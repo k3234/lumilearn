@@ -1,0 +1,23 @@
+FROM pytorch/pytorch:2.4.1-cuda12.4-cudnn9-runtime
+
+WORKDIR /app
+
+# 系统依赖
+RUN apt-get update && apt-get install -y \
+    git \
+    wget \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python 依赖
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制代码
+COPY . .
+
+# 创建目录
+RUN mkdir -p /app/logs /app/models /app/training_data
+
+# 启动命令
+CMD ["python", "train_tianhong_v4.py"]

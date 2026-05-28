@@ -1,0 +1,226 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# ============================================
+# LumiLearn: Model checkpoints (very large)
+# ============================================
+lumilearn_model_v*/
+*.pt
+*.gguf
+*.bin
+*.safetensors
+
+# ============================================
+# LumiLearn: Generated outputs
+# ============================================
+animation_output/
+anki_output/
+obsidian_vault/
+reports/
+*.csv
+
+# ============================================
+# LumiLearn: Temporary/debug scripts
+# ============================================
+check_*.py
+debug_*.py
+status_*.py
+*_check.py
+*_status.py
+*_debug.py
+quick_check*.py
+quick_supplement*.py
+final_*.py
+deep_*.py
+investigate*.py
+cleanup*.py
+
+# One-off deployment / launch scripts
+*launch*.py
+*restart*.py
+*relaunch*.py
+kill_and_restart.py
+gpu_*.py
+diagnose*.py
+diag_*.py
+export_gguf*.py
+fix_gguf*.py
+gateway_*.py
+import_to_ollama.py
+push_to_ollama.py
+deploy_to_ollama*.py
+deploy_to_tianhong.py
+dockercp_deploy*.py
+convert_and_deploy.py
+export_and_import*.py
+full_deploy.py
+full_pipeline.py
+full_status.py
+rebuild_and_deploy.py
+sync_*.py
+cloud_merge.py
+parallel_collector*.py
+start_nohup*.py
+start_extended*.py
+start_training.py
+run_extended*.py
+run_gpu*.py
+
+# Temp training scripts
+lumilearn_train*.py
+lumilearn_full*.py
+lumllearn_full*.py
+lumilearn_continue*.py
+train_from_scratch.py
+train_tianhong*.py
+train_v5*.py
+train.py
+
+# One-off test/data generation scripts
+test_framework*.py
+test_lumilearn.py
+test_now.py
+test_v32*.py
+test_v4*.py
+test_gguf*.py
+test_inference_local.py
+test_live_anchor.py
+test_load_model.py
+test_langgraph*.py
+test_hybrid*.py
+gen_test_data.py
+data_generator.py
+generate_skill_training_data.py
+extend_training_data.py
+multi_difficulty_training_data.py
+
+# Stale/refactored code
+lumilearn_model.py
+lumilearn_shared.py
+lumilearn_config.py
+client_config.py
+lumilearn_api_server.py
+lumilearn_api_quantized.py
+api_gateway.py
+unified_api_gateway.py
+lumilearn_main.py
+lumilearn_framework_b.py
+lumilearn_auto*.py
+lumilearn_daily_auto.py
+lumilearn_daily_processor.py
+
+# Misc temp scripts
+animation_batch*.py
+animation_generator.py
+batch_data_collector.py
+batch_supplement.py
+phase_trainer.py
+storage_manager.py
+web_scraper.py
+shell_launch.py
+reliable_launch.py
+ssh_controller.py
+tianhong_deployer.py
+dashboard.py
+monitor_training.py
+watch_training.py
+setup_auto_pipeline.py
+langgraph_engine.py
+pcta_algorithm.py
+stress_test.py
+quantization.py
+model_comparison.py
+model_files_check.py
+verify_train.py
+remote_access.ps1
+remote_test_infer.py
+deploy_tianhong.ps1
+
+# Temp scripts (underscore prefix)
+_analyze*.py
+
+# Batch files
+run_daily.bat
+saturday_dev.bat
+start_v4*.bat
+启动统一API.bat
+
+# ============================================
+# LumiLearn: Generated reports and logs
+# ============================================
+report_*.json
+report_*.txt
+report_*.md
+learning_path_output_*.json
+training_log_*.json
+training_report_*.json
+training_report_*.md
+automation_report_*.json
+simulation_qa_test_*.json
+simulation_random_*.json
+project_status.json
+project_status_report.html
+model_comparison_*.json
+model_comparison_*.png
+model_comparison_report_*.json
+test_report_*.json
+multi_model_queue.json
+data_diagnosis.json
+learning_experience.json
+pcta_demo_state.json
+debug_*.txt
+debug_*.json
+v4_training_log.txt
+stress_test_output.txt
+overfitting_analysis.png
+
+# Temp markdown documents
+MODEL_CHECK_REPORT.md
+MODEL_DETECTION_SUMMARY.md
+MODEL_QUICK_GUIDE.md
+PROJECT_OPTIMIZATION_SUMMARY.md
+status_check_report.md
+training_status_summary.md
+model_status_report.md
+SESSION_ROLLBACK_REPORT.md
+DEPLOY_TO_OLLAMA.md
+LUMILEARN_FROM_SCRATCH_PLAN.md
+LumiLearn_完整情况与训练提示词.md
+ALGORITHM_DOCUMENT.md
+AUTOMATION_PROMPT.md
+AUTOMATED_PROMPT_OPTIMIZATION.md
+prompt_optimization_report_*.md
+lumilearn_prompt_image_version.md
+
+# Images
+*.png
+*.jpg
+*.jpeg
