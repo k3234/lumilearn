@@ -1,0 +1,62 @@
+# ============================================
+# LumiLearn · 天虹主机 Docker Compose
+# 本配置文件仅在天虹(Ubuntu)上使用
+# 本机(Windows)不部署任何AI容器
+# ============================================
+version: "3.8"
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: lumilearn-ollama
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:11434:11434"
+    volumes:
+      - /home/lumi/ollama_models:/root/.ollama/models
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_NUM_PARALLEL=4
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+
+  api-server:
+    image: python:3.10-slim
+    container_name: lumilearn-api
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:18000:18000"
+    volumes:
+      - /home/lumi/lumilearn:/app
+    working_dir: /app
+    command: >
+      sh -c "pip install flask requests -q &&
+             python3 lumilearn_api_server.py"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=18000
+      - MODEL_DIR=/app/lumilearn_model_v3_extended/best_model
+      - OLLAMA_BASE_URL=http://ollama:11434
+    depends_on:
+      - ollama
+
+  training-worker:
+    image: python:3.10-slim
+    container_name: lumilearn-trainer
+    restart: "no"
+    volumes:
+      - /home/lumi/lumilearn:/app
+    working_dir: /app
+    profiles:
+      - train
+    command: >
+      sh -c "pip install torch numpy pandas requests -q &&
+             python3 train_tianhong_v4.py"
+    deploy:
+      resources:
+        limits:
+          memory: 14G

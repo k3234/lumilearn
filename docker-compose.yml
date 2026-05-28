@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  lumilearn-inference:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lumilearn-inference:latest
+    container_name: lumilearn-inference
+    ports:
+      - "18080:18080"
+    volumes:
+      - ./outputs:/app/outputs:ro
+    environment:
+      - LUMILEARN_MODEL_DIR=/app/outputs
+      - LUMILEARN_VERSION=v5
+      - LUMILEARN_DEVICE=auto
+      - HSA_OVERRIDE_GFX_VERSION=11.0.2
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - render
+      - video
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: ""
+              capabilities: ["gpu"]

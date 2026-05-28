@@ -1,0 +1,20 @@
+# 统一API网关 - 将Ollama和LumiLearn合并到同一地址
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 安装依赖
+RUN pip install --no-cache-dir flask requests
+
+# 复制网关代码
+COPY unified_api_gateway.py /app/
+
+# 设置环境变量
+ENV GATEWAY_PORT=11435
+ENV LUMILEARN_URL=http://lumilearn-v4:8000
+ENV OLLAMA_URL=http://ollama:11434
+ENV PYTHONUNBUFFERED=1
+
+EXPOSE 11435
+
+CMD ["python", "unified_api_gateway.py"]

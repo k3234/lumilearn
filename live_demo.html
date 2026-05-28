@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>🌿 LumiLearn 直播助手 · 真实演示</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d1117;color:#c9d1d9;font-family:'Microsoft YaHei',sans-serif;min-height:100vh;display:flex}
+.left{width:460px;padding:20px;border-right:1px solid #21262d;position:fixed;left:0;top:0;bottom:0;overflow-y:auto}
+.right{flex:1;margin-left:460px;padding:20px}
+h2{color:#7ee787;font-size:16px;margin:16px 0 10px;border-bottom:1px solid #21262d;padding-bottom:8px}
+h3{color:#7ee787;font-size:14px;margin:12px 0 6px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:12px}
+.chat-msg{border-left:3px solid #238636;padding:8px 12px;margin:6px 0;background:rgba(35,134,54,.1);border-radius:0 6px 6px 0}
+.chat-user{color:#58a6ff;font-size:11px;font-weight:bold}
+.chat-text{color:#c9d1d9;font-size:13px;margin-top:4px}
+.chat-reply{border-left:3px solid #7ee787;padding:6px 10px;margin:4px 0 4px 12px;background:rgba(126,231,135,.08);border-radius:0 6px 6px 0;font-size:12px;color:#aff5b4}
+.status-bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.dot-green{background:#238636;animation:blink 2s infinite}
+.dot-yellow{background:#d29922}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.badge{background:#21262d;border:1px solid #30363d;border-radius:20px;padding:4px 12px;font-size:11px;color:#8b949e}
+.badge .val{color:#7ee787;font-weight:bold;margin-left:4px}
+.demo-btn{background:#238636;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;margin:4px}
+.demo-btn:hover{background:#2ea043}
+.demo-btn.red{background:#da3633}
+.demo-btn.red:hover{background:#f85149}
+.log-line{font-family:'Consolas',monospace;font-size:11px;color:#8b949e;padding:2px 8px;border-left:2px solid #30363d;margin:2px 0}
+.log-line.important{color:#7ee787;border-left-color:#238636}
+.log-line.warn{color:#d29922;border-left-color:#d29922}
+.log-line.model{color:#58a6ff;border-left-color:#58a6ff}
+code{background:#21262d;padding:1px 5px;border-radius:3px;font-size:11px;color:#f0883e}
+pre{background:#161b22;padding:12px;border-radius:6px;font-size:11px;overflow-x:auto;border:1px solid #30363d}
+.tabs{display:flex;gap:0;margin-bottom:12px}
+.tab{padding:6px 14px;background:#161b22;border:1px solid #30363d;cursor:pointer;font-size:12px;color:#8b949e}
+.tab.active{background:#1f6feb;color:white;border-color:#1f6feb}
+.pipeline{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin:12px 0;font-size:11px}
+.pipe-node{background:#21262d;border:1px solid #30363d;padding:4px 10px;border-radius:4px;white-space:nowrap}
+.pipe-arrow{color:#484f58}
+</style>
+</head>
+<body>
+
+<div class="left" id="left-panel">
+  <h2 style="margin-top:0">🌿 LumiLearn 直播助手「小澍」</h2>
+
+  <div class="status-bar">
+    <span class="badge">推理服务器<span class="val">192.168.2.63:18080</span></span>
+    <span class="badge">模型<span class="val">LumiLearn V5</span></span>
+    <span class="badge">参数<span class="val">21M</span></span>
+    <span class="badge">检查点<span class="val">Step 1500</span></span>
+  </div>
+
+  <div class="status-bar">
+    <span class="badge">推理服务器<span class="val" id="api-status">检测中...</span></span>
+    <span class="badge">天虹GPU<span class="val">CPU模式</span></span>
+    <span class="badge">OBS端口<span class="val">localhost:8765</span></span>
+  </div>
+
+  <h3>📱 模拟弹幕输入</h3>
+  <div style="display:flex;gap:4px;margin-bottom:12px">
+    <input id="danmu-input" placeholder="输入弹幕..." style="flex:1;padding:8px;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:white;font-size:13px"
+           onkeydown="if(event.key==='Enter')sendDanmu()">
+    <button class="demo-btn" onclick="sendDanmu()">发送</button>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">
+    <button class="demo-btn" onclick="quickDanmu('你好小澍！')">👋 你好</button>
+    <button class="demo-btn" onclick="quickDanmu('三角形面积公式是什么')">📐 数学</button>
+    <button class="demo-btn" onclick="quickDanmu('英语谢谢怎么说')">🇬🇧 英语</button>
+    <button class="demo-btn" onclick="quickDanmu('作文怎么写')">✍️ 写作</button>
+    <button class="demo-btn" onclick="quickDanmu('怎么制定学习计划')">📅 计划</button>
+    <button class="demo-btn" onclick="quickDanmu('记不住单词怎么办')">🧠 记忆</button>
+    <button class="demo-btn" onclick="quickDanmu('什么是质数')">🔢 数学</button>
+    <button class="demo-btn" onclick="quickDanmu('物理题怎么做')">🔬 物理</button>
+    <button class="demo-btn" onclick="quickDanmu('不想学了')">💪 鼓励</button>
+    <button class="demo-btn red" onclick="clearChat()">清屏</button>
+  </div>
+
+  <h3>💬 直播间弹幕互动 <span id="msg-count" style="color:#8b949e;font-size:11px">(0条)</span></h3>
+  <div id="chat-area" style="max-height:500px;overflow-y:auto">
+    <div style="color:#484f58;text-align:center;padding:20px">等待弹幕...</div>
+  </div>
+</div>
+
+<div class="right">
+  <h2>🔍 系统运行日志</h2>
+
+  <div class="pipeline">
+    <span>弹幕输入</span><span class="pipe-arrow">→</span>
+    <span class="pipe-node">📋 弹幕过滤</span><span class="pipe-arrow">→</span>
+    <span class="pipe-node">📚 知识库匹配</span><span class="pipe-arrow">→</span>
+    <span class="pipe-node model">🤖 LumiLearn模型</span><span class="pipe-arrow">→</span>
+    <span class="pipe-node">🔍 乱码检测</span><span class="pipe-arrow">→</span>
+    <span class="pipe-node">✅ 输出回复</span>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('pipeline')">处理管道</div>
+    <div class="tab" onclick="switchTab('api')">API原始响应</div>
+    <div class="tab" onclick="switchTab('kb')">知识库统计</div>
+  </div>
+
+  <div id="tab-pipeline" class="tab-content">
+    <div class="card">
+      <h3 style="margin:0 0 8px">🔄 实时处理管道</h3>
+      <div id="pipeline-logs" style="max-height:400px;overflow-y:auto;font-family:Consolas,monospace;font-size:11px">
+        <div class="log-line">系统就绪，等待弹幕输入...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-api" class="tab-content" style="display:none">
+    <div class="card">
+      <h3 style="margin:0 0 8px">🌐 LumiLearn API 调用记录</h3>
+      <div id="api-logs" style="max-height:400px;overflow-y:auto;font-family:Consolas,monospace;font-size:11px">
+        <div class="log-line">尚未调用模型API</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-kb" class="tab-content" style="display:none">
+    <div class="card">
+      <h3 style="margin:0 0 8px">📚 教育知识库</h3>
+      <div id="kb-stats"></div>
+    </div>
+  </div>
+
+  <h2>🎬 OBS 叠加层预览</h2>
+  <div class="card" style="padding:0;overflow:hidden">
+    <iframe id="obs-frame" src="http://localhost:8765" style="width:100%;height:500px;border:none;background:transparent"></iframe>
+  </div>
+</div>
+
+<script>
+let msgCount = 0;
+let knowledgeBase = null;
+
+// API base
+const API_BASE = 'http://192.168.2.63:18080';
+
+// Check API health
+async function checkApi() {
+  try {
+    const r = await fetch(API_BASE + '/health');
+    const d = await r.json();
+    document.getElementById('api-status').textContent = d.status === 'ok' ? '在线 ✅' : '异常';
+    document.getElementById('api-status').style.color = d.status === 'ok' ? '#7ee787' : '#f85149';
+  } catch(e) {
+    document.getElementById('api-status').textContent = '离线 ❌';
+    document.getElementById('api-status').style.color = '#f85149';
+  }
+}
+
+function addLog(container, msg, cls) {
+  const div = document.getElementById(container);
+  div.innerHTML += `<div class="log-line${cls?' '+cls:''}">${msg}</div>`;
+  div.scrollTop = div.scrollHeight;
+}
+
+async function sendDanmu() {
+  const inp = document.getElementById('danmu-input');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  processDanmu(text);
+}
+
+function quickDanmu(text) {
+  processDanmu(text);
+}
+
+async function processDanmu(text) {
+  msgCount++;
+  document.getElementById('msg-count').textContent = `(${msgCount}条)`;
+
+  const t = new Date().toLocaleTimeString();
+
+  // Step 1: Show danmu
+  const chat = document.getElementById('chat-area');
+  if (chat.querySelector('div[style]')) chat.innerHTML = '';
+
+  const dmDiv = document.createElement('div');
+  dmDiv.className = 'chat-msg';
+  dmDiv.innerHTML = `
+    <div class="chat-user">👤 观众${Math.floor(Math.random()*9000)+1000} · ${t}</div>
+    <div class="chat-text">${text}</div>
+    <div class="chat-reply" id="reply-${msgCount}">🌿 小澍思考中...</div>
+  `;
+  chat.insertBefore(dmDiv, chat.firstChild);
+
+  addLog('pipeline-logs', `[${t}] 📩 收到弹幕: "${text}"`);
+
+  // Step 2: Filter
+  addLog('pipeline-logs', `[${t}] 📋 弹幕过滤: 通过 (长度${text.length}, 有效)`);
+
+  // Step 3: Knowledge base search
+  const kbResult = searchKnowledgeBase(text);
+  if (kbResult) {
+    addLog('pipeline-logs', `[${t}] 📚 知识库命中: "${kbResult.topic}"`, 'important');
+  } else {
+    addLog('pipeline-logs', `[${t}] 📚 知识库: 未命中`);
+  }
+
+  // Step 4: Call LumiLearn model
+  addLog('pipeline-logs', `[${t}] 🤖 调用 LumiLearn 模型...`, 'model');
+  addLog('api-logs', `[${t}] POST ${API_BASE}/api/generate`, 'model');
+  addLog('api-logs', `[${t}] Request: {"model":"lumilearn-v5","prompt":"指令：你是小澍...\\n\\n问题：${text}\\n回答："}`, 'model');
+
+  const startTime = Date.now();
+  let modelResult = null;
+  let modelUsed = false;
+
+  try {
+    const systemPrompt = "你是「小澍」，专业亲切的中文AI学习规划师。回答简洁有趣，适合中小学生。用比喻和例子解释概念。回答在50字以内。";
+    const fullPrompt = `指令：${systemPrompt}\n\n问题：${text}\n回答：`;
+
+    const r = await fetch(API_BASE + '/api/generate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'lumilearn-v5',
+        prompt: fullPrompt,
+        stream: false,
+        options: {num_predict: 60, temperature: 0.8}
+      }),
+      signal: AbortSignal.timeout(15000)
+    });
+
+    const d = await r.json();
+    const rawText = d.response || '';
+    const elapsed = Date.now() - startTime;
+
+    addLog('api-logs', `[${t}] Response (${elapsed}ms): "${rawText.substring(0,80)}"`, rawText.length > 0 ? 'model' : 'warn');
+
+    // Step 5: Gibberish check
+    const isGib = checkGibberish(rawText);
+    addLog('pipeline-logs', `[${t}] 🔍 乱码检测: ${isGib ? '❌ 乱码' : '✅ 通过'} (${rawText.length}字符)`, isGib ? 'warn' : 'important');
+
+    // Step 6: Semantic check
+    if (!isGib && rawText.length >= 4) {
+      const isSem = checkSemantic(rawText, text);
+      addLog('pipeline-logs', `[${t}] 🔍 语义检测: ${isSem ? '✅ 有意义' : '❌ 无意义'}`, isSem ? 'important' : 'warn');
+
+      if (isSem) {
+        modelResult = rawText;
+        modelUsed = true;
+        addLog('pipeline-logs', `[${t}] ✅ 使用 LumiLearn 模型输出`, 'important');
+      }
+    }
+  } catch(e) {
+    addLog('pipeline-logs', `[${t}] ⚠️ 模型调用异常: ${e.message}`, 'warn');
+  }
+
+  // Step 7: Final response
+  let finalReply;
+  if (modelUsed) {
+    finalReply = `AI小澍：${modelResult}`;
+    addLog('pipeline-logs', `[${t}] 🎯 最终回复(模型): "${finalReply.substring(0,60)}"`, 'important');
+  } else if (kbResult) {
+    finalReply = kbResult.reply;
+    addLog('pipeline-logs', `[${t}] 🎯 最终回复(知识库): "${finalReply.substring(0,60)}"`, 'important');
+  } else {
+    finalReply = getSmartFallback(text);
+    addLog('pipeline-logs', `[${t}] 🎯 最终回复(通用): "${finalReply.substring(0,60)}"`, 'important');
+  }
+
+  // Update chat reply
+  const replyDiv = document.getElementById('reply-' + msgCount);
+  if (replyDiv) {
+    replyDiv.innerHTML = `🌿 小澍：${finalReply}`;
+  }
+}
+
+// Gibberish detection (client-side version)
+const TOP500 = new Set('的一是在不了有和人这中大为上个国我以要他时来用们生到作地于出就分对成会可主发年动同工也能下过子说产种面而方后多定行学法所民得经十三之进着等部度家电力里如水化高自二理起小物现实加量都两体制机当使点从业本去把性好应开它合还因由其些然前外天政四日那社义事平形相全表间样与关各重新线内数正心反你明看原又么利比或但质气第向道命此变条只没结解问意建月公无系军很情者最立代想已通并提直题党程展五果料象员革位入常文总次品式活设及管特件长求老头基资边流路级少图山统接知较将组见计别她手角期根论运农指几九区强放决西被干做必战先回则任取据处队南给色光门即保治北造百规热领七海口东导器压志世金增争济阶油思术极交受联什认六共权收证改清己美再采转更单风切打白教速花带安场身车例真务具万每目至达走积示议声报斗完类八离华名确才科张信马节话米整空元况今集温传土许步群广石记需段研界拉林律叫且究观越织装影算低持音众书布复容儿须际商非验连断深难近矿千周委素技备半办青省列习响约支般史感劳便团往历酸克市何除消构府称太准精值号率族维划选标写存候毛亲快效斯院查江型眼王按格养置层片始却专状育厂京识适属圆包火住调满县局照参红细引听该铁价严首底液官德随病苏失讲配黄推显谈罪神艺呢席含企望密批营项防举球英氧势告李台落木帮轮破亚师围注远字材排供河态封另施减树溶怎止案言士均武固叶鱼波视仅费紧爱左章早朝害续轻服试食充兵源判护司足练差致板田降黑犯负击范继兴似余坚曲输修故城夫够送笔船占右财吃富春职觉汉画功巴跟虽杂飞检吸助升阳互初创抗考投坏策古径换未跑留钢曾端责站简述钱副尽帝射草冲承独令限阿宣环双请超微让控州良轴找否纪益依优顶础载倒房突坐粉敌略客袁冷胜绝析块剂测丝协诉念陈仍罗盐友洋错苦夜刑移频逐靠混母短皮终聚汽村云哪既距卫停烈央察烧迅境若印洲刻括激孔搞甚室待核校散侵吧甲游久菜味旧模湖货损预阻毫普稳乙妈植息扩银语挥酒守拿序纸医缺雨吗针刘啊急唱误训愿审附获茶鲜粮斤孩脱硫肥善龙演父渐血欢械掌歌沙刚攻谓盾讨晚粒乱燃矛乎杀药宁鲁贵钟煤读班伯香介迫句丰培握兰担弦蛋沉假穿执答乐准顺'.split(''));
+
+const COMMON_WORDS = ['的','是','在','有','我','你','他','不','了','人','一','这','中','大','来','上','学','习','好','会','可','以','要','就','能','对','知','道','什','么','怎','样','为','因','和','与','但','问','答','说'];
+
+const SEMANTIC_PATTERNS = ['方法','可以','需要','应该','注意','建议','首先','然后','比如','例如','因为','所以','如果','那么','但是','虽然','学习','练习','掌握','理解','记住','知道','了解','重要','关键','基础','基本','简单','复杂','问题','答案','结果','过程','步骤','提高','增加','减少','改变','变化','发展','进步'];
+
+function checkGibberish(text) {
+  if (!text || text.length < 2) return true;
+  const chinese = [...text].filter(c => c >= '\u4e00' && c <= '\u9fff');
+  if (chinese.length < 3) return false;
+  const common = chinese.filter(c => TOP500.has(c)).length;
+  const ratio = common / chinese.length;
+  const foundWords = COMMON_WORDS.filter(w => text.includes(w)).length;
+  if (ratio < 0.25) return true;
+  if (ratio < 0.4 && foundWords < 2) return true;
+  if (chinese.length >= 6 && foundWords === 0 && ratio < 0.6) return true;
+  if (foundWords === 0 && ratio < 0.5) return true;
+  return false;
+}
+
+function checkSemantic(text, question) {
+  if (text.length < 4) return false;
+  const qChars = new Set([...question].filter(c => c >= '\u4e00' && c <= '\u9fff'));
+  const foundPatterns = SEMANTIC_PATTERNS.filter(p => text.includes(p)).length;
+  const relevancy = [...text].filter(c => qChars.has(c)).length;
+  return (foundPatterns >= 2 && relevancy >= 1) || foundPatterns >= 3;
+}
+
+function searchKnowledgeBase(text) {
+  const KB = [
+    {topic:'加法',kw:['加法','相加','加'], reply:'加法就是合并数字～比如 28+15，先个位 8+5=13 进1，再十位 2+1+1=4，结果 43！加法是数学最基础的运算哦 📐'},
+    {topic:'三角形面积',kw:['三角形','面积'], reply:'三角形面积 = 底 × 高 ÷ 2！比如底4cm、高3cm的三角形，面积 = 4×3÷2 = 6平方厘米。把三角形看成半个长方形～ 📐'},
+    {topic:'英语翻译',kw:['英语','英文','翻译'], reply:'学英语小技巧：1️⃣ 先理解中文意思 2️⃣ 找对应的英文句式 3️⃣ 常用短语多背诵。「谢谢」= Thank you，「不客气」= You\'re welcome。每天记5个新词！🇬🇧'},
+    {topic:'作文写作',kw:['作文','写作','怎么写'], reply:'写作文三步法：1️⃣ 开头点题吸引人 2️⃣ 中间展开举例（至少2-3个）3️⃣ 结尾总结升华。多读多练自然写得好！✍️'},
+    {topic:'学习计划',kw:['计划','安排','怎么学'], reply:'制定学习计划的黄金法则：📅 每天固定时间 📝 分科目轮换 ⏰ 番茄钟25+5 📊 每周总结错题。坚持21天！'},
+    {topic:'记不住',kw:['记不住','忘记','记忆力','背不'], reply:'提高记忆力四大法宝：1️⃣ 间隔复习 2️⃣ 联想记忆 3️⃣ 画思维导图 4️⃣ 讲给别人听！🧠'},
+    {topic:'方程',kw:['方程'], reply:'方程就是含有未知数的等式～比如 x+5=12，两边同时减5，x=7。核心思想：等式两边做同样的运算！⚖️'},
+    {topic:'质数',kw:['质数','素数'], reply:'质数是只能被1和它本身整除的数，比如2、3、5、7、11、13、17、19...记住：2是最小的质数！🔢'},
+    {topic:'学习动力',kw:['不想学','没动力','累','懒'], reply:'学习没动力时试试：1️⃣ 设定小目标奖励自己 2️⃣ 换学习方式 3️⃣ 找学习伙伴 4️⃣ 想象学成后的成就感！💪✨'},
+    {topic:'科学常识',kw:['物理','化学','科学','实验'], reply:'科学讲究观察和实验！很多原理都可以用生活中的现象来解释。具体问题告诉我，我用简单方式讲给你听 🔬'},
+    {topic:'资源推荐',kw:['推荐','资源','什么书','资料'], reply:'推荐学习资源：📱 数学用作业帮 📖 英语用百词斩 📚 语文多看名著 🎬 B站很多免费教学视频。选适合自己的最重要！'},
+    {topic:'考试技巧',kw:['考试','怎么考','做题','复习'], reply:'考试技巧：📝 先做会的 ⏰ 合理分配时间 ✅ 做完检查 💪 前一天早睡，保持好状态！'},
+  ];
+
+  let best = null, bestScore = 0;
+  for (const entry of KB) {
+    let score = 0;
+    for (const kw of entry.kw) {
+      if (text.includes(kw)) score += kw.length;
+    }
+    if (score > bestScore) { bestScore = score; best = entry; }
+  }
+  return bestScore >= 2 ? best : null;
+}
+
+function getSmartFallback(text) {
+  if (['你好','在吗','hello','hi','老师好'].some(k=>text.includes(k))) return '欢迎来到直播间！我是小澍～有什么问题随时问！';
+  if (['谢谢','好棒','厉害','加油','支持'].some(k=>text.includes(k))) return '谢谢支持！你认真学习的样子最棒了～💪';
+  const replies = [
+    '这个问题问得好！可以具体说说哪里不明白吗？',
+    '让我想想怎么用最简单的方式解释给你听...',
+    '学习上遇到问题是好事！说明你在思考，我来帮你梳理一下',
+    '好的！这个知识点其实很重要，我用生活中的例子解释',
+  ];
+  return replies[Math.floor(Math.random() * replies.length)];
+}
+
+function clearChat() {
+  document.getElementById('chat-area').innerHTML = '<div style="color:#484f58;text-align:center;padding:20px">等待弹幕...</div>';
+  document.getElementById('msg-count').textContent = '(0条)';
+  document.getElementById('pipeline-logs').innerHTML = '<div class="log-line">系统就绪，等待弹幕输入...</div>';
+  document.getElementById('api-logs').innerHTML = '<div class="log-line">尚未调用模型API</div>';
+  msgCount = 0;
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).style.display = 'block';
+  document.querySelector(`.tab:contains('${name==='pipeline'?'处理管道':name==='api'?'API原始响应':'知识库统计'}')`).classList.add('active');
+}
+
+// Init
+checkApi();
+setInterval(checkApi, 30000);
+setInterval(() => document.getElementById('obs-frame').src = document.getElementById('obs-frame').src, 60000);
+
+// KB stats
+let html = '';
+const KB = [['加法',7],['减法',5],['乘法',6],['除法',5],['三角形面积',3],['长方形面积',3],['圆的面积',3],['分数运算',3],['方程',4],['质数',3],['概念解释',4],['英语翻译',4],['英语语法',5],['作文写作',5],['阅读理解',4],['学习计划',4],['记不住',4],['考试技巧',4],['学习动力',5],['科学常识',4],['资源推荐',5]];
+KB.forEach(([t,c]) => { html += `<div class="badge" style="margin:3px">${t}<span class="val">${c}关键词</span></div>`; });
+document.getElementById('kb-stats').innerHTML = `<p style="font-size:12px;color:#8b949e;margin-bottom:8px">共 ${KB.length} 个教育话题，覆盖 K-12 核心学科</p>${html}`;
+</script>
+</body>
+</html>

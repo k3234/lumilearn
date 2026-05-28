@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌿 AI小澍 直播助手 - 预览效果</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0a;
+    font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h2 { color: #4ade80; margin-bottom: 16px; font-size: 16px; }
+
+  .obs-preview {
+    width: 460px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(74, 222, 128, 0.3);
+    background: #0d1a12;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1a4d1a, #2d7a2d);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 2px solid #4ade80;
+  }
+  .avatar {
+    font-size: 38px;
+    animation: bounce 2s ease-in-out infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .header-info h3 {
+    color: #7fff7f;
+    font-size: 17px;
+    font-weight: bold;
+  }
+  .header-info p {
+    color: #aaffaa;
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .status-dot {
+    width: 8px; height: 8px; background: #4ade80; border-radius: 50%;
+    display: inline-block; margin-right: 4px; animation: blink 1.5s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .reply-panel {
+    background: linear-gradient(180deg, #0f2a1a 0%, #1a3a2a 100%);
+    padding: 14px 18px;
+    border-left: 4px solid #4ade80;
+    min-height: 70px;
+    position: relative;
+  }
+  .reply-label { color: #4ade80; font-size: 11px; margin-bottom: 6px; }
+  .reply-text { color: #ffffff; font-size: 15px; line-height: 1.6; }
+  .typing { color: #86efac; font-size: 12px; animation: typing 1s steps(4) infinite; }
+  @keyframes typing { 0%{content:'.'} 25%{content:'..'} 50%{content:'...'} 75%{content:'....'} }
+
+  .danmu-list { background: rgba(10, 20, 10, 0.8); }
+  .danmu-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .danmu-item:last-child { border-bottom: none; }
+  .dm-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .dm-user { color: #86efac; font-size: 11px; font-weight: bold; }
+  .dm-time { color: #4b5563; font-size: 10px; }
+  .dm-text { color: #d1d5db; font-size: 13px; line-height: 1.4; }
+  .reply-box {
+    margin-top: 8px; padding: 6px 10px;
+    background: rgba(74, 222, 128, 0.08);
+    border-radius: 6px; border-left: 2px solid #4ade80;
+  }
+  .reply-label-small { color: #4ade80; font-size: 10px; }
+  .reply-text-small { color: #bbf7d0; font-size: 12px; margin-left: 4px; }
+
+  .demo-controls {
+    margin-top: 24px; width: 460px;
+  }
+  .demo-controls h3 { color: #4ade80; font-size: 14px; margin-bottom: 10px; }
+  .demo-controls p { color: #888; font-size: 11px; margin-bottom: 10px; line-height: 1.6; }
+  .demo-btn {
+    background: #1a4d1a; color: #4ade80;
+    border: 1px solid #4ade80; padding: 10px 20px;
+    border-radius: 8px; cursor: pointer; font-size: 13px;
+    margin: 4px; transition: all 0.2s;
+  }
+  .demo-btn:hover { background: #2d7a2d; }
+  .demo-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .guide { margin-top: 24px; width: 460px; }
+  .guide h3 { color: #4ade80; font-size: 14px; margin-bottom: 12px; }
+  .guide-step {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 10px; padding: 10px;
+    background: rgba(74, 222, 128, 0.05);
+    border-radius: 8px; border-left: 3px solid #4ade80;
+  }
+  .step-num {
+    background: #2d7a2d; color: white;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: bold; flex-shrink: 0;
+  }
+  .step-text { color: #ccc; font-size: 12px; line-height: 1.5; }
+  .step-text strong { color: #4ade80; }
+  .step-text code {
+    background: rgba(0,0,0,0.3); padding: 2px 6px;
+    border-radius: 4px; font-size: 11px; color: #86efac;
+  }
+</style>
+</head>
+<body>
+
+<h2>🌿 LumiLearn 直播助手「小澍」预览</h2>
+
+<div class="obs-preview">
+  <div class="header">
+    <div class="avatar">🌿</div>
+    <div class="header-info">
+      <h3>AI 小澍 学习助手</h3>
+      <p><span class="status-dot"></span>直播中 · 已回复 8 条弹幕</p>
+    </div>
+  </div>
+
+  <div class="reply-panel">
+    <div class="reply-label">🌿 小澍 回复：</div>
+    <div class="reply-text" id="latest-reply">遇到不懂的地方一定要问哦！我会用更简单的方式再讲一遍～</div>
+  </div>
+
+  <div class="danmu-list">
+    <div class="danmu-item">
+      <div class="dm-header">
+        <span class="dm-user">用户3381</span>
+        <span class="dm-time">21:35</span>
+      </div>
+      <div class="dm-text">老师好！</div>
+      <div class="reply-box">
+        <span class="reply-label-small">🌿 小澍 回复：</span>
+        <span class="reply-text-small">你好！欢迎来到直播间～有什么学习问题尽管问我！</span>
+      </div>
+    </div>
+    <div class="danmu-item">
+      <div class="dm-header">
+        <span class="dm-user">用户5529</span>
+        <span class="dm-time">21:34</span>
+      </div>
+      <div class="dm-text">三角形面积公式是什么来着？</div>
+      <div class="reply-box">
+        <span class="reply-label-small">🌿 小澍 回复：</span>
+        <span class="reply-text-small">底×高÷2 ！想象把三角形切成两半拼成长方形就记住了～</span>
+      </div>
+    </div>
+    <div class="danmu-item">
+      <div class="dm-header">
+        <span class="dm-user">用户7742</span>
+        <span class="dm-time">21:33</span>
+      </div>
+      <div class="dm-text">听不懂</div>
+      <div class="reply-box">
+        <span class="reply-label-small">🌿 小澍 回复：</span>
+        <span class="reply-text-small">别急！换个方式讲：用底4cm、高3cm的三角形，面积就是4×3÷2=6平方厘米～</span>
+      </div>
+    </div>
+    <div class="danmu-item">
+      <div class="dm-header">
+        <span class="dm-user">用户2210</span>
+        <span class="dm-time">21:32</span>
+      </div>
+      <div class="dm-text">推荐学习计划</div>
+      <div class="reply-box">
+        <span class="reply-label-small">🌿 小澍 回复：</span>
+        <span class="reply-text-small">每天早起复习30分钟，下午做练习题，晚上总结错题本，坚持一周效果明显！</span>
+      </div>
+    </div>
+    <div class="danmu-item">
+      <div class="dm-header">
+        <span class="dm-user">用户9901</span>
+        <span class="dm-time">21:31</span>
+      </div>
+      <div class="dm-text">英语怎么说"我喜欢学习"</div>
+      <div class="reply-box">
+        <span class="reply-label-small">🌿 小澍 回复：</span>
+        <span class="reply-text-small">I enjoy learning. 记住 enjoy = en(使) + joy(快乐)，让学习变快乐！</span>
+      </div>
+    </div>
+    <div class="danmu-item" style="opacity:0.5">
+      <div class="dm-header">
+        <span class="dm-user">用户1155</span>
+        <span class="dm-time">21:30</span>
+      </div>
+      <div class="dm-text">加油</div>
+      <div class="reply-box">
+        <span class="reply-label-small">🌿 小澍 回复：</span>
+        <span class="reply-text-small">一起加油！💪 有问题随时问！</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="demo-controls">
+  <h3>🎮 模拟弹幕效果</h3>
+  <p>点击下方按钮模拟观众发送弹幕，AI 小澍会自动回复：</p>
+  <div class="demo-buttons">
+    <button class="demo-btn" onclick="simulate('你好小澍！')">👋 你好</button>
+    <button class="demo-btn" onclick="simulate('1+1等于几')">🔢 数学</button>
+    <button class="demo-btn" onclick="simulate('英语怎么说谢谢')">🇬🇧 英语</button>
+    <button class="demo-btn" onclick="simulate('作文怎么写')">📝 写作</button>
+    <button class="demo-btn" onclick="simulate('听不懂，能讲详细点吗')">❓ 不懂</button>
+    <button class="demo-btn" onclick="simulate('小澍加油！支持你！')">👍 鼓励</button>
+    <button class="demo-btn" onclick="simulate('推荐学习计划给我')">📋 计划</button>
+    <button class="demo-btn" onclick="simulate('这道物理题怎么做')">🔬 物理</button>
+  </div>
+</div>
+
+<div class="guide">
+  <h3>📺 接入抖音直播步骤</h3>
+  <div class="guide-step">
+    <div class="step-num">1</div>
+    <div class="step-text">
+      <strong>安装依赖</strong><br>
+      <code>pip install websocket-client gtts pygame Pillow</code>
+    </div>
+  </div>
+  <div class="guide-step">
+    <div class="step-num">2</div>
+    <div class="step-text">
+      <strong>启动直播助手</strong><br>
+      <code>python live_anchor.py --source mock</code>（测试模式）<br>
+      或连接真实弹幕源
+    </div>
+  </div>
+  <div class="guide-step">
+    <div class="step-num">3</div>
+    <div class="step-text">
+      <strong>OBS 添加浏览器源</strong><br>
+      URL: <code>http://localhost:8765</code><br>
+      宽高: 460×700，设为透明背景
+    </div>
+  </div>
+  <div class="guide-step">
+    <div class="step-num">4</div>
+    <div class="step-text">
+      <strong>叠加到直播画面</strong><br>
+      拖动 OBS 中的浏览器源到画面右侧/左下角，<br>
+      调整大小适合你的直播布局
+    </div>
+  </div>
+  <div class="guide-step">
+    <div class="step-num">5</div>
+    <div class="step-text">
+      <strong>开启 TTS 语音（可选）</strong><br>
+      <code>python live_anchor.py --source mock --tts</code><br>
+      AI 回复会自动朗读出来
+    </div>
+  </div>
+</div>
+
+<script>
+const replies = {
+  '你好小澍！': '你好！我是小澍，AI学习规划师～有问题尽管问我！',
+  '1+1等于几': '1+1=2 呀！就像一个苹果再加一个苹果，就是两个苹果～',
+  '英语怎么说谢谢': '谢谢 = Thank you！也可以说 Thanks，多简单～',
+  '作文怎么写': '写作文记住三步：开头点题、中间举例、结尾总结！用一个好故事开头最吸引人～',
+  '听不懂，能讲详细点吗': '没问题！慢慢来，我换个更简单的说法～',
+  '小澍加油！支持你！': '谢谢支持！💪 一起加油，我们都能进步！',
+  '推荐学习计划给我': '建议：早起30分钟复习，下午做练习题，晚上整理错题本，坚持21天形成习惯！',
+  '这道物理题怎么做': '物理题关键是找到已知条件和公式。先画图，再代入公式计算，多练几次就熟了！',
+};
+
+const list = document.querySelector('.danmu-list');
+let count = 9;
+
+function simulate(text) {
+  // Update latest reply
+  const reply = document.getElementById('latest-reply');
+  reply.textContent = replies[text] || '嗯嗯，这个问题有意思！想想怎么回答～';
+
+  // Add new danmu item
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  const userId = Math.floor(Math.random() * 9000) + 1000;
+
+  const item = document.createElement('div');
+  item.className = 'danmu-item';
+  item.style.animation = 'slideIn 0.3s ease';
+  item.innerHTML = `
+    <div class="dm-header">
+      <span class="dm-user">用户${userId}</span>
+      <span class="dm-time">${time}</span>
+    </div>
+    <div class="dm-text">${text}</div>
+    <div class="reply-box">
+      <span class="reply-label-small">🌿 小澍 回复：</span>
+      <span class="reply-text-small">${replies[text] || '收到！我来想想～'}</span>
+    </div>
+  `;
+  list.insertBefore(item, list.firstChild);
+
+  // Keep only 8 items
+  while (list.children.length > 8) {
+    list.removeChild(list.lastChild);
+  }
+}
+</script>
+</body>
+</html>
