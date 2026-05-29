@@ -17,7 +17,7 @@ from framework.trainer import LumiLearnTrainer
 
 
 def main():
-    config = LumiLearnConfig(preset="scratch_gpu")
+    config = LumiLearnConfig()
 
     data_path = os.path.join(SCRIPT_DIR, "lumilearn_master.csv")
     if not os.path.exists(data_path):
