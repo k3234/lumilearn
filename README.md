@@ -182,33 +182,42 @@ docker-compose up -d
 ```
 lumilearn/
 ├── framework/              # 微型 Transformer 框架
-│   ├── model.py            #   模型架构
-│   ├── config.py           #   训练配置
+│   ├── model.py            #   GPT-2 风格模型架构
+│   ├── config.py           #   训练配置中心
 │   ├── tokenizer.py        #   字符级分词器
-│   ├── data.py             #   数据加载
+│   ├── data.py             #   数据加载器
 │   ├── trainer.py          #   训练循环
 │   └── utils.py            #   工具函数
 ├── data_management/        # 数据管线
-│   ├── cleaner.py
-│   ├── validator.py
-│   ├── pipeline.py
-│   ├── schema.py
-│   └── versioner.py
-├── scripts/                # 自动化脚本
+│   ├── cleaner.py          #   数据清洗
+│   ├── validator.py        #   质量验证
+│   ├── pipeline.py         #   数据流水线
+│   ├── schema.py           #   数据模式
+│   └── versioner.py        #   版本管理
+├── scripts/                # 自动化脚本/流水线
+│   ├── lumilearn_unified_auto.py   # 统一自动化流水线
+│   ├── generate_personal_study.py  # 个人学习生成器
+│   ├── lumilearn_learning_path_generator.py  # 学习路径生成
+│   └── ...
 ├── skills/                 # 技能模块
 ├── lesson_engine.py        # 智能讲解引擎 ⭐
 ├── smart_reply_engine.py   # 智能回复引擎 ⭐
+├── langgraph_engine.py     # 多模型并行编排引擎
+├── batch_data_collector.py # 全学科数据收集器
+├── animation_generator.py  # Manim 动画生成器
+├── lumilearn_shared.py     # 共享模块(路径/模型/工具)
 ├── live_anchor.py          # 直播助手
 ├── live_anchor_preview.html # OBS 叠加层预览
 ├── live_demo.html          # 交互演示页面
 ├── inference.py            # 模型推理
 ├── inference_server.py     # Flask 推理服务器
-├── deploy_inference_server.py # 部署脚本
-├── deploy_smart_engine.py  # 部署脚本
+├── deploy_inference_server.py # 部署到天虹
+├── deploy_smart_engine.py  # 部署智能引擎
 ├── docker-compose.yml
 ├── docker-compose.tianhong.yml
 ├── Dockerfile*
 ├── requirements.txt
+├── PROJECT_PRINCIPLES.md   # 开发原则
 └── .env.example
 ```
 
