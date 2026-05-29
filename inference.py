@@ -7,6 +7,7 @@ sys.path.insert(0, SCRIPT_DIR)
 
 from framework.model import LumiLearnModel
 from framework.config import ModelConfig
+from framework.tokenizer import LumiLearnTokenizer
 
 
 class LumiLearnInference:
@@ -82,54 +83,24 @@ class LumiLearnInference:
 
         tokenizer_path = os.path.join(model_dir, "tokenizer.json")
         if not os.path.exists(tokenizer_path):
-            for root, _, files in os.walk(model_dir):
-                if "tokenizer.json" in files:
-                    tokenizer_path = os.path.join(root, "tokenizer.json")
-                    break
-        self.vocab = self._load_tokenizer(tokenizer_path)
-
+            tokenizer_path = os.path.join(SCRIPT_DIR, "framework", "bpe_tokenizer.json")
+        self.tokenizer = LumiLearnTokenizer(vocab_size=self.config.vocab_size,
+                                            tokenizer_path=tokenizer_path)
         self.vocab_size = self.config.vocab_size
-        self.id_to_char = {v: k for k, v in self.vocab.items()}
 
         print(f"[LumiLearn] Loaded model: {sum(p.numel() for p in self.model.parameters()):,} params")
-        print(f"[LumiLearn] Device: {self.device}, Vocab: {len(self.vocab)}")
-
-    def _load_tokenizer(self, path):
-        with open(path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        if isinstance(data, dict):
-            if "char_to_id" in data:
-                return data["char_to_id"]
-            if "vocab" in data:
-                v = data["vocab"]
-                if isinstance(v, dict):
-                    return v
-                if isinstance(v, list):
-                    return {ch: i for i, ch in enumerate(v)}
-            return {ch: i for i, ch in enumerate(data.keys())}
-        if isinstance(data, list):
-            return {ch: i for i, ch in enumerate(data)}
-        return data
+        print(f"[LumiLearn] Device: {self.device}, Vocab: {self.tokenizer.vocab_size_actual}")
 
     def encode(self, text: str, max_len: int | None = None):
         if max_len is None:
             max_len = self.config.max_seq_len
-        ids = []
-        for ch in text:
-            ids.append(self.vocab.get(ch, self.vocab.get("<unk>", 0)))
-        if len(ids) > max_len - 1:
-            ids = ids[-(max_len - 1):]
+        ids = self.tokenizer.encode(text, add_special_tokens=True)
+        if len(ids) > max_len:
+            ids = ids[:max_len]
         return ids
 
     def decode(self, ids: list[int]) -> str:
-        chars = []
-        for i in ids:
-            ch = self.id_to_char.get(i, "")
-            if ch == "<eos>" or ch == "<pad>":
-                break
-            chars.append(ch)
-        return "".join(chars)
+        return self.tokenizer.decode(ids, skip_special=True)
 
     @torch.no_grad()
     def generate(
@@ -151,7 +122,7 @@ class LumiLearnInference:
 
         t_start = time.time()
         generated = list(input_ids)
-        eos_id = self.vocab.get("<eos>", -1)
+        eos_id = self.tokenizer.eos_token_id
 
         full_ids = torch.tensor([input_ids], dtype=torch.long, device=self.device)
 

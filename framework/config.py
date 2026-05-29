@@ -11,7 +11,7 @@ from typing import Optional
 
 @dataclass
 class ModelConfig:
-    vocab_size: int = 12000
+    vocab_size: int = 8000
     hidden_size: int = 384
     num_layers: int = 8
     num_heads: int = 8
@@ -143,7 +143,7 @@ def get_preset_configs() -> dict:
                                     warmup_steps=500, batch_size=4, gradient_accumulation=2),
         ),
         "scratch_medium": LumiLearnConfig(
-            model=ModelConfig(vocab_size=16000, hidden_size=512, num_layers=10,
+            model=ModelConfig(vocab_size=8000, hidden_size=512, num_layers=10,
                               num_heads=8, ff_dim=1536, max_seq_len=512, dropout=0.25),
             training=TrainingConfig(learning_rate=8e-4, max_steps=80000,
                                     warmup_steps=1000, batch_size=6, gradient_accumulation=6),
