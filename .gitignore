@@ -124,7 +124,6 @@ multi_difficulty_training_data.py
 
 # Stale/refactored code
 lumilearn_model.py
-lumilearn_shared.py
 lumilearn_config.py
 client_config.py
 lumilearn_api_server.py
@@ -139,8 +138,6 @@ lumilearn_daily_processor.py
 
 # Misc temp scripts
 animation_batch*.py
-animation_generator.py
-batch_data_collector.py
 batch_supplement.py
 phase_trainer.py
 storage_manager.py
@@ -153,7 +150,6 @@ dashboard.py
 monitor_training.py
 watch_training.py
 setup_auto_pipeline.py
-langgraph_engine.py
 pcta_algorithm.py
 stress_test.py
 quantization.py
