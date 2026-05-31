@@ -199,6 +199,134 @@ THANKS_REPLIES = [
     "谢谢支持！你认真学习的样子最棒了～",
 ]
 
+# ============================================================
+# "反着教"引导式回复（不给答案，只给思路）
+# ============================================================
+
+GUIDED_QUESTION_STARTERS = {
+    "math": [
+        "🤔 好问题！在解题之前，先想想：题目给了什么条件？你要找的是什么？",
+        "💡 这个问题不急着给答案。你先说说看，你觉得第一步应该做什么？",
+        "📐 先别算！先告诉我，这道题可以用哪个公式？为什么选这个？",
+        "🔍 看到这道题，你最先想到的方法是什么？先说说你的思路",
+    ],
+    "english": [
+        "🇬🇧 试着先翻译一下这句话的意思？你认识哪些单词？",
+        "📖 先不查答案。你试着读一遍，能理解大概意思吗？",
+        "✍️ 先自己试着写一下，写了再来对答案",
+    ],
+    "chinese": [
+        "✍️ 写作文之前，先列出你要写的几个要点。你先列一下？",
+        "📚 你读这段文字，试着用自己的话概括一下讲了什么？",
+    ],
+    "science": [
+        "🔬 先别查答案。你观察到了什么现象？先描述一下",
+        "🧪 你觉得可能是什么原因？先猜一下，再验证",
+    ],
+    "general": [
+        "🤔 这个问题问得好。你先说说你已经知道的部分？",
+        "💡 我不直接告诉你答案。但可以给你提示：从哪里开始想？",
+        "先自己试着分析一下，然后我帮你检查思路对不对",
+    ],
+}
+
+FOLLOWUP_HINTS = {
+    "面积": [
+        "提示：面积公式里的底和高，必须是垂直的！",
+        "再想想：这个图形可以看成什么基本图形的组合？",
+        "检查一下单位：厘米还是米？平方厘米还是平方米？",
+    ],
+    "方程": [
+        "提示：移项的时候注意变号！",
+        "左边有什么，右边有什么？试试把含未知数的移到同一边",
+    ],
+    "分数": [
+        "提示：分母不同怎么办？对，先通分！",
+        "分子分母约分了吗？结果要最简形式",
+    ],
+    "乘法": [
+        "提示：可以用九九乘法表，也可以拆开算",
+        "试试：把大数拆成两个熟悉的小数来乘",
+    ],
+    "计算": [
+        "提示：先看运算顺序！有括号先算括号里的",
+        "再检查一遍：进位/借位有没有漏掉？",
+    ],
+}
+
+ANSWER_CHECK_TEMPLATES = {
+    "correct": [
+        "🎉 完全正确！你是怎么想到这个方法的？说说你的思路！",
+        "✅ 答对了！能给我讲讲你的解题过程吗？",
+        "💪 厉害！这道题你用了什么方法？分享给大家听听",
+    ],
+    "close": [
+        "🤏 很接近了！再检查一下最后一步的计算",
+        "思路对了，但答案差一点点。看看有没有算错的地方？",
+        "方向正确！但中间好像有个小失误，再算一遍？",
+    ],
+    "wrong": [
+        "🤔 这个答案不对。不过没关系，我们一起分析下哪里出了问题",
+        "❌ 不对哦。不过失败是学习的一部分！先想想公式用对了吗？",
+        "💡 答案是错的，但没关系。你先说说你是怎么想的，我帮你找问题",
+    ],
+}
+
+
+def get_guided_question(question: str, subject: str = "general") -> str:
+    """根据问题生成引导式提问（不直接给答案）"""
+    import random
+
+    starters = GUIDED_QUESTION_STARTERS.get(subject, GUIDED_QUESTION_STARTERS["general"])
+    starter = random.choice(starters)
+
+    hints = []
+    for keyword, hint_list in FOLLOWUP_HINTS.items():
+        if keyword in question:
+            hints.append(random.choice(hint_list))
+
+    if hints:
+        return f"{starter}\n\n{random.choice(hints)}"
+    return starter
+
+
+def check_user_answer(user_answer: str, correct_answer: str,
+                      question: str = "") -> dict:
+    """
+    验证用户答案，返回引导反馈
+    不给直接的"对/错"，而是引导思考
+    """
+    import random
+
+    user = user_answer.strip().lower().replace(" ", "")
+    correct = correct_answer.strip().lower().replace(" ", "")
+
+    if user == correct:
+        return {
+            "status": "correct",
+            "message": random.choice(ANSWER_CHECK_TEMPLATES["correct"]),
+            "next": "next_challenge",
+        }
+
+    if "×" in question or "*" in question or "x" in user.lower():
+        user_num = "".join(c for c in user if c.isdigit() or c == "-")
+        correct_num = "".join(c for c in correct if c.isdigit() or c == "-")
+        try:
+            if abs(int(user_num) - int(correct_num)) <= max(1, int(correct_num) * 0.1):
+                return {
+                    "status": "close",
+                    "message": random.choice(ANSWER_CHECK_TEMPLATES["close"]),
+                    "next": "hint",
+                }
+        except (ValueError, ZeroDivisionError):
+            pass
+
+    return {
+        "status": "wrong",
+        "message": random.choice(ANSWER_CHECK_TEMPLATES["wrong"]),
+        "next": "hint",
+    }
+
 
 def search_knowledge_base(question: str) -> Optional[str]:
     """在知识库中搜索匹配"""
@@ -384,15 +512,37 @@ def is_semantically_valid(text: str, question: str) -> bool:
 # ============================================================
 
 class LiveTutor:
-    """直播讲解专用引擎"""
+    """直播讲解专用引擎
 
-    def __init__(self, api_base: str = DEFAULT_API_BASE):
+    两种模式：
+    - direct: 直接给出答案/解释（你的直播讲解模式）
+    - guided: "不给答案"引导模式（Koji 风格，让用户自己思考）
+    """
+
+    def __init__(self, api_base: str = DEFAULT_API_BASE, mode: str = "direct"):
         self.api_base = api_base
         self.conversation_history = []
         self.max_history = 10
+        self.mode = mode  # "direct" or "guided"
 
-    def respond(self, question: str, user_name: str = "") -> str:
-        """主回复入口"""
+    def set_mode(self, mode: str):
+        """设置回复模式：direct 直接给答案 / guided 引导式提问"""
+        assert mode in ("direct", "guided"), f"mode must be 'direct' or 'guided', got {mode}"
+        self.mode = mode
+
+    def toggle_mode(self) -> str:
+        """切换模式，返回切换后的说明"""
+        if self.mode == "direct":
+            self.mode = "guided"
+            return "🔄 已切换到「引导式思考」模式：我不直接给答案，帮你一步步思考 ✅"
+        else:
+            self.mode = "direct"
+            return "🔄 已切换到「直接解答」模式：我直接告诉你答案和方法 ✅"
+
+    def respond(self, question: str, user_name: str = "", correct_answer: str = "") -> str:
+        """主回复入口
+        guided 模式：如果是学习问题，先引导思考而不是直接给答案
+        """
         if not question.strip():
             return "有什么问题随时问我哦～"
 
@@ -401,13 +551,7 @@ class LiveTutor:
         if len(self.conversation_history) > self.max_history:
             self.conversation_history = self.conversation_history[-self.max_history:]
 
-        # 1. 尝试知识库
-        kb = search_knowledge_base(question)
-        if kb:
-            self.conversation_history.append(f"小澍(知识库): {kb[:30]}")
-            return kb
-
-        # 2. 分类并给针对性建议
+        # 1. 分类
         qtype = classify_question(question)
 
         if qtype == "greeting":
@@ -415,7 +559,17 @@ class LiveTutor:
         elif qtype == "thanks":
             return random.choice(THANKS_REPLIES)
 
-        # 3. 尝试 LumiLearn 模型
+        # 2. 引导模式：如果是学习问题，先不给答案
+        if self.mode == "guided" and qtype != "general":
+            return get_guided_question(question, qtype)
+
+        # 3. 尝试知识库
+        kb = search_knowledge_base(question)
+        if kb:
+            self.conversation_history.append(f"小澍(知识库): {kb[:30]}")
+            return kb
+
+        # 4. 尝试 LumiLearn 模型
         system_prompt = ("你是「小澍」，专业亲切的中文AI学习规划师。"
                          "回答简洁有趣，适合中小学生。用比喻和例子解释概念。"
                          "回答在50字以内。")
@@ -426,8 +580,16 @@ class LiveTutor:
             self.conversation_history.append(f"小澍(模型): {llm_text[:30]}")
             return f"AI小澍：{llm_text}"
 
-        # 4. 知识库兜底
+        # 5. 知识库兜底
         return get_intelligent_reply(question)
+
+    def check_answer(self, user_answer: str, correct_answer: str,
+                     question: str = "", topic: str = "") -> dict:
+        """
+        验证用户答案，不给直接的"对/错"，而是引导思考
+        返回 {"status": "correct"|"close"|"wrong", "message": ..., "next": ...}
+        """
+        return check_user_answer(user_answer, correct_answer, question)
 
     def teach_topic(self, topic: str) -> str:
         """主动讲解某个知识主题"""
