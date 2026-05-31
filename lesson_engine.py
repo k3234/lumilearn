@@ -14,11 +14,13 @@ from typing import Optional, Callable
 @dataclass
 class Slide:
     title: str
-    content: str = ""     # 正文（讲解内容）
-    formula: str = ""     # 公式/重点（大字显示）
-    example: str = ""     # 例题
-    tip: str = ""         # 小贴士
-    tts_script: str = ""  # TTS 朗读脚本
+    content: str = ""
+    formula: str = ""
+    example: str = ""
+    tip: str = ""
+    thinking_question: str = ""  # 引导学生思考的问题（不给答案）
+    challenge: str = ""          # "试试自己做"的自测题
+    tts_script: str = ""
     duration_sec: int = 8
 
 @dataclass
@@ -46,6 +48,7 @@ LESSONS = {
             Slide(
                 title="📐 三角形的面积",
                 content="同学们好！今天我们来学习三角形的面积。\n\n先回忆一下：长方形的面积 = 长 × 宽，这个大家都记住了吧？",
+                thinking_question="🤔 长方形沿对角线剪开会变成什么？剪开后的两个图形有什么关系？",
                 tts_script="同学们好！今天我们来学习三角形的面积。先回忆一下，长方形的面积等于长乘以宽，大家都记住了吧？",
                 duration_sec=10
             ),
@@ -53,6 +56,7 @@ LESSONS = {
                 title="🔍 观察：三角形和长方形的关系",
                 content="把一个长方形沿对角线剪开，就得到了两个一模一样的三角形！\n\n这说明：每个三角形的面积 = 长方形面积的一半",
                 formula="长方形面积 ÷ 2 = 三角形面积",
+                thinking_question="💡 如果长方形面积是24平方厘米，那么每个小三角形的面积是多少？不用纸笔，用脑子想一下！",
                 tts_script="把一个长方形沿对角线剪开，你会得到两个完全一样的三角形。这说明每个三角形的面积，正好是长方形面积的一半。",
                 duration_sec=12
             ),
@@ -70,6 +74,7 @@ LESSONS = {
                 formula="S = 6 × 4 ÷ 2",
                 example="= 24 ÷ 2\n= 12 平方厘米",
                 tip="注意单位：平方厘米",
+                thinking_question="🤔 如果底不变，高变成8厘米，面积是多少？你发现高和面积是什么关系？",
                 tts_script="来看例题：底是六厘米，高是四厘米。面积等于六乘四除以二，六乘四得二十四，二十四除以二得十二。答案是十二平方厘米。",
                 duration_sec=14
             ),
@@ -79,6 +84,8 @@ LESSONS = {
                 formula="S = 8 × 5 ÷ 2",
                 example="= 40 ÷ 2\n= 20 平方米",
                 tip="自己试试：底10cm，高3cm，面积是多少？",
+                challenge="底10cm，高3cm，面积 = ?",
+                thinking_question="🎯 做完这道题后，总结一下：你觉得做三角形面积题最容易在哪一步出错？",
                 tts_script="再看一题：底八米，高五米。八乘五等于四十，四十除以二等于二十。答案是二十平方米。大家试试：底十厘米，高三厘米，面积是多少？",
                 duration_sec=15
             ),
@@ -86,6 +93,7 @@ LESSONS = {
                 title="🎯 解题技巧",
                 content="三角形面积题的三个关键步骤：\n\n1️⃣ 找到底和高（必须是垂直的！）\n2️⃣ 底 × 高\n3️⃣ 结果 ÷ 2",
                 tip="⚠️ 底和高要对应，不是任意两条边！",
+                thinking_question="🤔 为什么底和高必须是垂直的？如果用了不垂直的两条边，算出来的结果对还是错？",
                 tts_script="做三角形面积题，记住三步：第一步，找到底和高，注意底和高必须是垂直的；第二步，底乘高；第三步，除以二。记住，底和高必须对应，不是任意两条边都能算！",
                 duration_sec=12
             ),
@@ -122,6 +130,7 @@ LESSONS = {
                 title="📝 解方程四步法",
                 content="1️⃣ 去分母（如果有分数）\n2️⃣ 去括号（如果有括号）\n3️⃣ 移项（把含 x 的移到左边，常数移到右边）\n4️⃣ 合并同类项，求出 x",
                 formula="例：2x + 3 = 11\n移项：2x = 11 - 3\n合并：2x = 8\n求解：x = 4",
+                thinking_question="🤔 第三步移项的时候，+3变成-3，你能解释一下为什么吗？",
                 tts_script="解方程有四步：第一步去分母，第二步去括号，第三步移项，把含x的移到左边，常数移到右边，第四步合并同类项，求出x。注意：移项要变号！",
                 duration_sec=15
             ),
@@ -130,6 +139,7 @@ LESSONS = {
                 content="解方程：3x - 7 = 14",
                 formula="3x - 7 = 14\n3x = 14 + 7\n3x = 21\nx = 7",
                 tip="⚠️ 移项时 -7 变 +7",
+                thinking_question="🤔 如果方程是 3x+7=14，移项的方向会怎么变？试一试！",
                 tts_script="解方程：3x减7等于14。把负7移到右边变成正7，3x等于14加7，等于21。x等于21除以3，等于7。注意移项要变号！",
                 duration_sec=14
             ),
@@ -138,6 +148,7 @@ LESSONS = {
                 content="解方程：5x + 9 = 2x + 24",
                 formula="5x - 2x = 24 - 9\n3x = 15\nx = 5",
                 tip="💡 含x的移到左边，常数移到右边",
+                thinking_question="🎯 做完例题后问自己：我能不能用语言解释「移项为什么要变号」？试着给自己讲一遍",
                 tts_script="解这个方程：5x加9等于2x加24。把2x移到左边变负2x，9移到右边变负9。5x减2x等于24减9，3x等于15，x等于5。",
                 duration_sec=14
             ),
@@ -174,6 +185,7 @@ LESSONS = {
                 content="为什么分母要相同？\n\n因为分母代表「把整体分成几份」，份数不一样就不能直接比较！",
                 formula="✅ 1/4 + 2/4 = 3/4\n❌ 1/4 + 1/3 ≠ 2/7",
                 tip="💡 分母不同 → 先通分",
+                thinking_question="🤔 用生活中的例子解释：为什么1/4个披萨和1/3块蛋糕不能直接加？",
                 tts_script="分数加减法最关键的一点：分母必须相同才能加减。分母代表把整体分成了几份，份数不一样就没法直接加。比如四分之一加四分之二等于四分之三，但四分之一加三分之一不能直接加，要先通分！",
                 duration_sec=14
             ),
@@ -231,6 +243,7 @@ LESSONS = {
                 title="🔍 怎么判断一个数是质数？",
                 content="方法：用 2、3、5、7... 依次试除\n\n如果都不能整除 → 就是质数\n只要有一个能整除 → 就是合数",
                 formula="判断 17：\n17÷2=8.5 ✗  17÷3≈5.67 ✗\n17÷5=3.4 ✗  17÷7≈2.43 ✗\n→ 17 是质数 ✅",
+                thinking_question="🤔 试一试：23 是质数吗？用2、3、5、7依次试除看看。你最多试到几就可以确定？",
                 tts_script="判断一个数是不是质数，用2、3、5、7依次试除。如果都不能整除，就是质数。比如17，除以2、3、5、7都不能整除，所以17是质数。",
                 duration_sec=14
             ),
@@ -337,7 +350,7 @@ LESSONS = {
         slides=[
             Slide(title="📚 高效学习法", content="为什么有的同学学得又快又好？\n\n不是因为他们更聪明，而是因为他们有方法！\n\n今天分享三个最实用的学习方法", tts_script="为什么有的同学学得又快又好？不是因为他们更聪明，而是因为他们有方法！今天分享三个最实用的学习方法。", duration_sec=8),
             Slide(title="🍅 番茄钟学习法", content="25分钟专注学习 + 5分钟休息 = 一个番茄钟\n\n每4个番茄钟后，休息15-30分钟", formula="📱 推荐App：Forest、番茄ToDo、专注清单", tip="💡 关键：25分钟内只做一件事，绝不碰手机", tts_script="番茄钟学习法：25分钟专注学习，5分钟休息，这就是一个番茄钟。每四个番茄钟后，休息15到30分钟。关键是在25分钟内只做一件事，绝不碰手机。", duration_sec=12),
-            Slide(title="👨‍🏫 费曼学习法", content="学完一个知识点后，假装给一个8岁小孩讲解。\n\n讲不清楚的地方 = 你没真懂的地方\n回去再学，直到能讲清楚为止！", formula="四步：\n1. 选一个概念\n2. 教给别人\n3. 发现卡壳 → 回去学\n4. 简化语言重讲", tip="💡 最好的学习方法就是教别人", tts_script="费曼学习法：学完一个知识点后，假装给一个8岁小孩讲解。讲不清楚的地方，就是你没真懂的地方，回去再学。最好的学习方法就是教别人！", duration_sec=14),
+            Slide(title="👨‍🏫 费曼学习法", content="学完一个知识点后，假装给一个8岁小孩讲解。\n\n讲不清楚的地方 = 你没真懂的地方\n回去再学，直到能讲清楚为止！", formula="四步：\n1. 选一个概念\n2. 教给别人\n3. 发现卡壳 → 回去学\n4. 简化语言重讲", tip="💡 最好的学习方法就是教别人", thinking_question="🤔 你现在学的这个知识点，试着用最最简单的话讲给你同桌听。哪一步会卡壳？", tts_script="费曼学习法：学完一个知识点后，假装给一个8岁小孩讲解。讲不清楚的地方，就是你没真懂的地方，回去再学。最好的学习方法就是教别人！", duration_sec=14),
             Slide(title="🔄 间隔复习法", content="人的遗忘曲线：刚学完记得100%，1天后只剩33%\n\n对抗遗忘的方法：间隔复习", formula="当天 → 第二天 → 一周后 → 一月后\n每次复习只需要5-10分钟", tip="💡 复习比学新知识更重要！", tts_script="间隔复习法：刚学完记得100%，但一天后就只剩33%。对抗遗忘的方法就是间隔复习：当天学完，第二天复习，一周后再复习，一月后还复习。每次只需要5-10分钟。", duration_sec=14),
             Slide(title="📝 三个方法结合使用", formula="🍅 番茄钟 → 保证专注\n👨‍🏫 费曼法 → 保证理解\n🔄 间隔复习 → 保证不忘\n\n三管齐下，学习效率翻倍！", tts_script="三个方法结合使用：番茄钟保证专注，费曼法保证理解，间隔复习保证不忘。三管齐下，学习效率翻倍！", duration_sec=10),
         ]
@@ -437,6 +450,8 @@ class LessonController:
                 "formula": slide.formula if slide else "",
                 "example": slide.example if slide else "",
                 "tip": slide.tip if slide else "",
+                "thinking_question": slide.thinking_question if slide else "",
+                "challenge": slide.challenge if slide else "",
                 "tts_script": slide.tts_script if slide else "",
                 "duration": slide.duration_sec if slide else 0,
             } if slide else None,
@@ -588,6 +603,14 @@ body{background:transparent;font-family:'Microsoft YaHei','PingFang SC',sans-ser
 /* 小贴士 */
 .tip-box{background:rgba(210,153,34,0.1);border:1px solid #d29922;border-radius:8px;padding:10px 14px;font-size:13px;color:#d29922;display:flex;align-items:center;gap:8px}
 
+/* 思考问题 */
+.think-box{background:rgba(230,118,183,0.08);border:1px dashed #e676b7;border-radius:8px;padding:12px 16px;font-size:14px;color:#e676b7;display:flex;align-items:flex-start;gap:8px;line-height:1.6}
+.think-box .icon{font-size:18px;flex-shrink:0}
+
+/* 挑战题 */
+.challenge-box{background:rgba(139,148,158,0.06);border:1px solid #8b949e;border-radius:8px;padding:12px 16px;font-size:14px;color:#8b949e;display:flex;align-items:flex-start;gap:8px;line-height:1.6}
+.challenge-box .icon{font-size:18px;flex-shrink:0}
+
 /* 底部控制 */
 .footer{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid #21262d}
 .slide-counter{color:#8b949e;font-size:12px}
@@ -633,6 +656,8 @@ body{background:transparent;font-family:'Microsoft YaHei','PingFang SC',sans-ser
       <div class="formula-box" id="sformula" style="display:none"></div>
       <div class="example-box" id="sexample" style="display:none"></div>
       <div class="tip-box" id="stip" style="display:none"></div>
+      <div class="think-box" id="sthink" style="display:none"><span class="icon">🤔</span><span id="sthink-text"></span></div>
+      <div class="challenge-box" id="schallenge" style="display:none"><span class="icon">🎯</span><span id="schallenge-text"></span></div>
     </div>
     <div class="footer">
       <span class="slide-counter" id="counter">--</span>
@@ -694,8 +719,17 @@ async function refreshSlide() {
   document.getElementById('sformula').textContent = s.formula;
   document.getElementById('sexample').style.display = s.example ? 'block' : 'none';
   document.getElementById('sexample').textContent = s.example;
-  document.getElementById('stip').style.display = s.tip ? 'flex' : 'none';
-  document.getElementById('stip').textContent = s.tip;
+  const tip = s.tip || '';
+  document.getElementById('stip').style.display = tip ? 'flex' : 'none';
+  document.getElementById('stip').innerHTML = '💡 ' + tip;
+
+  const think = s.thinking_question || '';
+  document.getElementById('sthink').style.display = think ? 'flex' : 'none';
+  document.getElementById('sthink-text').textContent = think;
+
+  const challenge = s.challenge || '';
+  document.getElementById('schallenge').style.display = challenge ? 'flex' : 'none';
+  document.getElementById('schallenge-text').textContent = challenge;
 
   // Re-trigger animation
   const area = document.getElementById('slide-area');
