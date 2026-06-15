@@ -1,0 +1,4250 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#08080d">
+<meta name="format-detection" content="telephone=no, email=no, address=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="referrer" content="no-referrer-when-downgrade">
+<title>LumiLearn · 互动课堂</title>
+<!-- Google Fonts (with fallback for blocked CDN) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" onerror="this.onerror=null;this.href='';">
+<style>/* Fallback: Google Fonts will be skipped if blocked in China */</style>
+<!-- KaTeX 数学渲染 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+<!-- Chart.js 图表 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- highlight.js 代码高亮 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<!-- Reveal.js 幻灯片演示 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.min.css">
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.min.js"></script>
+<style>
+/* ── LumiLearn Classroom · Observatory Dark Theme ── */
+:root {
+--bg-deep: #08080d;
+--bg-surface: #141413;
+--bg-elevated: #1c1c1a;
+--bg-dark: #0e0e0c;
+--text-primary: #faf9f5;
+--text-secondary: #b0aea5;
+--text-dim: #6b6b6b;
+--accent-orange: #d97757;
+--accent-blue: #6a9bcc;
+--accent-green: #788c5d;
+--accent-purple: #9b7ec4;
+--accent-red: #f26b6b;
+--border: #2a2a2a;
+--border-light: #343434;
+--glow-orange: rgba(217, 119, 87, 0.15);
+--glow-blue: rgba(106, 155, 204, 0.1);
+--glow-purple: rgba(155, 126, 196, 0.15);
+--glow-green: rgba(120, 140, 93, 0.12);
+/* Legacy aliases */
+--bg: var(--bg-deep);
+--accent: var(--accent-orange);
+--accent-hover: #e08a6a;
+--accent-light: var(--glow-orange);
+--shadow: 0 2px 8px rgba(0,0,0,0.3);
+--shadow-lg: 0 4px 20px rgba(0,0,0,0.4);
+--shadow-sm: 0 1px 3px rgba(0,0,0,0.25);
+--shadow-md: 0 4px 12px rgba(0,0,0,0.35);
+--radius-sm: 6px;
+--radius: 8px;
+--radius-lg: 12px;
+--radius-xl: 16px;
+--font: 'Poppins', system-ui, -apple-system, sans-serif;
+--font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+--transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+/* Backward compat: map old --theme-* variables */
+--theme-bg: var(--bg-deep);
+--theme-bg-surface: var(--bg-elevated);
+--theme-bg-elevated: var(--bg-surface);
+--theme-text-primary: var(--text-primary);
+--theme-text-secondary: var(--text-secondary);
+--theme-text-muted: var(--text-dim);
+--theme-accent: var(--accent-orange);
+--theme-accent-hover: #e08a6a;
+--theme-accent-light: var(--glow-orange);
+--theme-border: var(--border);
+--theme-shadow: 0 2px 8px rgba(0,0,0,0.3);
+--theme-shadow-lg: 0 4px 20px rgba(0,0,0,0.4);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; height: 100dvh; }
+body {
+font-family: var(--font);
+background: var(--bg-deep);
+color: var(--text-primary);
+height: 100vh;
+height: 100dvh;
+min-height: -webkit-fill-available;
+width: 100%;
+overflow: hidden;
+display: flex;
+flex-direction: column;
+-webkit-font-smoothing: antialiased;
+-webkit-text-size-adjust: 100%;
+-webkit-overflow-scrolling: touch;
+overscroll-behavior-y: contain;
+user-select: none;
+}
+.msg-text, .msg-text *, .chat-msg-text, .chat-msg-text *, .slide-card-new, .slide-card-new *, input, textarea, select { user-select: text; }
+body { font-size: 1rem; line-height: 1.6; }
+h1 { font-size: 2.25rem; line-height: 1.2; font-weight: 700; }
+h2 { font-size: 1.75rem; line-height: 1.25; font-weight: 600; }
+h3 { font-size: 1.25rem; line-height: 1.3; font-weight: 600; }
+
+/* 触摸按钮最小点击区 */
+button, .btn-send, .btn-mic, .chapter-item, .theme-option, .feynman-btn, .slide-nav-btn-circular,
+input[type="text"], input[type="submit"], select, textarea, .feynman-level-select, .quiz-option,
+.role-tab, .mindmap-close {
+  min-height: 44px;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+button:active, .feynman-btn:active, .chapter-item:active, .slide-nav-btn-circular:active,
+.theme-option:active, .btn-send:active {
+  transform: scale(0.97);
+  filter: brightness(0.92);
+  transition: transform 0.08s ease, filter 0.1s ease;
+}
+
+/* Card system */
+.card, .slide-card, .chapter-item, .agent-card {
+background: var(--bg-elevated);
+border-radius: var(--radius);
+box-shadow: var(--shadow);
+border: 1px solid var(--border);
+}
+
+/* Reduce border usage */
+hr, .divider { border-color: var(--border); }
+
+/* Focus visible */
+:focus-visible {
+outline: 2px solid var(--accent);
+outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+*, *::before, *::after {
+transition-duration: 0.01ms !important;
+animation-duration: 0.01ms !important;
+}
+}
+
+/* ── Header ── */
+.header {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 0 24px;
+height: 56px;
+background: var(--bg-surface);
+border-bottom: 1px solid var(--border);
+flex-shrink: 0;
+z-index: 10;
+}
+.brand {
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.brand-dot {
+width: 10px; height: 10px;
+border-radius: 50%;
+background: var(--accent-orange);
+box-shadow: 0 0 8px var(--glow-orange);
+}
+.brand h1 {
+font-size: 17px;
+font-weight: 600;
+letter-spacing: -0.3px;
+color: var(--text-primary);
+}
+.brand span { color: var(--accent); font-weight: 500; }
+.nav-links {
+display: flex;
+align-items: center;
+gap: 4px;
+background: var(--bg-elevated);
+border-radius: var(--radius);
+padding: 4px;
+}
+.nav-links a {
+font-size: 13px;
+font-weight: 500;
+color: var(--text-dim);
+text-decoration: none;
+padding: 8px 16px;
+border-radius: var(--radius-sm);
+transition: all var(--transition);
+}
+.nav-links a:hover { color: var(--text-primary); }
+.nav-links a.active {
+background: var(--bg);
+color: var(--accent);
+box-shadow: var(--shadow-sm);
+}
+
+/* Topic Input */
+.topic-input-area input:focus {
+outline: none;
+border-color: var(--accent);
+box-shadow: 0 0 0 2px var(--accent-light);
+}
+#btnGenerateSlides:hover { background: var(--accent-hover); }
+#btnGenerateSlides:disabled { opacity: 0.6; cursor: not-allowed; }
+#btnToggleReveal:hover { border-color: var(--accent); color: var(--accent); }
+#btnToggleReveal.active { background: var(--accent); color: var(--theme-bg-surface); border-color: var(--accent); }
+
+/* Reveal.js overlay */
+.reveal-overlay-close {
+position: fixed;
+top: 16px;
+right: 16px;
+z-index: 1001;
+width: 40px;
+height: 40px;
+border-radius: 50%;
+background: rgba(0,0,0,0.5);
+color: var(--theme-bg-surface);
+border: none;
+font-size: 20px;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: background var(--transition);
+}
+.reveal-overlay-close:hover { background: rgba(0,0,0,0.8); }
+
+/* Theme Panel */
+.theme-btn {
+padding: 8px 16px;
+background: var(--bg-elevated);
+color: var(--text-secondary);
+border: 1px solid var(--border);
+border-radius: var(--radius-sm);
+font-size: 13px;
+cursor: pointer;
+white-space: nowrap;
+transition: all var(--transition);
+}
+.theme-btn:hover {
+border-color: var(--accent);
+color: var(--accent);
+}
+.theme-panel {
+display: none;
+position: absolute;
+top: 100%;
+right: 0;
+margin-top: 8px;
+background: var(--bg-elevated);
+border: 1px solid var(--border);
+border-radius: var(--radius-lg);
+box-shadow: var(--shadow-lg);
+padding: 16px;
+z-index: 200;
+min-width: 320px;
+grid-template-columns: repeat(2, 1fr);
+gap: 8px;
+}
+.theme-panel.hidden { display: none; }
+.theme-panel:not(.hidden) { display: grid; }
+.theme-option {
+padding: 8px 12px;
+border-radius: var(--radius-sm);
+cursor: pointer;
+border: 2px solid transparent;
+transition: all var(--transition);
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 12px;
+color: var(--text-primary);
+background: var(--bg);
+}
+.theme-option:hover {
+border-color: var(--accent);
+background: var(--bg-surface);
+}
+.theme-option.active {
+border-color: var(--accent);
+background: var(--accent-light);
+}
+.theme-swatch {
+width: 20px;
+height: 20px;
+border-radius: 50%;
+flex-shrink: 0;
+border: 1px solid var(--border);
+}
+
+/* ── Main Layout ── */
+.main {
+flex: 1;
+display: flex;
+overflow: hidden;
+}
+
+/* ── Left Panel: Outline ── */
+.panel-left {
+width: 250px;
+min-width: 250px;
+background: var(--bg-surface);
+border-right: 1px solid var(--border);
+display: flex;
+flex-direction: column;
+flex-shrink: 0;
+}
+.panel-left .panel-header {
+padding: 16px 20px;
+font-size: 12px;
+font-weight: 600;
+color: var(--text-dim);
+text-transform: uppercase;
+letter-spacing: 0.5px;
+border-bottom: 1px solid var(--border);
+flex-shrink: 0;
+}
+.chapter-list {
+flex: 1;
+overflow-y: auto;
+padding: 8px;
+}
+.chapter-list::-webkit-scrollbar { width: 4px; }
+.chapter-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.chapter-item {
+padding: 8px 16px;
+margin-bottom: 4px;
+border-radius: var(--radius);
+cursor: pointer;
+transition: all var(--transition);
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 13px;
+color: var(--text-secondary);
+border: 1px solid transparent;
+}
+.chapter-item:hover {
+background: var(--bg-elevated);
+color: var(--text-primary);
+}
+.chapter-item.active {
+background: var(--accent-light);
+color: var(--accent);
+border-color: var(--accent);
+font-weight: 500;
+}
+.chapter-num {
+width: 26px; height: 26px;
+border-radius: 50%;
+background: var(--bg-elevated);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 12px;
+font-weight: 600;
+flex-shrink: 0;
+transition: all var(--transition);
+}
+.chapter-item.active .chapter-num {
+background: var(--accent-orange);
+color: var(--bg-deep);
+}
+.chapter-item.completed .chapter-num {
+background: var(--glow-green);
+color: var(--accent-green);
+}
+.chapter-item.completed .chapter-num::after {
+content: '✓';
+}
+
+/* ── Center Panel: Slide Area ── */
+.panel-center {
+flex: 1;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+background: var(--bg-surface);
+}
+.slide-container {
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 32px;
+overflow-y: auto;
+position: relative;
+}
+.slide-card {
+width: 100%;
+max-width: 800px;
+background: var(--bg);
+border: 1px solid var(--border);
+border-radius: var(--radius-xl);
+box-shadow: var(--shadow-lg);
+padding: 40px 48px;
+min-height: 420px;
+transition: opacity var(--transition), transform var(--transition);
+}
+.slide-card.slide-enter {
+animation: slideIn 0.35s ease-out;
+}
+@keyframes slideIn {
+from { opacity: 0; transform: translateY(16px); }
+to { opacity: 1; transform: translateY(0); }
+}
+.slide-title {
+font-size: 24px;
+font-weight: 700;
+color: var(--text-primary);
+margin-bottom: 8px;
+line-height: 1.3;
+}
+.slide-subtitle {
+font-size: 14px;
+color: var(--text-dim);
+margin-bottom: 24px;
+padding-bottom: 16px;
+border-bottom: 1px solid var(--border-light);
+}
+.slide-content {
+font-size: 15px;
+line-height: 1.8;
+color: var(--text-secondary);
+}
+.slide-content p { margin-bottom: 12px; }
+.slide-content .highlight {
+background: var(--accent-light);
+padding: 4px 8px;
+border-radius: 4px;
+color: var(--accent);
+font-weight: 500;
+}
+.slide-content .math-block {
+text-align: center;
+margin: 20px 0;
+padding: 20px;
+background: var(--bg-surface);
+border-radius: var(--radius);
+border: 1px solid var(--border-light);
+overflow-x: auto;
+}
+.slide-content .math-block .katex { font-size: 1.3em; }
+
+/* Derivation Steps */
+.derivation-steps {
+margin: 16px 0;
+}
+.derivation-step {
+background: var(--bg-surface);
+border: 1px solid var(--border-light);
+border-radius: var(--radius);
+margin-bottom: 8px;
+overflow: hidden;
+transition: all var(--transition);
+}
+.derivation-step .step-header {
+padding: 12px 16px;
+display: flex;
+align-items: center;
+gap: 8px;
+cursor: pointer;
+font-size: 14px;
+font-weight: 500;
+color: var(--text-primary);
+transition: background var(--transition);
+}
+.derivation-step .step-header:hover { background: var(--bg-elevated); }
+.derivation-step .step-arrow {
+font-size: 10px;
+color: var(--text-dim);
+transition: transform var(--transition);
+}
+.derivation-step.open .step-arrow { transform: rotate(90deg); }
+.derivation-step .step-body {
+max-height: 0;
+overflow: hidden;
+transition: max-height 0.35s var(--transition-ease), padding 0.35s var(--transition-ease);
+padding: 0 16px;
+font-size: 14px;
+color: var(--text-secondary);
+line-height: 1.7;
+border-top: 1px solid transparent;
+}
+.derivation-step.open .step-body {
+max-height: 300px;
+padding: 16px 16px;
+border-top-color: var(--border-light);
+}
+
+/* Quiz */
+.quiz-block {
+margin: 20px 0;
+padding: 20px;
+background: var(--bg-surface);
+border: 1px solid var(--border);
+border-radius: var(--radius-lg);
+}
+.quiz-question {
+font-size: 15px;
+font-weight: 500;
+color: var(--text-primary);
+margin-bottom: 16px;
+}
+.quiz-options { display: flex; flex-direction: column; gap: 8px; }
+.quiz-option {
+padding: 12px 16px;
+border: 1px solid var(--border);
+border-radius: var(--radius);
+cursor: pointer;
+transition: all var(--transition);
+font-size: 14px;
+color: var(--text-secondary);
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.quiz-option:hover {
+border-color: var(--accent);
+background: var(--accent-light);
+}
+.quiz-option.selected {
+border-color: var(--accent);
+background: var(--accent-light);
+color: var(--accent);
+}
+.quiz-option.correct {
+border-color: var(--accent-green);
+background: var(--accent-green-light);
+color: var(--accent-green);
+}
+.quiz-option.wrong {
+border-color: var(--accent-red);
+background: var(--accent-red-light);
+color: var(--accent-red);
+}
+.quiz-option.disabled { pointer-events: none; }
+.quiz-feedback {
+margin-top: 12px;
+padding: 12px 16px;
+border-radius: var(--radius);
+font-size: 14px;
+display: none;
+}
+.quiz-feedback.show { display: block; }
+.quiz-feedback.correct {
+background: var(--accent-green-light);
+color: var(--accent-green);
+border: 1px solid var(--accent-green);
+}
+.quiz-feedback.wrong {
+background: var(--accent-red-light);
+color: var(--accent-red);
+border: 1px solid var(--accent-red);
+}
+.quiz-score {
+display: flex;
+align-items: center;
+gap: 8px;
+margin-top: 8px;
+font-size: 13px;
+color: var(--text-dim);
+}
+.quiz-score-bar {
+flex: 1;
+height: 6px;
+background: var(--border);
+border-radius: 3px;
+overflow: hidden;
+}
+.quiz-score-fill {
+height: 100%;
+background: var(--accent-green);
+border-radius: 3px;
+transition: width 0.4s var(--transition-ease);
+}
+
+/* Video Placeholder */
+.video-placeholder {
+margin: 16px 0;
+background: var(--theme-text-primary);
+border-radius: var(--radius);
+overflow: hidden;
+position: relative;
+aspect-ratio: 16/9;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.video-placeholder video {
+width: 100%;
+height: 100%;
+object-fit: contain;
+}
+.video-placeholder .video-poster {
+text-align: center;
+color: var(--theme-bg-surface);
+opacity: 0.7;
+}
+.video-placeholder .video-poster .play-icon {
+font-size: 56px;
+margin-bottom: 8px;
+cursor: pointer;
+transition: opacity var(--transition);
+}
+.video-placeholder .video-poster .play-icon:hover { opacity: 0.8; }
+.video-placeholder .video-poster p {
+font-size: 13px;
+color: #94a3b8;
+}
+.video-loading {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 12px;
+padding: 32px;
+color: #94a3b8;
+}
+.video-progress-bar {
+width: 240px;
+height: 4px;
+background: #334155;
+border-radius: 2px;
+overflow: hidden;
+}
+.video-progress-fill {
+height: 100%;
+background: var(--accent);
+border-radius: 2px;
+transition: width var(--transition);
+width: 0%;
+}
+
+/* Chart Area */
+.chart-area {
+margin: 16px 0;
+background: var(--bg-surface);
+border: 1px solid var(--border-light);
+border-radius: var(--radius);
+padding: 16px;
+}
+.chart-area canvas {
+max-height: 300px;
+width: 100% !important;
+}
+
+/* Slide Navigation */
+.slide-nav {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 16px;
+padding: 16px 24px;
+border-top: 1px solid var(--border);
+flex-shrink: 0;
+background: var(--bg);
+}
+.slide-nav-btn {
+width: 44px; height: 44px;
+border-radius: 50%;
+border: 1px solid var(--border);
+background: var(--bg);
+color: var(--text-secondary);
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all var(--transition);
+font-size: 16px;
+}
+.slide-nav-btn:hover {
+border-color: var(--accent);
+color: var(--accent);
+background: var(--accent-light);
+}
+.slide-nav-btn:disabled {
+opacity: 0.4;
+cursor: not-allowed;
+}
+.slide-nav-btn:disabled:hover {
+border-color: var(--border);
+color: var(--text-secondary);
+background: var(--bg);
+}
+.slide-dots {
+display: flex;
+gap: 8px;
+}
+.slide-dot {
+width: 8px; height: 8px;
+border-radius: 50%;
+background: var(--border);
+cursor: pointer;
+transition: all var(--transition);
+}
+.slide-dot:hover { background: var(--text-muted); }
+.slide-dot.active {
+background: var(--accent);
+width: 24px;
+border-radius: 4px;
+}
+.slide-indicator {
+font-size: 13px;
+color: var(--text-dim);
+font-family: 'JetBrains Mono', monospace;
+min-width: 60px;
+text-align: center;
+}
+
+/* ── Right Panel: AI Chat ── */
+.panel-right {
+width: 350px;
+min-width: 350px;
+background: var(--bg-surface);
+border-left: 1px solid var(--border);
+display: flex;
+flex-direction: column;
+flex-shrink: 0;
+}
+
+/* Role Selector */
+.role-tabs {
+display: flex;
+border-bottom: 1px solid var(--border);
+flex-shrink: 0;
+}
+.role-tab {
+flex: 1;
+padding: 12px 8px;
+text-align: center;
+cursor: pointer;
+font-size: 13px;
+font-weight: 500;
+color: var(--text-dim);
+border-bottom: 2px solid transparent;
+transition: all var(--transition);
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 4px;
+}
+.role-tab:hover { color: var(--text-secondary); background: var(--bg-elevated); }
+.role-tab.active {
+color: var(--accent);
+border-bottom-color: var(--accent);
+background: var(--accent-light);
+}
+.role-tab .role-avatar {
+width: 28px; height: 28px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 14px;
+}
+.role-tab .role-avatar svg { width: 16px; height: 16px; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.role-tab[data-role="teacher"] .role-avatar { background: var(--glow-orange); }
+.role-tab[data-role="teacher"] .role-avatar svg { stroke: var(--accent-orange); }
+.role-tab[data-role="assistant"] .role-avatar { background: var(--glow-green); }
+.role-tab[data-role="assistant"] .role-avatar svg { stroke: var(--accent-green); }
+.role-tab[data-role="student"] .role-avatar { background: var(--glow-purple); }
+.role-tab[data-role="student"] .role-avatar svg { stroke: var(--accent-purple); }
+
+/* Chat Messages */
+.chat-messages {
+flex: 1;
+overflow-y: auto;
+padding: 16px;
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.chat-messages::-webkit-scrollbar { width: 4px; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.chat-msg {
+display: flex;
+gap: 8px;
+animation: msgIn 0.3s ease-out;
+}
+@keyframes msgIn {
+from { opacity: 0; transform: translateY(8px); }
+to { opacity: 1; transform: translateY(0); }
+}
+.chat-msg-avatar {
+width: 30px; height: 30px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 12px;
+font-weight: 600;
+flex-shrink: 0;
+}
+.chat-msg-avatar.teacher { background: var(--accent); color: var(--theme-bg-surface); }
+.chat-msg-avatar.assistant { background: var(--accent-green); color: var(--theme-bg-surface); }
+.chat-msg-avatar.student { background: var(--accent-purple); color: var(--theme-bg-surface); }
+.chat-msg-avatar.user { background: var(--text-dim); color: var(--theme-bg-surface); }
+.chat-msg-bubble {
+flex: 1;
+min-width: 0;
+}
+.chat-msg-name {
+font-size: 11px;
+font-weight: 600;
+color: var(--text-dim);
+margin-bottom: 4px;
+}
+.chat-msg-text {
+font-size: 13px;
+line-height: 1.6;
+color: var(--text-secondary);
+background: var(--bg);
+border: 1px solid var(--border-light);
+border-radius: var(--radius);
+padding: 8px 16px;
+word-break: break-word;
+}
+.chat-msg-text .katex { font-size: 1.05em; }
+/* Markdown rendered content in chat */
+.chat-msg-text h1, .chat-msg-text h2, .chat-msg-text h3 {
+margin: 8px 0 4px 0;
+font-weight: 600;
+color: var(--text-primary);
+}
+.chat-msg-text h1 { font-size: 15px; }
+.chat-msg-text h2 { font-size: 14px; }
+.chat-msg-text h3 { font-size: 13px; }
+.chat-msg-text strong { font-weight: 600; color: var(--text-primary); }
+.chat-msg-text em { font-style: italic; }
+.chat-msg-text .chat-list { margin: 4px 0; padding-left: 16px; }
+.chat-msg-text .chat-list li { margin-bottom: 4px; }
+.chat-msg-text .chat-code-block {
+background: var(--bg-elevated);
+border: 1px solid var(--border);
+border-radius: var(--radius-sm);
+padding: 8px 12px;
+margin: 8px 0;
+font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+font-size: 12px;
+line-height: 1.5;
+overflow-x: auto;
+white-space: pre-wrap;
+word-break: break-word;
+}
+.chat-msg-text .chat-inline-code {
+background: var(--bg-elevated);
+padding: 4px 8px;
+border-radius: 3px;
+font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+font-size: 12px;
+}
+.chat-msg-text .math-block {
+text-align: center;
+margin: 8px 0;
+padding: 8px;
+background: var(--bg-surface);
+border-radius: var(--radius);
+overflow-x: auto;
+}
+.chat-msg-text .chat-hr {
+border: none;
+border-top: 1px solid var(--border-light);
+margin: 8px 0;
+}
+.chat-msg-text p { margin: 4px 0; }
+.chat-empty {
+text-align: center;
+padding: 40px 16px;
+color: var(--text-dim);
+font-size: 13px;
+}
+.chat-empty .empty-icon {
+width: 48px; height: 48px;
+margin: 0 auto 12px;
+fill: none;
+stroke: var(--text-dim);
+stroke-width: 1.5;
+opacity: 0.5;
+display: block;
+}
+
+/* Chat Input */
+.chat-input-area {
+padding: 12px 16px;
+border-top: 1px solid var(--border);
+flex-shrink: 0;
+background: var(--bg);
+}
+.chat-input-wrap {
+display: flex;
+gap: 8px;
+}
+.chat-input-wrap input {
+flex: 1;
+font-size: 13px;
+padding: 8px 16px;
+border: 1px solid var(--border);
+border-radius: var(--radius);
+outline: none;
+color: var(--text-primary);
+background: var(--bg-surface);
+transition: border-color var(--transition);
+}
+.chat-input-wrap input:focus { border-color: var(--accent); }
+.chat-input-wrap input::placeholder { color: var(--text-muted); }
+.chat-input-wrap button {
+width: 44px; height: 44px;
+border-radius: var(--radius);
+border: none;
+background: var(--accent);
+color: var(--theme-bg-surface);
+cursor: pointer;
+font-size: 16px;
+transition: all var(--transition);
+flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.chat-input-wrap button:hover { background: var(--accent-hover); }
+.chat-input-wrap button:disabled {
+background: var(--border);
+cursor: not-allowed;
+}
+
+/* Chat Typing Indicator */
+.chat-typing {
+display: flex;
+gap: 4px;
+padding: 8px 16px;
+align-items: center;
+}
+.chat-typing span {
+width: 6px; height: 6px;
+border-radius: 50%;
+background: var(--text-muted);
+animation: typingBounce 1.4s ease-in-out infinite;
+}
+.chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+.chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* Toast */
+.toast {
+position: fixed;
+bottom: 24px;
+left: 50%;
+transform: translateX(-50%);
+background: var(--text-primary);
+color: var(--theme-bg-surface);
+padding: 8px 16px;
+border-radius: var(--radius);
+font-size: 13px;
+z-index: 100;
+opacity: 0;
+transition: opacity var(--transition);
+pointer-events: none;
+box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; }
+
+/* ── Responsive ── */
+@media (max-width: 1024px) { /* lg */
+.panel-left { display: none; }
+.panel-right { width: 300px; min-width: 300px; }
+}
+@media (max-width: 768px) { /* md */
+.panel-right { display: none; }
+.slide-card { padding: 24px 16px; }
+.slide-title { font-size: 20px; }
+.header { padding: 0 16px; }
+.brand h1 { font-size: 15px; }
+}
+
+/* Touch-friendly */
+@media (hover: none) and (pointer: coarse) {
+.chapter-item, .theme-option, .btn, button {
+min-height: 44px;
+padding: 12px 16px;
+}
+input, select, textarea {
+font-size: 16px; /* Prevent iOS zoom */
+}
+}
+
+/* Accessibility focus-visible */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
+.chapter-item:focus-visible, .theme-option:focus-visible, .agent-card:focus-visible {
+outline: 2px solid var(--accent);
+outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════
+FEYNMAN FIVE-STEP LEARNING METHOD
+═══════════════════════════════════════════ */
+.mode-tabs {
+display: flex;
+gap: 4px;
+padding: 8px 16px;
+border-bottom: 1px solid var(--border);
+flex-shrink: 0;
+background: var(--bg);
+}
+.mode-tab {
+padding: 8px 18px;
+border-radius: var(--radius-sm);
+cursor: pointer;
+font-size: 13px;
+font-weight: 500;
+color: var(--text-secondary);
+background: transparent;
+border: 1px solid transparent;
+transition: all var(--transition);
+white-space: nowrap;
+}
+.mode-tab:hover {
+color: var(--accent);
+background: var(--accent-light);
+}
+.mode-tab.active {
+background: var(--accent);
+color: var(--theme-bg-surface);
+font-weight: 600;
+}
+
+/* Feynman Container */
+.feynman-container {
+flex: 1;
+display: flex;
+flex-direction: column;
+padding: 20px;
+overflow-y: auto;
+height: 100%;
+}
+.feynman-container::-webkit-scrollbar { width: 4px; }
+.feynman-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Feynman Input Area */
+.feynman-input-area {
+display: flex;
+gap: 10px;
+margin-bottom: 16px;
+flex-shrink: 0;
+}
+.feynman-input {
+flex: 1;
+padding: 10px 14px;
+border: 1px solid var(--border);
+border-radius: var(--radius);
+font-size: 14px;
+background: var(--bg);
+color: var(--text-primary);
+outline: none;
+transition: border-color var(--transition);
+}
+.feynman-input:focus {
+border-color: var(--accent);
+box-shadow: 0 0 0 2px var(--accent-light);
+}
+.feynman-input::placeholder { color: var(--text-muted); }
+.feynman-level-select {
+padding: 12px 40px 12px 16px;
+border: 1px solid var(--border);
+border-radius: var(--radius);
+font-size: 14px;
+background: var(--bg);
+color: var(--text-primary);
+cursor: pointer;
+outline: none;
+min-height: 44px;
+appearance: auto;
+-webkit-appearance: menulist;
+-moz-appearance: menulist;
+background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23888'><polygon points='6,9 12,15 18,9'/></svg>");
+background-repeat: no-repeat;
+background-position: right 10px center;
+background-size: 14px;
+transition: border-color var(--transition);
+}
+.feynman-level-select:focus { border-color: var(--accent); }
+.feynman-level-select option { background: var(--bg-surface); color: var(--text-primary); padding: 8px; }
+.feynman-btn {
+padding: 10px 20px;
+background: var(--accent);
+color: var(--theme-bg-surface);
+border: none;
+border-radius: var(--radius);
+cursor: pointer;
+font-size: 13px;
+font-weight: 500;
+white-space: nowrap;
+transition: all var(--transition);
+}
+.feynman-btn:hover { background: var(--accent-hover); }
+.feynman-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Feynman Progress */
+.feynman-progress {
+margin: 12px 0;
+display: flex;
+align-items: center;
+gap: 10px;
+flex-shrink: 0;
+}
+.feynman-progress-bar {
+flex: 1;
+height: 6px;
+background: var(--border);
+border-radius: 3px;
+overflow: hidden;
+}
+.feynman-progress-fill {
+height: 100%;
+background: var(--accent);
+border-radius: 3px;
+transition: width 0.4s ease;
+width: 0%;
+}
+.feynman-progress-text {
+font-size: 13px;
+color: var(--text-secondary);
+white-space: nowrap;
+font-family: 'JetBrains Mono', monospace;
+}
+
+/* Feynman Steps Container */
+.feynman-steps-container {
+display: flex;
+flex-direction: column;
+gap: 8px;
+flex: 1;
+overflow-y: auto;
+min-height: 0;
+}
+.feynman-steps-container::-webkit-scrollbar { width: 4px; }
+.feynman-steps-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* Feynman Step Card */
+.feynman-step-card {
+border: 1px solid var(--border);
+border-radius: var(--radius);
+overflow: hidden;
+cursor: pointer;
+transition: all 0.3s ease;
+background: var(--bg-elevated);
+}
+.feynman-step-card:hover {
+border-color: var(--accent);
+box-shadow: 0 2px 8px var(--accent-light);
+}
+.feynman-step-card.current {
+border-color: var(--accent);
+box-shadow: 0 0 16px var(--accent-light), 0 4px 12px rgba(0,0,0,0.06);
+}
+.feynman-step-card.done {
+opacity: 0.82;
+}
+
+.feynman-step-header {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 14px 18px;
+}
+.feynman-step-number {
+width: 30px; height: 30px;
+border-radius: 50%;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 13px;
+font-weight: 600;
+flex-shrink: 0;
+background: var(--bg-elevated);
+color: var(--text-secondary);
+transition: all 0.3s ease;
+border: 2px solid var(--border);
+}
+.feynman-step-card.current .feynman-step-number {
+background: var(--accent);
+color: #fff;
+border-color: var(--accent);
+}
+.feynman-step-card.done .feynman-step-number {
+background: #22c55e;
+color: #fff;
+border-color: #22c55e;
+}
+.feynman-step-name {
+font-weight: 600;
+font-size: 14px;
+flex: 1;
+color: var(--text-primary);
+}
+.feynman-step-status {
+font-size: 12px;
+color: var(--text-muted);
+transition: color 0.3s ease;
+display: flex;
+align-items: center;
+gap: 4px;
+}
+.step-status-dot {
+display: inline-block;
+width: 8px; height: 8px;
+border-radius: 50%;
+background: var(--text-muted);
+transition: background 0.3s ease;
+}
+.step-status-dot.learning {
+background: var(--accent);
+animation: pulse-dot 1.5s ease-in-out infinite;
+}
+.step-status-dot.done {
+background: #22c55e;
+}
+@keyframes pulse-dot {
+0%, 100% { opacity: 1; transform: scale(1); }
+50% { opacity: 0.5; transform: scale(1.4); }
+}
+
+.feynman-step-body {
+padding: 0 18px;
+
+max-height: 0;
+overflow: hidden;
+opacity: 0;
+transform: translateY(-8px);
+transition: max-height 0.4s ease, opacity 0.35s ease 0.05s, transform 0.35s ease, padding 0.4s ease;
+}
+.feynman-step-card.current .feynman-step-body {
+max-height: 1000px;
+opacity: 1;
+transform: translateY(0);
+padding-bottom: 18px;
+}
+.feynman-step-content {
+font-size: 14px;
+line-height: 1.7;
+margin-bottom: 12px;
+white-space: pre-wrap;
+color: var(--text-secondary);
+}
+.feynman-step-keypoints {
+display: flex;
+flex-wrap: wrap;
+gap: 6px;
+margin-bottom: 12px;
+}
+.feynman-keypoint-tag {
+font-size: 12px;
+padding: 3px 10px;
+border-radius: 10px;
+background: var(--accent-light);
+color: var(--accent);
+white-space: nowrap;
+}
+
+/* Step Animation */
+.step-animation {
+margin-top: 10px;
+border-radius: var(--radius);
+overflow: hidden;
+background: #000;
+}
+.step-animation video {
+width: 100%;
+max-height: 300px;
+display: block;
+}
+.step-animation-loading {
+padding: 30px;
+text-align: center;
+color: var(--text-muted);
+font-size: 13px;
+}
+.step-animation-error {
+padding: 20px;
+text-align: center;
+color: var(--text-muted);
+font-size: 13px;
+border: 1px dashed var(--border);
+border-radius: var(--radius);
+}
+
+/* Feynman Test Area */
+.feynman-test-area {
+margin-top: 16px;
+padding: 16px;
+border: 1px solid var(--border);
+border-radius: var(--radius);
+flex-shrink: 0;
+}
+.feynman-test-input {
+width: 100%;
+min-height: 80px;
+padding: 10px 14px;
+border: 1px solid var(--border);
+border-radius: var(--radius);
+font-size: 14px;
+resize: vertical;
+background: var(--bg);
+color: var(--text-primary);
+outline: none;
+font-family: inherit;
+transition: border-color var(--transition);
+}
+.feynman-test-input:focus {
+border-color: var(--accent);
+}
+.feynman-test-input::placeholder { color: var(--text-muted); }
+.feynman-test-submit {
+margin-top: 10px;
+padding: 10px 20px;
+background: #22c55e;
+color: #fff;
+border: none;
+border-radius: var(--radius);
+cursor: pointer;
+font-size: 13px;
+font-weight: 500;
+transition: all var(--transition);
+}
+.feynman-test-submit:hover { background: #16a34a; }
+.feynman-test-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.feynman-test-result {
+margin-top: 12px;
+padding: 16px;
+border-radius: var(--radius);
+background: var(--bg-elevated);
+display: none;
+}
+.feynman-score-circle {
+width: 80px; height: 80px;
+border-radius: 50%;
+border: 3px solid #22c55e;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 28px;
+font-weight: 700;
+margin: 0 auto 12px;
+color: var(--text-primary);
+}
+.feynman-score-label {
+text-align: center;
+font-size: 13px;
+color: var(--text-muted);
+margin-bottom: 16px;
+}
+.feynman-dimension {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 4px 0;
+}
+.feynman-dimension-name {
+width: 60px;
+font-size: 13px;
+color: var(--text-secondary);
+flex-shrink: 0;
+}
+.feynman-dimension-bar-wrap {
+flex: 1;
+height: 8px;
+background: var(--border);
+border-radius: 4px;
+overflow: hidden;
+}
+.feynman-dimension-bar {
+height: 100%;
+border-radius: 4px;
+transition: width 0.5s ease;
+}
+.feynman-dimension-score {
+width: 30px;
+text-align: right;
+font-size: 13px;
+font-weight: 600;
+color: var(--text-secondary);
+}
+.feynman-feedback-text {
+margin-top: 12px;
+padding: 10px 14px;
+background: var(--accent-light);
+border-radius: var(--radius);
+font-size: 13px;
+line-height: 1.6;
+color: var(--text-secondary);
+}
+
+/* Feynman Loading */
+.feynman-loading {
+text-align: center;
+padding: 32px 16px;
+color: var(--text-muted);
+font-size: 14px;
+}
+
+/* ═══════════════════════════════════════════
+CUSTOM SLIDE COMPONENTS (Task 8)
+═══════════════════════════════════════════ */
+
+/* Slide container - full bleed */
+.slide-container { position: relative; }
+.slide-canvas {
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 24px 32px;
+overflow-y: auto;
+position: relative;
+}
+.slide-progress-bar {
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 3px;
+background: var(--border);
+z-index: 5;
+}
+.slide-progress-fill {
+height: 100%;
+background: var(--accent);
+border-radius: 0 2px 2px 0;
+transition: width 0.3s ease;
+}
+
+/* Slide card - polished */
+.slide-card-new {
+width: 100%;
+max-width: 820px;
+min-height: 420px;
+padding: 44px 48px;
+border-radius: var(--radius-xl);
+position: relative;
+overflow: hidden;
+background: linear-gradient(135deg, var(--theme-bg) 0%, var(--theme-bg-elevated) 100%);
+border: 1px solid var(--theme-border);
+box-shadow: var(--theme-shadow-lg);
+}
+.slide-card-new::before {
+content: '';
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 3px;
+background: linear-gradient(90deg, var(--theme-accent), var(--theme-accent-hover), var(--theme-accent));
+opacity: 0.6;
+}
+.slide-number-indicator {
+position: absolute;
+bottom: 16px; right: 20px;
+font-size: 12px;
+color: var(--text-muted);
+font-family: var(--font-mono);
+opacity: 0.7;
+}
+
+/* Slide transitions */
+@keyframes slideExitLeft {
+0% { transform: translateX(0); opacity: 1; }
+100% { transform: translateX(-30px); opacity: 0; }
+}
+@keyframes slideEnterRight {
+0% { transform: translateX(30px); opacity: 0; }
+100% { transform: translateX(0); opacity: 1; }
+}
+.slide-card-new.slide-exit {
+animation: slideExitLeft 400ms ease-out forwards;
+}
+.slide-card-new.slide-enter-new {
+animation: slideEnterRight 400ms ease-out forwards;
+}
+
+/* ── Content Block Types ── */
+.block-title {
+font-size: 28px;
+font-weight: 700;
+color: var(--text-primary);
+text-align: center;
+margin-bottom: 12px;
+line-height: 1.3;
+position: relative;
+padding-bottom: 16px;
+}
+.block-title::after {
+content: '';
+position: absolute;
+bottom: 0; left: 50%;
+transform: translateX(-50%);
+width: 60px; height: 3px;
+border-radius: 2px;
+background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+}
+.block-subtitle {
+font-size: 15px;
+font-weight: 500;
+color: var(--text-secondary);
+text-align: center;
+margin-bottom: 28px;
+padding: 8px 0 8px 14px;
+border-left: 3px solid var(--accent);
+display: inline-block;
+text-align: left;
+}
+.block-content {
+font-size: 15px;
+line-height: 1.8;
+color: var(--text-secondary);
+margin-bottom: 12px;
+}
+.block-content p { margin-bottom: 10px; }
+.block-content ul, .block-content ol { margin-left: 20px; margin-bottom: 10px; }
+.block-content li { margin-bottom: 4px; }
+.block-content .highlight {
+background: var(--accent-light);
+padding: 3px 8px;
+border-radius: 4px;
+color: var(--accent);
+font-weight: 500;
+}
+.block-content .math-block {
+text-align: center;
+margin: 16px 0;
+padding: 16px;
+background: var(--bg-surface);
+border-radius: var(--radius);
+border: 1px solid var(--border-light);
+overflow-x: auto;
+}
+.block-content .math-block .katex { font-size: 1.25em; }
+.block-content h3 {
+font-size: 15px;
+font-weight: 600;
+color: var(--text-primary);
+margin: 12px 0 6px;
+}
+.block-katex {
+text-align: center;
+margin: 20px 0;
+padding: 24px;
+background: var(--bg-surface);
+border-radius: var(--radius);
+border: 1px solid var(--border);
+overflow-x: auto;
+}
+.block-katex .katex { font-size: 1.4em; }
+.block-code {
+position: relative;
+margin: 16px 0;
+border-radius: var(--radius);
+overflow: hidden;
+background: #1e1e2e;
+border: 1px solid var(--border);
+}
+.block-code pre {
+margin: 0;
+padding: 16px 20px;
+font-family: var(--font-mono);
+font-size: 13px;
+line-height: 1.6;
+color: #cdd6f4;
+overflow-x: auto;
+white-space: pre-wrap;
+word-break: break-word;
+}
+.block-code .code-copy-btn {
+position: absolute;
+top: 8px; right: 8px;
+padding: 4px 10px;
+background: rgba(255,255,255,0.1);
+color: #cdd6f4;
+border: none;
+border-radius: 4px;
+font-size: 11px;
+cursor: pointer;
+opacity: 0;
+transition: opacity 0.2s;
+}
+.block-code:hover .code-copy-btn { opacity: 1; }
+.block-code .code-copy-btn:hover { background: rgba(255,255,255,0.2); }
+.block-code .code-lang-tag {
+position: absolute;
+top: 8px; left: 12px;
+padding: 2px 8px;
+background: rgba(255,255,255,0.08);
+color: #a6adc8;
+border-radius: 3px;
+font-size: 10px;
+font-family: var(--font-mono);
+text-transform: uppercase;
+}
+.block-animation {
+position: relative;
+margin: 16px 0;
+border-radius: var(--radius);
+overflow: hidden;
+background: #0a0a1a;
+aspect-ratio: 16/9;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+}
+.block-animation .anim-poster {
+text-align: center;
+color: rgba(255,255,255,0.7);
+}
+.block-animation .anim-play-icon {
+width: 64px; height: 64px;
+border-radius: 50%;
+background: rgba(255,255,255,0.15);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 28px;
+margin: 0 auto 12px;
+transition: background 0.2s, transform 0.2s;
+}
+.block-animation:hover .anim-play-icon {
+background: rgba(255,255,255,0.25);
+transform: scale(1.08);
+}
+.block-animation .anim-label {
+font-size: 13px;
+opacity: 0.8;
+}
+.block-animation video {
+width: 100%;
+height: 100%;
+object-fit: contain;
+display: none;
+}
+.block-animation.playing .anim-poster { display: none; }
+.block-animation.playing video { display: block; }
+
+/* Block wrapper */
+.block-wrapper {
+margin-bottom: 8px;
+}
+
+/* ── Enhanced Slide Navigation ── */
+.slide-nav-enhanced {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 4px;
+padding: 12px 24px;
+border-top: 1px solid var(--border);
+flex-shrink: 0;
+background: var(--bg);
+transition: opacity 0.3s ease;
+}
+.slide-nav-enhanced.hidden { opacity: 0; pointer-events: none; }
+.slide-nav-row {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 16px;
+}
+.slide-nav-btn-circular {
+width: 40px; height: 40px;
+border-radius: 50%;
+border: 2px solid var(--border);
+background: var(--bg-elevated);
+color: var(--text-secondary);
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all var(--transition);
+font-size: 16px;
+}
+.slide-nav-btn-circular:hover {
+border-color: var(--accent);
+color: var(--accent);
+background: var(--accent-light);
+transform: scale(1.05);
+}
+.slide-nav-btn-circular:disabled {
+opacity: 0.35;
+cursor: not-allowed;
+transform: none;
+}
+.slide-nav-btn-circular:disabled:hover {
+border-color: var(--border);
+color: var(--text-secondary);
+background: var(--bg-elevated);
+}
+.slide-nav-hints {
+font-size: 11px;
+color: var(--text-muted);
+opacity: 0.6;
+font-family: var(--font-mono);
+}
+
+/* ── Mind Map (Task 9) ── */
+.mindmap-btn {
+padding: 8px 16px;
+background: var(--bg-elevated);
+color: var(--text-secondary);
+border: 1px solid var(--border);
+border-radius: var(--radius-sm);
+font-size: 13px;
+cursor: pointer;
+white-space: nowrap;
+transition: all var(--transition);
+}
+.mindmap-btn:hover { border-color: var(--accent); color: var(--accent); }
+.mindmap-btn.active {
+background: var(--accent);
+color: var(--theme-bg-surface);
+border-color: var(--accent);
+}
+.mindmap-overlay {
+position: absolute;
+inset: 0;
+background: var(--theme-bg);
+z-index: 10;
+overflow: auto;
+display: none;
+}
+.mindmap-overlay.show { display: block; }
+.mindmap-overlay::-webkit-scrollbar { width: 4px; }
+.mindmap-overlay::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.mindmap-close {
+position: sticky;
+top: 12px; right: 12px; left: auto;
+float: right;
+width: 32px; height: 32px;
+border-radius: 50%;
+border: 1px solid var(--border);
+background: var(--bg-elevated);
+color: var(--text-secondary);
+cursor: pointer;
+font-size: 16px;
+display: flex;
+align-items: center;
+justify-content: center;
+transition: all var(--transition);
+z-index: 2;
+}
+.mindmap-close:hover { background: var(--accent-red-light); color: var(--accent-red); border-color: var(--accent-red); }
+.mindmap-tree {
+display: flex;
+flex-direction: column;
+align-items: center;
+padding: 40px 20px;
+min-width: max-content;
+}
+.mindmap-node {
+position: relative;
+padding: 10px 18px;
+border-radius: 8px;
+font-weight: 600;
+font-size: 14px;
+text-align: center;
+cursor: pointer;
+transition: all 0.2s;
+user-select: none;
+white-space: nowrap;
+}
+.mindmap-node.root {
+font-size: 18px;
+padding: 14px 28px;
+background: var(--theme-accent);
+color: white;
+box-shadow: 0 4px 12px var(--theme-accent-light);
+}
+.mindmap-node.root:hover { transform: scale(1.03); }
+.mindmap-node.level-1 {
+background: var(--theme-accent-light);
+color: var(--theme-accent);
+border: 1px solid var(--theme-accent);
+}
+.mindmap-node.level-1:hover { transform: scale(1.03); }
+.mindmap-node.level-2 {
+background: var(--theme-bg-elevated);
+color: var(--theme-text-secondary);
+border: 1px solid var(--theme-border);
+font-size: 13px;
+padding: 8px 14px;
+}
+.mindmap-node.level-2:hover { border-color: var(--theme-accent); color: var(--theme-accent); }
+.mindmap-children {
+display: flex;
+gap: 20px;
+justify-content: center;
+flex-wrap: wrap;
+margin-top: 28px;
+}
+.mindmap-branch {
+display: flex;
+flex-direction: column;
+align-items: center;
+position: relative;
+}
+.mindmap-connector {
+width: 2px;
+height: 28px;
+background: var(--theme-border);
+border-radius: 1px;
+}
+.mindmap-horizontal-connector {
+position: absolute;
+top: -14px;
+height: 2px;
+background: var(--theme-border);
+border-radius: 1px;
+}
+.mindmap-child-container {
+display: flex;
+flex-direction: column;
+align-items: center;
+gap: 14px;
+margin-top: 16px;
+overflow: hidden;
+max-height: 500px;
+transition: max-height 0.35s ease, margin-top 0.35s ease, opacity 0.35s ease;
+opacity: 1;
+}
+.mindmap-child-container.collapsed {
+max-height: 0;
+margin-top: 0;
+opacity: 0;
+}
+.mindmap-loading {
+text-align: center;
+padding: 48px 16px;
+color: var(--text-muted);
+font-size: 14px;
+}
+
+/* ── Simulation Sandbox (Task 10) ── */
+.block-simulation {
+margin: 16px 0;
+border: 1px solid var(--border);
+border-radius: var(--radius-lg);
+overflow: hidden;
+}
+.simulation-toolbar {
+display: flex;
+gap: 8px;
+padding: 8px 12px;
+background: var(--bg-elevated);
+border-bottom: 1px solid var(--border);
+align-items: center;
+}
+.simulation-toolbar-title {
+flex: 1;
+font-size: 12px;
+color: var(--text-secondary);
+font-weight: 500;
+}
+.simulation-toolbar-btn {
+padding: 5px 12px;
+border: 1px solid var(--border);
+border-radius: var(--radius-sm);
+background: var(--bg-surface);
+color: var(--text-secondary);
+font-size: 12px;
+cursor: pointer;
+transition: all var(--transition);
+}
+.simulation-toolbar-btn:hover {
+border-color: var(--accent);
+color: var(--accent);
+background: var(--accent-light);
+}
+.simulation-iframe {
+width: 100%;
+min-height: 320px;
+border: none;
+background: #fff;
+display: block;
+}
+.simulation-resize-handle {
+height: 6px;
+background: var(--border);
+cursor: ns-resize;
+transition: background var(--transition);
+}
+.simulation-resize-handle:hover { background: var(--accent); }
+.simulation-fullscreen {
+position: fixed;
+inset: 0;
+z-index: 9999;
+background: #fff;
+}
+.simulation-fullscreen .simulation-iframe {
+height: 100%;
+}
+.simulation-fullscreen .simulation-resize-handle { display: none; }
+
+/* ========== iPad / 移动设备响应式适配 ========== */
+@media (max-width: 1024px) {
+  .panel-left { width: 180px; min-width: 180px; }
+  .panel-right { width: 280px; min-width: 280px; }
+}
+@media (max-width: 768px) {
+  .panel-left { width: 140px; min-width: 140px; }
+  .panel-right { width: 260px; min-width: 260px; }
+  .brand h1 { font-size: 15px; }
+  .slide-card-new { padding: 24px 16px; }
+  .header { padding: 0 12px; height: 52px; }
+  .topic-input-area input { font-size: 16px; }
+}
+@media (max-width: 640px) {
+  .main { flex-direction: column; }
+  .panel-left {
+    width: 100%;
+    max-height: 35vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-right {
+    width: 100%;
+    min-width: 100%;
+    max-height: 50vh;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+  .slide-container { min-height: 0; flex: 1; }
+  .topic-input-area input { font-size: 16px; max-width: 120px; }
+  .slide-card-new { padding: 20px 14px; min-height: 320px; }
+  .block-title { font-size: 18px; }
+  .block-content { font-size: 13px; }
+  .brand h1 { font-size: 14px; }
+  .header { padding: 0 8px; height: 48px; }
+  .header button { font-size: 12px; padding: 6px 10px; }
+}
+/* 横屏模式 */
+@media (orientation: landscape) and (max-height: 700px) {
+  .header { padding: 0 12px; height: 44px; }
+  .brand h1 { font-size: 14px; }
+  .topic-input-area input { font-size: 13px; }
+  .slide-card-new { padding: 16px 24px; min-height: 280px; }
+  .block-title { font-size: 20px; }
+  .panel-left { width: 160px; min-width: 160px; }
+  .panel-right { width: 240px; min-width: 240px; }
+}
+/* 触摸优化 */
+@media (hover: none) and (pointer: coarse) {
+  .chapter-item, .theme-option, .feynman-level-select, .mode-tab {
+    padding: 12px 16px;
+  }
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  .quiz-option { padding: 14px 16px; font-size: 14px; }
+  .chat-input-wrap input { font-size: 16px; padding: 12px 14px; }
+  .feynman-input { font-size: 16px !important; padding: 12px 16px !important; }
+  .block-title { font-size: 22px; }
+  .block-subtitle { font-size: 14px; }
+  .block-content { font-size: 14px; line-height: 1.7; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg-deep: #1a1a20; --bg-surface: #252530; --bg-elevated: #2e2e38; }
+}
+body.keyboard-open .chat-input-area,
+body.keyboard-open .slide-nav-enhanced {
+  padding-top: 4px;
+  padding-bottom: max(4px, env(safe-area-inset-bottom));
+}
+.header {
+  padding-top: max(0, env(safe-area-inset-top));
+}
+button:focus-visible, select:focus-visible, textarea:focus-visible,
+input:focus-visible, .chapter-item:focus-visible, .theme-option:focus-visible {
+  outline: 2px solid var(--accent-orange);
+  outline-offset: 2px;
+}
+.long-press-menu {
+  position: fixed;
+  z-index: 9999;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  padding: 4px;
+  display: none;
+  min-width: 140px;
+}
+.long-press-menu.visible { display: block; }
+.long-press-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 38px;
+}
+.long-press-menu button:hover, .long-press-menu button:active {
+  background: var(--border);
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<div class="header">
+<div class="brand">
+<div class="brand-dot"></div>
+<h1>LumiLearn <span>· 互动课堂</span></h1>
+</div>
+<div class="topic-input-area" id="topicInputArea" style="display:flex;align-items:center;gap:8px;">
+<input type="text" id="topicInput" placeholder="输入主题，AI生成幻灯片..." style="width:220px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--bg);color:var(--text-primary);">
+<button id="btnGenerateSlides" onclick="generateSlides()" style="padding:8px 16px;background:var(--accent-orange);color:var(--bg-deep);border:none;border-radius:var(--radius-sm);font-size:13px;cursor:pointer;font-weight:500;white-space:nowrap;">生成</button>
+<button id="btnToggleReveal" onclick="toggleRevealMode()" style="padding:6px 14px;background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;" title="切换到演示模式"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20"/></svg>演示</button>
+<button id="btnTheme" onclick="toggleThemePanel()" style="position:relative;padding:6px 14px;background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;" title="切换主题"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><circle cx="12" cy="12" r="3"/></svg>主题</button>
+<button id="btnMindmap" onclick="toggleMindmap()" style="padding:6px 14px;background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;" title="思维导图"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><line x1="12" y1="7" x2="5" y2="16"/><line x1="12" y1="7" x2="19" y2="16"/></svg>导图</button>
+<div class="theme-panel hidden" id="themePanel">
+<!-- Theme options rendered by JS -->
+</div>
+</div>
+<div class="nav-links">
+<a href="/classroom" class="active">课堂模式</a>
+<a href="/chat">终端模式</a>
+</div>
+</div>
+
+<!-- ═══════════════ MAIN LAYOUT ═══════════════ -->
+<div class="main">
+
+<!-- Left: Course Outline -->
+<div class="panel-left">
+<div class="panel-header">课程大纲</div>
+<div class="chapter-list" id="chapterList">
+<div class="chapter-item active" data-slide="0">
+<span class="chapter-num">1</span>
+<span>勾股定理简介</span>
+</div>
+<div class="chapter-item" data-slide="1">
+<span class="chapter-num">2</span>
+<span>几何证明</span>
+</div>
+<div class="chapter-item" data-slide="2">
+<span class="chapter-num">3</span>
+<span>代数推导</span>
+</div>
+<div class="chapter-item" data-slide="3">
+<span class="chapter-num">4</span>
+<span>实际应用</span>
+</div>
+<div class="chapter-item" data-slide="4">
+<span class="chapter-num">5</span>
+<span>互动测验</span>
+</div>
+</div>
+</div>
+
+<!-- Center: Slide Area -->
+<div class="panel-center">
+<div class="mode-tabs" style="position:relative;display:flex;align-items:center;justify-content:space-between;">
+<div style="display:flex;gap:6px;">
+<button class="mode-tab active" onclick="switchMode('slides')"> 课件</button>
+<button class="mode-tab" onclick="switchMode('feynman')"> 五步学习</button>
+</div>
+</div>
+
+<div class="slide-container" id="slideContainer" style="position:relative;">
+<!-- Progress bar -->
+<div class="slide-progress-bar" id="slideProgressBar">
+<div class="slide-progress-fill" id="slideProgressFill" style="width:20%;"></div>
+</div>
+<!-- Slide canvas -->
+<div class="slide-canvas" id="slideCanvas">
+<!-- Slides rendered by JS -->
+</div>
+<!-- Mind Map Overlay -->
+<div class="mindmap-overlay" id="mindmapOverlay">
+<button class="mindmap-close" onclick="toggleMindmap()" title="关闭思维导图">✕</button>
+<div id="mindmapContent">
+<div class="mindmap-loading">点击「 思维导图」按钮加载知识结构图</div>
+</div>
+</div>
+</div>
+
+<div class="slide-nav-enhanced" id="slideNavEnhanced">
+<div class="slide-nav-row">
+<button class="slide-nav-btn-circular" id="btnPrevEnhanced" onclick="prevSlide()" title="上一页">←</button>
+<div class="slide-dots" id="slideDots"></div>
+<button class="slide-nav-btn-circular" id="btnNextEnhanced" onclick="nextSlide()" title="下一页">→</button>
+<span class="slide-indicator" id="slideIndicator">1 / 5</span>
+</div>
+<div class="slide-nav-hints">← → 键切换幻灯片</div>
+</div>
+
+<div class="feynman-container" id="feynmanContainer" style="display:none">
+<div class="feynman-input-area">
+<input type="text" class="feynman-input" id="feynmanTopicInput" placeholder="输入学习主题，如：勾股定理、求根公式...">
+<select class="feynman-level-select" id="feynmanLevelSelect">
+<option value="junior">初中</option>
+<option value="senior">高中</option>
+<option value="college">大学</option>
+<option value="general">通用</option>
+</select>
+<button class="feynman-btn" id="btnFeynmanStart" onclick="startFeynmanLearning()">开始学习</button>
+</div>
+<div class="feynman-progress" id="feynmanProgress" style="display:none">
+<div class="feynman-progress-bar">
+<div class="feynman-progress-fill" id="feynmanProgressFill"></div>
+</div>
+<span class="feynman-progress-text" id="feynmanProgressText">0 / 5</span>
+</div>
+<div class="feynman-steps-container" id="feynmanStepsContainer"></div>
+<div class="feynman-test-area" id="feynmanTestArea" style="display:none">
+<div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">
+请用最简单的话向一个8岁小朋友解释这个概念：
+</div>
+<textarea class="feynman-test-input" id="feynmanTestInput" placeholder="在这里写下你的解释..."></textarea>
+<button class="feynman-test-submit" id="btnFeynmanTestSubmit" onclick="submitFeynmanTest()">提交测试</button>
+<div class="feynman-test-result" id="feynmanTestResult"></div>
+</div>
+</div>
+</div>
+
+<!-- Right: AI Chat -->
+<div class="panel-right">
+<div class="role-tabs" id="roleTabs">
+<div class="role-tab active" data-role="teacher" onclick="switchRole('teacher')">
+<span class="role-avatar"><svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></span>
+<span>AI老师</span>
+</div>
+<div class="role-tab" data-role="assistant" onclick="switchRole('assistant')">
+<span class="role-avatar"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></span>
+<span>AI助教</span>
+</div>
+<div class="role-tab" data-role="student" onclick="switchRole('student')">
+<span class="role-avatar"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg></span>
+<span>AI同学</span>
+</div>
+</div>
+
+<div class="chat-messages" id="chatMessages">
+<div class="chat-empty">
+<svg class="empty-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+<p>选择一个AI角色，开始互动学习吧！</p>
+</div>
+</div>
+
+<div class="chat-input-area">
+<div class="chat-input-wrap">
+<input type="text" id="chatInput" placeholder="输入你的问题..." onkeydown="if(event.key==='Enter')sendChat()">
+<button id="btnSend" onclick="sendChat()">↑</button>
+</div>
+</div>
+</div>
+</div>
+
+<!-- Reveal.js Presentation Mode (hidden by default) -->
+<div class="reveal" id="revealPresentation" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1000;background:var(--theme-bg-surface);">
+<div class="slides" id="revealSlides">
+<!-- Slides rendered dynamically -->
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// SLIDE DATA · 动态从后端生成（默认空）
+// ═══════════════════════════════════════════
+var slides = [
+    {
+        title: '勾股定理简介',
+        subtitle: 'Pythagorean Theorem · 几何基石',
+        content: `
+<p style="font-size:15px;line-height:1.8;text-align:center;">
+    在任意直角三角形中，两条直角边的<strong>平方和</strong>等于斜边的<strong>平方</strong>。
+</p>
+<div class="block-katex" style="text-align:center;margin:20px 0;font-size:20px;">
+    <span class="katex-text">a² + b² = c²</span>
+</div>
+<div class="derivation-steps">
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">●</span> a、b 分别为两条直角边</div>
+    </div>
+    <div class="derivation-step" style="margin-top:6px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">●</span> c 为斜边（最长边）</div>
+    </div>
+    <div class="derivation-step" style="margin-top:6px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">●</span> 最早记载：中国《周髀算经》「勾三股四弦五」</div>
+    </div>
+    <div class="derivation-step" style="margin-top:6px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">●</span> 古希腊数学家毕达哥拉斯给出严格证明</div>
+    </div>
+</div>`,
+        katex: 'a^2 + b^2 = c^2'
+    },
+    {
+        title: '几何证明',
+        subtitle: 'Proof by Area Rearrangement',
+        content: `
+<p style="font-size:15px;line-height:1.75;">
+    <strong>证明思路</strong>：用面积法证明——构造一个边长为 (a+b) 的大正方形，其面积可以有两种不同的表达方式。
+</p>
+<div class="derivation-steps" style="margin-top:12px;">
+    <div class="derivation-step">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">①</span> 方式一：大正方形面积 = (a+b)² = a² + 2ab + b²</div>
+    </div>
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">②</span> 方式二：大正方形 = 4 个直角三角形 + 1 个小正方形</div>
+    </div>
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">③</span> 4 × (½ ab) + c² = 2ab + c²</div>
+    </div>
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">④</span> 联立：a² + 2ab + b² = 2ab + c²</div>
+    </div>
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;color:var(--accent);font-weight:600;"><span class="step-arrow">✓</span> 两边消去 2ab，得 a² + b² = c²</div>
+    </div>
+</div>
+<p style="font-size:13px;line-height:1.7;margin-top:14px;color:var(--text-secondary);text-align:center;">
+    这是勾股定理最简洁的证明之一——只要你相信「面积守恒」，你就必须相信勾股定理。
+</p>`,
+        katex: '(a+b)^2 = 4(\\tfrac{1}{2}ab) + c^2'
+    },
+    {
+        title: '代数推导',
+        subtitle: 'From Formula to Computation',
+        content: `
+<p style="font-size:15px;line-height:1.75;">
+    掌握公式后，我们可以通过代数运算求解任意边的长度。
+</p>
+<div class="derivation-steps" style="margin-top:12px;">
+    <div class="derivation-step">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">问题</span> 已知 a=3, b=4，求 c</div>
+    </div>
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">步骤1</span> c² = a² + b² = 3² + 4² = 9 + 16 = 25</div>
+    </div>
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">步骤2</span> c = √25 = 5</div>
+    </div>
+</div>
+<div class="derivation-steps" style="margin-top:18px;">
+    <div class="derivation-step">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">问题</span> 已知 c=13, a=5，求 b</div>
+    </div>
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">步骤1</span> b² = c² - a² = 169 - 25 = 144</div>
+    </div>
+    <div class="derivation-step" style="margin-top:8px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">步骤2</span> b = √144 = 12</div>
+    </div>
+</div>
+<p style="font-size:13px;line-height:1.7;margin-top:14px;color:var(--text-secondary);text-align:center;">
+    勾股数 (3,4,5), (5,12,13), (8,15,17), (7,24,25)... 均满足三边为整数的直角三角形
+</p>`,
+        katex: 'c = \\sqrt{a^2 + b^2}'
+    },
+    {
+        title: '实际应用',
+        subtitle: 'Real-world Applications',
+        content: `
+<p style="font-size:15px;line-height:1.75;">
+    勾股定理在日常生活中有着广泛的应用。以下是三个经典场景：
+</p>
+<div class="derivation-steps" style="margin-top:12px;">
+    <div class="derivation-step">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">🏠</span> <strong>梯子靠墙</strong></div>
+        <div style="padding:8px 24px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+            梯子长 5m，底距墙脚 3m，梯子顶端距地面多高？<br>
+            h² = 5² - 3² = 16 → h = 4m
+        </div>
+    </div>
+    <div class="derivation-step" style="margin-top:10px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">📺</span> <strong>电视对角线</strong></div>
+        <div style="padding:8px 24px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+            55 英寸电视指对角线长 55 英寸（约 140cm），按 16:9 比例可计算长和宽
+        </div>
+    </div>
+    <div class="derivation-step" style="margin-top:10px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">🛣️</span> <strong>两点间最短距离</strong></div>
+        <div style="padding:8px 24px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+            地图坐标 (x1,y1) 和 (x2,y2)，距离 = √[(x2-x1)² + (y2-y1)²]
+        </div>
+    </div>
+    <div class="derivation-step" style="margin-top:10px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">📐</span> <strong>木工直角</strong></div>
+        <div style="padding:8px 24px;font-size:13px;color:var(--text-secondary);line-height:1.7;">
+            木匠用 3-4-5 三角法（卷尺量 30cm、40cm、50cm）检查木板是否为直角
+        </div>
+    </div>
+</div>`,
+        katex: 'd = \\sqrt{(x_2-x_1)^2 + (y_2-y_1)^2}'
+    },
+    {
+        title: '互动测验',
+        subtitle: 'Practice · 巩固与提升',
+        content: `
+<p style="font-size:15px;line-height:1.75;text-align:center;">
+    恭喜！你已经掌握了勾股定理的核心知识。现在做几道题巩固一下吧。
+</p>
+<div class="derivation-steps" style="margin-top:16px;">
+    <div class="derivation-step">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">Q1</span> 直角三角形两直角边为 6 和 8，斜边 = ?</div>
+        <div style="padding:6px 24px;font-size:13px;color:var(--accent-green);">
+            hint: √(36+64) = √100 = 10
+        </div>
+    </div>
+    <div class="derivation-step" style="margin-top:10px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">Q2</span> 斜边 = 10，一条直角边 = 6，另一条直角边 = ?</div>
+        <div style="padding:6px 24px;font-size:13px;color:var(--accent-green);">
+            hint: √(100-36) = √64 = 8
+        </div>
+    </div>
+    <div class="derivation-step" style="margin-top:10px;">
+        <div class="step-header" style="cursor:default;"><span class="step-arrow">Q3</span> 两点 (0,0) 和 (3,4) 的距离 = ?</div>
+        <div style="padding:6px 24px;font-size:13px;color:var(--accent-green);">
+            hint: √(9+16) = √25 = 5
+        </div>
+    </div>
+</div>
+<p style="font-size:13px;line-height:1.7;margin-top:18px;color:var(--text-secondary);text-align:center;">
+    → 点击右侧 <strong>AI 老师</strong> 让它出更多题目<br>
+    → 或在上方输入框输入新主题，生成新的课程
+</p>`,
+        katex: ''
+    }
+];
+
+// Quiz data (空，由生成新主题时动态填充或保留简单测试)
+const quizQuestions = [];
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let currentSlide = 0;
+let currentRole = 'teacher';
+let quizState = { currentQ: 0, score: 0, answered: new Set() };
+let videoPlaying = false;
+let charts = {};
+
+// ═══════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+renderSlide(currentSlide);
+renderDots();
+updateNavButtons();
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+if (e.key === 'ArrowLeft') prevSlide();
+if (e.key === 'ArrowRight') nextSlide();
+});
+
+// ==== iOS Safari 键盘弹出检测 ====
+(function() {
+  var ua = navigator.userAgent.toLowerCase();
+  var isIOS = /iphone|ipad|ipod/.test(ua);
+  if (!isIOS) return;
+  var chatInput = document.getElementById('chatInput');
+  var topicInput = document.getElementById('topicInput');
+  var feynmanInput = document.getElementById('feynmanInput');
+  function focusIn() { document.body.classList.add('keyboard-open'); }
+  function focusOut() {
+    setTimeout(function() {
+      if (document.activeElement &&
+          document.activeElement.tagName !== 'INPUT' &&
+          document.activeElement.tagName !== 'TEXTAREA') {
+        document.body.classList.remove('keyboard-open');
+      }
+    }, 100);
+  }
+  [chatInput, topicInput, feynmanInput].forEach(function(el) {
+    if (el) {
+      el.addEventListener('focus', focusIn);
+      el.addEventListener('blur', focusOut);
+    }
+  });
+  // 旋转屏幕时重新计算
+  window.addEventListener('orientationchange', function() {
+    setTimeout(function() { window.scrollTo(0, 0); }, 300);
+  });
+})();
+
+// ==== 连接状态检测 ====
+(function() {
+  function updateOnline() {
+    var online = navigator.onLine;
+    try {
+      if (!online) showToast('网络连接已断开');
+    } catch(e) {}
+  }
+  window.addEventListener('online', updateOnline);
+  window.addEventListener('offline', updateOnline);
+})();
+});
+
+// ═══════════════════════════════════════════
+// SLIDE RENDERING
+// ═══════════════════════════════════════════
+function renderSlide(index, direction) {
+direction = direction || 'next';
+currentSlide = index;
+var slide = slides[index];
+var container = document.getElementById('slideCanvas');
+
+// Build blocks from slide data
+var blocks = slide.blocks || buildBlocksFromSlide(slide);
+
+var card = document.createElement('div');
+card.className = 'slide-card-new slide-enter-new';
+
+var html = '';
+// Slide number indicator
+html += '<div class="slide-number-indicator">' + (index + 1) + ' / ' + slides.length + '</div>';
+
+// Render each block
+blocks.forEach(function(block) {
+html += renderBlock(block);
+});
+
+card.innerHTML = html;
+
+// Transition: remove old card with exit animation
+var oldCard = container.querySelector('.slide-card-new');
+if (oldCard) {
+oldCard.classList.add('slide-exit');
+setTimeout(function() {
+if (oldCard.parentNode) oldCard.remove();
+container.appendChild(card);
+// Post-render
+setTimeout(function() { renderMath(card); }, 50);
+if (index === 1) setTimeout(function() { renderGeometryChart(); }, 100);
+if (index === 3) setTimeout(function() { renderApplicationChart(); }, 100);
+}, 350);
+} else {
+container.innerHTML = '';
+container.appendChild(card);
+setTimeout(function() { renderMath(card); }, 50);
+if (index === 1) setTimeout(function() { renderGeometryChart(); }, 100);
+if (index === 3) setTimeout(function() { renderApplicationChart(); }, 100);
+}
+
+// Update chapter list
+document.querySelectorAll('.chapter-item').forEach(function(item, i) {
+item.classList.toggle('active', i === index);
+});
+
+// Update dots
+renderDots();
+updateNavButtons();
+updateSlideProgress();
+document.getElementById('slideIndicator').textContent = (index + 1) + ' / ' + slides.length;
+updateSlideNumber();
+}
+
+/* Build content blocks from legacy slide data */
+function buildBlocksFromSlide(slide) {
+var blocks = [];
+if (slide.title) {
+blocks.push({type: 'title', data: slide.title});
+}
+if (slide.subtitle) {
+blocks.push({type: 'subtitle', data: slide.subtitle});
+}
+if (slide.content) {
+blocks.push({type: 'content', data: slide.content});
+}
+if (slide.katex) {
+blocks.push({type: 'katex', data: slide.katex});
+}
+return blocks;
+}
+
+/* Render individual content block */
+function renderBlock(block) {
+var type = block.type || 'content';
+var data = block.data || '';
+var wrapperClass = 'block-wrapper';
+
+switch (type) {
+case 'title':
+return '<div class="block-title">' + escapeHtml(String(data)) + '</div>';
+case 'subtitle':
+return '<div class="block-subtitle">' + escapeHtml(String(data)) + '</div>';
+case 'content':
+return '<div class="block-content">' + (typeof data === 'string' ? data : '') + '</div>';
+case 'katex':
+return '<div class="block-katex" data-katex="' + escapeHtml(String(data)).replace(/"/g, '&quot;') + '"></div>';
+case 'code':
+var lang = block.lang || '';
+return '<div class="block-code">' +
+(lang ? '<span class="code-lang-tag">' + escapeHtml(lang) + '</span>' : '') +
+'<button class="code-copy-btn" onclick="copyCodeBlock(this)" title="复制代码">复制</button>' +
+'<pre><code>' + escapeHtml(String(data)) + '</code></pre>' +
+'</div>';
+case 'animation':
+return '<div class="block-animation" onclick="toggleBlockAnimation(this)" data-video="' + escapeHtml(String(data)).replace(/"/g, '&quot;') + '">' +
+'<div class="anim-poster">' +
+'<div class="anim-play-icon">▶</div>' +
+'<div class="anim-label">点击播放动画演示</div>' +
+'</div>' +
+'<video src="" preload="none"></video>' +
+'</div>';
+case 'simulation':
+var simData = block.data;
+if (typeof simData === 'string') simData = {html: simData};
+var simId = 'sim-' + Math.random().toString(36).substr(2, 8);
+return '<div class="block-simulation">' +
+'<div class="simulation-toolbar">' +
+'<span class="simulation-toolbar-title"> 交互式模拟</span>' +
+'<button class="simulation-toolbar-btn" onclick="runSimulation(\'' + simId + '\')" title="运行模拟">▶ 运行</button>' +
+'<button class="simulation-toolbar-btn" onclick="fullscreenSimulation(\'' + simId + '\')" title="全屏">⛶</button>' +
+'</div>' +
+'<iframe class="simulation-iframe" id="' + simId + '" sandbox="allow-scripts allow-same-origin" ' +
+'data-html="' + base64Encode(simData.html || '') + '" ' +
+'data-css="' + base64Encode(simData.css || '') + '" ' +
+'data-js="' + base64Encode(simData.js || '') + '">' +
+'</iframe>' +
+'<div class="simulation-resize-handle" onmousedown="startSimResize(event, \'' + simId + '\')"></div>' +
+'</div>';
+default:
+return '<div class="block-content">' + (typeof data === 'string' ? data : JSON.stringify(data)) + '</div>';
+}
+}
+
+function updateSlideProgress() {
+var fill = document.getElementById('slideProgressFill');
+if (fill) {
+fill.style.width = ((currentSlide + 1) / slides.length * 100) + '%';
+}
+}
+
+function updateSlideNumber() {
+// Already handled by slideIndicator
+}
+
+function renderMath(container) {
+if (typeof renderMathInElement !== 'undefined') {
+try {
+renderMathInElement(container, {
+delimiters: [
+{ left: '$$', right: '$$', display: true },
+{ left: '$', right: '$', display: false },
+{ left: '\\(', right: '\\)', display: false },
+{ left: '\\[', right: '\\]', display: true }
+],
+throwOnError: false
+});
+} catch (e) {
+console.warn('KaTeX render error:', e);
+}
+}
+
+// Render specific math blocks (legacy)
+var slide = slides[currentSlide];
+if (slide.katex) {
+var mathBlock = document.getElementById('math-slide-' + currentSlide);
+if (mathBlock && typeof katex !== 'undefined') {
+try {
+katex.render(slide.katex, mathBlock, { throwOnError: false, displayMode: true });
+} catch (e) {
+mathBlock.textContent = slide.katex;
+}
+}
+}
+
+// Render new block-katex elements
+var katexBlocks = container.querySelectorAll('.block-katex[data-katex]');
+katexBlocks.forEach(function(el) {
+var formula = el.getAttribute('data-katex');
+if (formula && typeof katex !== 'undefined') {
+try {
+katex.render(formula, el, { throwOnError: false, displayMode: true });
+} catch (e) {
+el.textContent = formula;
+}
+}
+});
+}
+
+function renderDots() {
+const dotsContainer = document.getElementById('slideDots');
+dotsContainer.innerHTML = '';
+slides.forEach((_, i) => {
+const dot = document.createElement('div');
+dot.className = 'slide-dot' + (i === currentSlide ? ' active' : '');
+dot.onclick = () => goToSlide(i);
+dotsContainer.appendChild(dot);
+});
+}
+
+function updateNavButtons() {
+document.getElementById('btnPrevEnhanced').disabled = currentSlide === 0;
+document.getElementById('btnNextEnhanced').disabled = currentSlide === slides.length - 1;
+}
+
+function prevSlide() {
+if (currentSlide > 0) {
+renderSlide(currentSlide - 1, 'prev');
+}
+}
+
+function nextSlide() {
+if (currentSlide < slides.length - 1) {
+// Mark current chapter as completed
+var items = document.querySelectorAll('.chapter-item');
+if (items[currentSlide]) {
+items[currentSlide].classList.add('completed');
+}
+renderSlide(currentSlide + 1, 'next');
+}
+}
+
+function goToSlide(index) {
+renderSlide(index);
+}
+
+// ═══════════════════════════════════════════
+// DERIVATION STEPS
+// ═══════════════════════════════════════════
+function toggleDerivation(header) {
+const step = header.parentElement;
+step.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════
+// QUIZ
+// ═══════════════════════════════════════════
+function selectAnswer(optionEl, answer) {
+const quizBlock = optionEl.closest('.quiz-block');
+if (quizBlock.classList.contains('answered')) return;
+
+const allOptions = quizBlock.querySelectorAll('.quiz-option');
+allOptions.forEach(opt => opt.classList.add('disabled'));
+optionEl.classList.add('selected');
+
+const feedback = quizBlock.querySelector('.quiz-feedback');
+const qIndex = quizState.currentQ;
+const qData = quizQuestions[qIndex];
+
+if (answer === 'correct') {
+optionEl.classList.add('correct');
+feedback.className = 'quiz-feedback correct show';
+feedback.innerHTML = '[OK] 正确！' + qData.explanation;
+quizState.score++;
+} else {
+optionEl.classList.add('wrong');
+// Highlight correct answer
+allOptions.forEach(opt => {
+if (opt.dataset.answer === 'correct') opt.classList.add('correct');
+});
+feedback.className = 'quiz-feedback wrong show';
+feedback.innerHTML = '[X] 不对哦！' + qData.explanation;
+}
+
+quizState.answered.add(qIndex);
+quizBlock.classList.add('answered');
+
+// Update score
+const scoreFill = document.getElementById('quizScoreFill');
+const scoreText = document.getElementById('quizScoreText');
+const total = quizQuestions.length;
+const pct = Math.round((quizState.score / total) * 100);
+scoreFill.style.width = pct + '%';
+scoreText.textContent = `${quizState.score} / ${total}`;
+
+// Next question after delay
+if (qIndex < quizQuestions.length - 1) {
+setTimeout(() => {
+quizState.currentQ++;
+loadNextQuizQuestion(quizBlock);
+}, 2000);
+} else {
+setTimeout(() => {
+feedback.innerHTML += '<br><br> 测验完成！总得分：' + quizState.score + ' / ' + total;
+}, 1500);
+}
+}
+
+function loadNextQuizQuestion(quizBlock) {
+const qIndex = quizState.currentQ;
+const qData = quizQuestions[qIndex];
+
+quizBlock.querySelector('.quiz-question').textContent = qData.question;
+const optionsContainer = quizBlock.querySelector('.quiz-options');
+optionsContainer.innerHTML = '';
+qData.options.forEach(opt => {
+const div = document.createElement('div');
+div.className = 'quiz-option';
+div.dataset.answer = opt.answer;
+div.textContent = opt.text;
+div.onclick = function() { selectAnswer(this, opt.answer); };
+optionsContainer.appendChild(div);
+});
+
+quizBlock.querySelector('.quiz-feedback').className = 'quiz-feedback';
+quizBlock.querySelector('.quiz-feedback').innerHTML = '';
+quizBlock.classList.remove('answered');
+}
+
+// ═══════════════════════════════════════════
+// VIDEO
+// ═══════════════════════════════════════════
+function toggleVideo(slideIndex) {
+const videoArea = document.getElementById('videoArea' + slideIndex);
+if (!videoArea) return;
+
+const existingVideo = videoArea.querySelector('video');
+if (existingVideo) {
+if (existingVideo.paused) {
+existingVideo.play().catch(() => {});
+videoPlaying = true;
+} else {
+existingVideo.pause();
+videoPlaying = false;
+}
+return;
+}
+
+// Show loading state
+videoArea.innerHTML = `
+<div class="video-loading">
+<div class="chat-typing"><span></span><span></span><span></span></div>
+<p style="font-size:13px;color:#94a3b8;">正在加载视频...</p>
+<div class="video-progress-bar">
+<div class="video-progress-fill" id="videoProgressFill" style="width:0%"></div>
+</div>
+</div>
+`;
+
+// Simulate progressive loading
+let progress = 0;
+const progressInterval = setInterval(() => {
+progress += Math.random() * 15 + 5;
+if (progress >= 100) {
+progress = 100;
+clearInterval(progressInterval);
+showVideoPlayer(videoArea);
+}
+const fill = document.getElementById('videoProgressFill');
+if (fill) fill.style.width = progress + '%';
+}, 200);
+}
+
+function showVideoPlayer(videoArea) {
+videoArea.innerHTML = `
+<video controls style="width:100%;height:100%;object-fit:contain;">
+<source src="" type="video/mp4">
+<p>您的浏览器不支持视频播放。</p>
+</video>
+`;
+videoPlaying = true;
+
+// Try to load animation from API; fall back to Canvas
+fetchAnimationVideo().catch(() => {
+renderCanvasAnimation(videoArea);
+});
+}
+
+async function fetchAnimationVideo() {
+// Skip API calls when opened locally (file://)
+if (window.location.protocol === 'file:') {
+console.log('Animation API skipped (local file)');
+return;
+}
+try {
+const resp = await fetch('/api/animation/health');
+const data = await resp.json();
+if (data.status === 'ok') {
+// Generate animation
+const genResp = await fetch('/api/animation/generate', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ topic: '勾股定理', scene_type: 'geometry' })
+});
+const genData = await genResp.json();
+if (genData.task_id) {
+pollAnimationProgress(genData.task_id);
+}
+}
+} catch (e) {
+console.log('Animation API not available, using placeholder');
+}
+}
+
+async function pollAnimationProgress(taskId) {
+const maxPolls = 30;
+let polls = 0;
+const pollInterval = setInterval(async () => {
+polls++;
+try {
+const resp = await fetch(`/api/animation/progress/${taskId}`);
+const data = await resp.json();
+if (data.task_status === 'completed' && data.result && data.result.video_path) {
+clearInterval(pollInterval);
+const videoUrl = `/api/animation/video/${data.result.video_path.split('/').pop()}`;
+const video = document.querySelector('.video-placeholder video');
+if (video) {
+video.src = videoUrl;
+video.play().catch(() => {});
+}
+} else if (data.task_status === 'failed' || polls >= maxPolls) {
+clearInterval(pollInterval);
+}
+} catch (e) {
+if (polls >= maxPolls) clearInterval(pollInterval);
+}
+}, 2000);
+}
+
+// Canvas fallback for animation when Manim backend is unavailable
+function renderCanvasAnimation(videoArea) {
+videoArea.innerHTML = '<canvas id="animCanvas" width="600" height="400" style="width:100%;height:100%;background:var(--bg-deep);border-radius:8px;"></canvas>';
+var canvas = document.getElementById('animCanvas');
+if (!canvas) return;
+var ctx = canvas.getContext('2d');
+var step = 0;
+var maxSteps = 60;
+
+function draw() {
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+var progress = step / maxSteps;
+var x = 100, y = 300, w = 300, h = 200;
+
+// Background grid
+ctx.strokeStyle = '#2a2a2a';
+ctx.lineWidth = 0.5;
+for (var i = 0; i < canvas.width; i += 40) {
+ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+}
+for (var j = 0; j < canvas.height; j += 40) {
+ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+}
+
+// Right triangle
+var rightX = x + w * progress;
+var topY = y - h * progress;
+ctx.beginPath();
+ctx.moveTo(x, y);
+ctx.lineTo(rightX, y);
+ctx.lineTo(x, topY);
+ctx.closePath();
+ctx.strokeStyle = '#d97757';
+ctx.lineWidth = 3;
+ctx.stroke();
+ctx.fillStyle = 'rgba(217, 119, 87, 0.15)';
+ctx.fill();
+
+// Labels
+ctx.fillStyle = '#b0aea5';
+ctx.font = '16px Poppins, sans-serif';
+var midBX = (x + rightX) / 2;
+var midHX = (x + x) / 2 - 10;
+var midHY = (y + topY) / 2;
+ctx.fillText('a', rightX / 2 + x / 2, y + 25);
+ctx.fillText('b', x - 35, (y + topY) / 2 + 5);
+ctx.fillText('c', (x + rightX) / 2 - 10, (y + topY) / 2 - 10);
+
+// Right angle marker
+ctx.beginPath();
+ctx.moveTo(x + 15, y);
+ctx.lineTo(x + 15, y - 15);
+ctx.lineTo(x, y - 15);
+ctx.strokeStyle = '#6a9bcc';
+ctx.lineWidth = 1.5;
+ctx.stroke();
+
+// Formula
+ctx.fillStyle = '#faf9f5';
+ctx.font = '18px JetBrains Mono, monospace';
+ctx.fillText('a^2 + b^2 = c^2', canvas.width / 2, 50);
+
+if (step < maxSteps) {
+step++;
+requestAnimationFrame(draw);
+}
+}
+draw();
+}
+
+// ═══════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════
+function renderGeometryChart() {
+if (typeof Chart === 'undefined') return;
+const canvas = document.getElementById('chartCanvas1');
+if (!canvas) return;
+if (charts['geometry']) charts['geometry'].destroy();
+
+charts['geometry'] = new Chart(canvas, {
+type: 'bar',
+data: {
+labels: ['a²', 'b²', 'a²+b²', 'c²'],
+datasets: [{
+label: '面积对比',
+data: [9, 16, 25, 25],
+backgroundColor: [
+'rgba(37, 99, 235, 0.6)',
+'rgba(37, 99, 235, 0.6)',
+'rgba(22, 163, 74, 0.7)',
+'rgba(22, 163, 74, 0.7)'
+],
+borderColor: ['#2563eb', '#2563eb', '#16a34a', '#16a34a'],
+borderWidth: 1,
+borderRadius: 6
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+title: { display: true, text: '勾股定理验证 (以 3-4-5 为例)', font: { size: 14 }, color: '#1e293b' },
+legend: { display: false }
+},
+scales: {
+y: { beginAtZero: true, max: 30, ticks: { stepSize: 5 }, grid: { color: '#f1f5f9' } },
+x: { grid: { display: false } }
+}
+}
+});
+}
+
+function renderApplicationChart() {
+if (typeof Chart === 'undefined') return;
+const canvas = document.getElementById('chartCanvas3');
+if (!canvas) return;
+if (charts['application']) charts['application'].destroy();
+
+charts['application'] = new Chart(canvas, {
+type: 'scatter',
+data: {
+datasets: [{
+label: '直角三角形顶点',
+data: [
+{ x: 0, y: 0 },
+{ x: 3, y: 0 },
+{ x: 0, y: 4 }
+],
+backgroundColor: '#2563eb',
+pointRadius: 6,
+pointHoverRadius: 8
+}, {
+label: '斜边',
+data: [
+{ x: 3, y: 0 },
+{ x: 0, y: 4 }
+],
+backgroundColor: '#16a34a',
+pointRadius: 0,
+showLine: true,
+borderColor: '#16a34a',
+borderWidth: 2,
+borderDash: [5, 5]
+}]
+},
+options: {
+responsive: true,
+maintainAspectRatio: false,
+plugins: {
+title: { display: true, text: '梯子问题示意图', font: { size: 14 }, color: '#1e293b' },
+legend: { display: true, labels: { usePointStyle: true } }
+},
+scales: {
+x: { title: { display: true, text: '底边 (米)' }, grid: { color: '#f1f5f9' }, min: -1, max: 5 },
+y: { title: { display: true, text: '高度 (米)' }, grid: { color: '#f1f5f9' }, min: -1, max: 6 }
+}
+}
+});
+}
+
+// ═══════════════════════════════════════════
+// ROLE SWITCHING
+// ═══════════════════════════════════════════
+function switchRole(role) {
+currentRole = role;
+document.querySelectorAll('.role-tab').forEach(tab => {
+tab.classList.toggle('active', tab.dataset.role === role);
+});
+document.getElementById('chatInput').placeholder = getRolePlaceholder(role);
+document.getElementById('chatInput').focus();
+}
+
+function getRolePlaceholder(role) {
+const placeholders = {
+teacher: '向AI老师提问...',
+assistant: '向AI助教提问...',
+student: '和AI同学讨论...'
+};
+return placeholders[role] || '输入你的问题...';
+}
+
+// ═══════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════
+async function sendChat() {
+var input = document.getElementById('chatInput');
+var message = (input.value || '').trim();
+if (!message) return;
+
+input.value = '';
+var btnSend = document.getElementById('btnSend');
+btnSend.disabled = true;
+
+// Add user message
+addChatMessage('user', '你', message);
+
+// Add typing indicator
+var typingId = addTypingIndicator();
+
+try {
+    var resp = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            model: 'qwen2.5:7b',
+            messages: [{ role: 'user', content: message }],
+            stream: false,
+            temperature: 0.7
+        })
+    });
+
+    removeTypingIndicator(typingId);
+
+    if (resp.ok) {
+        var data = await resp.json();
+        var reply = '';
+        // 兼容多种响应格式（Ollama / OpenAI / Flask 代理等）
+        if (data && typeof data === 'object') {
+            if (data.message && typeof data.message.content === 'string') {
+                reply = data.message.content;
+            } else if (typeof data.content === 'string') {
+                reply = data.content;
+            } else if (typeof data.response === 'string') {
+                reply = data.response;
+            } else if (Array.isArray(data.choices) && data.choices.length > 0 &&
+                data.choices[0].message && typeof data.choices[0].message.content === 'string') {
+                reply = data.choices[0].message.content;
+            } else if (data.data && typeof data.data.content === 'string') {
+                reply = data.data.content;
+            } else if (typeof data.reply === 'string') {
+                reply = data.reply;
+            } else {
+                // 递归尝试从嵌套对象中提取文本
+                var found = null;
+                function extractText(obj) {
+                    if (found) return;
+                    if (obj == null) return;
+                    if (typeof obj === 'string') {
+                        if (obj.trim().length > 20 || (obj.trim().length > 0 && !found)) {
+                            found = obj;
+                        }
+                        return;
+                    }
+                    if (typeof obj === 'object') {
+                        if (Array.isArray(obj)) {
+                            obj.forEach(extractText);
+                        } else {
+                            for (var k in obj) extractText(obj[k]);
+                        }
+                    }
+                }
+                extractText(data);
+                reply = found || JSON.stringify(data);
+            }
+        } else if (typeof data === 'string') {
+            reply = data;
+        } else {
+            reply = JSON.stringify(data);
+        }
+        if (!reply || reply.trim().length === 0) reply = '（模型返回空内容）';
+        addChatMessage(currentRole, getRoleName(currentRole), reply);
+    } else {
+        var errText = '';
+        try { var ed = await resp.json(); errText = ed.error || ed.message || ''; } catch (x) {}
+        addChatMessage(currentRole, getRoleName(currentRole),
+            '请求失败 (HTTP ' + resp.status + ')' + (errText ? '：' + errText : ''));
+    }
+} catch (err) {
+    removeTypingIndicator(typingId);
+    var errMsg = (err && err.message) ? err.message : String(err);
+    addChatMessage(currentRole, getRoleName(currentRole),
+        '网络连接失败：' + errMsg + '\n\n请确认服务器是否运行。');
+}
+
+btnSend.disabled = false;
+try { input.focus(); } catch (x) {}
+}
+
+function getRoleName(role) {
+const names = { teacher: 'AI老师', assistant: 'AI助教', student: 'AI同学' };
+return names[role] || 'AI';
+}
+
+function addChatMessage(role, name, text) {
+const messages = document.getElementById('chatMessages');
+const empty = messages.querySelector('.chat-empty');
+if (empty) empty.remove();
+
+const div = document.createElement('div');
+div.className = 'chat-msg';
+const avatarClass = role === 'user' ? 'user' : role;
+const avatarEmoji = role === 'user' ? '' :
+role === 'teacher' ? '' : role === 'assistant' ? '' : '';
+
+div.innerHTML = `
+<div class="chat-msg-avatar ${avatarClass}">${avatarEmoji}</div>
+<div class="chat-msg-bubble">
+<div class="chat-msg-name">${name}</div>
+<div class="chat-msg-text">${renderMarkdown(text)}</div>
+</div>
+`;
+
+messages.appendChild(div);
+messages.scrollTop = messages.scrollHeight;
+
+// Render KaTeX in message
+if (typeof renderMathInElement !== 'undefined') {
+try {
+renderMathInElement(div.querySelector('.chat-msg-text'), { throwOnError: false });
+} catch (e) {}
+}
+
+return div;
+}
+
+function addTypingIndicator() {
+const messages = document.getElementById('chatMessages');
+const empty = messages.querySelector('.chat-empty');
+if (empty) empty.remove();
+
+const id = 'typing-' + Date.now();
+const div = document.createElement('div');
+div.className = 'chat-msg';
+div.id = id;
+const avatarEmoji = currentRole === 'teacher' ? '' : currentRole === 'assistant' ? '' : '';
+
+div.innerHTML = `
+<div class="chat-msg-avatar ${currentRole}">${avatarEmoji}</div>
+<div class="chat-msg-bubble">
+<div class="chat-msg-name">${getRoleName(currentRole)}</div>
+<div class="chat-msg-text">
+<div class="chat-typing"><span></span><span></span><span></span></div>
+</div>
+</div>
+`;
+
+messages.appendChild(div);
+messages.scrollTop = messages.scrollHeight;
+return id;
+}
+
+function removeTypingIndicator(id) {
+const el = document.getElementById(id);
+if (el) el.remove();
+}
+
+function escapeHtml(text) {
+const div = document.createElement('div');
+div.textContent = text;
+return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════
+// MARKDOWN RENDERER (for chat messages)
+// ═══════════════════════════════════════════
+function renderMarkdown(text) {
+if (!text) return '';
+
+console.log('[renderMarkdown] input:', text.substring(0, 200));
+
+// First, escape HTML to prevent XSS
+let html = escapeHtml(text);
+
+// Store code blocks and math blocks as placeholders
+const blocks = [];
+
+// Replace fenced code blocks (```lang ... ```)
+html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+blocks.push('<pre class="chat-code-block"><code>' + code.trim() + '</code></pre>');
+return '%%BLOCK_' + (blocks.length - 1) + '%%';
+});
+
+// Replace display math blocks ($$ ... $$)
+html = html.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
+blocks.push('<div class="math-block">$$' + math.trim() + '$$</div>');
+return '%%BLOCK_' + (blocks.length - 1) + '%%';
+});
+
+// Replace inline math ($...$)
+html = html.replace(/\$(.+?)\$/g, (match, math) => {
+blocks.push('<span class="math-inline">$' + math + '$</span>');
+return '%%BLOCK_' + (blocks.length - 1) + '%%';
+});
+
+// Headings
+html = html.replace(/^### (.+)$/gm, '<h3 class="chat-h3">$1</h3>');
+html = html.replace(/^## (.+)$/gm, '<h2 class="chat-h2">$1</h2>');
+html = html.replace(/^# (.+)$/gm, '<h1 class="chat-h1">$1</h1>');
+
+// Bold and italic
+html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+// Inline code
+html = html.replace(/`(.+?)`/g, '<code class="chat-inline-code">$1</code>');
+
+// Horizontal rules
+html = html.replace(/^---$/gm, '<hr class="chat-hr">');
+
+// List items: group consecutive lines starting with - or *
+html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+html = html.replace(/((?:<li>.*?<\/li>\n?)+)/g, '<ul class="chat-list">$1</ul>');
+
+// Double newlines → paragraph breaks
+html = html.replace(/\n\n/g, '</p><p>');
+// Single newlines → line breaks
+html = html.replace(/\n/g, '<br>');
+
+// Wrap in paragraph
+html = '<p>' + html + '</p>';
+
+// Restore placeholder blocks
+html = html.replace(/%%BLOCK_(\d+)%%/g, (match, idx) => blocks[parseInt(idx)] || '');
+
+// Clean up: remove empty paragraphs and fix paragraph wrapping around block elements
+html = html.replace(/<p><\/p>/g, '');
+html = html.replace(/<p>(<h[123])/g, '$1');
+html = html.replace(/(<\/h[123]>)<\/p>/g, '$1');
+html = html.replace(/<p>(<ul)/g, '$1');
+html = html.replace(/(<\/ul>)<\/p>/g, '$1');
+html = html.replace(/<p>(<pre)/g, '$1');
+html = html.replace(/(<\/pre>)<\/p>/g, '$1');
+html = html.replace(/<p>(<div)/g, '$1');
+html = html.replace(/(<\/div>)<\/p>/g, '$1');
+html = html.replace(/<p>(<hr)/g, '$1');
+html = html.replace(/(\/?>)<\/p>/g, '$1');
+
+console.log('[renderMarkdown] output:', html.substring(0, 300));
+return html;
+}
+
+// ═══════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════
+function showToast(msg) {
+const toast = document.getElementById('toast');
+toast.textContent = msg;
+toast.classList.add('show');
+setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════
+// CHAPTER LIST CLICK
+// ═══════════════════════════════════════════
+document.getElementById('chapterList').addEventListener('click', (e) => {
+const item = e.target.closest('.chapter-item');
+if (item) {
+const slideIndex = parseInt(item.dataset.slide);
+goToSlide(slideIndex);
+}
+});
+
+// ═══════════════════════════════════════════
+// SLIDE GENERATION (AI)
+// ═══════════════════════════════════════════
+let isRevealMode = false;
+let revealInstance = null;
+let generatedSlides = null;
+
+async function generateSlides() {
+const topic = document.getElementById('topicInput').value.trim();
+if (!topic) {
+showToast('请输入一个主题');
+return;
+}
+
+const btn = document.getElementById('btnGenerateSlides');
+btn.disabled = true;
+btn.textContent = '生成中...';
+showToast('AI 正在生成幻灯片...');
+
+try {
+const resp = await fetch('/api/slides/generate', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ topic: topic, slide_count: 5, style: 'detailed' })
+});
+
+if (resp.ok) {
+const data = await resp.json();
+generatedSlides = data.slides;
+// Update the existing slides array
+if (generatedSlides && generatedSlides.length > 0) {
+window.slides.length = 0;
+generatedSlides.forEach(s => window.slides.push(s));
+currentSlide = 0;
+renderSlide(0);
+renderChapterList();
+renderDots();
+updateNavButtons();
+document.getElementById('slideIndicator').textContent = '1 / ' + window.slides.length;
+showToast('幻灯片生成成功！共 ' + window.slides.length + ' 页');
+}
+} else {
+const err = await resp.json().catch(() => ({}));
+showToast('生成失败：' + (err.error || 'HTTP ' + resp.status));
+}
+} catch (e) {
+console.error('[generateSlides] error:', e);
+showToast('网络错误，请检查服务器连接');
+}
+
+btn.disabled = false;
+btn.textContent = '生成';
+}
+
+function renderChapterList() {
+const list = document.getElementById('chapterList');
+list.innerHTML = '';
+window.slides.forEach((slide, i) => {
+const item = document.createElement('div');
+item.className = 'chapter-item' + (i === currentSlide ? ' active' : '');
+item.dataset.slide = i;
+item.innerHTML = '<span class="chapter-num">' + (i + 1) + '</span><span>' + (slide.title || 'Slide ' + (i + 1)) + '</span>';
+list.appendChild(item);
+});
+}
+window.renderChapterList = renderChapterList;
+
+function toggleRevealMode() {
+const btn = document.getElementById('btnToggleReveal');
+const revealEl = document.getElementById('revealPresentation');
+
+if (!isRevealMode) {
+// Enter Reveal.js mode
+// Build Reveal.js slides from current slides data
+const revealSlides = document.getElementById('revealSlides');
+revealSlides.innerHTML = '';
+window.slides.forEach(slide => {
+const section = document.createElement('section');
+section.innerHTML = '<h2>' + (slide.title || '') + '</h2>' +
+'<p style="font-size:0.8em;color:#666;">' + (slide.subtitle || '') + '</p>' +
+'<div style="text-align:left;font-size:0.7em;line-height:1.8;">' + (slide.content || '') + '</div>';
+revealSlides.appendChild(section);
+});
+
+revealEl.style.display = 'block';
+document.querySelector('.header').style.display = 'none';
+document.querySelector('.main').style.display = 'none';
+
+// Add close button
+if (!document.getElementById('revealCloseBtn')) {
+const closeBtn = document.createElement('button');
+closeBtn.id = 'revealCloseBtn';
+closeBtn.className = 'reveal-overlay-close';
+closeBtn.textContent = '✕';
+closeBtn.onclick = toggleRevealMode;
+revealEl.appendChild(closeBtn);
+}
+
+if (typeof Reveal !== 'undefined') {
+revealInstance = new Reveal(revealEl, {
+hash: false,
+transition: 'slide',
+backgroundTransition: 'fade',
+width: 960,
+height: 700,
+margin: 0.1,
+controls: true,
+progress: true,
+center: true
+});
+revealInstance.initialize().then(() => {
+// Re-render KaTeX in Reveal.js
+if (typeof renderMathInElement !== 'undefined') {
+try { renderMathInElement(revealEl, { throwOnError: false }); } catch(e) {}
+}
+});
+}
+
+btn.textContent = '✕ 退出';
+btn.classList.add('active');
+isRevealMode = true;
+} else {
+// Exit Reveal.js mode
+if (revealInstance && typeof revealInstance.destroy === 'function') {
+try { revealInstance.destroy(); } catch(e) {}
+}
+revealInstance = null;
+revealEl.style.display = 'none';
+document.querySelector('.header').style.display = '';
+document.querySelector('.main').style.display = '';
+
+btn.textContent = '▶ 演示';
+btn.classList.remove('active');
+isRevealMode = false;
+}
+}
+
+// Keyboard shortcut: Escape to exit Reveal.js mode
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape' && isRevealMode) {
+toggleRevealMode();
+}
+});
+
+// ═══════════════════════════════════════════
+// THEME SYSTEM
+// ═══════════════════════════════════════════
+const THEMES = {
+ocean: { name: 'Ocean Depths', color: '#0284c7' },
+sunset: { name: 'Sunset Boulevard', color: '#ea580c' },
+forest: { name: 'Forest Canopy', color: '#059669' },
+minimal: { name: 'Modern Minimalist', color: '#3b82f6' },
+golden: { name: 'Golden Hour', color: '#ca8a04' },
+arctic: { name: 'Arctic Frost', color: '#0284c7' },
+desert: { name: 'Desert Rose', color: '#db2777' },
+tech: { name: 'Tech Innovation', color: '#38bdf8' },
+botanical: { name: 'Botanical Garden', color: '#16a34a' },
+midnight: { name: 'Midnight Galaxy', color: '#7c3aed' }
+};
+
+function initThemePanel() {
+const panel = document.getElementById('themePanel');
+Object.entries(THEMES).forEach(([key, theme]) => {
+const opt = document.createElement('div');
+opt.className = 'theme-option';
+opt.innerHTML = '<span class="theme-swatch" style="background:' + theme.color + '"></span>' + theme.name;
+opt.onclick = () => applyTheme(key);
+if (key === currentTheme) opt.classList.add('active');
+panel.appendChild(opt);
+});
+}
+
+let currentTheme = localStorage.getItem('lumilearn-theme') || 'minimal';
+function applyTheme(themeKey) {
+document.documentElement.setAttribute('data-theme', themeKey);
+currentTheme = themeKey;
+localStorage.setItem('lumilearn-theme', themeKey);
+// Update active state in panel
+document.querySelectorAll('.theme-option').forEach(el => el.classList.remove('active'));
+const panel = document.getElementById('themePanel');
+const opts = panel.querySelectorAll('.theme-option');
+const keys = Object.keys(THEMES);
+opts.forEach((opt, i) => {
+if (keys[i] === themeKey) opt.classList.add('active');
+});
+}
+
+function toggleThemePanel() {
+const panel = document.getElementById('themePanel');
+panel.classList.toggle('hidden');
+}
+
+// Initialize theme on load
+document.addEventListener('DOMContentLoaded', () => {
+applyTheme(currentTheme);
+initThemePanel();
+});
+
+// Close theme panel on outside click
+document.addEventListener('click', (e) => {
+const panel = document.getElementById('themePanel');
+const btn = document.getElementById('btnTheme');
+if (panel && btn && !panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== btn) {
+panel.classList.add('hidden');
+}
+});
+
+// ═══════════════════════════════════════════
+// FEYNMAN FIVE-STEP LEARNING METHOD
+// ═══════════════════════════════════════════
+var currentMode = 'slides';
+var feynmanData = null;
+var feynmanCurrentStep = 0;
+var feynmanStepAnimations = {};
+var feynmanPollTimers = {};
+
+function switchMode(mode) {
+currentMode = mode;
+var tabs = document.querySelectorAll('.mode-tab');
+tabs.forEach(function(t) {
+t.classList.toggle('active', (mode === 'slides' && t.textContent.indexOf('课件') >= 0) || (mode === 'feynman' && t.textContent.indexOf('五步学习') >= 0));
+});
+var slideContainer = document.getElementById('slideContainer');
+var slideNav = document.getElementById('slideNavEnhanced');
+var feynmanContainer = document.getElementById('feynmanContainer');
+if (mode === 'feynman') {
+slideContainer.style.display = 'none';
+slideNav.style.display = 'none';
+feynmanContainer.style.display = 'flex';
+} else {
+slideContainer.style.display = '';
+slideNav.style.display = '';
+feynmanContainer.style.display = 'none';
+}
+}
+
+function startFeynmanLearning() {
+var topic = document.getElementById('feynmanTopicInput').value.trim();
+if (!topic) { showToast('请输入学习主题'); return; }
+
+var level = document.getElementById('feynmanLevelSelect').value;
+var container = document.getElementById('feynmanStepsContainer');
+var progressBar = document.getElementById('feynmanProgress');
+var testArea = document.getElementById('feynmanTestArea');
+var btn = document.getElementById('btnFeynmanStart');
+
+btn.disabled = true;
+btn.textContent = '加载中...';
+progressBar.style.display = 'none';
+testArea.style.display = 'none';
+feynmanData = null;
+feynmanCurrentStep = 0;
+feynmanStepAnimations = {};
+// Clear all poll timers
+Object.keys(feynmanPollTimers).forEach(function(k) { clearInterval(feynmanPollTimers[k]); });
+feynmanPollTimers = {};
+
+container.innerHTML = '<div class="feynman-loading"><div class="chat-typing"><span></span><span></span><span></span></div><p style="margin-top:8px;font-size:13px">AI 正在生成五步教学法...</p></div>';
+
+fetch('/api/feynman/explain', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ topic: topic, level: level })
+}).then(function(resp) {
+if (!resp.ok) throw new Error('HTTP ' + resp.status);
+return resp.json();
+}).then(function(data) {
+if (data.steps && data.steps.length > 0) {
+feynmanData = data;
+renderFeynmanSteps(data.steps);
+} else if (data.full_content) {
+container.innerHTML = '<div class="feynman-step-card current"><div class="feynman-step-body" style="display:block;padding:16px"><div class="feynman-step-content">' + escapeHtml(data.full_content) + '</div></div></div>';
+progressBar.style.display = 'flex';
+document.getElementById('feynmanProgressFill').style.width = '100%';
+document.getElementById('feynmanProgressText').textContent = '1 / 1';
+} else {
+container.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">生成失败，请重试</div>';
+}
+btn.disabled = false;
+btn.textContent = '开始学习';
+}).catch(function(e) {
+container.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">请求失败: ' + e.message + '</div>';
+btn.disabled = false;
+btn.textContent = '开始学习';
+showToast('请求失败: ' + e.message);
+});
+}
+
+function renderFeynmanSteps(steps) {
+var container = document.getElementById('feynmanStepsContainer');
+container.innerHTML = '';
+
+steps.forEach(function(step, index) {
+var card = document.createElement('div');
+card.className = 'feynman-step-card';
+card.id = 'feynmanCard' + index;
+
+var keypointsHtml = '';
+if (step.key_points && step.key_points.length > 0) {
+keypointsHtml = '<div class="feynman-step-keypoints">' +
+step.key_points.map(function(kp) { return '<span class="feynman-keypoint-tag">' + escapeHtml(kp) + '</span>'; }).join('') +
+'</div>';
+}
+
+var animHtml = '';
+if (index < 4) {
+animHtml = '<div class="step-animation" id="stepAnim' + index + '"></div>';
+}
+
+// 先构建 innerHTML，再 querySelector 绑定事件
+card.innerHTML =
+'<div class="feynman-step-header">' +
+'<div class="feynman-step-number">' + (index + 1) + '</div>' +
+'<div class="feynman-step-name">' + escapeHtml(step.step_name) + '</div>' +
+'<span class="feynman-step-status"><span class="step-status-dot"></span> 待学习</span>' +
+'<span class="feynman-step-collapse-icon" style="margin-left:8px;transition:transform 0.3s;">▼</span>' +
+'</div>' +
+'<div class="feynman-step-body">' +
+'<div class="feynman-step-content">' + escapeHtml(step.content) + '</div>' +
+keypointsHtml +
+animHtml +
+'</div>';
+
+// 点击头部切换展开/收起（必须在 innerHTML 赋值之后绑定）
+var header = card.querySelector('.feynman-step-header');
+if (header) {
+header.style.cursor = 'pointer';
+header.onclick = function(e) {
+e.stopPropagation();
+toggleFeynmanStep(index);
+};
+}
+card.onclick = function(e) {
+// 如果点击的是视频播放器或动画区域，不处理
+if (e.target.closest('video') || e.target.closest('.step-animation')) return;
+toggleFeynmanStep(index);
+};
+
+container.appendChild(card);
+});
+
+// Activate first step
+if (container.children.length > 0) {
+feynmanCurrentStep = 0;
+toggleFeynmanStep(0, true); // force expand step 1
+}
+
+// Setup scroll observer for auto-expand
+setupScrollObserver();
+
+// Show progress
+document.getElementById('feynmanProgress').style.display = 'flex';
+updateFeynmanProgress();
+
+// Trigger animation for step 1
+if (steps.length > 0) {
+triggerStepAnimation(steps[0], 0);
+}
+}
+
+/**
+* 切换五步卡片展开/收起状态
+* @param {number} index - 步骤索引
+* @param {boolean} forceExpand - 是否强制展开
+*/
+function toggleFeynmanStep(index, forceExpand) {
+var cards = document.querySelectorAll('.feynman-step-card');
+if (!cards[index]) return;
+
+var card = cards[index];
+var isCurrentlyExpanded = card.classList.contains('current');
+var shouldExpand = forceExpand || !isCurrentlyExpanded;
+
+if (shouldExpand) {
+// 先关闭所有已展开的卡片（确保只有当前步骤展开）
+for (var j = 0; j < cards.length; j++) {
+if (j !== index) {
+cards[j].classList.remove('current');
+var icon = cards[j].querySelector('.feynman-step-collapse-icon');
+if (icon) icon.style.transform = 'rotate(0deg)';
+}
+}
+
+// 展开当前卡片
+card.classList.add('current');
+card.querySelector('.feynman-step-status').innerHTML = '<span class="step-status-dot learning"></span> 学习中';
+card.querySelector('.feynman-step-collapse-icon').style.transform = 'rotate(180deg)';
+
+// 标记之前的所有卡片为已完成
+for (var i = 0; i < index; i++) {
+cards[i].classList.add('done');
+cards[i].querySelector('.feynman-step-status').innerHTML = '<span class="step-status-dot done"></span> 已完成';
+}
+
+// 更新当前最大进度
+if (index > feynmanCurrentStep) feynmanCurrentStep = index;
+
+// 触发动画 (如果没有触发过)
+if (!feynmanStepAnimations[index] && feynmanData && feynmanData.steps[index]) {
+triggerStepAnimation(feynmanData.steps[index], index);
+}
+
+// 如果展开最后一步，显示测试区域
+if (index === 4) {
+document.getElementById('feynmanTestArea').style.display = 'block';
+}
+
+// 平滑滚动到展开的卡片
+requestAnimationFrame(function() {
+var header = card.querySelector('.feynman-step-header');
+if (header) {
+header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+});
+} else {
+// 收起当前卡片
+card.classList.remove('current');
+card.querySelector('.feynman-step-status').innerHTML = '<span class="step-status-dot done"></span> 已完成';
+card.querySelector('.feynman-step-collapse-icon').style.transform = 'rotate(0deg)';
+}
+
+updateFeynmanProgress();
+}
+
+/**
+* 使用 IntersectionObserver 监听滚动，自动展开进入视口的卡片。
+* 添加节流延迟，避免快速滚动时过度触发。
+*/
+function setupScrollObserver() {
+if (window._feynmanScrollObserver) {
+window._feynmanScrollObserver.disconnect();
+}
+
+var container = document.getElementById('feynmanStepsContainer');
+if (!container) return;
+
+var pendingExpands = {};
+
+var options = {
+root: container.closest('.feynman-container') || null,
+threshold: 0.35,
+rootMargin: '0px 0px -10px 0px'
+};
+
+window._feynmanScrollObserver = new IntersectionObserver(function(entries) {
+entries.forEach(function(entry) {
+if (entry.isIntersecting) {
+var card = entry.target;
+var index = parseInt(card.id.replace('feynmanCard', ''));
+if (!isNaN(index) && !card.classList.contains('current')) {
+// 延迟展开，避免快速滚动时的闪烁
+if (pendingExpands[index]) return;
+pendingExpands[index] = setTimeout(function() {
+toggleFeynmanStep(index, true);
+delete pendingExpands[index];
+}, 250);
+}
+} else {
+// 卡片离开视口时取消待处理的展开
+var idx = parseInt(entry.target.id.replace('feynmanCard', ''));
+if (pendingExpands[idx]) {
+clearTimeout(pendingExpands[idx]);
+delete pendingExpands[idx];
+}
+}
+});
+}, options);
+
+// 观察所有卡片
+var cards = container.querySelectorAll('.feynman-step-card');
+cards.forEach(function(card) {
+window._feynmanScrollObserver.observe(card);
+});
+}
+
+function triggerStepAnimation(step, index) {
+if (index >= 4) return; // Skip step 5 (test)
+
+var animContainer = document.getElementById('stepAnim' + index);
+if (!animContainer) return;
+
+animContainer.innerHTML = '<div class="step-animation-loading">正在生成动画...</div>';
+feynmanStepAnimations[index] = { taskId: null, videoUrl: null };
+
+var sceneType = (feynmanData && feynmanData.topic_type) ? feynmanData.topic_type : 'geometry';
+var topic = feynmanData ? feynmanData.topic : document.getElementById('feynmanTopicInput').value.trim();
+
+fetch('/api/animation/generate/async', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ topic: topic, scene_type: sceneType })
+}).then(function(resp) {
+if (!resp.ok) throw new Error('HTTP ' + resp.status);
+return resp.json();
+}).then(function(data) {
+if (data.status === 'ok' || data.task_id) {
+feynmanStepAnimations[index].taskId = data.task_id;
+pollAnimationProgressForStep(data.task_id, index);
+} else {
+animContainer.innerHTML = '<div class="step-animation-error">动画生成失败</div>';
+}
+}).catch(function(e) {
+animContainer.innerHTML = '<div class="step-animation-error">动画生成失败: ' + e.message + '</div>';
+});
+}
+
+function pollAnimationProgressForStep(taskId, stepIndex) {
+var maxPolls = 90;
+var pollCount = 0;
+var animContainer = document.getElementById('stepAnim' + stepIndex);
+
+feynmanPollTimers[stepIndex] = setInterval(function() {
+pollCount++;
+fetch('/api/animation/progress/' + taskId)
+.then(function(resp) { return resp.json(); })
+.then(function(data) {
+if (data.task_status === 'completed' && data.result && data.result.video_path) {
+clearInterval(feynmanPollTimers[stepIndex]);
+var filename = data.result.video_path.split('/').pop().replace(/\\/g, '/').split('/').pop();
+var videoUrl = '/api/animation/video/' + filename;
+feynmanStepAnimations[stepIndex].videoUrl = videoUrl;
+if (animContainer) {
+animContainer.innerHTML = '<video controls src="' + videoUrl + '"></video>';
+}
+} else if (data.task_status === 'failed') {
+clearInterval(feynmanPollTimers[stepIndex]);
+if (animContainer) {
+animContainer.innerHTML = '<div class="step-animation-error">动画生成失败</div>';
+}
+} else if (pollCount >= maxPolls) {
+clearInterval(feynmanPollTimers[stepIndex]);
+if (animContainer) {
+animContainer.innerHTML = '<div class="step-animation-error">动画生成超时</div>';
+}
+}
+}).catch(function() {
+if (pollCount >= maxPolls) {
+clearInterval(feynmanPollTimers[stepIndex]);
+}
+});
+}, 2000);
+}
+
+function updateFeynmanProgress() {
+var total = feynmanData ? feynmanData.steps.length : 5;
+var completed = feynmanCurrentStep + 1;
+var percent = Math.round((completed / total) * 100);
+document.getElementById('feynmanProgressFill').style.width = percent + '%';
+document.getElementById('feynmanProgressText').textContent = completed + ' / ' + total;
+}
+
+function submitFeynmanTest() {
+var explanation = document.getElementById('feynmanTestInput').value.trim();
+if (!explanation) { showToast('请输入你的解释'); return; }
+
+var topic = feynmanData ? feynmanData.topic : document.getElementById('feynmanTopicInput').value.trim();
+var resultDiv = document.getElementById('feynmanTestResult');
+var btn = document.getElementById('btnFeynmanTestSubmit');
+
+btn.disabled = true;
+btn.textContent = '评分中...';
+resultDiv.style.display = 'block';
+resultDiv.innerHTML = '<div class="feynman-loading"><div class="chat-typing"><span></span><span></span><span></span></div><p style="margin-top:8px">正在评分...</p></div>';
+
+fetch('/api/feynman/test', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ concept: topic, explanation: explanation })
+}).then(function(resp) {
+if (!resp.ok) throw new Error('HTTP ' + resp.status);
+return resp.json();
+}).then(function(data) {
+if (data.score !== undefined) {
+var scoreColor = data.score >= 80 ? '#22c55e' : (data.score >= 60 ? '#ea580c' : '#dc2626');
+var dims = data.dimensions || {};
+var dimNames = { simplicity: '简洁度', accuracy: '准确度', analogy: '比喻运用', completeness: '完整度', jargon_free: '术语规避' };
+var dimsHtml = '';
+Object.keys(dimNames).forEach(function(key) {
+var val = dims[key] !== undefined ? dims[key] : 0;
+var barColor = val >= 16 ? '#22c55e' : (val >= 10 ? '#ea580c' : '#dc2626');
+dimsHtml += '<div class="feynman-dimension">' +
+'<div class="feynman-dimension-name">' + dimNames[key] + '</div>' +
+'<div class="feynman-dimension-bar-wrap"><div class="feynman-dimension-bar" style="width:' + (val / 20 * 100) + '%;background:' + barColor + '"></div></div>' +
+'<div class="feynman-dimension-score">' + val + '</div>' +
+'</div>';
+});
+
+resultDiv.innerHTML =
+'<div class="feynman-score-circle" style="border-color:' + scoreColor + ';color:' + scoreColor + '">' + data.score + '</div>' +
+'<div class="feynman-score-label">费曼测试得分</div>' +
+dimsHtml +
+(data.feedback ? '<div class="feynman-feedback-text">' + escapeHtml(data.feedback) + '</div>' : '') +
+(data.is_feynman_worthy !== undefined ? '<div style="margin-top:10px;font-size:13px;text-align:center;color:' + (data.is_feynman_worthy ? '#22c55e' : '#ea580c') + '">' + (data.is_feynman_worthy ? '✓ 达到费曼标准' : '✗ 还需加油，继续改进') + '</div>' : '');
+} else {
+resultDiv.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">评分失败</div>';
+}
+btn.disabled = false;
+btn.textContent = '提交测试';
+}).catch(function(e) {
+resultDiv.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">请求失败: ' + e.message + '</div>';
+btn.disabled = false;
+btn.textContent = '提交测试';
+});
+}
+
+// Auto-fill topic from chapter list when in feynman mode
+document.getElementById('chapterList').addEventListener('click', function(e) {
+var item = e.target.closest('.chapter-item');
+if (item && currentMode === 'feynman') {
+var topicText = item.querySelector('span:last-child').textContent.trim();
+if (topicText) {
+document.getElementById('feynmanTopicInput').value = topicText;
+}
+}
+});
+
+// Enter key in feynmanTopicInput triggers startFeynmanLearning
+document.getElementById('feynmanTopicInput').addEventListener('keydown', function(e) {
+if (e.key === 'Enter') startFeynmanLearning();
+});
+
+// ═══════════════════════════════════════════
+// AUTO-HIDE SLIDE NAV (Task 8.4)
+// ═══════════════════════════════════════════
+var navHideTimer = null;
+function showNavTemporarily() {
+var nav = document.getElementById('slideNavEnhanced');
+if (!nav) return;
+nav.classList.remove('hidden');
+clearTimeout(navHideTimer);
+navHideTimer = setTimeout(function() {
+nav.classList.add('hidden');
+}, 3000);
+}
+// Show nav on mouse move in slide area
+var slideArea = document.getElementById('slideContainer');
+if (slideArea) {
+slideArea.addEventListener('mousemove', showNavTemporarily);
+slideArea.addEventListener('touchstart', showNavTemporarily);
+// Initially visible, then auto-hide
+navHideTimer = setTimeout(function() {
+document.getElementById('slideNavEnhanced').classList.add('hidden');
+}, 5000);
+}
+
+// ═══════════════════════════════════════════
+// MIND MAP (Task 9.2)
+// ═══════════════════════════════════════════
+var mindmapVisible = false;
+var mindmapData = null;
+
+function toggleMindmap() {
+var overlay = document.getElementById('mindmapOverlay');
+var btn = document.getElementById('btnMindmap');
+mindmapVisible = !mindmapVisible;
+
+if (mindmapVisible) {
+overlay.classList.add('show');
+btn.classList.add('active');
+// Load mind map data if not loaded yet
+if (!mindmapData) {
+loadMindmap();
+}
+} else {
+overlay.classList.remove('show');
+btn.classList.remove('active');
+}
+}
+
+function loadMindmap() {
+var content = document.getElementById('mindmapContent');
+content.innerHTML = '<div class="mindmap-loading"><div class="chat-typing"><span></span><span></span><span></span></div><p style="margin-top:8px">正在生成思维导图...</p></div>';
+
+// Get topic from current slide or topic input
+var topic = (slides[currentSlide] && slides[currentSlide].title) || document.getElementById('topicInput').value.trim() || '当前课程';
+var slidesContent = '';
+slides.forEach(function(s) {
+slidesContent += (s.content || '') + ' ' + (s.title || '') + ' ';
+});
+
+// Try API first
+fetch('/api/mindmap/generate', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ topic: topic, slides_content: slidesContent.substring(0, 3000) })
+}).then(function(resp) {
+if (!resp.ok) throw new Error('HTTP ' + resp.status);
+return resp.json();
+}).then(function(data) {
+if (data.nodes && data.edges) {
+mindmapData = data;
+renderMindmap(data);
+} else {
+showMindmapError('思维导图数据格式错误');
+}
+}).catch(function(e) {
+console.warn('Mind map API failed, using template:', e.message);
+// Generate template mind map from blocks
+mindmapData = generateTemplateMindmap(topic);
+renderMindmap(mindmapData);
+});
+}
+
+function generateTemplateMindmap(topic) {
+var nodes = [{ id: 'root', label: topic }];
+var edges = [];
+var firstLevel = ['基本概念', '核心原理', '公式推导', '实际应用', '学习要点'];
+var nid = 1;
+firstLevel.forEach(function(label) {
+var parentId = 'n' + nid;
+nodes.push({ id: parentId, label: label });
+edges.push({ from: 'root', to: parentId });
+nid++;
+// Add 2 children per node
+for (var c = 0; c < 2; c++) {
+var childId = 'n' + nid;
+var childLabels = {
+'基本概念': ['定义', '背景'],
+'核心原理': ['推导逻辑', '关键公式'],
+'公式推导': ['符号说明', '计算示例'],
+'实际应用': ['生活案例', '工程场景'],
+'学习要点': ['易错点', '记忆技巧']
+};
+var childLabel = (childLabels[label] || ['要点一', '要点二'])[c];
+nodes.push({ id: childId, label: childLabel });
+edges.push({ from: parentId, to: childId });
+nid++;
+}
+});
+return { nodes: nodes, edges: edges };
+}
+
+function renderMindmap(data) {
+var content = document.getElementById('mindmapContent');
+content.innerHTML = '';
+
+// Build node map
+var nodeMap = {};
+data.nodes.forEach(function(n) {
+nodeMap[n.id] = n;
+});
+
+// Build children map
+var childrenMap = {};
+data.edges.forEach(function(e) {
+if (!childrenMap[e.from]) childrenMap[e.from] = [];
+childrenMap[e.from].push(e.to);
+});
+
+// Create tree
+var tree = document.createElement('div');
+tree.className = 'mindmap-tree';
+tree.appendChild(createMindmapNode('root', nodeMap, childrenMap, 0));
+content.appendChild(tree);
+}
+
+function createMindmapNode(nodeId, nodeMap, childrenMap, depth) {
+var node = nodeMap[nodeId];
+if (!node) return document.createElement('div');
+
+var wrapper = document.createElement('div');
+wrapper.className = 'mindmap-branch';
+
+var nodeEl = document.createElement('div');
+nodeEl.className = 'mindmap-node';
+if (depth === 0) nodeEl.classList.add('root');
+else if (depth === 1) nodeEl.classList.add('level-1');
+else nodeEl.classList.add('level-2');
+nodeEl.textContent = node.label;
+
+var children = childrenMap[nodeId] || [];
+if (children.length > 0) {
+nodeEl.onclick = function(e) {
+e.stopPropagation();
+var childContainer = wrapper.querySelector('.mindmap-child-container');
+if (childContainer) {
+childContainer.classList.toggle('collapsed');
+}
+};
+}
+
+wrapper.appendChild(nodeEl);
+
+if (children.length > 0) {
+var connector = document.createElement('div');
+connector.className = 'mindmap-connector';
+wrapper.appendChild(connector);
+
+var childContainer = document.createElement('div');
+childContainer.className = 'mindmap-child-container';
+
+var childrenRow = document.createElement('div');
+childrenRow.className = 'mindmap-children';
+
+children.forEach(function(childId) {
+childrenRow.appendChild(createMindmapNode(childId, nodeMap, childrenMap, depth + 1));
+});
+
+childContainer.appendChild(childrenRow);
+wrapper.appendChild(childContainer);
+}
+
+return wrapper;
+}
+
+function showMindmapError(msg) {
+var content = document.getElementById('mindmapContent');
+content.innerHTML = '<div class="mindmap-loading" style="color:var(--accent-red)">' + escapeHtml(msg) + '</div>';
+}
+
+// ═══════════════════════════════════════════
+// SIMULATION SANDBOX (Task 10.2)
+// ═══════════════════════════════════════════
+
+// Base64 encode helper (for embedding in data attributes)
+function base64Encode(str) {
+try {
+return btoa(unescape(encodeURIComponent(str)));
+} catch (e) {
+// Fallback: just encodeURIComponent
+return encodeURIComponent(str);
+}
+}
+
+function base64Decode(str) {
+try {
+return decodeURIComponent(escape(atob(str)));
+} catch (e) {
+try {
+return decodeURIComponent(str);
+} catch (e2) {
+return str;
+}
+}
+}
+
+function runSimulation(iframeId) {
+var iframe = document.getElementById(iframeId);
+if (!iframe) return;
+
+var html = base64Decode(iframe.getAttribute('data-html') || '');
+var css = base64Decode(iframe.getAttribute('data-css') || '');
+var js = base64Decode(iframe.getAttribute('data-js') || '');
+
+var fullHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' + css + '</style></head><body>' +
+html + '<script>' + js + '<\/script></body></html>';
+
+iframe.srcdoc = fullHTML;
+}
+
+function fullscreenSimulation(iframeId) {
+var iframe = document.getElementById(iframeId);
+if (!iframe) return;
+
+var block = iframe.closest('.block-simulation');
+if (!block) return;
+
+if (block.classList.contains('simulation-fullscreen')) {
+block.classList.remove('simulation-fullscreen');
+document.body.style.overflow = '';
+} else {
+// Ensure simulation is running
+if (!iframe.srcdoc) runSimulation(iframeId);
+block.classList.add('simulation-fullscreen');
+document.body.style.overflow = 'hidden';
+}
+}
+
+function startSimResize(event, iframeId) {
+event.preventDefault();
+var iframe = document.getElementById(iframeId);
+if (!iframe) return;
+
+var startY = event.clientY;
+var startHeight = iframe.offsetHeight;
+
+function onMouseMove(e) {
+var delta = e.clientY - startY;
+var newHeight = Math.max(150, startHeight + delta);
+iframe.style.minHeight = newHeight + 'px';
+iframe.style.height = newHeight + 'px';
+}
+
+function onMouseUp() {
+document.removeEventListener('mousemove', onMouseMove);
+document.removeEventListener('mouseup', onMouseUp);
+}
+
+document.addEventListener('mousemove', onMouseMove);
+document.addEventListener('mouseup', onMouseUp);
+}
+
+// Auto-run simulations on slide load
+var origRenderSlide = renderSlide;
+renderSlide = function(index, direction) {
+origRenderSlide(index, direction);
+// Auto-run simulations after a short delay
+setTimeout(function() {
+var simIframes = document.querySelectorAll('.simulation-iframe');
+simIframes.forEach(function(iframe) {
+if (!iframe.srcdoc) runSimulation(iframe.id);
+});
+}, 600);
+};
+
+// ═══════════════════════════════════════════
+// CODE BLOCK UTILITIES
+// ═══════════════════════════════════════════
+function copyCodeBlock(btn) {
+var codeEl = btn.parentElement.querySelector('code');
+if (!codeEl) return;
+var text = codeEl.textContent;
+
+if (navigator.clipboard && navigator.clipboard.writeText) {
+navigator.clipboard.writeText(text).then(function() {
+btn.textContent = '已复制!';
+setTimeout(function() { btn.textContent = '复制'; }, 2000);
+}).catch(function() {
+fallbackCopy(text, btn);
+});
+} else {
+fallbackCopy(text, btn);
+}
+}
+
+function fallbackCopy(text, btn) {
+var textarea = document.createElement('textarea');
+textarea.value = text;
+textarea.style.position = 'fixed';
+textarea.style.opacity = '0';
+document.body.appendChild(textarea);
+textarea.select();
+try {
+document.execCommand('copy');
+btn.textContent = '已复制!';
+} catch (e) {
+btn.textContent = '复制失败';
+}
+document.body.removeChild(textarea);
+setTimeout(function() { btn.textContent = '复制'; }, 2000);
+}
+
+// ═══════════════════════════════════════════
+// BLOCK ANIMATION PLAYER
+// ═══════════════════════════════════════════
+function toggleBlockAnimation(el) {
+var video = el.querySelector('video');
+var videoUrl = el.getAttribute('data-video');
+if (!video || !videoUrl) return;
+
+// 权限检查：预生成视频对所有用户开放，只有需要动态生成的才受限制
+// 这里的 data-video 指向已生成的视频文件，所以不需要权限检查
+
+if (el.classList.contains('playing')) {
+video.pause();
+el.classList.remove('playing');
+} else {
+// Lazy load video source
+if (!video.src || video.src === window.location.href) {
+video.src = videoUrl;
+}
+video.play().catch(function() {});
+el.classList.add('playing');
+}
+}
+
+</script>
+
+</body>
+</html>

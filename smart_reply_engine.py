@@ -4,10 +4,12 @@ LumiLearn 智能混合回复引擎
 - 教育知识库精确匹配
 - 规则引擎兜底
 - 乱码检测自动切换
+- 费曼教学模式：不直接给答案，引导式教学
 """
 
 import re
 import random
+import json
 import requests
 from typing import Optional, Tuple
 
@@ -416,43 +418,58 @@ def get_intelligent_reply(question: str) -> str:
 # LumiLearn 模型调用（尝试 + 乱码检测）
 # ============================================================
 
+# 注意：192.168.2.xx:18080 是 Flask 前端，不提供 /api/generate。
+# 实际的本地 LLM 推理由 Ollama 提供（http://192.168.2.xx:11434）。
+# 这里保留 18080 作为默认 API_BASE，以便兼容 chat_service.py 中的流式 /api/chat 路由；
+# 真正直接调用 Ollama 的场景（如 generate_slides）请显式传入 ollama_base。
 DEFAULT_API_BASE = "http://192.168.2.xx:18080"
+DEFAULT_OLLAMA_BASE = "http://192.168.2.xx:11434"
 
-def try_lumilearn(prompt: str, question: str = "", api_base: str = DEFAULT_API_BASE, timeout: int = 15) -> Tuple[Optional[str], bool]:
-    """尝试调用 LumiLearn 模型，返回 (文本, 是否可用)"""
+
+def try_lumilearn(prompt: str, question: str = "", api_base: str = DEFAULT_OLLAMA_BASE, timeout: int = 15) -> Tuple[Optional[str], bool]:
+    """尝试调用 Ollama 本地模型，返回 (文本, 是否可用)
+
+    默认调用 Ollama /api/chat 接口；兼容：
+      - Ollama 直接返回：{"message": {"content": "..."}}
+      - 或 /api/generate 返回：{"response": "..."}
+    """
     try:
+        # 优先用 /api/chat 接口（更通用，支持 system prompt）
         resp = requests.post(
-            f"{api_base}/api/generate",
+            f"{api_base}/api/chat",
             json={
-                "model": "lumilearn-v5",
-                "prompt": prompt,
+                "model": "qwen2.5:7b",
+                "messages": [{"role": "user", "content": prompt}],
                 "stream": False,
-                "options": {"num_predict": 60, "temperature": 0.8}
+                "options": {"num_predict": 200, "temperature": 0.8}
             },
             timeout=timeout
         )
 
+        text = ""
         if resp.status_code == 200:
             data = resp.json()
-            text = data.get("response", "").strip()
+            if isinstance(data, dict):
+                msg = data.get("message")
+                if isinstance(msg, dict):
+                    text = msg.get("content", "").strip()
+                if not text:
+                    text = data.get("response", "").strip()
 
-            if not text:
-                return None, False
+        if not text:
+            return None, False
 
-            if is_gibberish(text):
-                return None, False
+        if is_gibberish(text):
+            return None, False
 
-            # 清理输出
-            cleaned = clean_output(text)
-            if len(cleaned) < 3:
-                return None, False
+        cleaned = clean_output(text)
+        if len(cleaned) < 3:
+            return None, False
 
-            if question and not is_semantically_valid(cleaned, question):
-                return None, False
+        if question and not is_semantically_valid(cleaned, question):
+            return None, False
 
-            return cleaned, True
-
-        return None, False
+        return cleaned, True
 
     except Exception:
         return None, False
@@ -514,34 +531,79 @@ def is_semantically_valid(text: str, question: str) -> bool:
 class LiveTutor:
     """直播讲解专用引擎
 
-    两种模式：
-    - direct: 直接给出答案/解释（你的直播讲解模式）
-    - guided: "不给答案"引导模式（Koji 风格，让用户自己思考）
+    四种模式：
+    - direct:  直接给出答案/解释（你的直播讲解模式）
+    - guided:  "不给答案"引导模式（Koji 风格，让用户自己思考）
+    - react:   OpenManus 风格 ReAct 推理模式（Think→Act→Observe 循环）
+    - feynman: 费曼教学法模式（现象→冲突→模型→推导→测试五步引导）
     """
 
     def __init__(self, api_base: str = DEFAULT_API_BASE, mode: str = "direct"):
         self.api_base = api_base
         self.conversation_history = []
         self.max_history = 10
-        self.mode = mode  # "direct" or "guided"
+        self.mode = mode  # "direct" / "guided" / "react" / "feynman"
+        self._manus_agent = None
+        self._last_thinking_trace = []
+        self._feynman_engine = None
+        self._feynman_topic = ""  # 当前费曼教学的话题
 
     def set_mode(self, mode: str):
-        """设置回复模式：direct 直接给答案 / guided 引导式提问"""
-        assert mode in ("direct", "guided"), f"mode must be 'direct' or 'guided', got {mode}"
+        """设置回复模式：direct 直接给答案 / guided 引导式提问 / react ReAct推理 / feynman 费曼教学"""
+        assert mode in ("direct", "guided", "react", "feynman"), \
+            f"mode must be 'direct', 'guided', 'react', or 'feynman', got {mode}"
         self.mode = mode
+        # 切换到费曼模式时初始化引擎
+        if mode == "feynman" and self._feynman_engine is None:
+            self._init_feynman()
+
+    def _init_feynman(self):
+        """延迟初始化费曼引擎"""
+        try:
+            from framework.engines.feynman_engine import FeynmanEngine
+            self._feynman_engine = FeynmanEngine(model_name="qwen2.5:7b")
+        except ImportError:
+            self._feynman_engine = None
 
     def toggle_mode(self) -> str:
         """切换模式，返回切换后的说明"""
-        if self.mode == "direct":
-            self.mode = "guided"
-            return "🔄 已切换到「引导式思考」模式：我不直接给答案，帮你一步步思考 ✅"
-        else:
-            self.mode = "direct"
-            return "🔄 已切换到「直接解答」模式：我直接告诉你答案和方法 ✅"
+        modes = ["direct", "guided", "react", "feynman"]
+        current_idx = modes.index(self.mode) if self.mode in modes else 0
+        next_idx = (current_idx + 1) % len(modes)
+        self.mode = modes[next_idx]
+
+        if self.mode == "feynman" and self._feynman_engine is None:
+            self._init_feynman()
+
+        descriptions = {
+            "direct": "🔄 已切换到「直接解答」模式：我直接告诉你答案和方法 ✅",
+            "guided": "🔄 已切换到「引导式思考」模式：我不直接给答案，帮你一步步思考 ✅",
+            "react": "🔄 已切换到「ReAct推理」模式：AI会先思考分析，再选择工具，最后给出答案 🧠",
+            "feynman": "🔄 已切换到「费曼教学」模式：用费曼学习法五步引导，让你真正理解每一个概念 💡🎓",
+        }
+        return descriptions.get(self.mode, f"模式已切换为: {self.mode}")
+
+    def _get_manus_agent(self):
+        """延迟初始化 ManusAgent"""
+        if self._manus_agent is None:
+            from openmanus.manus_agent import ManusAgent
+            ollama_base = self.api_base.replace(":18080", ":11434")
+            self._manus_agent = ManusAgent(
+                api_base=self.api_base,
+                ollama_base=ollama_base,
+                mode="auto"
+            )
+        return self._manus_agent
+
+    def get_thinking_trace(self) -> list:
+        """获取最后一次 ReAct 推理的思考链路"""
+        return self._last_thinking_trace
 
     def respond(self, question: str, user_name: str = "", correct_answer: str = "") -> str:
         """主回复入口
         guided 模式：如果是学习问题，先引导思考而不是直接给答案
+        react 模式：使用 OpenManus 风格 ReAct 循环推理
+        feynman 模式：费曼教学法五步引导式教学
         """
         if not question.strip():
             return "有什么问题随时问我哦～"
@@ -559,17 +621,25 @@ class LiveTutor:
         elif qtype == "thanks":
             return random.choice(THANKS_REPLIES)
 
-        # 2. 引导模式：如果是学习问题，先不给答案
+        # 2. ReAct 模式：使用 OpenManus 风格多步推理
+        if self.mode == "react":
+            return self._respond_react(question, qtype)
+
+        # 3. 引导模式：如果是学习问题，先不给答案
         if self.mode == "guided" and qtype != "general":
             return get_guided_question(question, qtype)
 
-        # 3. 尝试知识库
+        # 4. 费曼模式：使用费曼教学引擎引导
+        if self.mode == "feynman":
+            return self._respond_feynman(question, qtype)
+
+        # 5. 尝试知识库
         kb = search_knowledge_base(question)
         if kb:
             self.conversation_history.append(f"小澍(知识库): {kb[:30]}")
             return kb
 
-        # 4. 尝试 LumiLearn 模型
+        # 6. 尝试 LumiLearn 模型
         system_prompt = ("你是「小澍」，专业亲切的中文AI学习规划师。"
                          "回答简洁有趣，适合中小学生。用比喻和例子解释概念。"
                          "回答在50字以内。")
@@ -580,8 +650,159 @@ class LiveTutor:
             self.conversation_history.append(f"小澍(模型): {llm_text[:30]}")
             return f"AI小澍：{llm_text}"
 
-        # 5. 知识库兜底
+        # 7. 知识库兜底
         return get_intelligent_reply(question)
+
+    def _respond_react(self, question: str, qtype: str) -> str:
+        """ReAct 模式：使用 ManusAgent 多步推理"""
+        agent = self._get_manus_agent()
+
+        if qtype in ("math", "science", "english", "chinese"):
+            result = agent.run(question)
+        else:
+            result = agent.run(question)
+
+        self._last_thinking_trace = agent.get_thinking_trace()
+        final_answer = result.get("final_answer", "")
+
+        if final_answer:
+            self.conversation_history.append(f"小澍(ReAct): {final_answer[:30]}")
+            return f"🧠 {final_answer}"
+
+        return get_intelligent_reply(question)
+
+    def _respond_feynman(self, question: str, qtype: str) -> str:
+        """费曼教学模式：利用 FeynmanEngine 进行引导式教学"""
+        # 如果费曼引擎不可用，降级到引导模式
+        if self._feynman_engine is None:
+            self._init_feynman()
+        if self._feynman_engine is None:
+            # 降级为普通引导模式
+            if qtype != "general":
+                return get_guided_question(question, qtype)
+            return "🤔 费曼引擎正在准备中...先让我想想怎么引导你。"
+
+        # 将学生问题作为费曼教学的话题
+        self._feynman_topic = question[:50]  # 截取前50字作为话题
+
+        # 根据问题类型差异化处理
+        if qtype in ("greeting", "thanks"):
+            if qtype == "greeting":
+                return random.choice(GREETING_REPLIES)
+            return random.choice(THANKS_REPLIES)
+
+        # 学习方法类问题给直接建议
+        if qtype == "study_method":
+            return self._feynman_engine.ask_guiding_question(
+                "学习方法", question
+            )
+
+        # 学科问题使用费曼引导
+        if qtype in ("math", "science", "english", "chinese"):
+            # 提取核心话题
+            topic = self._extract_feynman_topic(question, qtype)
+            self._feynman_topic = topic
+            return f"🎓 费曼课堂：让我们真正理解「{topic}」\n\n" + \
+                   self._feynman_engine.ask_guiding_question(topic, question)
+
+        # 通用问题
+        return self._feynman_engine.ask_guiding_question("这个问题", question)
+
+    def _extract_feynman_topic(self, question: str, qtype: str) -> str:
+        """从问题中提取费曼教学的核心话题"""
+        # 移除常见问句结构
+        topic = re.sub(r'^(什么是|什么叫做|如何|怎么|怎样|为什么|帮我|请|请问|告诉我|讲解|解释)', '', question)
+        topic = re.sub(r'[？?！!。.]$', '', topic)
+        topic = topic.strip()
+        if len(topic) > 15:
+            # 如果太长，尝试提取核心概念
+            for kw in ["公式", "定理", "定律", "方法", "概念", "原理", "运算", "语法", "时态"]:
+                if kw in topic:
+                    idx = topic.index(kw)
+                    start = max(0, idx - 5)
+                    end = min(len(topic), idx + 8)
+                    topic = topic[start:end]
+                    break
+        return topic if topic else question[:15]
+
+    def feynman_explain(self, topic: str, level: str = "junior") -> str:
+        """
+        费曼教学完整讲解 - 五步教学法
+        
+        参数：
+            topic: 教学主题
+            level: 学生水平 (junior/senior/college)
+        
+        返回：
+            格式化后的五步讲解内容
+        """
+        if self._feynman_engine is None:
+            self._init_feynman()
+        if self._feynman_engine is None:
+            return f"抱歉，费曼引擎暂时不可用。关于「{topic}」的讲解..."
+
+        self._feynman_topic = topic
+        result = self._feynman_engine.explain(topic, level)
+        return result.get("full_content", f"费曼讲解「{topic}」准备中...")
+
+    def feynman_test(self, concept: str, 
+                      student_explanation: str) -> dict:
+        """
+        费曼30秒测试评分
+        
+        参数：
+            concept: 概念名
+            student_explanation: 学生解释
+        
+        返回：
+            评分结果Dict
+        """
+        if self._feynman_engine is None:
+            self._init_feynman()
+        if self._feynman_engine is None:
+            return {"score": 0, "feedback": "费曼引擎不可用", "is_feynman_worthy": False}
+        return self._feynman_engine.thirty_second_test(concept, student_explanation)
+
+    def feynman_correct(self, concept: str, 
+                         wrong_explanation: str) -> str:
+        """
+        费曼式纠错引导
+        
+        参数：
+            concept: 概念名
+            wrong_explanation: 学生的错误解释
+        
+        返回：
+            引导式纠正文本
+        """
+        if self._feynman_engine is None:
+            self._init_feynman()
+        if self._feynman_engine is None:
+            return f"关于{concept}，让我们重新想一想..."
+        return self._feynman_engine.suggest_correction(concept, wrong_explanation)
+
+    def feynman_next_step(self) -> str:
+        """
+        费曼教学下一步引导
+        在上一段讲解后，继续引导下一步
+        """
+        if self._feynman_engine is None or not self._feynman_topic:
+            return "我们先确定要学什么话题吧！你最近对什么知识点感兴趣？"
+
+        # 根据历史步数决定下一步
+        topic = self._feynman_topic
+        history_count = sum(1 for h in self.conversation_history if "费曼" in h)
+
+        steps = [
+            f"让我们用一个生活中的例子来理解「{topic}」。你见过...",
+            f"现在有个问题想问：你觉得为什么「{topic}」会是这样的？",
+            f"我来给你一个简单的模型来理解「{topic}」。把它想象成...",
+            f"根据刚才的模型，你能推出了吗？试试看...",
+            f"好了，现在给你30秒，用最简单的话讲清楚什么是「{topic}」。开始！",
+        ]
+
+        idx = history_count % len(steps)
+        return steps[idx]
 
     def check_answer(self, user_answer: str, correct_answer: str,
                      question: str = "", topic: str = "") -> dict:
@@ -616,6 +837,339 @@ class LiveTutor:
         return f"关于{topic}，让我来讲解！可以告诉我你不太明白的具体部分，我针对性地解答～"
 
 
+# ============================================================
+# 幻灯片生成
+# ============================================================
+
+def _build_slide_prompt(topic: str, slide_count: int, style: str) -> str:
+    """构建幻灯片生成的提示词"""
+    style_descriptions = {
+        "detailed": "详细讲解，每张幻灯片包含丰富的解释和例子",
+        "concise": "简洁明了，每张幻灯片只包含核心要点",
+        "outline": "大纲式，每张幻灯片列出关键知识点",
+    }
+    style_desc = style_descriptions.get(style, style_descriptions["detailed"])
+
+    prompt = f"""你是一位专业的AI教育内容创作助手。请为主题「{topic}」生成 {slide_count} 张教学幻灯片。
+
+幻灯片风格要求：{style_desc}
+
+每张幻灯片必须包含以下字段：
+- title: 幻灯片标题（简洁有吸引力）
+- subtitle: 副标题（补充说明）
+- content: HTML格式的正文内容，使用 <p>、<h3>、<ul>、<li> 等标签组织
+- katex: 数学公式（KaTeX格式，如 a^2 + b^2 = c^2，没有公式则留空字符串 ""）
+
+输出要求：
+- 严格输出JSON数组格式，不要包含任何其他文字或代码块标记
+- 按照教学逻辑从浅入深排列幻灯片
+
+输出格式示例：
+[{{"title": "勾股定理简介", "subtitle": "直角三角形的基本性质", "content": "<p>勾股定理是几何学中最重要的定理之一...</p>", "katex": "a^2 + b^2 = c^2"}}]
+
+请直接输出JSON数组："""
+    return prompt
+
+
+def _parse_slides_json(text: str) -> list:
+    """从LLM输出中解析幻灯片JSON数组"""
+    text = text.strip()
+
+    # 尝试直接解析
+    try:
+        result = json.loads(text)
+        if isinstance(result, list):
+            return result
+    except json.JSONDecodeError:
+        pass
+
+    # 尝试提取 JSON 数组（处理可能包裹在代码块或其他文本中的情况）
+    array_match = re.search(r'\[[\s\S]*\]', text)
+    if array_match:
+        try:
+            result = json.loads(array_match.group(0))
+            if isinstance(result, list):
+                return result
+        except json.JSONDecodeError:
+            pass
+
+    # 尝试按行解析（每行一个JSON对象）
+    lines = text.strip().split('\n')
+    slides = []
+    for line in lines:
+        line = line.strip().rstrip(',')
+        if line.startswith('{') and line.endswith('}'):
+            try:
+                slide = json.loads(line)
+                if isinstance(slide, dict):
+                    slides.append(slide)
+            except json.JSONDecodeError:
+                continue
+
+    return slides if slides else []
+
+
+def _normalize_slide(slide: dict) -> dict:
+    """标准化幻灯片数据结构"""
+    return {
+        "title": str(slide.get("title", "")).strip(),
+        "subtitle": str(slide.get("subtitle", "")).strip(),
+        "content": str(slide.get("content", "")).strip(),
+        "katex": str(slide.get("katex", "")).strip(),
+    }
+
+
+def _generate_template_slides(topic: str, slide_count: int, style: str) -> list:
+    """基于模板生成幻灯片（LLM不可用时的回退方案）"""
+    slides = []
+
+    # 幻灯片模板
+    template_structures = [
+        {
+            "title_suffix": "概述",
+            "subtitle": f"什么是{topic}？",
+            "content": f"<h3>欢迎学习</h3><p>本课程将带你深入了解「{topic}」的核心概念与应用。让我们一起开始这段学习之旅！</p>",
+        },
+        {
+            "title_suffix": "背景与由来",
+            "subtitle": f"{topic}的历史与发展",
+            "content": f"<h3>知识背景</h3><p>了解「{topic}」的起源和发展历程，有助于我们更好地理解它的意义和价值。</p>",
+        },
+        {
+            "title_suffix": "核心概念",
+            "subtitle": f"理解{topic}的关键要素",
+            "content": f"<h3>核心要点</h3><ul><li>关键概念的定义与解释</li><li>核心要素的拆解分析</li><li>与其他知识的关联</li></ul>",
+        },
+        {
+            "title_suffix": "公式与推导",
+            "subtitle": f"{topic}的数学表达",
+            "content": f"<h3>公式推导</h3><p>让我们一步步推导「{topic}」的数学表达，理解每个符号的含义。</p>",
+        },
+        {
+            "title_suffix": "应用举例",
+            "subtitle": f"{topic}在实际中的应用",
+            "content": f"<h3>实际应用</h3><p>通过实际例子来理解「{topic}」如何解决真实世界的问题。</p>",
+        },
+        {
+            "title_suffix": "常见误区",
+            "subtitle": f"学习{topic}时的注意事项",
+            "content": f"<h3>避坑指南</h3><ul><li>容易混淆的概念辨析</li><li>常见错误及纠正</li><li>记忆技巧分享</li></ul>",
+        },
+        {
+            "title_suffix": "进阶拓展",
+            "subtitle": f"{topic}的深入探索",
+            "content": f"<h3>进阶思考</h3><p>掌握了基础知识后，来看看「{topic}」在更高级场景中的应用和延伸。</p>",
+        },
+        {
+            "title_suffix": "总结回顾",
+            "subtitle": f"{topic}知识要点总结",
+            "content": f"<h3>课程总结</h3><p>回顾本课程的核心知识点，巩固所学内容。你已经掌握了「{topic}」的要点！</p>",
+        },
+    ]
+
+    # 根据 slide_count 均匀采样模板
+    total_templates = len(template_structures)
+    if slide_count <= total_templates:
+        step = total_templates / slide_count
+        indices = [int(i * step) for i in range(slide_count)]
+    else:
+        indices = list(range(total_templates))
+        # 如果 slide_count 超过模板数，循环补充
+        extra = slide_count - total_templates
+        for i in range(extra):
+            indices.append(i % total_templates)
+
+    for idx in indices[:slide_count]:
+        template = template_structures[idx]
+        slide = {
+            "title": f"{topic} - {template['title_suffix']}",
+            "subtitle": template["subtitle"],
+            "content": template["content"],
+            "katex": "",
+        }
+        slides.append(slide)
+
+    return slides
+
+
+def generate_slides(topic: str, slide_count: int = 5, style: str = "detailed") -> list:
+    """
+    生成教学幻灯片内容
+
+    参数：
+        topic: 教学主题
+        slide_count: 幻灯片数量（1-20）
+        style: 风格（detailed/concise/outline）
+
+    返回：
+        幻灯片列表，每张包含 title, subtitle, content, katex
+    """
+    import os as _os
+
+    # 优先从环境变量读取 Ollama 地址，否则使用共享默认值
+    ollama_base = _os.environ.get("OLLAMA_BASE_URL", "http://192.168.2.xx:11434")
+    model_name = _os.environ.get("LUMILEARN_SLIDE_MODEL", "qwen2.5:7b")
+
+    # 1. 尝试调用 Ollama 本地模型生成（使用 /api/chat 接口，更通用）
+    try:
+        user_prompt = _build_slide_prompt(topic, slide_count, style)
+
+        resp = requests.post(
+            f"{ollama_base}/api/chat",
+            json={
+                "model": model_name,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "你是一名专业的教育内容创作助手，擅长为各类主题生成结构化的教学幻灯片。"
+                                   "严格按 JSON 数组格式输出，不要包含任何其他文字。"
+                    },
+                    {"role": "user", "content": user_prompt}
+                ],
+                "stream": False,
+                "options": {"num_predict": 4096, "temperature": 0.7}
+            },
+            timeout=120
+        )
+
+        if resp.status_code == 200:
+            data = resp.json()
+            text = ""
+            # 兼容多种可能的响应格式
+            if isinstance(data, dict):
+                if "message" in data and isinstance(data["message"], dict):
+                    text = data["message"].get("content", "").strip()
+                elif "response" in data:
+                    text = data.get("response", "").strip()
+                elif "choices" in data and isinstance(data["choices"], list):
+                    first = data["choices"][0]
+                    if isinstance(first, dict) and "message" in first:
+                        text = first["message"].get("content", "").strip()
+
+            if text and not is_gibberish(text):
+                raw_slides = _parse_slides_json(text)
+                if raw_slides and len(raw_slides) > 0:
+                    slides = [_normalize_slide(s) for s in raw_slides[:slide_count]]
+                    if any(s["title"] or s["content"] for s in slides):
+                        return slides
+    except Exception as exc:
+        logger_msg = f"[slides] ollama call failed: {exc}"
+        # 简单打印，不引入新依赖
+        try:
+            import logging
+            logging.getLogger("lumilearn.slides").warning(logger_msg)
+        except Exception:
+            pass
+
+    # 2. 回退：模板生成（比空白好）
+    return _generate_template_slides(topic, slide_count, style)
+
+
+# ============================================================
+# 交互式模拟代码生成
+# ============================================================
+
+SIMULATION_TEMPLATES = {
+    "default": {
+        "html": '<h2 style="text-align:center;color:#333;margin-top:40px;">交互式模拟</h2><p style="text-align:center;color:#666;">点击画布区域开始交互</p>',
+        "css": 'body{margin:0;font-family:sans-serif;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:100vh;cursor:pointer;}',
+        "js": 'document.body.addEventListener("click",function(){var c=document.createElement("div");c.style.cssText="position:absolute;width:20px;height:20px;border-radius:50%;background:hsl("+Math.random()*360+",70%,60%);animation:pop 0.6s ease-out forwards;";c.style.left=event.clientX-10+"px";c.style.top=event.clientY-10+"px";document.body.appendChild(c);setTimeout(function(){c.remove();},600);});var s=document.createElement("style");s.textContent="@keyframes pop{to{transform:scale(3);opacity:0;}}";document.head.appendChild(s);',
+    },
+    "geometry": {
+        "html": '<canvas id="canvas" width="400" height="400"></canvas><div id="info" style="text-align:center;margin-top:10px;color:#555;">拖动三角形顶点查看变化</div>',
+        "css": 'body{margin:20px;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;background:#f9f9f9;}#canvas{border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;}',
+        "js": 'var c=document.getElementById("canvas"),ctx=c.getContext("2d");var A={x:200,y:300},B={x:100,y:100},C={x:300,y:100};var drag=null;function draw(){ctx.clearRect(0,0,400,400);ctx.beginPath();ctx.moveTo(A.x,A.y);ctx.lineTo(B.x,B.y);ctx.lineTo(C.x,C.y);ctx.closePath();ctx.fillStyle="rgba(59,130,246,0.2)";ctx.fill();ctx.strokeStyle="#3b82f6";ctx.lineWidth=2;ctx.stroke();[A,B,C].forEach(function(p){ctx.beginPath();ctx.arc(p.x,p.y,8,0,Math.PI*2);ctx.fillStyle="#3b82f6";ctx.fill();ctx.strokeStyle="#fff";ctx.lineWidth=2;ctx.stroke();});var ab=Math.sqrt(Math.pow(B.x-A.x,2)+Math.pow(B.y-A.y,2));var bc=Math.sqrt(Math.pow(C.x-B.x,2)+Math.pow(C.y-B.y,2));var ca=Math.sqrt(Math.pow(A.x-C.x,2)+Math.pow(A.y-C.y,2));ctx.fillStyle="#333";ctx.font="13px monospace";ctx.fillText("AB: "+ab.toFixed(0),10,20);ctx.fillText("BC: "+bc.toFixed(0),10,38);ctx.fillText("CA: "+ca.toFixed(0),10,56);}c.addEventListener("mousedown",function(e){var r=c.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;[A,B,C].forEach(function(p){if(Math.hypot(mx-p.x,my-p.y)<12)drag=p;});});c.addEventListener("mousemove",function(e){if(drag){var r=c.getBoundingClientRect();drag.x=e.clientX-r.left;drag.y=e.clientY-r.top;draw();}});c.addEventListener("mouseup",function(){drag=null;});draw();',
+    },
+    "physics": {
+        "html": '<canvas id="canvas" width="500" height="400"></canvas><div style="text-align:center;margin-top:8px;color:#555;">小球自由落体模拟 | 点击添加新球</div>',
+        "css": 'body{margin:20px;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;background:#f9f9f9;}#canvas{border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;}',
+        "js": 'var c=document.getElementById("canvas"),ctx=c.getContext("2d");var balls=[],gravity=0.5,bounce=0.7;function addBall(x,y){balls.push({x:x,y:y,vx:(Math.random()-0.5)*4,vy:0,r:8+Math.random()*12,color:"hsl("+Math.random()*360+",70%,55%)"});}c.addEventListener("click",function(e){var r=c.getBoundingClientRect();addBall(e.clientX-r.left,e.clientY-r.top);});function update(){balls.forEach(function(b){b.vy+=gravity;b.x+=b.vx;b.y+=b.vy;if(b.y+b.r>400){b.y=400-b.r;b.vy*=-bounce;}if(b.x-b.r<0){b.x=b.r;b.vx*=-bounce;}if(b.x+b.r>500){b.x=500-b.r;b.vx*=-bounce;}});}function draw(){ctx.clearRect(0,0,500,400);ctx.fillStyle="#f0f0f0";ctx.fillRect(0,380,500,20);balls.forEach(function(b){ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle=b.color;ctx.fill();ctx.strokeStyle="rgba(0,0,0,0.2)";ctx.stroke();});}function loop(){update();draw();requestAnimationFrame(loop);}addBall(100,50);addBall(250,30);addBall(400,20);loop();',
+    },
+    "math": {
+        "html": '<canvas id="canvas" width="450" height="450"></canvas><div style="text-align:center;margin-top:8px;color:#555;">函数图像绘制 | y = sin(x) · cos(x/2)</div>',
+        "css": 'body{margin:20px;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;background:#f9f9f9;}#canvas{border:1px solid #ddd;border-radius:8px;background:#fff;}',
+        "js": 'var c=document.getElementById("canvas"),ctx=c.getContext("2d"),W=450,H=450;ctx.beginPath();ctx.strokeStyle="#ddd";ctx.lineWidth=1;for(var i=0;i<=10;i++){var x=i*W/10;ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.moveTo(0,i*H/10);ctx.lineTo(W,i*H/10);}ctx.stroke();ctx.beginPath();ctx.strokeStyle="#3b82f6";ctx.lineWidth=2;for(var t=0;t<=W;t+=0.5){var angle=(t/W)*Math.PI*4-Math.PI*2;var y=H/2-Math.sin(angle)*Math.cos(angle/2)*(H/3);t===0?ctx.moveTo(t,y):ctx.lineTo(t,y);}ctx.stroke();ctx.fillStyle="#333";ctx.font="12px monospace";ctx.fillText("y=sin(x)·cos(x/2)",10,H-10);',
+    },
+}
+
+
+def generate_simulation(topic: str, concept: str = "", scene_type: str = "default") -> dict:
+    """
+    生成交互式模拟 HTML/CSS/JS 代码
+
+    参数：
+        topic: 教学主题（如"勾股定理"）
+        concept: 具体概念（如"直角三角形边的平方关系"）
+        scene_type: 场景类型（default/geometry/physics/math）
+
+    返回：
+        {"html": "...", "css": "...", "js": "..."}
+    """
+    # 检测场景类型
+    if not scene_type or scene_type == "default":
+        topic_lower = (topic + concept).lower()
+        if any(k in topic_lower for k in ["几何", "三角形", "勾股", "图形", "面积"]):
+            scene_type = "geometry"
+        elif any(k in topic_lower for k in ["物理", "力", "运动", "速度", "重力", "加速度"]):
+            scene_type = "physics"
+        elif any(k in topic_lower for k in ["函数", "方程", "曲线", "坐标", "图像"]):
+            scene_type = "math"
+        else:
+            scene_type = "default"
+
+    # 1. 尝试调用 LLM 生成
+    try:
+        prompt = f"""你是一位前端开发专家。请为主题「{topic}」生成一个交互式教学模拟的 HTML/CSS/JS 代码。
+
+概念：{concept if concept else topic}
+场景类型：{scene_type}
+
+要求：
+- 纯 HTML/CSS/JavaScript，无需任何外部库
+- 使用 Canvas 或 DOM 操作实现交互
+- 代码简洁，适合教学演示
+- 大小为 500x400 左右
+- 带有颜色和动画效果
+
+请严格输出 JSON 格式（不要包含任何其他文字）：
+{{"html": "HTML内容", "css": "CSS样式", "js": "JavaScript代码"}}
+
+直接输出 JSON："""
+
+        resp = requests.post(
+            f"{DEFAULT_API_BASE}/api/generate",
+            json={
+                "model": "lumilearn-v5",
+                "prompt": prompt,
+                "stream": False,
+                "options": {"num_predict": 2048, "temperature": 0.6}
+            },
+            timeout=60
+        )
+
+        if resp.status_code == 200:
+            data = resp.json()
+            text = data.get("response", "").strip()
+            if text and not is_gibberish(text):
+                json_match = re.search(r'\{[\s\S]*\}', text)
+                if json_match:
+                    result = json.loads(json_match.group(0))
+                    if "html" in result and "js" in result:
+                        return {
+                            "html": result.get("html", ""),
+                            "css": result.get("css", ""),
+                            "js": result.get("js", ""),
+                        }
+    except Exception:
+        pass
+
+    # 2. 回退：使用预设模板
+    template = SIMULATION_TEMPLATES.get(scene_type, SIMULATION_TEMPLATES["default"])
+    return {
+        "html": template["html"],
+        "css": template["css"],
+        "js": template["js"],
+    }
 if __name__ == "__main__":
     print("=" * 50)
     print("LumiLearn 智能混合回复引擎测试")

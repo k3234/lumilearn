@@ -2,11 +2,35 @@
 LumiLearn 智能讲解引擎 - 直播讲课专用
 自动生成结构化教案，每个知识点拆分为6-8张幻灯片
 内置TTS旁白脚本，直接可用于OBS直播叠加
+新增动画讲解模式：AI生成动画分镜和Manim代码
 """
 
-import json, time, threading, random
+import json
+import time
+import threading
+import random
+import os
 from dataclasses import dataclass, field
-from typing import Optional, Callable
+from typing import Optional, Callable, Dict, Any
+
+# ============================================================
+# 动画生成器集成
+# ============================================================
+try:
+    from animation_generator import AnimationGenerator
+    HAS_ANIM = True
+except ImportError:
+    HAS_ANIM = False
+
+
+def get_animation_generator():
+    """获取动画生成器实例（单例）"""
+    if not HAS_ANIM:
+        return None
+    if not hasattr(get_animation_generator, '_instance'):
+        get_animation_generator._instance = AnimationGenerator()
+    return get_animation_generator._instance
+
 
 # ============================================================
 # 数据结构
@@ -20,8 +44,10 @@ class Slide:
     tip: str = ""
     thinking_question: str = ""  # 引导学生思考的问题（不给答案）
     challenge: str = ""          # "试试自己做"的自测题
+    animation_id: str = ""        # 关联的动画ID
     tts_script: str = ""
     duration_sec: int = 8
+
 
 @dataclass
 class Lesson:
@@ -31,6 +57,7 @@ class Lesson:
     title: str            # 课程标题
     intro: str            # 课程简介
     slides: list = field(default_factory=list)
+    animation_id: str = ""
     total_duration: int = 0
 
 
@@ -49,6 +76,7 @@ LESSONS = {
                 title="📐 三角形的面积",
                 content="同学们好！今天我们来学习三角形的面积。\n\n先回忆一下：长方形的面积 = 长 × 宽，这个大家都记住了吧？",
                 thinking_question="🤔 长方形沿对角线剪开会变成什么？剪开后的两个图形有什么关系？",
+                animation_id="triangle_area",
                 tts_script="同学们好！今天我们来学习三角形的面积。先回忆一下，长方形的面积等于长乘以宽，大家都记住了吧？",
                 duration_sec=10
             ),
@@ -100,7 +128,7 @@ LESSONS = {
             Slide(
                 title="📝 课堂小结",
                 content="今天我们学了：\n\n✅ 三角形面积 = 底 × 高 ÷ 2\n✅ 本质是把三角形看成半个长方形\n✅ 解题关键：找到正确的底和高",
-                tts_script="今天我们学了三角形的面积公式，底乘高除以二。本质是把三角形看成半个长方形。解题关键是找到正确的底和高。下节课我们继续！",
+                tts_script="今天我们学了三角形的面积公式，底乘高除以二。本质是把三角形看成半个长方形。解题关键是找到正确的底和高。下节课继续！",
                 duration_sec=10
             ),
         ]
@@ -115,6 +143,7 @@ LESSONS = {
                 title="⚖️ 一元一次方程",
                 content="同学们，今天我们学习一元一次方程。\n\n先看一个例子：x + 5 = 12，x 是多少？",
                 formula="x + 5 = 12",
+                animation_id="linear_equation",
                 tts_script="同学们，今天我们来学习一元一次方程。先看一个简单的例子：x加五等于十二，x是多少呢？",
                 duration_sec=8
             ),
@@ -177,6 +206,7 @@ LESSONS = {
                 title="🍕 分数的加减运算",
                 content="同学们好！今天学分数加减法。\n\n分数就像分披萨🍕，把一块披萨分成几份，取其中几份就是分数。",
                 formula="1/4 + 1/4 = 2/4 = 1/2",
+                animation_id="fraction_ops",
                 tts_script="同学们好！今天我们来学分数加减法。分数就像分披萨，把一块披萨分成四份，取一份就是四分之一。",
                 duration_sec=8
             ),
@@ -228,6 +258,7 @@ LESSONS = {
             Slide(
                 title="🔢 质数与合数",
                 content="同学们，今天学习质数和合数。\n\n先看几个数：2、3、5、7、11——它们有什么共同点？",
+                animation_id="prime_numbers",
                 tts_script="同学们，今天我们来学习质数和合数。先看几个数：二、三、五、七、十一，它们有什么共同点呢？",
                 duration_sec=8
             ),
@@ -272,6 +303,7 @@ LESSONS = {
             Slide(
                 title="⏰ 英语三大时态",
                 content="英语中，动作发生的时间不同，动词形式也不同。\n\n今天学三个最常用的时态：\n一般现在时 · 一般过去时 · 一般将来时",
+                animation_id="english_tenses",
                 tts_script="Hello everyone！今天我们来学习英语的三大时态：一般现在时、一般过去时和一般将来时。",
                 duration_sec=8
             ),
@@ -362,7 +394,7 @@ LESSONS = {
 # 课程控制器
 # ============================================================
 class LessonController:
-    """课程控制器：管理幻灯片播放、自动推进、TTS旁白"""
+    """课程控制器：管理幻灯片播放、自动推进、TTS旁白、动画生成"""
 
     def __init__(self, lesson_id: str):
         self.lesson = LESSONS.get(lesson_id)
@@ -374,6 +406,7 @@ class LessonController:
         self.is_playing = False
         self.on_slide_change: Optional[Callable] = None
         self._timer: Optional[threading.Timer] = None
+        self._animation_cache = {}
 
     def get_current_slide(self) -> Optional[Slide]:
         if 0 <= self.current_slide < self.total_slides:
@@ -432,6 +465,35 @@ class LessonController:
         if self._timer:
             self._timer.cancel()
 
+    def generate_animation(self) -> Optional[Dict[str, Any]]:
+        """为当前课程生成动画（或使用缓存）"""
+        anim_gen = get_animation_generator()
+        if not anim_gen:
+            return None
+
+        key = self.lesson.id
+        if key in self._animation_cache:
+            return self._animation_cache[key]
+
+        # 拼接课程内容用于生成动画
+        full_content = []
+        for slide in self.lesson.slides:
+            if slide.content:
+                full_content.append(slide.content)
+            if slide.formula:
+                full_content.append(slide.formula)
+
+        content_str = "\n".join(full_content)
+        anim = anim_gen.create_animation(
+            content_str,
+            self.lesson.title,
+            self.lesson.subject,
+            self.lesson.grade
+        )
+        anim_gen.save_animation(anim)
+        self._animation_cache[key] = anim
+        return anim
+
     def to_dict(self):
         slide = self.get_current_slide()
         return {
@@ -452,6 +514,7 @@ class LessonController:
                 "tip": slide.tip if slide else "",
                 "thinking_question": slide.thinking_question if slide else "",
                 "challenge": slide.challenge if slide else "",
+                "animation_id": slide.animation_id if slide else "",
                 "tts_script": slide.tts_script if slide else "",
                 "duration": slide.duration_sec if slide else 0,
             } if slide else None,
@@ -469,6 +532,7 @@ def start_api_server(port: int = 8766):
     import json as _json
 
     controllers = {}
+    anim_gen = get_animation_generator()
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -539,6 +603,27 @@ def start_api_server(port: int = 8766):
                 else:
                     self._json({"error": "not found"}, 404)
 
+            elif path == "/api/lesson/animation":
+                params = {}
+                if "?" in self.path:
+                    for p in self.path.split("?")[1].split("&"):
+                        if "=" in p:
+                            k, v = p.split("=", 1)
+                            params[k] = v
+                lid = params.get("id")
+                if lid and lid in controllers:
+                    anim = controllers[lid].generate_animation()
+                    self._json(anim or {"error": "not_available"})
+                else:
+                    self._json({"error": "not found"}, 404)
+
+            elif path == "/api/animations/cached":
+                if anim_gen:
+                    cached = anim_gen.list_cached_animations()
+                    self._json({"count": len(cached), "list": [os.path.basename(p) for p in cached]})
+                else:
+                    self._json({"count": 0, "list": [], "status": "no_anim_gen"})
+
             elif path == "/":
                 self._serve_html()
 
@@ -564,6 +649,9 @@ def start_api_server(port: int = 8766):
 
     server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"[Lesson API] 服务器启动: http://localhost:{port}")
+    print(f"  - /api/lessons         课程列表")
+    print(f"  - /api/lesson/start?id=xxx  开始课程")
+    print(f"  - /api/lesson/animation?id=xxx  生成动画分镜")
     server.serve_forever()
 
 
@@ -611,6 +699,15 @@ body{background:transparent;font-family:'Microsoft YaHei','PingFang SC',sans-ser
 .challenge-box{background:rgba(139,148,158,0.06);border:1px solid #8b949e;border-radius:8px;padding:12px 16px;font-size:14px;color:#8b949e;display:flex;align-items:flex-start;gap:8px;line-height:1.6}
 .challenge-box .icon{font-size:18px;flex-shrink:0}
 
+/* 动画分镜预览框 */
+.animation-panel{background:rgba(33,38,45,0.95);border:1px solid #30363d;border-radius:12px;padding:16px;margin-top:8px;display:none}
+.anim-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.anim-header h4{color:#7ee787;font-size:14px}
+.anim-steps{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
+.anim-step{min-width:160px;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px;flex-shrink:0}
+.anim-step .step-num{font-size:12px;color:#8b949e;margin-bottom:4px}
+.anim-step .step-content{font-size:13px;color:#c9d1d9;white-space:pre-line;line-height:1.5}
+
 /* 底部控制 */
 .footer{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid #21262d}
 .slide-counter{color:#8b949e;font-size:12px}
@@ -619,6 +716,7 @@ body{background:transparent;font-family:'Microsoft YaHei','PingFang SC',sans-ser
 .btn:hover{background:#30363d;border-color:#58a6ff}
 .btn.active{background:#238636;border-color:#238636;color:white}
 .btn.auto{background:#1f6feb;border-color:#1f6feb;color:white}
+.btn.anim{background:#8957e5;border-color:#8957e5;color:white}
 
 /* 动画 */
 .fade-in{animation:fadeIn 0.4s ease}
@@ -658,12 +756,21 @@ body{background:transparent;font-family:'Microsoft YaHei','PingFang SC',sans-ser
       <div class="tip-box" id="stip" style="display:none"></div>
       <div class="think-box" id="sthink" style="display:none"><span class="icon">🤔</span><span id="sthink-text"></span></div>
       <div class="challenge-box" id="schallenge" style="display:none"><span class="icon">🎯</span><span id="schallenge-text"></span></div>
+
+      <div class="animation-panel" id="animation-panel">
+        <div class="anim-header">
+          <h4>🎬 动画分镜</h4>
+          <span class="slide-counter" id="anim-status">--</span>
+        </div>
+        <div class="anim-steps" id="anim-steps"></div>
+      </div>
     </div>
     <div class="footer">
       <span class="slide-counter" id="counter">--</span>
       <div class="controls">
         <button class="btn" onclick="prevSlide()">⬅ 上一页</button>
         <button class="btn auto" id="auto-btn" onclick="toggleAuto()">▶ 自动播放</button>
+        <button class="btn anim" onclick="loadAnimation()">🎬 生成分镜</button>
         <button class="btn" onclick="nextSlide()">下一页 ➡</button>
       </div>
     </div>
@@ -674,6 +781,7 @@ const API = 'http://localhost:8766';
 let currentLesson = null;
 let autoTimer = null;
 let isAutoPlaying = false;
+let currentAnimation = null;
 
 async function loadLessons() {
   const r = await fetch(API + '/api/lessons');
@@ -697,8 +805,10 @@ async function loadLessons() {
 async function startLesson(id) {
   await fetch(API + '/api/lesson/start?id=' + id);
   currentLesson = id;
+  currentAnimation = null;
   document.getElementById('lesson-select').style.display = 'none';
   document.getElementById('slide-view').style.display = 'flex';
+  document.getElementById('animation-panel').style.display = 'none';
   refreshSlide();
 }
 
@@ -736,6 +846,35 @@ async function refreshSlide() {
   area.classList.remove('fade-in');
   void area.offsetWidth;
   area.classList.add('fade-in');
+}
+
+async function loadAnimation() {
+  const panel = document.getElementById('animation-panel');
+  const status = document.getElementById('anim-status');
+  const stepsEl = document.getElementById('anim-steps');
+
+  if (currentAnimation) {
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    return;
+  }
+
+  status.textContent = '生成中...';
+  panel.style.display = 'block';
+
+  const r = await fetch(API + '/api/lesson/animation?id=' + currentLesson);
+  const anim = await r.json();
+  currentAnimation = anim;
+
+  status.textContent = `${anim.animation_type_name} · ${anim.scene_count}个分镜 · ${anim.estimated_duration}秒`;
+  stepsEl.innerHTML = '';
+
+  anim.storyboard.forEach((s, i) => {
+    const div = document.createElement('div');
+    div.className = 'anim-step';
+    div.innerHTML = `<div class="step-num">#${s.shot_number} · ${s.duration}秒</div>
+      <div class="step-content">${s.scene_description}</div>`;
+    stepsEl.appendChild(div);
+  });
 }
 
 async function nextSlide() {
@@ -797,6 +936,7 @@ if __name__ == "__main__":
     print("  🌿 LumiLearn 智能讲解系统")
     print(f"  API: http://localhost:{args.port}")
     print(f"  OBS: 添加浏览器源，URL=http://localhost:{args.port}")
+    print("  🎬 动画功能: 已集成" + ("" if HAS_ANIM else " (需要安装 animation_generator)"))
     print("=" * 50)
     print(f"\n  可用课程 ({len(LESSONS)}门):")
     for lid, lesson in LESSONS.items():

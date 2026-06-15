@@ -9,146 +9,146 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg-deep: #08080d;
-  --bg-surface: #141413;
-  --bg-elevated: #1c1c1a;
-  --text-primary: #faf9f5;
-  --text-secondary: #b0aea5;
-  --text-dim: #6b6b6b;
-  --accent-orange: #d97757;
-  --accent-blue: #6a9bcc;
-  --accent-green: #788c5d;
-  --accent-purple: #9b7ec4;
-  --border: #2a2a2a;
-  --glow-orange: rgba(217, 119, 87, 0.15);
-  --glow-blue: rgba(106, 155, 204, 0.1);
+--bg-deep: #08080d;
+--bg-surface: #141413;
+--bg-elevated: #1c1c1a;
+--text-primary: #faf9f5;
+--text-secondary: #b0aea5;
+--text-dim: #6b6b6b;
+--accent-orange: #d97757;
+--accent-blue: #6a9bcc;
+--accent-green: #788c5d;
+--accent-purple: #9b7ec4;
+--border: #2a2a2a;
+--glow-orange: rgba(217, 119, 87, 0.15);
+--glow-blue: rgba(106, 155, 204, 0.1);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: 'Poppins', system-ui, sans-serif;
-  background: var(--bg-deep);
-  color: var(--text-primary);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+font-family: 'Poppins', system-ui, sans-serif;
+background: var(--bg-deep);
+color: var(--text-primary);
+min-height: 100vh;
+display: flex;
+flex-direction: column;
 }
 
 /* Header */
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 28px;
-  background: rgba(20, 20, 19, 0.85);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 14px 28px;
+background: rgba(20, 20, 19, 0.85);
+backdrop-filter: blur(16px);
+border-bottom: 1px solid var(--border);
+flex-shrink: 0;
 }
 .brand { display: flex; align-items: center; gap: 10px; }
 .brand-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: var(--accent-purple);
-  box-shadow: 0 0 12px var(--accent-purple);
-  animation: pulse 2s ease-in-out infinite;
+width: 10px; height: 10px;
+border-radius: 50%;
+background: var(--accent-purple);
+box-shadow: 0 0 12px var(--accent-purple);
+animation: pulse 2s ease-in-out infinite;
 }
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.3); }
+0%, 100% { opacity: 1; transform: scale(1); }
+50% { opacity: 0.6; transform: scale(1.3); }
 }
 .brand h1 {
-  font-family: 'Lora', serif;
-  font-size: 18px;
-  font-weight: 500;
-  letter-spacing: -0.3px;
+font-family: 'Lora', serif;
+font-size: 18px;
+font-weight: 500;
+letter-spacing: -0.3px;
 }
 .brand span { color: var(--accent-purple); }
 .nav-links { display: flex; gap: 20px; }
 .nav-links a {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: color 0.2s;
+font-family: 'JetBrains Mono', monospace;
+font-size: 12px;
+color: var(--text-dim);
+text-decoration: none;
+transition: color 0.2s;
 }
 .nav-links a:hover, .nav-links a.active { color: var(--accent-purple); }
 
 /* Main Layout */
 .main {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 300px 1fr 320px;
-  gap: 0;
-  overflow: hidden;
+flex: 1;
+display: grid;
+grid-template-columns: 300px 1fr 320px;
+gap: 0;
+overflow: hidden;
 }
 
 /* Left Panel - Knowledge */
 .panel-left {
-  background: var(--bg-surface);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+background: var(--bg-surface);
+border-right: 1px solid var(--border);
+display: flex;
+flex-direction: column;
+overflow: hidden;
 }
 .panel-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  flex-shrink: 0;
+padding: 16px 20px;
+border-bottom: 1px solid var(--border);
+font-size: 13px;
+font-weight: 600;
+color: var(--text-secondary);
+text-transform: uppercase;
+letter-spacing: 1px;
+flex-shrink: 0;
 }
 .panel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
+flex: 1;
+overflow-y: auto;
+padding: 12px;
 }
 .panel-body::-webkit-scrollbar { width: 4px; }
 .panel-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 /* Knowledge Node */
 .knowledge-node {
-  padding: 10px 14px;
-  margin-bottom: 6px;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s;
+padding: 10px 14px;
+margin-bottom: 6px;
+border-radius: 8px;
+background: var(--bg-elevated);
+border: 1px solid transparent;
+cursor: pointer;
+transition: all 0.2s;
 }
 .knowledge-node:hover {
-  border-color: var(--accent-purple);
-  box-shadow: 0 0 12px rgba(155, 126, 196, 0.1);
+border-color: var(--accent-purple);
+box-shadow: 0 0 12px rgba(155, 126, 196, 0.1);
 }
 .knowledge-node.selected {
-  border-color: var(--accent-purple);
-  background: rgba(155, 126, 196, 0.08);
+border-color: var(--accent-purple);
+background: rgba(155, 126, 196, 0.08);
 }
 .knowledge-node .node-name {
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 4px;
+font-size: 13px;
+font-weight: 500;
+margin-bottom: 4px;
 }
 .knowledge-node .node-meta {
-  display: flex;
-  gap: 10px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--text-dim);
+display: flex;
+gap: 10px;
+font-family: 'JetBrains Mono', monospace;
+font-size: 10px;
+color: var(--text-dim);
 }
 .knowledge-node .mastery-bar {
-  height: 3px;
-  background: var(--border);
-  border-radius: 2px;
-  margin-top: 6px;
-  overflow: hidden;
+height: 3px;
+background: var(--border);
+border-radius: 2px;
+margin-top: 6px;
+overflow: hidden;
 }
 .knowledge-node .mastery-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.5s;
+height: 100%;
+border-radius: 2px;
+transition: width 0.5s;
 }
 .mastery-high { background: var(--accent-green); }
 .mastery-medium { background: var(--accent-blue); }
@@ -156,253 +156,257 @@ body {
 
 /* Center Panel - Animation */
 .panel-center {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+display: flex;
+flex-direction: column;
+overflow: hidden;
 }
 .anim-header {
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
+padding: 16px 24px;
+border-bottom: 1px solid var(--border);
+display: flex;
+align-items: center;
+gap: 12px;
+flex-shrink: 0;
 }
 .anim-header input {
-  flex: 1;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 16px;
-  outline: none;
+flex: 1;
+font-family: 'Poppins', sans-serif;
+font-size: 14px;
+background: var(--bg-elevated);
+color: var(--text-primary);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 10px 16px;
+outline: none;
 }
 .anim-header input:focus { border-color: var(--accent-purple); }
 .anim-header select {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  outline: none;
-  cursor: pointer;
+font-family: 'JetBrains Mono', monospace;
+font-size: 12px;
+background: var(--bg-elevated);
+color: var(--text-primary);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 10px 12px;
+outline: none;
+cursor: pointer;
 }
 .btn {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
+font-family: 'JetBrains Mono', monospace;
+font-size: 12px;
+padding: 10px 20px;
+border-radius: 8px;
+border: none;
+cursor: pointer;
+transition: all 0.2s;
+white-space: nowrap;
 }
 .btn-primary {
-  background: var(--accent-purple);
-  color: white;
+background: var(--accent-purple);
+color: white;
 }
 .btn-primary:hover { box-shadow: 0 0 16px rgba(155, 126, 196, 0.3); }
 .btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+opacity: 0.5;
+cursor: not-allowed;
 }
 
 /* Video Area */
 .video-area {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-  position: relative;
-  min-height: 300px;
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+background: #000;
+position: relative;
+min-height: 300px;
 }
 .video-placeholder {
-  text-align: center;
-  color: var(--text-dim);
+text-align: center;
+color: var(--text-dim);
 }
 .video-placeholder .icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-  opacity: 0.3;
+width: 48px; height: 48px;
+margin: 0 auto 12px;
+fill: none;
+stroke: currentColor;
+stroke-width: 2;
+opacity: 0.3;
+display: block;
 }
 .video-placeholder p {
-  font-family: 'Lora', serif;
-  font-size: 14px;
+font-family: 'Lora', serif;
+font-size: 14px;
 }
 .video-area video {
-  max-width: 100%;
-  max-height: 100%;
-  outline: none;
+max-width: 100%;
+max-height: 100%;
+outline: none;
 }
 
 /* Progress Bar */
 .progress-area {
-  padding: 12px 24px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-  display: none;
+padding: 12px 24px;
+border-top: 1px solid var(--border);
+flex-shrink: 0;
+display: none;
 }
 .progress-area.visible { display: block; }
 .progress-info {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--text-secondary);
+display: flex;
+justify-content: space-between;
+margin-bottom: 6px;
+font-family: 'JetBrains Mono', monospace;
+font-size: 11px;
+color: var(--text-secondary);
 }
 .progress-bar {
-  height: 4px;
-  background: var(--border);
-  border-radius: 2px;
-  overflow: hidden;
+height: 4px;
+background: var(--border);
+border-radius: 2px;
+overflow: hidden;
 }
 .progress-fill {
-  height: 100%;
-  background: var(--accent-purple);
-  border-radius: 2px;
-  transition: width 0.3s;
-  width: 0%;
+height: 100%;
+background: var(--accent-purple);
+border-radius: 2px;
+transition: width 0.3s;
+width: 0%;
 }
 
 /* Narration */
 .narration-area {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-  display: none;
-  max-height: 120px;
-  overflow-y: auto;
+padding: 16px 24px;
+border-top: 1px solid var(--border);
+flex-shrink: 0;
+display: none;
+max-height: 120px;
+overflow-y: auto;
 }
 .narration-area.visible { display: block; }
 .narration-area .narration-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
+font-size: 11px;
+font-weight: 600;
+color: var(--text-dim);
+text-transform: uppercase;
+letter-spacing: 1px;
+margin-bottom: 8px;
 }
 
 /* Feynman Response */
 .feynman-area {
-  border-top: 1px solid var(--border);
-  flex-shrink: 0;
-  display: none;
-  max-height: 280px;
-  overflow-y: auto;
-  background: var(--bg-surface);
+border-top: 1px solid var(--border);
+flex-shrink: 0;
+display: none;
+max-height: 280px;
+overflow-y: auto;
+background: var(--bg-surface);
 }
 .feynman-area.visible { display: block; }
 .feynman-content {
-  padding: 16px 24px;
-  font-family: 'Lora', serif;
-  font-size: 13px;
-  line-height: 1.7;
-  color: var(--text-secondary);
-  white-space: pre-wrap;
+padding: 16px 24px;
+font-family: 'Lora', serif;
+font-size: 13px;
+line-height: 1.7;
+color: var(--text-secondary);
+white-space: pre-wrap;
 }
 .feynman-content h2, .feynman-content h3 {
-  color: var(--accent-green);
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  margin: 12px 0 6px;
+color: var(--accent-green);
+font-family: 'Poppins', sans-serif;
+font-size: 14px;
+margin: 12px 0 6px;
 }
 .feynman-content strong {
-  color: var(--text-primary);
+color: var(--text-primary);
 }
 .feynman-loading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 20px 24px;
-  color: var(--text-dim);
-  font-size: 13px;
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 20px 24px;
+color: var(--text-dim);
+font-size: 13px;
 }
 .narration-area .narration-text {
-  font-family: 'Lora', serif;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--text-secondary);
+font-family: 'Lora', serif;
+font-size: 13px;
+line-height: 1.6;
+color: var(--text-secondary);
 }
 
 /* Right Panel - Adaptive */
 .panel-right {
-  background: var(--bg-surface);
-  border-left: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+background: var(--bg-surface);
+border-left: 1px solid var(--border);
+display: flex;
+flex-direction: column;
+overflow: hidden;
 }
 
 /* Stats */
 .stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  padding: 12px;
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 8px;
+padding: 12px;
 }
 .stat-card {
-  background: var(--bg-elevated);
-  border-radius: 8px;
-  padding: 12px;
-  text-align: center;
+background: var(--bg-elevated);
+border-radius: 8px;
+padding: 12px;
+text-align: center;
 }
 .stat-value {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--accent-purple);
+font-family: 'JetBrains Mono', monospace;
+font-size: 20px;
+font-weight: 600;
+color: var(--accent-purple);
 }
 .stat-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--text-dim);
-  margin-top: 4px;
+font-family: 'JetBrains Mono', monospace;
+font-size: 10px;
+color: var(--text-dim);
+margin-top: 4px;
 }
 
 /* Recommendations */
 .rec-item {
-  padding: 10px 14px;
-  margin-bottom: 6px;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s;
+padding: 10px 14px;
+margin-bottom: 6px;
+border-radius: 8px;
+background: var(--bg-elevated);
+border: 1px solid transparent;
+cursor: pointer;
+transition: all 0.2s;
 }
 .rec-item:hover {
-  border-color: var(--accent-blue);
+border-color: var(--accent-blue);
 }
 .rec-item .rec-name {
-  font-size: 13px;
-  font-weight: 500;
+font-size: 13px;
+font-weight: 500;
 }
 .rec-item .rec-desc {
-  font-size: 11px;
-  color: var(--text-dim);
-  margin-top: 4px;
+font-size: 11px;
+color: var(--text-dim);
+margin-top: 4px;
 }
 .rec-item .rec-score {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--accent-blue);
-  margin-top: 4px;
+font-family: 'JetBrains Mono', monospace;
+font-size: 10px;
+color: var(--accent-blue);
+margin-top: 4px;
 }
 
 /* Category tag */
 .cat-tag {
-  display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-right: 4px;
+display: inline-block;
+font-family: 'JetBrains Mono', monospace;
+font-size: 9px;
+padding: 2px 8px;
+border-radius: 4px;
+margin-right: 4px;
 }
 .cat-geometry { background: rgba(106, 155, 204, 0.15); color: var(--accent-blue); }
 .cat-algebra { background: rgba(217, 119, 87, 0.15); color: var(--accent-orange); }
@@ -412,438 +416,438 @@ body {
 
 /* Feynman Five Steps */
 .feynman-steps-container {
-  display: none;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
+display: none;
+flex-direction: column;
+gap: 12px;
+padding: 16px;
 }
 .feynman-steps-container.visible { display: flex; }
 
 .feynman-step-card {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-  cursor: pointer;
-  transition: all 0.2s;
+background: var(--bg-elevated);
+border: 1px solid var(--border);
+border-radius: 10px;
+padding: 14px 16px;
+cursor: pointer;
+transition: all 0.2s;
 }
 .feynman-step-card:hover {
-  border-color: var(--accent-purple);
-  box-shadow: 0 0 16px rgba(155, 126, 196, 0.15);
+border-color: var(--accent-purple);
+box-shadow: 0 0 16px rgba(155, 126, 196, 0.15);
 }
 .feynman-step-card.active {
-  border-color: var(--accent-purple);
-  background: rgba(155, 126, 196, 0.08);
+border-color: var(--accent-purple);
+background: rgba(155, 126, 196, 0.08);
 }
 .feynman-step-card.completed {
-  border-color: var(--accent-green);
+border-color: var(--accent-green);
 }
 .feynman-step-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
+display: flex;
+align-items: center;
+justify-content: space-between;
+margin-bottom: 8px;
 }
 .feynman-step-number {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--accent-purple);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
+width: 24px;
+height: 24px;
+border-radius: 50%;
+background: var(--accent-purple);
+color: white;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 12px;
+font-weight: 600;
 }
 .feynman-step-name {
-  flex: 1;
-  margin-left: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
+flex: 1;
+margin-left: 10px;
+font-size: 14px;
+font-weight: 500;
+color: var(--text-primary);
 }
 .feynman-step-status {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 4px;
+font-family: 'JetBrains Mono', monospace;
+font-size: 10px;
+padding: 2px 8px;
+border-radius: 4px;
 }
 .feynman-step-status.pending {
-  background: rgba(107, 107, 107, 0.2);
-  color: var(--text-dim);
+background: rgba(107, 107, 107, 0.2);
+color: var(--text-dim);
 }
 .feynman-step-status.current {
-  background: rgba(155, 126, 196, 0.2);
-  color: var(--accent-purple);
+background: rgba(155, 126, 196, 0.2);
+color: var(--accent-purple);
 }
 .feynman-step-status.done {
-  background: rgba(120, 140, 93, 0.2);
-  color: var(--accent-green);
+background: rgba(120, 140, 93, 0.2);
+color: var(--accent-green);
 }
 .feynman-step-preview {
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+font-size: 12px;
+color: var(--text-secondary);
+line-height: 1.5;
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
+overflow: hidden;
 }
 .feynman-step-detail {
-  display: none;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.7;
+display: none;
+margin-top: 12px;
+padding-top: 12px;
+border-top: 1px solid var(--border);
+font-size: 13px;
+color: var(--text-secondary);
+line-height: 1.7;
 }
 .feynman-step-card.active .feynman-step-detail { display: block; }
 .feynman-step-keypoints {
-  margin-top: 10px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+margin-top: 10px;
+display: flex;
+flex-wrap: wrap;
+gap: 6px;
 }
 .feynman-keypoint {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  padding: 3px 10px;
-  background: rgba(106, 155, 204, 0.15);
-  color: var(--accent-blue);
-  border-radius: 4px;
+font-family: 'JetBrains Mono', monospace;
+font-size: 10px;
+padding: 3px 10px;
+background: rgba(106, 155, 204, 0.15);
+color: var(--accent-blue);
+border-radius: 4px;
 }
 .feynman-animation-hint {
-  margin-top: 10px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--accent-orange);
-  display: flex;
-  align-items: center;
-  gap: 6px;
+margin-top: 10px;
+font-family: 'JetBrains Mono', monospace;
+font-size: 10px;
+color: var(--accent-orange);
+display: flex;
+align-items: center;
+gap: 6px;
 }
 .feynman-animation-hint::before {
-  content: '▶';
-  font-size: 8px;
+content: '▶';
+font-size: 8px;
 }
 
 /* Feynman Progress */
 .feynman-progress {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
+padding: 12px 16px;
+border-bottom: 1px solid var(--border);
+display: flex;
+align-items: center;
+gap: 12px;
 }
 .feynman-progress-bar {
-  flex: 1;
-  height: 6px;
-  background: var(--border);
-  border-radius: 3px;
-  overflow: hidden;
+flex: 1;
+height: 6px;
+background: var(--border);
+border-radius: 3px;
+overflow: hidden;
 }
 .feynman-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-purple), var(--accent-green));
-  border-radius: 3px;
-  transition: width 0.5s;
+height: 100%;
+background: linear-gradient(90deg, var(--accent-purple), var(--accent-green));
+border-radius: 3px;
+transition: width 0.5s;
 }
 .feynman-progress-text {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: var(--text-secondary);
-  white-space: nowrap;
+font-family: 'JetBrains Mono', monospace;
+font-size: 12px;
+color: var(--text-secondary);
+white-space: nowrap;
 }
 
 /* Feynman Test Button */
 .feynman-test-btn {
-  margin: 12px 16px;
-  padding: 14px;
-  background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-family: 'Poppins', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  display: none;
-  transition: all 0.2s;
+margin: 12px 16px;
+padding: 14px;
+background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+border: none;
+border-radius: 10px;
+color: white;
+font-family: 'Poppins', sans-serif;
+font-size: 14px;
+font-weight: 500;
+cursor: pointer;
+display: none;
+transition: all 0.2s;
 }
 .feynman-test-btn.visible { display: block; }
 .feynman-test-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(120, 140, 93, 0.3);
+transform: translateY(-2px);
+box-shadow: 0 6px 20px rgba(120, 140, 93, 0.3);
 }
 
 /* Feynman Test Area */
 .feynman-test-area {
-  padding: 16px;
-  display: none;
+padding: 16px;
+display: none;
 }
 .feynman-test-area.visible { display: block; }
 .feynman-test-input {
-  width: 100%;
-  min-height: 100px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  color: var(--text-primary);
-  font-family: 'Lora', serif;
-  font-size: 13px;
-  resize: vertical;
-  outline: none;
+width: 100%;
+min-height: 100px;
+background: var(--bg-elevated);
+border: 1px solid var(--border);
+border-radius: 8px;
+padding: 12px;
+color: var(--text-primary);
+font-family: 'Lora', serif;
+font-size: 13px;
+resize: vertical;
+outline: none;
 }
 .feynman-test-input:focus { border-color: var(--accent-green); }
 .feynman-test-submit {
-  margin-top: 12px;
-  padding: 10px 20px;
-  background: var(--accent-green);
-  border: none;
-  border-radius: 8px;
-  color: white;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  cursor: pointer;
+margin-top: 12px;
+padding: 10px 20px;
+background: var(--accent-green);
+border: none;
+border-radius: 8px;
+color: white;
+font-family: 'JetBrains Mono', monospace;
+font-size: 12px;
+cursor: pointer;
 }
 .feynman-test-submit:hover { box-shadow: 0 0 16px rgba(120, 140, 93, 0.3); }
 .feynman-test-result {
-  margin-top: 16px;
-  padding: 16px;
-  background: var(--bg-elevated);
-  border-radius: 8px;
-  display: none;
+margin-top: 16px;
+padding: 16px;
+background: var(--bg-elevated);
+border-radius: 8px;
+display: none;
 }
 .feynman-test-result.visible { display: block; }
 .feynman-score {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--accent-green);
-  text-align: center;
+font-family: 'JetBrains Mono', monospace;
+font-size: 32px;
+font-weight: 600;
+color: var(--accent-green);
+text-align: center;
 }
 .feynman-score-label {
-  text-align: center;
-  font-size: 12px;
-  color: var(--text-dim);
-  margin-bottom: 12px;
+text-align: center;
+font-size: 12px;
+color: var(--text-dim);
+margin-bottom: 12px;
 }
 .feynman-dimensions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 12px;
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 8px;
+margin-top: 12px;
 }
 .feynman-dimension {
-  padding: 8px;
-  background: var(--bg-surface);
-  border-radius: 6px;
-  font-size: 11px;
+padding: 8px;
+background: var(--bg-surface);
+border-radius: 6px;
+font-size: 11px;
 }
 .feynman-dimension-name {
-  color: var(--text-dim);
-  margin-bottom: 4px;
+color: var(--text-dim);
+margin-bottom: 4px;
 }
 .feynman-dimension-score {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--accent-purple);
+font-family: 'JetBrains Mono', monospace;
+color: var(--accent-purple);
 }
 .feynman-feedback {
-  margin-top: 12px;
-  padding: 12px;
-  background: rgba(120, 140, 93, 0.1);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  line-height: 1.6;
+margin-top: 12px;
+padding: 12px;
+background: rgba(120, 140, 93, 0.1);
+border-radius: 6px;
+font-size: 13px;
+color: var(--text-secondary);
+line-height: 1.6;
 }
 
 /* Loading */
 .spinner {
-  display: inline-block;
-  width: 16px; height: 16px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent-purple);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+display: inline-block;
+width: 16px; height: 16px;
+border: 2px solid var(--border);
+border-top-color: var(--accent-purple);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Toast */
 .toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: var(--text-primary);
-  z-index: 100;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
+position: fixed;
+bottom: 24px;
+left: 50%;
+transform: translateX(-50%);
+background: var(--bg-elevated);
+border: 1px solid var(--border);
+padding: 12px 24px;
+border-radius: 8px;
+font-family: 'JetBrains Mono', monospace;
+font-size: 12px;
+color: var(--text-primary);
+z-index: 100;
+opacity: 0;
+transition: opacity 0.3s;
+pointer-events: none;
 }
 .toast.show { opacity: 1; }
 
 /* Responsive */
 @media (max-width: 900px) {
-  .main { grid-template-columns: 1fr; }
-  .panel-left, .panel-right { display: none; }
+.main { grid-template-columns: 1fr; }
+.panel-left, .panel-right { display: none; }
 }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="brand">
-    <div class="brand-dot"></div>
-    <h1>LumiLearn <span>· 动画交互学习</span></h1>
-  </div>
-  <div class="nav-links">
-    <a href="/">终端</a>
-    <a href="/api/animation/learn" class="active">动画学习</a>
-  </div>
+<div class="brand">
+<div class="brand-dot"></div>
+<h1>LumiLearn <span>· 动画交互学习</span></h1>
+</div>
+<div class="nav-links">
+<a href="/">终端</a>
+<a href="/api/animation/learn" class="active">动画学习</a>
+</div>
 </div>
 
 <div class="main">
-  <!-- Left Panel: Knowledge Graph -->
-  <div class="panel-left">
-    <div class="panel-header">知识图谱</div>
-    <div class="panel-body" id="knowledge-list">
-      <div style="text-align:center;padding:40px 20px;color:var(--text-dim)">
-        <div class="spinner" style="margin-bottom:12px"></div>
-        <p style="font-size:12px">加载知识图谱...</p>
-      </div>
-    </div>
-  </div>
+<!-- Left Panel: Knowledge Graph -->
+<div class="panel-left">
+<div class="panel-header">知识图谱</div>
+<div class="panel-body" id="knowledge-list">
+<div style="text-align:center;padding:40px 20px;color:var(--text-dim)">
+<div class="spinner" style="margin-bottom:12px"></div>
+<p style="font-size:12px">加载知识图谱...</p>
+</div>
+</div>
+</div>
 
-  <!-- Center Panel: Animation -->
-  <div class="panel-center">
-    <div class="anim-header">
-      <input type="text" id="topic-input" placeholder="输入学习主题，如：勾股定理、求根公式..."
-             list="topic-suggestions" autocomplete="off">
-      <datalist id="topic-suggestions">
-        <option value="勾股定理">
-        <option value="余弦定理">
-        <option value="圆面积">
-        <option value="求根公式">
-        <option value="配方法">
-        <option value="自由落体">
-        <option value="光的折射">
-        <option value="正态分布">
-      </datalist>
-      <select id="scene-type">
-        <option value="auto">自动检测</option>
-        <option value="geometry">几何图形</option>
-        <option value="formula">公式推导</option>
-        <option value="physics">物理过程</option>
-        <option value="functions">函数图像</option>
-      </select>
-      <button class="btn btn-primary" id="btn-generate" onclick="generateAnimation()">
-        生成动画
-      </button>
-      <button class="btn" id="btn-feynman" onclick="feynmanExplain()" style="background:var(--accent-green);color:white">
-        费曼教学
-      </button>
-    </div>
+<!-- Center Panel: Animation -->
+<div class="panel-center">
+<div class="anim-header">
+<input type="text" id="topic-input" placeholder="输入学习主题，如：勾股定理、求根公式..."
+list="topic-suggestions" autocomplete="off">
+<datalist id="topic-suggestions">
+<option value="勾股定理">
+<option value="余弦定理">
+<option value="圆面积">
+<option value="求根公式">
+<option value="配方法">
+<option value="自由落体">
+<option value="光的折射">
+<option value="正态分布">
+</datalist>
+<select id="scene-type">
+<option value="auto">自动检测</option>
+<option value="geometry">几何图形</option>
+<option value="formula">公式推导</option>
+<option value="physics">物理过程</option>
+<option value="functions">函数图像</option>
+</select>
+<button class="btn btn-primary" id="btn-generate" onclick="generateAnimation()">
+生成动画
+</button>
+<button class="btn" id="btn-feynman" onclick="feynmanExplain()" style="background:var(--accent-green);color:white">
+费曼教学
+</button>
+</div>
 
-    <div class="feynman-area" id="feynman-area">
-      <!-- Feynman Five Steps Progress -->
-      <div class="feynman-progress" id="feynman-progress" style="display:none">
-        <span style="font-size:12px;color:var(--text-secondary)">学习进度</span>
-        <div class="feynman-progress-bar">
-          <div class="feynman-progress-fill" id="feynman-progress-fill"></div>
-        </div>
-        <span class="feynman-progress-text" id="feynman-progress-text">0/5</span>
-      </div>
-      
-      <!-- Five Steps Cards Container -->
-      <div class="feynman-steps-container" id="feynman-steps-container"></div>
-      
-      <!-- 30 Second Test Button -->
-      <button class="feynman-test-btn" id="feynman-test-btn" onclick="showFeynmanTest()">
-        🎯 开始30秒费曼测试
-      </button>
-      
-      <!-- Test Area -->
-      <div class="feynman-test-area" id="feynman-test-area">
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">
-          请用30秒时间，用最简单的话向一个8岁小朋友解释这个概念：
-        </div>
-        <textarea class="feynman-test-input" id="feynman-test-input" 
-                  placeholder="在这里写下你的解释..."></textarea>
-        <button class="feynman-test-submit" onclick="submitFeynmanTest()">提交测试</button>
-        <div class="feynman-test-result" id="feynman-test-result"></div>
-      </div>
-      
-      <!-- Original Content (hidden by default) -->
-      <div class="feynman-content" id="feynman-content"></div>
-    </div>
+<div class="feynman-area" id="feynman-area">
+<!-- Feynman Five Steps Progress -->
+<div class="feynman-progress" id="feynman-progress" style="display:none">
+<span style="font-size:12px;color:var(--text-secondary)">学习进度</span>
+<div class="feynman-progress-bar">
+<div class="feynman-progress-fill" id="feynman-progress-fill"></div>
+</div>
+<span class="feynman-progress-text" id="feynman-progress-text">0/5</span>
+</div>
 
-    <div class="video-area" id="video-area">
-      <div class="video-placeholder" id="video-placeholder">
-        <div class="icon">&#9654;</div>
-        <p>输入主题，点击"生成动画"开始学习</p>
-        <p style="font-size:11px;margin-top:8px;color:var(--text-dim)">
-          支持几何、代数、函数、物理等数学主题
-        </p>
-      </div>
-      <video id="video-player" controls style="display:none" onended="onVideoEnded()">
-        您的浏览器不支持 video 标签
-      </video>
-    </div>
+<!-- Five Steps Cards Container -->
+<div class="feynman-steps-container" id="feynman-steps-container"></div>
 
-    <div class="progress-area" id="progress-area">
-      <div class="progress-info">
-        <span id="progress-step">准备中...</span>
-        <span id="progress-percent">0%</span>
-      </div>
-      <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill"></div>
-      </div>
-    </div>
+<!-- 30 Second Test Button -->
+<button class="feynman-test-btn" id="feynman-test-btn" onclick="showFeynmanTest()">
+开始30秒费曼测试
+</button>
 
-    <div class="narration-area" id="narration-area">
-      <div class="narration-title">旁白文案</div>
-      <div class="narration-text" id="narration-text"></div>
-    </div>
-  </div>
+<!-- Test Area -->
+<div class="feynman-test-area" id="feynman-test-area">
+<div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">
+请用30秒时间，用最简单的话向一个8岁小朋友解释这个概念：
+</div>
+<textarea class="feynman-test-input" id="feynman-test-input"
+placeholder="在这里写下你的解释..."></textarea>
+<button class="feynman-test-submit" onclick="submitFeynmanTest()">提交测试</button>
+<div class="feynman-test-result" id="feynman-test-result"></div>
+</div>
 
-  <!-- Right Panel: Adaptive Learning -->
-  <div class="panel-right">
-    <div class="panel-header">学习进度</div>
-    <div class="stats-grid" id="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value" id="stat-mastered">0</div>
-        <div class="stat-label">已掌握</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-learning">0</div>
-        <div class="stat-label">学习中</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-weaknesses">0</div>
-        <div class="stat-label">薄弱点</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="stat-progress">0%</div>
-        <div class="stat-label">总进度</div>
-      </div>
-    </div>
+<!-- Original Content (hidden by default) -->
+<div class="feynman-content" id="feynman-content"></div>
+</div>
 
-    <div class="panel-header">智能推荐</div>
-    <div class="panel-body" id="recommendations">
-      <div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px">
-        加载推荐中...
-      </div>
-    </div>
-  </div>
+<div class="video-area" id="video-area">
+<div class="video-placeholder" id="video-placeholder">
+<svg class="icon" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20"/></svg>
+<p>输入主题，点击"生成动画"开始学习</p>
+<p style="font-size:11px;margin-top:8px;color:var(--text-dim)">
+支持几何、代数、函数、物理等数学主题
+</p>
+</div>
+<video id="video-player" controls style="display:none" onended="onVideoEnded()">
+您的浏览器不支持 video 标签
+</video>
+</div>
+
+<div class="progress-area" id="progress-area">
+<div class="progress-info">
+<span id="progress-step">准备中...</span>
+<span id="progress-percent">0%</span>
+</div>
+<div class="progress-bar">
+<div class="progress-fill" id="progress-fill"></div>
+</div>
+</div>
+
+<div class="narration-area" id="narration-area">
+<div class="narration-title">旁白文案</div>
+<div class="narration-text" id="narration-text"></div>
+</div>
+</div>
+
+<!-- Right Panel: Adaptive Learning -->
+<div class="panel-right">
+<div class="panel-header">学习进度</div>
+<div class="stats-grid" id="stats-grid">
+<div class="stat-card">
+<div class="stat-value" id="stat-mastered">0</div>
+<div class="stat-label">已掌握</div>
+</div>
+<div class="stat-card">
+<div class="stat-value" id="stat-learning">0</div>
+<div class="stat-label">学习中</div>
+</div>
+<div class="stat-card">
+<div class="stat-value" id="stat-weaknesses">0</div>
+<div class="stat-label">薄弱点</div>
+</div>
+<div class="stat-card">
+<div class="stat-value" id="stat-progress">0%</div>
+<div class="stat-label">总进度</div>
+</div>
+</div>
+
+<div class="panel-header">智能推荐</div>
+<div class="panel-body" id="recommendations">
+<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px">
+加载推荐中...
+</div>
+</div>
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -861,341 +865,341 @@ let currentTopic = '';
 // 初始化
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-  loadKnowledgeGraph();
-  loadRecommendations();
-  loadProgress();
+loadKnowledgeGraph();
+loadRecommendations();
+loadProgress();
 
-  // 回车键生成
-  document.getElementById('topic-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') generateAnimation();
-  });
+// 回车键生成
+document.getElementById('topic-input').addEventListener('keydown', (e) => {
+if (e.key === 'Enter') generateAnimation();
+});
 });
 
 // ============================================================
 // Toast 提示
 // ============================================================
 function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+const toast = document.getElementById('toast');
+toast.textContent = msg;
+toast.classList.add('show');
+setTimeout(() => toast.classList.remove('show'), 2500);
 }
 
 // ============================================================
 // 动画生成
 // ============================================================
 async function generateAnimation() {
-  const topic = document.getElementById('topic-input').value.trim();
-  const sceneType = document.getElementById('scene-type').value;
+const topic = document.getElementById('topic-input').value.trim();
+const sceneType = document.getElementById('scene-type').value;
 
-  if (!topic) {
-    showToast('请输入学习主题');
-    return;
-  }
+if (!topic) {
+showToast('请输入学习主题');
+return;
+}
 
-  currentTopic = topic;
-  const btn = document.getElementById('btn-generate');
-  btn.disabled = true;
-  btn.textContent = '提交中...';
+currentTopic = topic;
+const btn = document.getElementById('btn-generate');
+btn.disabled = true;
+btn.textContent = '提交中...';
 
-  // 显示进度条
-  const progressArea = document.getElementById('progress-area');
-  progressArea.classList.add('visible');
-  updateProgress(0, '提交任务...');
+// 显示进度条
+const progressArea = document.getElementById('progress-area');
+progressArea.classList.add('visible');
+updateProgress(0, '提交任务...');
 
-  // 隐藏之前的视频
-  document.getElementById('video-placeholder').style.display = 'none';
-  document.getElementById('video-player').style.display = 'none';
-  document.getElementById('narration-area').classList.remove('visible');
+// 隐藏之前的视频
+document.getElementById('video-placeholder').style.display = 'none';
+document.getElementById('video-player').style.display = 'none';
+document.getElementById('narration-area').classList.remove('visible');
 
-  try {
-    const resp = await fetch(`${API_BASE}/generate/async`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, scene_type: sceneType, user_id: 'student_001' })
-    });
-    const data = await resp.json();
+try {
+const resp = await fetch(`${API_BASE}/generate/async`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ topic, scene_type: sceneType, user_id: 'student_001' })
+});
+const data = await resp.json();
 
-    if (data.status === 'ok') {
-      currentTaskId = data.task_id;
-      btn.textContent = '生成中...';
-      startPolling(currentTaskId);
-    } else {
-      showToast('提交失败: ' + (data.message || '未知错误'));
-      btn.disabled = false;
-      btn.textContent = '生成动画';
-      progressArea.classList.remove('visible');
-    }
-  } catch (e) {
-    showToast('网络错误: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '生成动画';
-    progressArea.classList.remove('visible');
-  }
+if (data.status === 'ok') {
+currentTaskId = data.task_id;
+btn.textContent = '生成中...';
+startPolling(currentTaskId);
+} else {
+showToast('提交失败: ' + (data.message || '未知错误'));
+btn.disabled = false;
+btn.textContent = '生成动画';
+progressArea.classList.remove('visible');
+}
+} catch (e) {
+showToast('网络错误: ' + e.message);
+btn.disabled = false;
+btn.textContent = '生成动画';
+progressArea.classList.remove('visible');
+}
 }
 
 function startPolling(taskId) {
-  if (pollTimer) clearInterval(pollTimer);
+if (pollTimer) clearInterval(pollTimer);
 
-  pollTimer = setInterval(async () => {
-    try {
-      const resp = await fetch(`${API_BASE}/progress/${taskId}`);
-      const data = await resp.json();
+pollTimer = setInterval(async () => {
+try {
+const resp = await fetch(`${API_BASE}/progress/${taskId}`);
+const data = await resp.json();
 
-      if (data.status === 'ok') {
-        updateProgress(data.progress, data.step);
+if (data.status === 'ok') {
+updateProgress(data.progress, data.step);
 
-        if (data.task_status === 'completed' && data.result) {
-          clearInterval(pollTimer);
-          pollTimer = null;
-          onTaskCompleted(data.result);
-        } else if (data.task_status === 'failed') {
-          clearInterval(pollTimer);
-          pollTimer = null;
-          onTaskFailed(data.error || '未知错误');
-        }
-      }
-    } catch (e) {
-      // 轮询失败不中断
-    }
-  }, 800);
+if (data.task_status === 'completed' && data.result) {
+clearInterval(pollTimer);
+pollTimer = null;
+onTaskCompleted(data.result);
+} else if (data.task_status === 'failed') {
+clearInterval(pollTimer);
+pollTimer = null;
+onTaskFailed(data.error || '未知错误');
+}
+}
+} catch (e) {
+// 轮询失败不中断
+}
+}, 800);
 }
 
 function updateProgress(percent, step) {
-  document.getElementById('progress-fill').style.width = percent + '%';
-  document.getElementById('progress-percent').textContent = percent + '%';
-  document.getElementById('progress-step').textContent = step;
+document.getElementById('progress-fill').style.width = percent + '%';
+document.getElementById('progress-percent').textContent = percent + '%';
+document.getElementById('progress-step').textContent = step;
 }
 
 function onTaskCompleted(result) {
-  const btn = document.getElementById('btn-generate');
-  btn.disabled = false;
-  btn.textContent = '生成动画';
+const btn = document.getElementById('btn-generate');
+btn.disabled = false;
+btn.textContent = '生成动画';
 
-  // 显示视频
-  if (result.video_path) {
-    const videoUrl = `/api/animation/video/${result.video_path.split('/').pop()}`;
-    const player = document.getElementById('video-player');
-    player.src = videoUrl;
-    player.style.display = 'block';
-    document.getElementById('video-placeholder').style.display = 'none';
-    player.play().catch(() => {});
-  } else if (result.error) {
-    showToast('渲染失败: ' + result.error);
-  }
+// 显示视频
+if (result.video_path) {
+const videoUrl = `/api/animation/video/${result.video_path.split('/').pop()}`;
+const player = document.getElementById('video-player');
+player.src = videoUrl;
+player.style.display = 'block';
+document.getElementById('video-placeholder').style.display = 'none';
+player.play().catch(() => {});
+} else if (result.error) {
+showToast('渲染失败: ' + result.error);
+}
 
-  // 显示旁白
-  if (result.narration) {
-    document.getElementById('narration-text').textContent = result.narration;
-    document.getElementById('narration-area').classList.add('visible');
-  }
+// 显示旁白
+if (result.narration) {
+document.getElementById('narration-text').textContent = result.narration;
+document.getElementById('narration-area').classList.add('visible');
+}
 
-  // 记录学习
-  recordLearning(currentTopic, 1.0, result.duration || 0);
+// 记录学习
+recordLearning(currentTopic, 1.0, result.duration || 0);
 
-  // 刷新推荐
-  setTimeout(() => {
-    loadRecommendations();
-    loadProgress();
-  }, 500);
+// 刷新推荐
+setTimeout(() => {
+loadRecommendations();
+loadProgress();
+}, 500);
 
-  showToast('动画生成完成！');
+showToast('动画生成完成！');
 }
 
 function onTaskFailed(error) {
-  const btn = document.getElementById('btn-generate');
-  btn.disabled = false;
-  btn.textContent = '生成动画';
-  showToast('生成失败: ' + error);
+const btn = document.getElementById('btn-generate');
+btn.disabled = false;
+btn.textContent = '生成动画';
+showToast('生成失败: ' + error);
 }
 
 function onVideoEnded() {
-  // 视频播放完成，可以触发下一个推荐
-  loadRecommendations();
+// 视频播放完成，可以触发下一个推荐
+loadRecommendations();
 }
 
 // ============================================================
 // 学习记录
 // ============================================================
 async function recordLearning(nodeId, score, timeSpent) {
-  try {
-    await fetch(`${API_BASE}/learn/progress`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: 'student_001',
-        node_id: nodeId,
-        score: score,
-        time_spent: timeSpent
-      })
-    });
-  } catch (e) {
-    // 静默失败
-  }
+try {
+await fetch(`${API_BASE}/learn/progress`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+user_id: 'student_001',
+node_id: nodeId,
+score: score,
+time_spent: timeSpent
+})
+});
+} catch (e) {
+// 静默失败
+}
 }
 
 // ============================================================
 // 知识图谱
 // ============================================================
 async function loadKnowledgeGraph() {
-  try {
-    const resp = await fetch(`${API_BASE}/learn/graph`);
-    const data = await resp.json();
+try {
+const resp = await fetch(`${API_BASE}/learn/graph`);
+const data = await resp.json();
 
-    if (data.status === 'ok') {
-      renderKnowledgeGraph(data.graph);
-    }
-  } catch (e) {
-    document.getElementById('knowledge-list').innerHTML =
-      '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px">加载失败</div>';
-  }
+if (data.status === 'ok') {
+renderKnowledgeGraph(data.graph);
+}
+} catch (e) {
+document.getElementById('knowledge-list').innerHTML =
+'<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px">加载失败</div>';
+}
 }
 
 function renderKnowledgeGraph(graph) {
-  const container = document.getElementById('knowledge-list');
-  const nodes = graph.nodes || [];
+const container = document.getElementById('knowledge-list');
+const nodes = graph.nodes || [];
 
-  // 按类别分组
-  const categories = {};
-  nodes.forEach(n => {
-    if (!categories[n.category]) categories[n.category] = [];
-    categories[n.category].push(n);
-  });
+// 按类别分组
+const categories = {};
+nodes.forEach(n => {
+if (!categories[n.category]) categories[n.category] = [];
+categories[n.category].push(n);
+});
 
-  const catNames = {
-    geometry: '几何', algebra: '代数', functions: '函数',
-    physics: '物理', statistics: '统计'
-  };
+const catNames = {
+geometry: '几何', algebra: '代数', functions: '函数',
+physics: '物理', statistics: '统计'
+};
 
-  let html = '';
-  for (const [cat, catNodes] of Object.entries(categories)) {
-    html += `<div style="font-size:11px;color:var(--text-dim);padding:8px 14px 4px;text-transform:uppercase;letter-spacing:1px">${catNames[cat] || cat}</div>`;
-    catNodes.forEach(node => {
-      html += `
-        <div class="knowledge-node" onclick="selectNode('${node.id}', '${node.name}')" data-node-id="${node.id}">
-          <div class="node-name">${node.name}</div>
-          <div class="node-meta">
-            <span class="cat-tag cat-${node.category}">${catNames[node.category] || node.category}</span>
-            <span>难度 ${'★'.repeat(node.difficulty)}</span>
-          </div>
-          <div class="mastery-bar">
-            <div class="mastery-fill mastery-low" style="width:0%"></div>
-          </div>
-        </div>`;
-    });
-  }
+let html = '';
+for (const [cat, catNodes] of Object.entries(categories)) {
+html += `<div style="font-size:11px;color:var(--text-dim);padding:8px 14px 4px;text-transform:uppercase;letter-spacing:1px">${catNames[cat] || cat}</div>`;
+catNodes.forEach(node => {
+html += `
+<div class="knowledge-node" onclick="selectNode('${node.id}', '${node.name}')" data-node-id="${node.id}">
+<div class="node-name">${node.name}</div>
+<div class="node-meta">
+<span class="cat-tag cat-${node.category}">${catNames[node.category] || node.category}</span>
+<span>难度 ${'★'.repeat(node.difficulty)}</span>
+</div>
+<div class="mastery-bar">
+<div class="mastery-fill mastery-low" style="width:0%"></div>
+</div>
+</div>`;
+});
+}
 
-  container.innerHTML = html;
+container.innerHTML = html;
 }
 
 function selectNode(nodeId, nodeName) {
-  // 高亮选中
-  document.querySelectorAll('.knowledge-node').forEach(el => el.classList.remove('selected'));
-  const el = document.querySelector(`[data-node-id="${nodeId}"]`);
-  if (el) el.classList.add('selected');
+// 高亮选中
+document.querySelectorAll('.knowledge-node').forEach(el => el.classList.remove('selected'));
+const el = document.querySelector(`[data-node-id="${nodeId}"]`);
+if (el) el.classList.add('selected');
 
-  // 填入输入框
-  document.getElementById('topic-input').value = nodeName;
-  document.getElementById('topic-input').focus();
+// 填入输入框
+document.getElementById('topic-input').value = nodeName;
+document.getElementById('topic-input').focus();
 }
 
 // ============================================================
 // 智能推荐
 // ============================================================
 async function loadRecommendations() {
-  try {
-    const resp = await fetch(`${API_BASE}/learn/recommend?user_id=student_001&count=5`);
-    const data = await resp.json();
+try {
+const resp = await fetch(`${API_BASE}/learn/recommend?user_id=student_001&count=5`);
+const data = await resp.json();
 
-    if (data.status === 'ok') {
-      renderRecommendations(data.recommendations);
-    }
-  } catch (e) {
-    document.getElementById('recommendations').innerHTML =
-      '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px">加载失败</div>';
-  }
+if (data.status === 'ok') {
+renderRecommendations(data.recommendations);
+}
+} catch (e) {
+document.getElementById('recommendations').innerHTML =
+'<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px">加载失败</div>';
+}
 }
 
 function renderRecommendations(recs) {
-  const container = document.getElementById('recommendations');
-  if (!recs || recs.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px">暂无推荐，开始学习吧！</div>';
-    return;
-  }
+const container = document.getElementById('recommendations');
+if (!recs || recs.length === 0) {
+container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:12px">暂无推荐，开始学习吧！</div>';
+return;
+}
 
-  const catNames = {
-    geometry: '几何', algebra: '代数', functions: '函数',
-    physics: '物理', statistics: '统计'
-  };
+const catNames = {
+geometry: '几何', algebra: '代数', functions: '函数',
+physics: '物理', statistics: '统计'
+};
 
-  let html = '';
-  recs.forEach(rec => {
-    const masteryPercent = Math.round(rec.current_mastery * 100);
-    html += `
-      <div class="rec-item" onclick="startRecommended('${rec.name}', '${rec.animation_type}')">
-        <div class="rec-name">
-          <span class="cat-tag cat-${rec.category}">${catNames[rec.category] || rec.category}</span>
-          ${rec.name}
-        </div>
-        <div class="rec-desc">${rec.description || ''}</div>
-        <div class="rec-score">
-          掌握度: ${masteryPercent}% | 推荐指数: ${(rec.recommendation_score * 100).toFixed(0)}%
-        </div>
-      </div>`;
-  });
+let html = '';
+recs.forEach(rec => {
+const masteryPercent = Math.round(rec.current_mastery * 100);
+html += `
+<div class="rec-item" onclick="startRecommended('${rec.name}', '${rec.animation_type}')">
+<div class="rec-name">
+<span class="cat-tag cat-${rec.category}">${catNames[rec.category] || rec.category}</span>
+${rec.name}
+</div>
+<div class="rec-desc">${rec.description || ''}</div>
+<div class="rec-score">
+掌握度: ${masteryPercent}% | 推荐指数: ${(rec.recommendation_score * 100).toFixed(0)}%
+</div>
+</div>`;
+});
 
-  container.innerHTML = html;
+container.innerHTML = html;
 }
 
 function startRecommended(name, animType) {
-  document.getElementById('topic-input').value = name;
-  document.getElementById('scene-type').value = animType;
-  generateAnimation();
+document.getElementById('topic-input').value = name;
+document.getElementById('scene-type').value = animType;
+generateAnimation();
 }
 
 // ============================================================
 // 学习进度
 // ============================================================
 async function loadProgress() {
-  try {
-    const resp = await fetch(`${API_BASE}/learn/progress?user_id=student_001`);
-    const data = await resp.json();
+try {
+const resp = await fetch(`${API_BASE}/learn/progress?user_id=student_001`);
+const data = await resp.json();
 
-    if (data.status === 'ok') {
-      const p = data.progress;
-      document.getElementById('stat-mastered').textContent = p.mastered_nodes || 0;
-      document.getElementById('stat-learning').textContent = p.learning_nodes || 0;
-      document.getElementById('stat-progress').textContent = (p.overall_progress || 0) + '%';
+if (data.status === 'ok') {
+const p = data.progress;
+document.getElementById('stat-mastered').textContent = p.mastered_nodes || 0;
+document.getElementById('stat-learning').textContent = p.learning_nodes || 0;
+document.getElementById('stat-progress').textContent = (p.overall_progress || 0) + '%';
 
-      // 更新知识图谱掌握度
-      if (p.nodes) {
-        for (const [nid, info] of Object.entries(p.nodes)) {
-          const el = document.querySelector(`[data-node-id="${nid}"]`);
-          if (el) {
-            const fill = el.querySelector('.mastery-fill');
-            if (fill) {
-              const mastery = (info.mastery || 0) * 100;
-              fill.style.width = mastery + '%';
-              fill.className = 'mastery-fill ' + (
-                mastery >= 80 ? 'mastery-high' : mastery >= 40 ? 'mastery-medium' : 'mastery-low'
-              );
-            }
-          }
-        }
-      }
-    }
-  } catch (e) {
-    // 静默失败
-  }
+// 更新知识图谱掌握度
+if (p.nodes) {
+for (const [nid, info] of Object.entries(p.nodes)) {
+const el = document.querySelector(`[data-node-id="${nid}"]`);
+if (el) {
+const fill = el.querySelector('.mastery-fill');
+if (fill) {
+const mastery = (info.mastery || 0) * 100;
+fill.style.width = mastery + '%';
+fill.className = 'mastery-fill ' + (
+mastery >= 80 ? 'mastery-high' : mastery >= 40 ? 'mastery-medium' : 'mastery-low'
+);
+}
+}
+}
+}
+}
+} catch (e) {
+// 静默失败
+}
 
-  // 薄弱点
-  try {
-    const resp = await fetch(`${API_BASE}/learn/weaknesses?user_id=student_001`);
-    const data = await resp.json();
-    if (data.status === 'ok') {
-      document.getElementById('stat-weaknesses').textContent = data.count || 0;
-    }
-  } catch (e) {}
+// 薄弱点
+try {
+const resp = await fetch(`${API_BASE}/learn/weaknesses?user_id=student_001`);
+const data = await resp.json();
+if (data.status === 'ok') {
+document.getElementById('stat-weaknesses').textContent = data.count || 0;
+}
+} catch (e) {}
 }
 
 // ============================================================
@@ -1207,362 +1211,362 @@ let feynmanData = null;
 let currentFeynmanStep = -1;
 
 async function feynmanExplain() {
-  const topic = document.getElementById('topic-input').value.trim();
-  if (!topic) { showToast('请输入学习主题'); return; }
+const topic = document.getElementById('topic-input').value.trim();
+if (!topic) { showToast('请输入学习主题'); return; }
 
-  currentTopic = topic;
-  const feynmanArea = document.getElementById('feynman-area');
-  const feynmanContent = document.getElementById('feynman-content');
-  const feynmanStepsContainer = document.getElementById('feynman-steps-container');
-  const feynmanProgress = document.getElementById('feynman-progress');
-  const feynmanTestBtn = document.getElementById('feynman-test-btn');
-  const btn = document.getElementById('btn-feynman');
-  const genBtn = document.getElementById('btn-generate');
+currentTopic = topic;
+const feynmanArea = document.getElementById('feynman-area');
+const feynmanContent = document.getElementById('feynman-content');
+const feynmanStepsContainer = document.getElementById('feynman-steps-container');
+const feynmanProgress = document.getElementById('feynman-progress');
+const feynmanTestBtn = document.getElementById('feynman-test-btn');
+const btn = document.getElementById('btn-feynman');
+const genBtn = document.getElementById('btn-generate');
 
-  btn.disabled = true;
-  genBtn.disabled = true;
-  btn.textContent = '教学中...';
+btn.disabled = true;
+genBtn.disabled = true;
+btn.textContent = '教学中...';
 
-  // Hide video and show feynman area
-  document.getElementById('video-placeholder').style.display = 'none';
-  document.getElementById('video-player').style.display = 'none';
-  document.getElementById('narration-area').classList.remove('visible');
-  document.getElementById('progress-area').classList.remove('visible');
-  feynmanArea.classList.add('visible');
-  
-  // Show progress and hide test
-  feynmanProgress.style.display = 'flex';
-  feynmanTestBtn.classList.remove('visible');
-  document.getElementById('feynman-test-area').classList.remove('visible');
-  document.getElementById('feynman-test-result').classList.remove('visible');
-  feynmanContent.style.display = 'none';
-  
-  // Initialize
-  currentFeynmanStep = -1;
-  feynmanStepsContainer.innerHTML = '<div class="feynman-loading"><div class="spinner"></div>正在生成费曼五步法教学...</div>';
-  feynmanStepsContainer.classList.add('visible');
-  updateFeynmanProgress(0);
+// Hide video and show feynman area
+document.getElementById('video-placeholder').style.display = 'none';
+document.getElementById('video-player').style.display = 'none';
+document.getElementById('narration-area').classList.remove('visible');
+document.getElementById('progress-area').classList.remove('visible');
+feynmanArea.classList.add('visible');
 
-  try {
-    const resp = await fetch('/api/feynman/explain', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        topic: topic,
-        level: 'general',
-        model: 'auto',
-        user_id: 'student_001'
-      })
-    });
-    const data = await resp.json();
+// Show progress and hide test
+feynmanProgress.style.display = 'flex';
+feynmanTestBtn.classList.remove('visible');
+document.getElementById('feynman-test-area').classList.remove('visible');
+document.getElementById('feynman-test-result').classList.remove('visible');
+feynmanContent.style.display = 'none';
 
-    if (data.steps && data.steps.length > 0) {
-      feynmanData = data;
-      // Render five-step cards
-      renderFeynmanSteps(data.steps);
-      
-      // Record learning
-      recordLearning(topic, 0.9, data.total_time || 0);
-      setTimeout(() => { loadRecommendations(); loadProgress(); }, 500);
-      
-      // Check for animation trigger
-      if (data.animation && data.animation.detected && data.animation.task_id) {
-        showToast('检测到动画！正在生成...');
-        feynmanTaskId = data.animation.task_id;
-        startFeynmanAnimationPolling(feynmanTaskId);
-      }
-    } else if (data.full_content) {
-      // Fallback to plain text
-      feynmanContent.style.display = 'block';
-      let html = data.full_content
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\n## (.*)/g, '\n<h3>$1</h3>')
-        .replace(/\n# (.*)/g, '\n<h2>$1</h2>')
-        .replace(/\n/g, '<br>');
-      feynmanContent.innerHTML = html;
-    } else {
-      feynmanStepsContainer.innerHTML = '<div style="padding:20px;color:var(--text-dim)">教学生成失败，请重试</div>';
-    }
+// Initialize
+currentFeynmanStep = -1;
+feynmanStepsContainer.innerHTML = '<div class="feynman-loading"><div class="spinner"></div>正在生成费曼五步法教学...</div>';
+feynmanStepsContainer.classList.add('visible');
+updateFeynmanProgress(0);
 
-  } catch (e) {
-    feynmanStepsContainer.innerHTML = '<div style="padding:20px;color:var(--accent-orange)">请求失败: ' + e.message + '</div>';
-    showToast('请求失败: ' + e.message);
-  }
+try {
+const resp = await fetch('/api/feynman/explain', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+topic: topic,
+level: 'general',
+model: 'auto',
+user_id: 'student_001'
+})
+});
+const data = await resp.json();
 
-  btn.disabled = false;
-  genBtn.disabled = false;
-  btn.textContent = '费曼教学';
+if (data.steps && data.steps.length > 0) {
+feynmanData = data;
+// Render five-step cards
+renderFeynmanSteps(data.steps);
+
+// Record learning
+recordLearning(topic, 0.9, data.total_time || 0);
+setTimeout(() => { loadRecommendations(); loadProgress(); }, 500);
+
+// Check for animation trigger
+if (data.animation && data.animation.detected && data.animation.task_id) {
+showToast('检测到动画！正在生成...');
+feynmanTaskId = data.animation.task_id;
+startFeynmanAnimationPolling(feynmanTaskId);
+}
+} else if (data.full_content) {
+// Fallback to plain text
+feynmanContent.style.display = 'block';
+let html = data.full_content
+.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+.replace(/\n## (.*)/g, '\n<h3>$1</h3>')
+.replace(/\n# (.*)/g, '\n<h2>$1</h2>')
+.replace(/\n/g, '<br>');
+feynmanContent.innerHTML = html;
+} else {
+feynmanStepsContainer.innerHTML = '<div style="padding:20px;color:var(--text-dim)">教学生成失败，请重试</div>';
+}
+
+} catch (e) {
+feynmanStepsContainer.innerHTML = '<div style="padding:20px;color:var(--accent-orange)">请求失败: ' + e.message + '</div>';
+showToast('请求失败: ' + e.message);
+}
+
+btn.disabled = false;
+genBtn.disabled = false;
+btn.textContent = '费曼教学';
 }
 
 function renderFeynmanSteps(steps) {
-  const container = document.getElementById('feynman-steps-container');
-  container.innerHTML = '';
-  
-  steps.forEach((step, index) => {
-    const card = document.createElement('div');
-    card.className = 'feynman-step-card';
-    card.dataset.stepIndex = index;
-    card.onclick = () => selectFeynmanStep(index);
-    
-    // Generate preview text (first 80 chars)
-    const preview = step.content.length > 80 
-      ? step.content.substring(0, 80) + '...' 
-      : step.content;
-    
-    // Animation hint description
-    const animationHintDesc = getAnimationHintDescription(step.animation_hint);
-    
-    card.innerHTML = `
-      <div class="feynman-step-header">
-        <div class="feynman-step-number">${index + 1}</div>
-        <div class="feynman-step-name">${step.step_name}</div>
-        <span class="feynman-step-status pending" data-status="pending">待查看</span>
-      </div>
-      <div class="feynman-step-preview">${escapeHtml(preview)}</div>
-      <div class="feynman-step-detail">
-        ${escapeHtml(step.content)}
-        ${step.key_points && step.key_points.length > 0 ? `
-          <div class="feynman-step-keypoints">
-            ${step.key_points.map(kp => `<span class="feynman-keypoint">${escapeHtml(kp)}</span>`).join('')}
-          </div>
-        ` : ''}
-        ${step.animation_hint ? `
-          <div class="feynman-animation-hint">${animationHintDesc}</div>
-        ` : ''}
-      </div>
-    `;
-    
-    container.appendChild(card);
-  });
-  
-  // Show test button after rendering
-  document.getElementById('feynman-test-btn').classList.add('visible');
+const container = document.getElementById('feynman-steps-container');
+container.innerHTML = '';
+
+steps.forEach((step, index) => {
+const card = document.createElement('div');
+card.className = 'feynman-step-card';
+card.dataset.stepIndex = index;
+card.onclick = () => selectFeynmanStep(index);
+
+// Generate preview text (first 80 chars)
+const preview = step.content.length > 80
+? step.content.substring(0, 80) + '...'
+: step.content;
+
+// Animation hint description
+const animationHintDesc = getAnimationHintDescription(step.animation_hint);
+
+card.innerHTML = `
+<div class="feynman-step-header">
+<div class="feynman-step-number">${index + 1}</div>
+<div class="feynman-step-name">${step.step_name}</div>
+<span class="feynman-step-status pending" data-status="pending">待查看</span>
+</div>
+<div class="feynman-step-preview">${escapeHtml(preview)}</div>
+<div class="feynman-step-detail">
+${escapeHtml(step.content)}
+${step.key_points && step.key_points.length > 0 ? `
+<div class="feynman-step-keypoints">
+${step.key_points.map(kp => `<span class="feynman-keypoint">${escapeHtml(kp)}</span>`).join('')}
+</div>
+` : ''}
+${step.animation_hint ? `
+<div class="feynman-animation-hint">${animationHintDesc}</div>
+` : ''}
+</div>
+`;
+
+container.appendChild(card);
+});
+
+// Show test button after rendering
+document.getElementById('feynman-test-btn').classList.add('visible');
 }
 
 function getAnimationHintDescription(hint) {
-  const descriptions = {
-    'math_geometry_scene': '建议：展示几何图形动画',
-    'math_puzzle': '建议：展示数学谜题动画',
-    'math_visualization': '建议：展示数学可视化动画',
-    'math_proof': '建议：展示数学证明过程动画',
-    'math_summary': '建议：展示总结图示',
-    'physics_mechanics_scene': '建议：展示力学场景动画',
-    'physics_diagram': '建议：展示物理示意图',
-    'physics_formula': '建议：展示公式推导动画',
-    'chemistry_reaction_scene': '建议：展示化学反应动画',
-    'chemistry_molecule': '建议：展示分子结构动画',
-    'english_conversation': '建议：展示英语对话场景',
-    'general_scene': '建议：展示生活场景',
-    'general_diagram': '建议：展示图示说明'
-  };
-  return descriptions[hint] || '建议：展示相关动画';
+const descriptions = {
+'math_geometry_scene': '建议：展示几何图形动画',
+'math_puzzle': '建议：展示数学谜题动画',
+'math_visualization': '建议：展示数学可视化动画',
+'math_proof': '建议：展示数学证明过程动画',
+'math_summary': '建议：展示总结图示',
+'physics_mechanics_scene': '建议：展示力学场景动画',
+'physics_diagram': '建议：展示物理示意图',
+'physics_formula': '建议：展示公式推导动画',
+'chemistry_reaction_scene': '建议：展示化学反应动画',
+'chemistry_molecule': '建议：展示分子结构动画',
+'english_conversation': '建议：展示英语对话场景',
+'general_scene': '建议：展示生活场景',
+'general_diagram': '建议：展示图示说明'
+};
+return descriptions[hint] || '建议：展示相关动画';
 }
 
 function selectFeynmanStep(index) {
-  const cards = document.querySelectorAll('.feynman-step-card');
-  
-  // Mark previous steps as completed
-  for (let i = 0; i < index; i++) {
-    cards[i].classList.add('completed');
-    cards[i].classList.remove('active');
-    cards[i].querySelector('[data-status]').textContent = '已完成';
-    cards[i].querySelector('[data-status]').className = 'feynman-step-status done';
-  }
-  
-  // Mark current step as active
-  cards[index].classList.add('active');
-  cards[index].classList.remove('completed');
-  cards[index].querySelector('[data-status]').textContent = '查看中';
-  cards[index].querySelector('[data-status]').className = 'feynman-step-status current';
-  
-  // Mark future steps as pending
-  for (let i = index + 1; i < cards.length; i++) {
-    cards[i].classList.remove('active', 'completed');
-    cards[i].querySelector('[data-status]').textContent = '待查看';
-    cards[i].querySelector('[data-status]').className = 'feynman-step-status pending';
-  }
-  
-  currentFeynmanStep = index;
-  updateFeynmanProgress(index + 1);
-  
-  // Auto-play animation for thinking model and derive steps
-  const step = feynmanData?.steps[index];
-  if (step && (step.step_name === '思维模型' || step.step_name === '自主推导')) {
-    if (step.animation_hint) {
-      showToast('正在播放相关动画：' + getAnimationHintDescription(step.animation_hint));
-      // Trigger animation based on hint
-      triggerAnimationForStep(step.animation_hint, feynmanData.topic);
-    }
-  }
+const cards = document.querySelectorAll('.feynman-step-card');
+
+// Mark previous steps as completed
+for (let i = 0; i < index; i++) {
+cards[i].classList.add('completed');
+cards[i].classList.remove('active');
+cards[i].querySelector('[data-status]').textContent = '已完成';
+cards[i].querySelector('[data-status]').className = 'feynman-step-status done';
+}
+
+// Mark current step as active
+cards[index].classList.add('active');
+cards[index].classList.remove('completed');
+cards[index].querySelector('[data-status]').textContent = '查看中';
+cards[index].querySelector('[data-status]').className = 'feynman-step-status current';
+
+// Mark future steps as pending
+for (let i = index + 1; i < cards.length; i++) {
+cards[i].classList.remove('active', 'completed');
+cards[i].querySelector('[data-status]').textContent = '待查看';
+cards[i].querySelector('[data-status]').className = 'feynman-step-status pending';
+}
+
+currentFeynmanStep = index;
+updateFeynmanProgress(index + 1);
+
+// Auto-play animation for thinking model and derive steps
+const step = feynmanData?.steps[index];
+if (step && (step.step_name === '思维模型' || step.step_name === '自主推导')) {
+if (step.animation_hint) {
+showToast('正在播放相关动画：' + getAnimationHintDescription(step.animation_hint));
+// Trigger animation based on hint
+triggerAnimationForStep(step.animation_hint, feynmanData.topic);
+}
+}
 }
 
 function updateFeynmanProgress(completed) {
-  const total = 5;
-  const percent = Math.round((completed / total) * 100);
-  
-  document.getElementById('feynman-progress-fill').style.width = percent + '%';
-  document.getElementById('feynman-progress-text').textContent = `${completed}/${total}`;
+const total = 5;
+const percent = Math.round((completed / total) * 100);
+
+document.getElementById('feynman-progress-fill').style.width = percent + '%';
+document.getElementById('feynman-progress-text').textContent = `${completed}/${total}`;
 }
 
 function triggerAnimationForStep(animationHint, topic) {
-  // Extract scene type from animation hint
-  let sceneType = 'auto';
-  if (animationHint.includes('geometry')) sceneType = 'geometry';
-  else if (animationHint.includes('physics')) sceneType = 'physics';
-  else if (animationHint.includes('chemistry')) sceneType = 'formula';
-  
-  // Trigger animation generation
-  generateAnimationForTopic(topic, sceneType);
+// Extract scene type from animation hint
+let sceneType = 'auto';
+if (animationHint.includes('geometry')) sceneType = 'geometry';
+else if (animationHint.includes('physics')) sceneType = 'physics';
+else if (animationHint.includes('chemistry')) sceneType = 'formula';
+
+// Trigger animation generation
+generateAnimationForTopic(topic, sceneType);
 }
 
 async function generateAnimationForTopic(topic, sceneType) {
-  try {
-    const resp = await fetch(`${API_BASE}/generate/async`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, scene_type: sceneType, user_id: 'student_001' })
-    });
-    const data = await resp.json();
+try {
+const resp = await fetch(`${API_BASE}/generate/async`, {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ topic, scene_type: sceneType, user_id: 'student_001' })
+});
+const data = await resp.json();
 
-    if (data.status === 'ok') {
-      feynmanTaskId = data.task_id;
-      startFeynmanAnimationPolling(data.task_id);
-    }
-  } catch (e) {
-    // Silent fail - animation is optional
-  }
+if (data.status === 'ok') {
+feynmanTaskId = data.task_id;
+startFeynmanAnimationPolling(data.task_id);
+}
+} catch (e) {
+// Silent fail - animation is optional
+}
 }
 
 function showFeynmanTest() {
-  const testArea = document.getElementById('feynman-test-area');
-  testArea.classList.add('visible');
-  document.getElementById('feynman-test-input').value = '';
-  document.getElementById('feynman-test-result').classList.remove('visible');
-  document.getElementById('feynman-test-input').focus();
+const testArea = document.getElementById('feynman-test-area');
+testArea.classList.add('visible');
+document.getElementById('feynman-test-input').value = '';
+document.getElementById('feynman-test-result').classList.remove('visible');
+document.getElementById('feynman-test-input').focus();
 }
 
 async function submitFeynmanTest() {
-  const explanation = document.getElementById('feynman-test-input').value.trim();
-  if (!explanation) {
-    showToast('请输入你的解释');
-    return;
-  }
-  
-  const topic = currentTopic || document.getElementById('topic-input').value.trim();
-  const resultDiv = document.getElementById('feynman-test-result');
-  
-  resultDiv.innerHTML = '<div class="feynman-loading"><div class="spinner"></div>正在评分...</div>';
-  resultDiv.classList.add('visible');
-  
-  try {
-    const resp = await fetch('/api/feynman/test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        concept: topic,
-        explanation: explanation,
-        model: 'auto'
-      })
-    });
-    const data = await resp.json();
+const explanation = document.getElementById('feynman-test-input').value.trim();
+if (!explanation) {
+showToast('请输入你的解释');
+return;
+}
 
-    if (data.score !== undefined) {
-      const scoreColor = data.score >= 80 ? 'var(--accent-green)' : 
-                         data.score >= 60 ? 'var(--accent-blue)' : 'var(--accent-orange)';
-      
-      resultDiv.innerHTML = `
-        <div class="feynman-score-label">费曼测试得分</div>
-        <div class="feynman-score" style="color:${scoreColor}">${data.score}</div>
-        <div class="feynman-dimensions">
-          ${Object.entries(data.dimensions || {}).map(([key, val]) => `
-            <div class="feynman-dimension">
-              <div class="feynman-dimension-name">${getDimensionName(key)}</div>
-              <div class="feynman-dimension-score">${val.score}/20</div>
-            </div>
-          `).join('')}
-        </div>
-        <div class="feynman-feedback">${data.feedback || ''}</div>
-      `;
-    } else {
-      resultDiv.innerHTML = '<div style="padding:20px;color:var(--accent-orange)">评分失败</div>';
-    }
-  } catch (e) {
-    resultDiv.innerHTML = '<div style="padding:20px;color:var(--accent-orange)">请求失败: ' + e.message + '</div>';
-  }
+const topic = currentTopic || document.getElementById('topic-input').value.trim();
+const resultDiv = document.getElementById('feynman-test-result');
+
+resultDiv.innerHTML = '<div class="feynman-loading"><div class="spinner"></div>正在评分...</div>';
+resultDiv.classList.add('visible');
+
+try {
+const resp = await fetch('/api/feynman/test', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({
+concept: topic,
+explanation: explanation,
+model: 'auto'
+})
+});
+const data = await resp.json();
+
+if (data.score !== undefined) {
+const scoreColor = data.score >= 80 ? 'var(--accent-green)' :
+data.score >= 60 ? 'var(--accent-blue)' : 'var(--accent-orange)';
+
+resultDiv.innerHTML = `
+<div class="feynman-score-label">费曼测试得分</div>
+<div class="feynman-score" style="color:${scoreColor}">${data.score}</div>
+<div class="feynman-dimensions">
+${Object.entries(data.dimensions || {}).map(([key, val]) => `
+<div class="feynman-dimension">
+<div class="feynman-dimension-name">${getDimensionName(key)}</div>
+<div class="feynman-dimension-score">${val.score}/20</div>
+</div>
+`).join('')}
+</div>
+<div class="feynman-feedback">${data.feedback || ''}</div>
+`;
+} else {
+resultDiv.innerHTML = '<div style="padding:20px;color:var(--accent-orange)">评分失败</div>';
+}
+} catch (e) {
+resultDiv.innerHTML = '<div style="padding:20px;color:var(--accent-orange)">请求失败: ' + e.message + '</div>';
+}
 }
 
 function getDimensionName(key) {
-  const names = {
-    simplicity: '简洁度',
-    accuracy: '准确度',
-    analogy: '比喻运用',
-    completeness: '完整度',
-    jargon_free: '术语规避'
-  };
-  return names[key] || key;
+const names = {
+simplicity: '简洁度',
+accuracy: '准确度',
+analogy: '比喻运用',
+completeness: '完整度',
+jargon_free: '术语规避'
+};
+return names[key] || key;
 }
 
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+const div = document.createElement('div');
+div.textContent = text;
+return div.innerHTML;
 }
 
 function startFeynmanAnimationPolling(taskId) {
-  if (feynmanPollTimer) clearInterval(feynmanPollTimer);
+if (feynmanPollTimer) clearInterval(feynmanPollTimer);
 
-  const progressArea = document.getElementById('progress-area');
-  progressArea.classList.add('visible');
-  updateProgress(0, '生成动画中...');
+const progressArea = document.getElementById('progress-area');
+progressArea.classList.add('visible');
+updateProgress(0, '生成动画中...');
 
-  // Use SSE if available
-  const evtSource = new EventSource(`${API_BASE}/progress/${taskId}/stream`);
-  evtSource.onmessage = function(event) {
-    try {
-      const data = JSON.parse(event.data);
-      updateProgress(data.progress || 0, data.step || '');
-      if (data.status === 'completed' && data.result) {
-        evtSource.close();
-        showAnimationResult(data.result);
-      } else if (data.status === 'failed') {
-        evtSource.close();
-        showToast('动画生成失败: ' + (data.error || '未知错误'));
-      }
-    } catch(e) {}
-  };
-  evtSource.onerror = function() {
-    evtSource.close();
-    // Fallback to polling
-    feynmanPollTimer = setInterval(async () => {
-      try {
-        const resp = await fetch(`${API_BASE}/progress/${taskId}`);
-        const data = await resp.json();
-        if (data.status === 'ok') {
-          updateProgress(data.progress, data.step);
-          if (data.task_status === 'completed' && data.result) {
-            clearInterval(feynmanPollTimer);
-            showAnimationResult(data.result);
-          }
-        }
-      } catch(e) {}
-    }, 2000);
-  };
+// Use SSE if available
+const evtSource = new EventSource(`${API_BASE}/progress/${taskId}/stream`);
+evtSource.onmessage = function(event) {
+try {
+const data = JSON.parse(event.data);
+updateProgress(data.progress || 0, data.step || '');
+if (data.status === 'completed' && data.result) {
+evtSource.close();
+showAnimationResult(data.result);
+} else if (data.status === 'failed') {
+evtSource.close();
+showToast('动画生成失败: ' + (data.error || '未知错误'));
+}
+} catch(e) {}
+};
+evtSource.onerror = function() {
+evtSource.close();
+// Fallback to polling
+feynmanPollTimer = setInterval(async () => {
+try {
+const resp = await fetch(`${API_BASE}/progress/${taskId}`);
+const data = await resp.json();
+if (data.status === 'ok') {
+updateProgress(data.progress, data.step);
+if (data.task_status === 'completed' && data.result) {
+clearInterval(feynmanPollTimer);
+showAnimationResult(data.result);
+}
+}
+} catch(e) {}
+}, 2000);
+};
 }
 
 function showAnimationResult(result) {
-  if (result.video_path) {
-    const videoUrl = `/api/animation/video/${result.video_path.split('/').pop()}`;
-    const player = document.getElementById('video-player');
-    player.src = videoUrl;
-    player.style.display = 'block';
-    document.getElementById('video-placeholder').style.display = 'none';
-    player.play().catch(() => {});
-  }
-  if (result.narration) {
-    document.getElementById('narration-text').textContent = result.narration;
-    document.getElementById('narration-area').classList.add('visible');
-  }
-  showToast('动画生成完成！');
+if (result.video_path) {
+const videoUrl = `/api/animation/video/${result.video_path.split('/').pop()}`;
+const player = document.getElementById('video-player');
+player.src = videoUrl;
+player.style.display = 'block';
+document.getElementById('video-placeholder').style.display = 'none';
+player.play().catch(() => {});
+}
+if (result.narration) {
+document.getElementById('narration-text').textContent = result.narration;
+document.getElementById('narration-area').classList.add('visible');
+}
+showToast('动画生成完成！');
 }
 </script>
 </body>
