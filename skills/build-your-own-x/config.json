@@ -1,0 +1,39 @@
+{
+  "name": "build-your-own-x",
+  "version": "1.0.0",
+  "description": "Build-Your-Own-X 手搓教程技能配置",
+  "tutorial_cache_dir": "./.tutorials",
+  "auto_evaluate": true,
+  "github_integration": {
+    "enabled": true,
+    "default_branch": "main"
+  },
+  "supported_languages": [
+    "python", "javascript", "typescript",
+    "c", "cpp", "rust", "go"
+  ],
+  "recommendation_engine": {
+    "strategy": "skill_progression",
+    "min_projects_to_advance": 3
+  },
+  "categories": {
+    "interpreters": "解释器/VM",
+    "os": "操作系统",
+    "network": "网络/数据库",
+    "graphics": "图形/游戏",
+    "tools": "工具链",
+    "frontend": "前端/应用"
+  },
+  "evaluation_criteria": [
+    "code_structure",
+    "naming",
+    "testing",
+    "documentation",
+    "performance"
+  ],
+  "integrations": {
+    "ai_collab": true,
+    "codegraph": true,
+    "understand_anything": true
+  }
+}

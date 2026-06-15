@@ -1,0 +1,54 @@
+{
+  "name": "impeccable",
+  "version": "1.0.0",
+  "description": "给 AI Coding Agent 用的响应式设计技能包，内置20个设计命令和反模式库",
+  "source": "https://github.com/pbakaus/impeccable",
+  "stars": "10K+",
+  "author": "Paul Bakaus (前 Google 开发者布道师)",
+  "type": "responsive-design",
+  "tags": ["frontend", "responsive", "design", "best-practices", "slash-commands", "mobile"],
+  "capabilities": [
+    "20个设计命令",
+    "反模式库",
+    "标准断点系统",
+    "栅格系统",
+    "触摸友好设计"
+  ],
+  "slash_commands": [
+    "impeccable-layout",
+    "impeccable-grid",
+    "impeccable-stack",
+    "impeccable-split",
+    "impeccable-center",
+    "impeccable-responsive",
+    "impeccable-breakpoints",
+    "impeccable-fluid",
+    "impeccable-mobile",
+    "impeccable-touch",
+    "impeccable-typography",
+    "impeccable-spacing",
+    "impeccable-colors",
+    "impeccable-shadows",
+    "impeccable-borders",
+    "impeccable-radii",
+    "impeccable-animation",
+    "impeccable-hover",
+    "impeccable-focus",
+    "impeccable-loading"
+  ],
+  "integration": {
+    "system_prompt": true,
+    "python_api": true,
+    "auto_apply": true
+  },
+  "dependencies": [],
+  "lumilearn_compatible": true,
+  "priority": "high",
+  "use_cases": [
+    "响应式教学页面",
+    "动画播放器界面",
+    "管理后台仪表盘",
+    "移动端优化",
+    "无障碍设计"
+  ]
+}

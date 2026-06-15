@@ -1,0 +1,80 @@
+{
+  "name": "ai-coding-tools",
+  "version": "1.0.0",
+  "description": "GitHub 热门 AI 编程工具配置指南 - Cursor/Continue/Aider/Copilot 完整工具链",
+  "source": "GitHub 热门项目整合",
+  "stars": "社区热门",
+  "author": "LumiLearn 项目组",
+  "type": "tooling-guidance",
+  "tags": [
+    "cursor",
+    "continue",
+    "aider",
+    "copilot",
+    "ai-programming",
+    "code-agent",
+    "ollama"
+  ],
+  "capabilities": [
+    "Cursor AI IDE 配置与使用",
+    "Continue 开源 AI 助手",
+    "Aider 终端 AI 编程",
+    "GitHub Copilot 使用",
+    "本地模型集成（Ollama）",
+    "项目规则集配置",
+    "多工具组合方案"
+  ],
+  "integration": {
+    "system_prompt": false,
+    "python_api": true,
+    "auto_apply": false
+  },
+  "dependencies": [
+    "ollama",
+    "python3.8+",
+    "vscode 或 cursor"
+  ],
+  "lumilearn_compatible": true,
+  "priority": "high",
+  "use_cases": [
+    "日常开发效率提升",
+    "项目代码重构",
+    "代码审查与优化",
+    "学习新代码库",
+    "自动化脚本编写"
+  ],
+  "recommended_tools": [
+    {
+      "name": "Cursor",
+      "type": "AI IDE",
+      "free": true,
+      "local": false,
+      "priority": 1,
+      "setup_time": "5 分钟"
+    },
+    {
+      "name": "Continue",
+      "type": "VSCode 插件",
+      "free": true,
+      "local": true,
+      "priority": 2,
+      "setup_time": "10 分钟"
+    },
+    {
+      "name": "Aider",
+      "type": "终端 Agent",
+      "free": true,
+      "local": true,
+      "priority": 3,
+      "setup_time": "5 分钟"
+    },
+    {
+      "name": "GitHub Copilot",
+      "type": "代码补全",
+      "free": false,
+      "local": false,
+      "priority": 4,
+      "setup_time": "5 分钟"
+    }
+  ]
+}

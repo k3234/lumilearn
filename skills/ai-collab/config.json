@@ -1,0 +1,264 @@
+{
+  "version": "1.0.0",
+  "name": "AI-Collab Multi-Agent Orchestration",
+  "description": "多智能体协作配置，实现AI Agent的协调工作",
+  
+  "orchestrator": {
+    "max_concurrent_tasks": 10,
+    "task_timeout": 300,
+    "retry_attempts": 3,
+    "quality_threshold": 0.85,
+    "parallel_execution": true,
+    "load_balancing": {
+      "enabled": true,
+      "max_concurrent_per_agent": 3,
+      "queue_strategy": "priority"
+    }
+  },
+  
+  "agents": {
+    "ContentAgent": {
+      "enabled": true,
+      "model": "qwen2.5:7b",
+      "temperature": 0.7,
+      "max_tokens": 2000,
+      "timeout": 60,
+      "capabilities": {
+        "skills": ["content_generation", "latex", "markdown"],
+        "subjects": ["math", "physics", "chemistry", "english", "chinese"],
+        "max_length": 5000,
+        "languages": ["zh", "en"]
+      }
+    },
+    "AnimationAgent": {
+      "enabled": true,
+      "model": "deepseek-r1:1.5b",
+      "temperature": 0.5,
+      "max_tokens": 3000,
+      "timeout": 120,
+      "capabilities": {
+        "skills": ["manim", "hyperframes", "animation_design"],
+        "animation_types": ["formula", "concept", "process", "comparison"],
+        "max_duration": 120
+      }
+    },
+    "QuestionAgent": {
+      "enabled": true,
+      "model": "qwen2.5:7b",
+      "temperature": 0.8,
+      "max_tokens": 1500,
+      "timeout": 45,
+      "capabilities": {
+        "skills": ["question_generation", "answer_validation"],
+        "question_types": ["choice", "fill_blank", "essay", "calculation"],
+        "difficulty_range": [0.3, 0.9]
+      }
+    },
+    "EvaluationAgent": {
+      "enabled": true,
+      "model": "Doubao-Seed-2.0",
+      "temperature": 0.3,
+      "max_tokens": 1000,
+      "timeout": 30,
+      "capabilities": {
+        "skills": ["content_evaluation", "quality_scoring", "error_detection"],
+        "metrics": ["accuracy", "completeness", "clarity", "difficulty"]
+      }
+    },
+    "TranslationAgent": {
+      "enabled": false,
+      "model": "qwen2.5:7b",
+      "temperature": 0.4,
+      "max_tokens": 2000,
+      "timeout": 60,
+      "capabilities": {
+        "skills": ["translation", "localization"],
+        "languages": ["zh", "en", "ja", "ko"]
+      }
+    },
+    "OptimizationAgent": {
+      "enabled": true,
+      "model": "Doubao-Seed-2.0",
+      "temperature": 0.5,
+      "max_tokens": 1500,
+      "timeout": 45,
+      "capabilities": {
+        "skills": ["content_optimization", "structure_improvement"]
+      }
+    }
+  },
+  
+  "workflows": {
+    "default": "完整知识点生成",
+    "templates_path": "./workflows",
+    "available_workflows": [
+      {
+        "name": "完整知识点生成",
+        "description": "从概念到练习的完整内容生成",
+        "stages": 4,
+        "estimated_time": 125
+      },
+      {
+        "name": "批量内容生产",
+        "description": "批量生成多个知识点的教学资源",
+        "stages": 5,
+        "estimated_time": 600
+      },
+      {
+        "name": "多语言内容生成",
+        "description": "生成中文内容并自动翻译为多语言",
+        "stages": 4,
+        "estimated_time": 180
+      },
+      {
+        "name": "快速内容生成",
+        "description": "仅生成基础内容，无动画和评估",
+        "stages": 1,
+        "estimated_time": 30
+      }
+    ]
+  },
+  
+  "allocation_rules": [
+    {
+      "condition": "task_type == 'content_generation'",
+      "priority_agent": "ContentAgent",
+      "fallback_agents": ["OptimizationAgent"],
+      "capabilities_required": ["content_generation"]
+    },
+    {
+      "condition": "task_type == 'animation'",
+      "priority_agent": "AnimationAgent",
+      "fallback_agents": [],
+      "capabilities_required": ["manim", "hyperframes"]
+    },
+    {
+      "condition": "task_type == 'question'",
+      "priority_agent": "QuestionAgent",
+      "fallback_agents": ["ContentAgent"],
+      "capabilities_required": ["question_generation"]
+    },
+    {
+      "condition": "task_type == 'evaluation'",
+      "priority_agent": "EvaluationAgent",
+      "fallback_agents": [],
+      "capabilities_required": ["content_evaluation"]
+    },
+    {
+      "condition": "task_type == 'translation'",
+      "priority_agent": "TranslationAgent",
+      "fallback_agents": ["ContentAgent"],
+      "capabilities_required": ["translation"]
+    }
+  ],
+  
+  "integration": {
+    "lumilearn": {
+      "auto_save_to_database": true,
+      "export_formats": ["json", "csv", "anki"],
+      "quality_check_before_save": true,
+      "min_quality_score": 0.7
+    },
+    "other_skills": {
+      "hyperframes": {
+        "enabled": true,
+        "agent_mapping": {
+          "AnimationAgent": "hyperframes"
+        }
+      },
+      "rtk": {
+        "enabled": false,
+        "agent_mapping": {}
+      }
+    }
+  },
+  
+  "monitoring": {
+    "enabled": true,
+    "metrics": [
+      "task_execution_time",
+      "agent_utilization",
+      "success_rate",
+      "average_quality_score",
+      "queue_length"
+    ],
+    "alerts": {
+      "task_failure_rate": {
+        "threshold": 0.05,
+        "action": "notify"
+      },
+      "avg_execution_time": {
+        "threshold": 300,
+        "action": "warn"
+      },
+      "queue_backlog": {
+        "threshold": 50,
+        "action": "scale_up"
+      }
+    },
+    "logging": {
+      "level": "INFO",
+      "format": "json",
+      "fields": [
+        "timestamp",
+        "task_id",
+        "agent_type",
+        "action",
+        "duration",
+        "status",
+        "input_hash",
+        "output_hash"
+      ],
+      "retention_days": 30
+    }
+  },
+  
+  "retry_policy": {
+    "max_attempts": 3,
+    "backoff_strategy": "exponential",
+    "initial_delay": 1,
+    "max_delay": 60,
+    "retryable_errors": [
+      "TimeoutError",
+      "ConnectionError",
+      "RateLimitError",
+      "ServiceUnavailable"
+    ]
+  },
+  
+  "fallback_strategy": {
+    "agent_unavailable": "use_backup_agent",
+    "quality_below_threshold": "manual_review",
+    "timeout": "return_partial_results",
+    "complete_failure": "log_error_and_notify"
+  },
+  
+  "performance": {
+    "parallel_optimization": {
+      "strategy": "dependency_analysis",
+      "max_parallel": 10,
+      "batch_size": 5,
+      "techniques": [
+        "task_dependency_graph",
+        "critical_path_optimization",
+        "dynamic_load_balancing",
+        "result_caching"
+      ]
+    },
+    "resource_management": {
+      "agent_pool": {
+        "min_instances": 2,
+        "max_instances": 10,
+        "scale_strategy": "queue_length_based"
+      },
+      "memory_management": {
+        "max_results_cache": 100,
+        "cleanup_interval": 3600
+      },
+      "rate_limiting": {
+        "requests_per_minute": 60,
+        "burst_allowance": 10
+      }
+    }
+  }
+}

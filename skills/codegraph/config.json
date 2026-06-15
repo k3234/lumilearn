@@ -1,0 +1,44 @@
+{
+  "name": "codegraph",
+  "version": "1.0.0",
+  "description": "代码知识图谱预索引技能配置",
+  "storage": {
+    "type": "sqlite",
+    "path": "./.codegraph/graph.db"
+  },
+  "scan": {
+    "auto_watch": true,
+    "watch_debounce_ms": 1000,
+    "max_file_size_mb": 10
+  },
+  "languages": ["python", "javascript", "typescript", "jsx", "tsx"],
+  "ignore_patterns": [
+    "**/node_modules/**",
+    "**/__pycache__/**",
+    "**/outputs/**",
+    "**/.git/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/venv/**",
+    "**/.venv/**"
+  ],
+  "mcp_server": {
+    "enabled": true,
+    "port": 8765,
+    "transport": "stdio"
+  },
+  "tools": [
+    "search_function",
+    "get_callers",
+    "get_callees",
+    "get_dependencies",
+    "trace_impact",
+    "find_unused"
+  ],
+  "integrations": {
+    "ai_collab": true,
+    "claude_code": true,
+    "cursor": true,
+    "opencode": true
+  }
+}

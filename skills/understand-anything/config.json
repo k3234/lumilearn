@@ -1,0 +1,46 @@
+{
+  "name": "understand-anything",
+  "version": "1.0.0",
+  "description": "Understand-Anything 代码库理解技能配置",
+  "graph_storage": {
+    "type": "sqlite",
+    "path": "./.ua/graph.db"
+  },
+  "analysis": {
+    "include_docs": true,
+    "include_readme": true,
+    "include_issues": false,
+    "max_file_size_mb": 5
+  },
+  "concept_extraction": {
+    "model": "qwen2.5:7b",
+    "max_concepts_per_file": 10,
+    "min_concept_relevance": 0.6
+  },
+  "question_mining": {
+    "max_questions_per_file": 5,
+    "min_quality_score": 0.7
+  },
+  "mcp_server": {
+    "enabled": true,
+    "port": 8766,
+    "transport": "stdio"
+  },
+  "node_types": ["file", "concept", "question"],
+  "relationship_types": [
+    "imports",
+    "uses",
+    "answered_by",
+    "addresses",
+    "related_to"
+  ],
+  "integrations": {
+    "ai_collab": true,
+    "codegraph": true,
+    "build_your_own_x": true,
+    "claude_code": true,
+    "cursor": true,
+    "github_copilot": true,
+    "gemini_cli": true
+  }
+}

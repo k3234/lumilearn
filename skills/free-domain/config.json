@@ -1,0 +1,81 @@
+{
+  "name": "free-domain",
+  "version": "1.0.0",
+  "description": "免费域名抢注与管理技能",
+  "providers": {
+    "digital_plat": {
+      "enabled": true,
+      "base_url": "https://domain.digitalplat.org",
+      "supported_domains": ["*.digitalplat.org", "*.lumilearn.app"]
+    },
+    "cloudflare_pages": {
+      "enabled": true,
+      "base_url": "https://pages.cloudflare.com",
+      "supported_domains": ["*.pages.dev"],
+      "needs_github": true
+    },
+    "vercel": {
+      "enabled": true,
+      "base_url": "https://vercel.com",
+      "supported_domains": ["*.vercel.app"],
+      "needs_github": true
+    },
+    "netlify": {
+      "enabled": true,
+      "base_url": "https://www.netlify.com",
+      "supported_domains": ["*.netlify.app"],
+      "needs_github": true
+    },
+    "github_pages": {
+      "enabled": true,
+      "base_url": "https://pages.github.com",
+      "supported_domains": ["*.github.io"],
+      "needs_github": true
+    },
+    "paid_registrars": {
+      "aliyun": "https://wanwang.aliyun.com",
+      "namecheap": "https://www.namecheap.com",
+      "godaddy": "https://www.godaddy.com"
+    }
+  },
+  "recommended_lumilearn_domains": {
+    "free": [
+      "lumilearn.pages.dev",
+      "lumilearn.vercel.app",
+      "lumilearn.netlify.app",
+      "lumilearn.github.io",
+      "lumilearn.digitalplat.org"
+    ],
+    "paid": [
+      "lumilearn.com",
+      "lumilearn.cn",
+      "lumilearn.ai",
+      "lumilearn.dev",
+      "lumilearn.xyz"
+    ]
+  },
+  "tianhong_server": {
+    "ip": "192.168.2.xx",
+    "ollama_port": 11434,
+    "terminal_port": 18080
+  },
+  "dns_records": {
+    "main": {
+      "type": "A",
+      "target": "192.168.2.xx",
+      "ttl": 300
+    },
+    "api": {
+      "type": "A",
+      "subdomain": "api",
+      "target": "192.168.2.xx",
+      "ttl": 300
+    },
+    "terminal": {
+      "type": "A",
+      "subdomain": "terminal",
+      "target": "192.168.2.xx",
+      "ttl": 300
+    }
+  }
+}

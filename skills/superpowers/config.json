@@ -1,0 +1,87 @@
+{
+  "name": "superpowers",
+  "version": "1.0.0",
+  "description": "AI 编程工程纪律框架 - 213K+ Stars，让 AI 从乱写变专业工程师",
+  "source": "https://github.com/obra/superpowers",
+  "stars": "213K+",
+  "author": "Jesse Vincent (obra)",
+  "type": "engineering-discipline",
+  "tags": [
+    "workflow",
+    "engineering-discipline",
+    "tdd",
+    "code-review",
+    "debugging",
+    "brainstorm",
+    "best-practices",
+    "claude-code",
+    "cursor"
+  ],
+  "capabilities": [
+    "brainstorm - 强制需求澄清",
+    "git-worktree - Git 分支隔离",
+    "tdd - 测试驱动开发",
+    "debugging - 系统性调试",
+    "code-review - 代码审查",
+    "pre-flight - 完成前验证"
+  ],
+  "skills": [
+    {
+      "name": "brainstorm",
+      "description": "强制头脑风暴 - 先澄清需求再动手",
+      "priority": 1
+    },
+    {
+      "name": "git-worktree",
+      "description": "Git 工作树隔离 - 不污染主分支",
+      "priority": 2
+    },
+    {
+      "name": "tdd",
+      "description": "测试驱动开发 - 先写测试再写代码",
+      "priority": 3
+    },
+    {
+      "name": "debugging",
+      "description": "系统性调试 - 找根因不试错",
+      "priority": 4
+    },
+    {
+      "name": "code-review",
+      "description": "代码审查 - 自审+清单检查",
+      "priority": 5
+    },
+    {
+      "name": "pre-flight",
+      "description": "完成前验证 - 6 项检查确保质量",
+      "priority": 6
+    }
+  ],
+  "integration": {
+    "system_prompt": true,
+    "python_api": false,
+    "auto_apply": false
+  },
+  "dependencies": [
+    "git",
+    "python3.8+",
+    "pytest (for tdd)"
+  ],
+  "lumilearn_compatible": true,
+  "priority": "high",
+  "use_cases": [
+    "新功能开发 - brainstorm → tdd → code-review → pre-flight",
+    "Bug 修复 - debugging → code-review → pre-flight",
+    "代码重构 - tdd → code-review → pre-flight",
+    "日常开发 - code-review → pre-flight"
+  ],
+  "recommended_for": [
+    "Claude Code",
+    "Cursor Agent",
+    "其他 AI Coding Agent"
+  ],
+  "related_skills": [
+    "AGESMD (PRODUCT.md, DESIGN.md, AGENTS.md)",
+    "ai-coding-tools (Cursor, Continue, Aider)"
+  ]
+}
