@@ -1,7 +1,8 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
 LumiLearn 动画生成器模块
 集成到主训练流程，为教学内容生成动画分镜和 Manim 代码
+支持独立运行（无Ollama时使用默认模板）
 """
 
 import json
@@ -9,13 +10,29 @@ import re
 import os
 import time
 from datetime import datetime
-from lumilearn_shared import call_ollama, LUMILEARN_DIR
+
+try:
+    from lumilearn_shared import call_ollama, LUMILEARN_DIR
+    HAS_SHARED = True
+except ImportError:
+    HAS_SHARED = False
+    LUMILEARN_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def safe_call_ollama(prompt, model="qwen2.5:7b", timeout=60):
+    """安全调用Ollama，失败时返回None"""
+    if not HAS_SHARED:
+        return None
+    try:
+        return call_ollama(model, prompt, timeout=timeout)
+    except Exception:
+        return None
 
 
 class AnimationGenerator:
     """动画生成器 - 为教学内容生成动画"""
 
-    def __init__(self, base_url="http://192.168.2.63:11434"):
+    def __init__(self, base_url="http://localhost:11434"):
         self.base_url = base_url
         self.primary_model = "qwen2.5:7b"
         self.fallback_model = "deepseek-r1:1.5b"
@@ -27,12 +44,16 @@ class AnimationGenerator:
             "chart": "图表动画",
             "3d_model": "3D模型动画"
         }
+        self.cache_dir = os.path.join(LUMILEARN_DIR, "animation_output")
+        os.makedirs(self.cache_dir, exist_ok=True)
 
     def _call_model(self, prompt, timeout=60):
-        """调用本地模型"""
+        """调用本地模型，失败时返回None"""
+        if not HAS_SHARED:
+            return None, None
         for model in [self.primary_model, self.fallback_model]:
             try:
-                result = call_ollama(prompt, model=model, timeout=timeout)
+                result = call_ollama(model, prompt, timeout=timeout)
                 if result and len(result) > 10:
                     return result, model
             except Exception as e:
@@ -41,7 +62,7 @@ class AnimationGenerator:
         return None, None
 
     def analyze_animation_type(self, content, title, subject):
-        """分析内容，确定最适合的动画类型"""
+        """分析内容，确定最适合的动画类型（无模型时返回默认）"""
         prompt = f"""作为教学动画设计专家，请分析以下教学内容，确定最适合的动画类型：
 
 标题: {title}
@@ -79,7 +100,7 @@ class AnimationGenerator:
         }
 
     def generate_storyboard(self, content, title, anim_type):
-        """生成分镜脚本"""
+        """生成分镜脚本（无模型时返回默认）"""
         type_name = self.animation_types.get(anim_type, "概念动画")
         prompt = f"""为以下教学内容设计动画分镜脚本：
 
@@ -103,18 +124,40 @@ class AnimationGenerator:
             except:
                 pass
 
-        # 默认分镜
-        return [
-            {"shot_number": 1, "duration": 5, "scene_description": "开场标题展示",
-             "narration": f"今天我们来学习{title}", "visual_elements": ["标题文字", "背景"], "transition": "淡入"},
-            {"shot_number": 2, "duration": 15, "scene_description": "核心概念展示",
-             "narration": content[:100], "visual_elements": ["核心图形", "标注"], "transition": "切换"},
-            {"shot_number": 3, "duration": 10, "scene_description": "总结回顾",
-             "narration": "以上就是本节内容", "visual_elements": ["总结文字"], "transition": "淡出"}
-        ], "fallback"
+        # 默认分镜（按学科智能生成）
+        default_shots = self._default_storyboard_by_subject(title, content, subject="数学")
+        return default_shots, "fallback"
+
+    def _default_storyboard_by_subject(self, title, content, subject):
+        """按学科生成智能默认分镜"""
+        if "面积" in title or "几何" in subject:
+            return [
+                {"shot_number": 1, "duration": 5, "scene_description": f"展示标题：{title}", "narration": f"今天我们来学习{title}", "visual_elements": ["标题文字", "几何背景"], "transition": "淡入"},
+                {"shot_number": 2, "duration": 10, "scene_description": "展示基本图形（长方形/三角形）", "narration": "首先我们来看基本图形的关系", "visual_elements": ["图形动画", "标注"], "transition": "切换"},
+                {"shot_number": 3, "duration": 12, "scene_description": "公式推导演示", "narration": "通过图形变化推导公式", "visual_elements": ["公式动画", "箭头指示"], "transition": "淡入"},
+                {"shot_number": 4, "duration": 10, "scene_description": "例题讲解", "narration": "我们来做一道例题", "visual_elements": ["题目文字", "解题步骤"], "transition": "切换"},
+                {"shot_number": 5, "duration": 3, "scene_description": "总结回顾", "narration": "这就是今天的内容，你学会了吗？", "visual_elements": ["总结文字", "点赞图标"], "transition": "淡出"}
+            ]
+        elif "方程" in title or "代数" in subject:
+            return [
+                {"shot_number": 1, "duration": 5, "scene_description": f"展示标题：{title}", "narration": f"欢迎来到{title}课堂", "visual_elements": ["标题文字", "代数符号"], "transition": "淡入"},
+                {"shot_number": 2, "duration": 8, "scene_description": "方程概念介绍", "narration": "什么是方程？我们来看", "visual_elements": ["等号动画", "天平"], "transition": "切换"},
+                {"shot_number": 3, "duration": 15, "scene_description": "解题步骤动画", "narration": "跟着步骤一步步来", "visual_elements": ["步骤动画", "移项演示"], "transition": "淡入"},
+                {"shot_number": 4, "duration": 12, "scene_description": "典型例题", "narration": "我们来看一道例题", "visual_elements": ["例题", "解答"], "transition": "切换"},
+                {"shot_number": 5, "duration": 5, "scene_description": "知识点总结", "narration": "今天的内容就是这些", "visual_elements": ["总结"], "transition": "淡出"}
+            ]
+        else:
+            return [
+                {"shot_number": 1, "duration": 5, "scene_description": "开场标题展示",
+                 "narration": f"今天我们来学习{title}", "visual_elements": ["标题文字", "背景"], "transition": "淡入"},
+                {"shot_number": 2, "duration": 15, "scene_description": "核心概念展示",
+                 "narration": content[:100], "visual_elements": ["核心图形", "标注"], "transition": "切换"},
+                {"shot_number": 3, "duration": 10, "scene_description": "总结回顾",
+                 "narration": "以上就是本节内容", "visual_elements": ["总结文字"], "transition": "淡出"}
+            ]
 
     def generate_animation_code(self, storyboard, anim_type, title, subject):
-        """生成 Manim 动画代码"""
+        """生成 Manim 动画代码（无模型时返回默认模板）"""
         prompt = f"""根据以下分镜脚本，生成完整的 Manim (Python) 动画代码。
 
 动画类型: {self.animation_types.get(anim_type, "概念动画")}
@@ -139,32 +182,41 @@ class AnimationGenerator:
             return result.strip(), model
 
         # 默认代码模板
-        code = f'''# Manim动画代码 - {title}
-from manim import *
-
-class TeachingAnimation(Scene):
-    def construct(self):
-        self.camera.background_color = "#1a1a2e"
-
-        # 分镜1: 开场
-        title = Text("{title}", font_size=48, color=WHITE)
-        self.play(Write(title), run_time=2)
-        self.wait(1)
-        self.play(FadeOut(title))
-
-        # 分镜2: 内容展示
-        content = Text("核心内容展示", font_size=36, color=YELLOW)
-        self.play(FadeIn(content), run_time=2)
-        self.wait(3)
-
-        # 结尾
-        self.play(FadeOut(content))
-        self.wait(1)
-'''
+        code = self._generate_template_code(title, storyboard)
         return code, "fallback"
 
+    def _generate_template_code(self, title, storyboard):
+        """生成智能模板代码"""
+        lines = [
+            f'# Manim动画代码 - {title}',
+            'from manim import *',
+            '',
+            'class TeachingAnimation(Scene):',
+            '    def construct(self):',
+            '        self.camera.background_color = "#1a1a2e"',
+            ''
+        ]
+        # 根据分镜生成代码
+        for i, shot in enumerate(storyboard, 1):
+            desc = shot.get("scene_description", "画面内容")[:50]
+            narr = shot.get("narration", "旁白")[:40]
+            dur = shot.get("duration", 5)
+            lines.extend([
+                f'        # 分镜{i}: {desc}',
+                f'        text{i} = Text("{narr[:15]}...", font_size=36)',
+                f'        self.play(Write(text{i}), run_time={min(dur,3)})',
+                f'        self.wait({dur})',
+                ''
+            ])
+        lines.extend([
+            '        # 结尾',
+            '        self.play(FadeOut(Group(*self.mobjects)))',
+            '        self.wait(1)'
+        ])
+        return '\n'.join(lines)
+
     def generate_interactive_elements(self, content, title):
-        """生成交互式动画元素"""
+        """生成交互式动画元素（无模型时返回默认）"""
         prompt = f"""为以下教学内容设计交互式动画元素：
 
 标题: {title}
@@ -190,8 +242,8 @@ class TeachingAnimation(Scene):
             "highlights": []
         }, "fallback"
 
-    def create_animation(self, content, title, subject, grade):
-        """创建完整动画方案"""
+    def create_animation(self, content, title, subject, grade=None):
+        """创建完整动画方案（不需要Ollama也能运行）"""
         # 1. 分析动画类型
         anim_analysis = self.analyze_animation_type(content, title, subject)
         anim_type = anim_analysis.get("animation_type", "concept")
@@ -236,3 +288,51 @@ class TeachingAnimation(Scene):
             },
             "create_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
+
+    def save_animation(self, animation_data):
+        """保存动画方案到文件"""
+        filename = f"{animation_data['animation_id']}.json"
+        filepath = os.path.join(self.cache_dir, filename)
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(animation_data, f, ensure_ascii=False, indent=2)
+
+        # 同时保存Manim代码
+        code_file = os.path.join(self.cache_dir, f"{animation_data['animation_id']}.py")
+        with open(code_file, 'w', encoding='utf-8') as f:
+            f.write(animation_data['animation_code'])
+
+        return filepath, code_file
+
+    def list_cached_animations(self):
+        """列出已缓存的动画方案"""
+        files = []
+        for f in os.listdir(self.cache_dir):
+            if f.endswith('.json'):
+                files.append(os.path.join(self.cache_dir, f))
+        return sorted(files, reverse=True)
+
+
+# 独立测试入口
+if __name__ == "__main__":
+    print("=" * 50)
+    print("LumiLearn 动画生成器 - 独立测试")
+    print("=" * 50)
+    print(f"缓存目录: {os.path.join(LUMILEARN_DIR, 'animation_output')}")
+    print()
+
+    ag = AnimationGenerator()
+
+    test_cases = [
+        ("三角形的面积", "今天我们来学习三角形的面积...", "数学"),
+        ("一元一次方程", "解一元一次方程的步骤...", "数学"),
+    ]
+
+    for title, content, subject in test_cases:
+        print(f"  [生成] {title}")
+        anim = ag.create_animation(content, title, subject)
+        fp, cp = ag.save_animation(anim)
+        print(f"  → 已保存到: {fp}")
+        print(f"    分镜数: {len(anim['storyboard'])} | 时长: {anim['estimated_duration']}秒")
+        print()
+
+    print("测试完成！")
