@@ -280,8 +280,7 @@ class LumiLearnModel(nn.Module):
 
     def _print_param_count(self):
         total = sum(p.numel() for p in self.parameters())
-        trainable = sum(p.numel() for p in self.parameters() if p.requires_grad),
-        trainable = trainable[0] if isinstance(trainable, tuple) else trainable
+        trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
         features = [
             f"{total/1e6:.2f}M params ({trainable/1e6:.2f}M trainable)",
         ]
@@ -366,7 +365,8 @@ class LumiLearnModel(nn.Module):
             next_token = torch.multinomial(probs, num_samples=1)
             input_ids = torch.cat([input_ids, next_token], dim=-1)
 
-            if next_token.item() == self.config.vocab_size - 1:
+            # FIX: EOS token ID is 1 (not vocab_size - 1)
+            if next_token.item() == 1:
                 break
 
         return input_ids
