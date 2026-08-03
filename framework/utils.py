@@ -9,6 +9,8 @@ import os
 import json
 import time
 import math
+import random
+import numpy as np
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
@@ -85,14 +87,23 @@ class TrainingMetrics:
         recent_loss = sum(self.train_loss[-100:]) / min(len(self.train_loss), 100)
         steps_per_sec = len(self.steps) / max(self.elapsed, 1)
 
-        return (
-            f"Steps: {len(self.steps)} | "
-            f"TrainLoss: {self.train_loss[-1]:.4f} (avg100: {recent_loss:.4f}) | "
-            f"ValLoss: {self.val_loss[-1]:.4f}" if self.val_loss else f"ValLoss: N/A"
-            f" | LR: {self.learning_rates[-1]:.2e}" if self.learning_rates else ""
-            f" | Speed: {steps_per_sec:.1f} st/s"
-            f" | Time: {self.elapsed_str}"
-        )
+        parts = [
+            f"Steps: {len(self.steps)}",
+            f"TrainLoss: {self.train_loss[-1]:.4f} (avg100: {recent_loss:.4f})",
+        ]
+        
+        if self.val_loss:
+            parts.append(f"ValLoss: {self.val_loss[-1]:.4f}")
+        else:
+            parts.append("ValLoss: N/A")
+        
+        if self.learning_rates:
+            parts.append(f"LR: {self.learning_rates[-1]:.2e}")
+        
+        parts.append(f"Speed: {steps_per_sec:.1f} st/s")
+        parts.append(f"Time: {self.elapsed_str}")
+        
+        return " | ".join(parts)
 
 
 def setup_logging(output_dir: str, experiment_name: str) -> str:
@@ -136,8 +147,6 @@ def get_device() -> torch.device:
 
 
 def seed_everything(seed: int = 42):
-    import random
-    import numpy as np
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
