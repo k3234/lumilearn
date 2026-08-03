@@ -29,7 +29,7 @@
 
 | 模块 | 说明 | 状态 |
 |:---|:---|:---|
-| **微型 Transformer** | GPT-2 风格，8 层 8 头，384 隐藏维度，~8M 参数，字符级 tokenizer | ✅ 完成 |
+| **微型 Transformer** | GPT-2 风格，8 层 8 头，256 隐藏维度，~8M 参数，BPE tokenizer | ✅ 完成 |
 | **课堂模式** | 三栏布局（大纲 + 幻灯片 + AI 聊天），费曼五步学习法 | ✅ 完成 |
 | **对话终端** | 轻量聊天界面，支持多轮对话，非流式 Ollama 代理 | ✅ 完成 |
 | **智能讲解引擎** | 8 门预置课程，OBS 透明叠加层，自动翻页 | ✅ 完成 |
@@ -42,16 +42,17 @@
 |:---|:---|
 | 架构 | GPT-2 Decoder-only (Pre-LN, GELU) |
 | 层数 / 注意力头 | 8 / 8 |
-| 隐藏维度 / FFN 维度 | 384 / 1024 |
+| 隐藏维度 / FFN 维度 | 256 / 1024 |
+| 序列最大长度 | 256 |
 | 词表大小 | 8000 |
-| 参数量 | ~8M |
-| Tokenizer | 字符级 BPE |
+| 参数量 | ~8.3M |
+| Tokenizer | BPE (HuggingFace tokenizers) |
 
 ## 快速开始
 
 ```bash
 # 克隆
-git clone https://github.com/KaiWang-afk/lumilearn.git
+git clone https://github.com/k3234/lumilearn.git
 cd lumilearn
 
 # 安装依赖
@@ -79,6 +80,19 @@ lumilearn/
 │   └── routes/             #   路由（chat/slides/mindmap/...）
 ├── framework/engines/      # 智能引擎
 │   └── feynman_engine.py   #   费曼五步学习法引擎
+├── framework/core/         # 核心模块
+│   ├── config.py           #   配置管理
+│   └── router.py           #   模型路由
+├── framework/models/       # 模型提供者
+│   ├── base.py             #   抽象基类
+│   ├── ollama_provider.py  #   Ollama API实现
+│   └── registry.py         #   模型注册表
+├── framework/services/     # 服务层
+│   ├── chat_service.py     #   聊天服务
+│   └── provider_service.py #   云端提供商管理
+├── framework/airllm/       # AirLLM优化模块
+│   ├── attention.py        #   GQA注意力
+│   └── rope.py             #   RoPE位置编码
 ├── tianhong/templates/     # 前端页面
 │   ├── classroom.html      #   课堂模式
 │   └── lumiterm.html       #   对话终端
@@ -86,7 +100,10 @@ lumilearn/
 ├── docs/                   # 学习笔记 & 研究文档
 ├── notebooks/              # Jupyter 教程
 ├── skills/                 # 技能模块
-├── archive/                # 开发过程记录（归档）
+├── config/                 # 配置文件
+│   ├── framework.yaml      #   框架配置
+│   └── providers.yaml      #   云端提供商配置
+├── train_lumilearn.sh      # 训练脚本
 ├── lesson_engine.py        # 智能讲解引擎
 ├── smart_reply_engine.py   # 智能回复引擎
 └── PROJECT_PRINCIPLES.md   # 开发原则
@@ -117,4 +134,4 @@ MIT License
 
 ---
 
-**最后更新**：2026-06-14
+**最后更新**：2026-08-03
