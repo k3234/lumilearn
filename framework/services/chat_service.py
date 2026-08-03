@@ -1,16 +1,13 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
 灵学 lumilearn - 对话服务
 封装 ModelProvider 调用，集成费曼引擎，消息历史管理
-
-作者：lumilearn AI自动化专家
-版本：1.0.0
-日期：2026-06-01
 """
-
 import json
 import time
 import logging
+import requests
+import os
 from typing import Any, Dict, List, Optional, Generator
 
 from framework.models.ollama_provider import get_ollama_provider
@@ -22,20 +19,13 @@ from framework.engines.feynman_engine import FeynmanEngine
 logger = logging.getLogger("lumilearn.chat_service")
 
 DEFAULT_MODEL = "qwen2.5:7b"
-GATEWAY_URL = "http://192.168.2.63:11434"
+GATEWAY_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 TIMEOUT = 300
 
 
 class ChatService:
     """
     对话服务
-
-    功能：
-    - 封装 OllamaProvider 调用
-    - 集成费曼教学引擎
-    - 消息历史管理
-    - 流式响应支持
-    - 模型路由选择
     """
 
     def __init__(self, config_dir: str = None):
@@ -57,19 +47,7 @@ class ChatService:
              temperature: float = 0.7,
              max_tokens: int = 2048,
              stream: bool = True) -> Generator:
-        """
-        流式对话
-
-        参数：
-            messages: 消息列表 [{"role": "user", "content": "..."}]
-            mode: 对话模式（chat/reasoning/creative/feynman）
-            temperature: 温度参数
-            max_tokens: 最大token数
-            stream: 是否流式返回
-
-        Yields:
-            JSON字符串片段（流式）
-        """
+        """流式对话"""
         if mode == "feynman":
             yield from self._feynman_chat(messages, stream)
             return
@@ -100,14 +78,7 @@ class ChatService:
                      model: str,
                      temperature: float,
                      max_tokens: int) -> Generator:
-        """
-        通过Ollama API进行流式对话
-
-        使用HTTP流式请求，逐行yield JSON片段
-        """
-        import requests
-        import os
-
+        """通过 Ollama API 进行流式对话"""
         base_url = os.environ.get("OLLAMA_BASE_URL", GATEWAY_URL)
 
         payload = {
@@ -149,14 +120,9 @@ class ChatService:
 
     def _feynman_chat(self, messages: List[Dict[str, str]],
                       stream: bool = True) -> Generator:
-        """
-        费曼教学模式对话
-
-        逐步执行费曼五步教学，每步yield一个片段
-        """
+        """费曼教学模式对话"""
         feynman = self._get_feynman()
 
-        # 从消息中提取主题
         topic = ""
         for msg in reversed(messages):
             if msg.get("role") == "user":
@@ -170,7 +136,6 @@ class ChatService:
             }, ensure_ascii=False)
             return
 
-        # 获取学生水平（从最后一条消息推断）
         level = "junior"
         for msg in reversed(messages):
             content = msg.get("content", "").lower()
@@ -181,7 +146,6 @@ class ChatService:
                 level = "senior"
                 break
 
-        # 流式执行费曼五步
         for step_data in feynman.explain_stream(topic, level):
             yield json.dumps({
                 "step": step_data["step"],
@@ -190,24 +154,13 @@ class ChatService:
                 "is_last": step_data["is_last"],
                 "mode": "feynman"
             }, ensure_ascii=False)
-            time.sleep(0.1)  # 模拟流式间隔
+            time.sleep(0.1)
 
     def chat_sync(self, messages: List[Dict[str, str]],
                   mode: str = "chat",
                   temperature: float = 0.7,
                   max_tokens: int = 2048) -> Dict[str, Any]:
-        """
-        同步对话（非流式）
-
-        参数：
-            messages: 消息列表
-            mode: 对话模式
-            temperature: 温度
-            max_tokens: 最大token
-
-        返回：
-            完整的结果字典
-        """
+        """同步对话"""
         if mode == "feynman":
             feynman = self._get_feynman()
             topic = ""
@@ -236,8 +189,6 @@ class ChatService:
 
     def get_models(self) -> List[Dict[str, Any]]:
         """获取可用模型列表"""
-        import requests
-        import os
         base_url = os.environ.get("OLLAMA_BASE_URL", GATEWAY_URL)
         try:
             resp = requests.get(f"{base_url}/api/tags", timeout=10)
@@ -252,99 +203,55 @@ class ChatService:
             return []
 
     def list_custom_models(self) -> List[Dict[str, Any]]:
-        """
-        获取自定义训练模型列表（仅LumiLearn训练的模型）
-
-        通过检查 models.yaml 中是否包含 custom: true 标志来区分自定义模型和第三方模型。
-
-        返回：
-            自定义模型列表，每个模型包含 name, model_id, tags 等元数据
-        """
+        """获取自定义训练模型列表"""
         try:
-            model_list = self._config.get_model_list()
+            model_list = get_config().get("models", {}).get("providers", {})
             custom_models = []
-            for model in model_list:
-                is_custom = model.get("custom", False)
-                has_custom_tag = "custom" in model.get("tags", [])
-                if is_custom or has_custom_tag:
-                    custom_models.append({
-                        "name": model.get("name", "unknown"),
-                        "model_id": model.get("model_id", model.get("name", "unknown")),
-                        "provider": model.get("provider", "unknown"),
-                        "base_url": model.get("base_url", ""),
-                        "priority": model.get("priority", None),
-                        "tags": model.get("tags", []),
-                        "custom": True,
-                    })
+            for provider_key, provider_cfg in model_list.items():
+                if not provider_cfg.get("enabled", True):
+                    continue
+                for model in provider_cfg.get("models", []):
+                    is_custom = model.get("custom", False)
+                    has_custom_tag = "custom" in model.get("tags", [])
+                    if is_custom or has_custom_tag:
+                        custom_models.append({
+                            "name": model.get("id", "unknown"),
+                            "model_id": model.get("id", "unknown"),
+                            "provider": provider_key,
+                            "base_url": provider_cfg.get("base_url", ""),
+                            "priority": model.get("priority", None),
+                            "tags": model.get("tags", []),
+                            "custom": True,
+                        })
             return custom_models
         except Exception as e:
             logger.error(f"获取自定义模型列表失败: {e}")
             return []
 
     def get_model_info(self, model_name: str) -> Optional[Dict[str, Any]]:
-        """
-        获取指定模型的元数据信息
-
-        参数：
-            model_name: 模型名称
-
-        返回：
-            模型信息字典，如果模型不存在则返回 None
-        """
+        """获取指定模型的元数据信息"""
         try:
-            model_list = self._config.get_model_list()
-            for model in model_list:
-                if model.get("name") == model_name or model.get("model_id") == model_name:
-                    return {
-                        "name": model.get("name", "unknown"),
-                        "model_id": model.get("model_id", model.get("name", "unknown")),
-                        "provider": model.get("provider", "unknown"),
-                        "base_url": model.get("base_url", ""),
-                        "priority": model.get("priority", None),
-                        "tags": model.get("tags", []),
-                        "custom": model.get("custom", False) or ("custom" in model.get("tags", [])),
-                        "version": model.get("version", "latest"),
-                        "all_fields": dict(model),
-                    }
-            # 如果没有在 models.yaml 中找到，尝试从 Ollama 获取
-            import requests
-            import os
-            base_url = os.environ.get("OLLAMA_BASE_URL", GATEWAY_URL)
-            try:
-                resp = requests.post(
-                    f"{base_url}/api/show",
-                    json={"name": model_name},
-                    timeout=10
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    return {
-                        "name": model_name,
-                        "model_id": model_name,
-                        "provider": "ollama",
-                        "base_url": base_url,
-                        "tags": [],
-                        "custom": False,
-                        "version": "latest",
-                        "details": data.get("details", {}),
-                    }
-            except Exception:
-                pass
+            model_list = get_config().get("models", {}).get("providers", {})
+            for provider_key, provider_cfg in model_list.items():
+                for model in provider_cfg.get("models", []):
+                    if model.get("id") == model_name:
+                        return {
+                            "name": model.get("id", "unknown"),
+                            "model_id": model.get("id", "unknown"),
+                            "provider": provider_key,
+                            "base_url": provider_cfg.get("base_url", ""),
+                            "priority": model.get("priority", None),
+                            "tags": model.get("tags", []),
+                            "custom": model.get("custom", False) or ("custom" in model.get("tags", [])),
+                            "version": model.get("version", "latest"),
+                        }
             return None
         except Exception as e:
             logger.error(f"获取模型信息失败 ({model_name}): {e}")
             return None
 
     def get_model_version(self, model_name: str = None) -> str:
-        """
-        获取模型版本信息
-
-        参数：
-            model_name: 模型名称，None 则使用默认模型
-
-        返回：
-            版本字符串（从 models.yaml 中读取 version 字段，默认为 "latest"）
-        """
+        """获取模型版本信息"""
         if model_name is None:
             model_name = self._default_model
         info = self.get_model_info(model_name)
@@ -354,8 +261,6 @@ class ChatService:
 
     def health_check(self) -> Dict[str, Any]:
         """健康检查"""
-        import requests
-        import os
         base_url = os.environ.get("OLLAMA_BASE_URL", GATEWAY_URL)
         result = {
             "status": "healthy",
@@ -377,8 +282,7 @@ class ChatService:
             result["error"] = str(e)
         return result
 
-    def update_history(self, session_id: str,
-                       messages: List[Dict[str, str]]):
+    def update_history(self, session_id: str, messages: List[Dict[str, str]]):
         """更新对话历史"""
         self._history[session_id] = messages
 
@@ -395,7 +299,7 @@ _chat_service_instance: Optional[ChatService] = None
 
 
 def get_chat_service(config_dir: str = None) -> ChatService:
-    """获取ChatService单例"""
+    """获取 ChatService 单例"""
     global _chat_service_instance
     if _chat_service_instance is None:
         _chat_service_instance = ChatService(config_dir)
