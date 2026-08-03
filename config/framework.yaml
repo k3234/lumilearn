@@ -1,0 +1,24 @@
+# LumiLearn 框架配置文件
+# 服务器、模型、安全等配置
+
+version: "1.0.0"
+debug: false
+
+server:
+  terminal_port: 18080
+  api_port: 18081
+  models_port: 18082
+  host: "0.0.0.0"
+
+ollama:
+  base_url: "http://localhost:11434"
+  default_model: "qwen2.5:7b"
+  timeout: 300
+
+models:
+  providers: {}
+
+security:
+  api_key_required: false
+  allowed_origins:
+    - "*"
