@@ -1,23 +1,10 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
-LumiLearn - Slides API 路由
-提供幻灯片生成端点
-
-作者：lumilearn AI自动化专家
-版本：1.0.0
-日期：2026-06-07
+灵学 lumilearn - 幻灯片 API 路由
+幻灯片生成端点
 """
-
-import json
 import logging
-import sys
-from pathlib import Path
 from flask import Blueprint, request, jsonify
-
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-sys.path.insert(0, str(BASE_DIR))
-
-from smart_reply_engine import generate_slides
 
 logger = logging.getLogger("lumilearn.routes.slides")
 
@@ -25,49 +12,71 @@ slides_bp = Blueprint("slides", __name__)
 
 
 @slides_bp.route("/api/slides/generate", methods=["POST", "OPTIONS"])
-def slides_generate():
+def generate_slides():
     """
-    幻灯片生成API端点
-
-    请求体（JSON）：
+    生成幻灯片端点
+    
+    请求体（JSON）:
         {
-            "topic": "勾股定理",
-            "slide_count": 5,
-            "style": "detailed"
-        }
-
-    响应：
-        {
-            "slides": [
-                {
-                    "title": "...",
-                    "subtitle": "...",
-                    "content": "...",
-                    "katex": "..."
-                }
-            ]
+            "topic": "主题",
+            "content": "内容大纲",
+            "style": "default",
+            "slides_count": 10
         }
     """
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"})
-
+    
     data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "请求体为空"}), 400
+    
     topic = data.get("topic", "")
-    slide_count = data.get("slide_count", 5)
-    style = data.get("style", "detailed")
-
     if not topic:
         return jsonify({"error": "缺少 topic 字段"}), 400
+    
+    # TODO: 实现幻灯片生成逻辑
+    return jsonify({
+        "status": "success",
+        "message": "幻灯片生成功能开发中",
+        "slides": []
+    })
 
-    if not isinstance(slide_count, int) or slide_count < 1 or slide_count > 20:
-        return jsonify({"error": "slide_count 必须在 1-20 之间"}), 400
 
-    if style not in ("detailed", "concise", "outline"):
-        return jsonify({"error": "style 必须是 detailed, concise 或 outline"}), 400
+@slides_bp.route("/api/slides/<slide_id>", methods=["GET", "OPTIONS"])
+def get_slide(slide_id):
+    """
+    获取单个幻灯片
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+    
+    return jsonify({
+        "status": "success",
+        "slide": None
+    })
 
-    try:
-        slides = generate_slides(topic, slide_count=slide_count, style=style)
-        return jsonify({"slides": slides})
-    except Exception as e:
-        logger.error(f"幻灯片生成失败: {e}")
-        return jsonify({"error": f"幻灯片生成失败: {str(e)}"}), 500
+
+@slides_bp.route("/api/slides/export", methods=["POST", "OPTIONS"])
+def export_slides():
+    """
+    导出幻灯片
+    
+    请求体（JSON）:
+        {
+            "slide_ids": ["slide1", "slide2"],
+            "format": "pptx/pdf"
+        }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+    
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "请求体为空"}), 400
+    
+    # TODO: 实现导出逻辑
+    return jsonify({
+        "status": "success",
+        "message": "导出功能开发中"
+    })
