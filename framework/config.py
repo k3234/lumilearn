@@ -12,12 +12,12 @@ from typing import Optional
 @dataclass
 class ModelConfig:
     vocab_size: int = 8000
-    hidden_size: int = 384
+    hidden_size: int = 256      # FIX: 256 (原384) 以匹配~8M参数目标
     num_layers: int = 8
     num_heads: int = 8
     num_kv_heads: int = 0       # GQA: 0=同num_heads(MHA), >0=分组查询头数
     ff_dim: int = 1024
-    max_seq_len: int = 384
+    max_seq_len: int = 256      # FIX: 256 (原384) 与hidden_size=256配置一致
     dropout: float = 0.3
     activation: str = "gelu"     # "gelu" | "swiglu"
     use_rotary: bool = False     # RoPE 旋转位置编码
@@ -27,13 +27,15 @@ class ModelConfig:
 
     @property
     def param_count(self) -> str:
-        """估算参数量（兼容 SwiGLU 的 3 矩阵结构）"""
+        """估算参数量（兼容 SwiGLU 的 3 矩阵结构，正确处理 tie_weights）"""
         emb = self.vocab_size * self.hidden_size
         # SwiGLU 有 gate/w_up/w_down 三个矩阵，GELU 有 fc1/fc2 两个矩阵
         ff_mult = 3 if self.activation == "swiglu" else 2
         per_layer = (4 * self.hidden_size * self.hidden_size  # QKV+Out
                      + ff_mult * self.hidden_size * self.ff_dim)
-        total = emb + self.num_layers * per_layer + self.hidden_size * self.vocab_size
+        # FIX: tie_weights=True 时 embedding 和 lm_head 共享权重，不重复计算
+        lm_head = 0 if self.tie_weights else self.hidden_size * self.vocab_size
+        total = emb + self.num_layers * per_layer + lm_head
         if total > 1e9:
             return f"{total/1e9:.2f}B"
         return f"{total/1e6:.2f}M"
@@ -195,7 +197,7 @@ def get_preset_configs() -> dict:
             ),
             experiment=ExperimentConfig(
                 name="AirLLM-1B", version="1.0.0",
-                description="1B参数教育模型，32GB CPU可训练（~1.1B params, 权重4.4G+优化器8.8G+激活0.5G≈13.7G）",
+                description="1B参数教育模型，32GB CPU可训练",
                 output_dir="outputs/airllm_1b",
             ),
         ),
