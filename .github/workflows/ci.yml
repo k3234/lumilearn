@@ -31,7 +31,7 @@ jobs:
           pip install torch transformers numpy pytest pytest-cov ruff
 
       - name: Lint with ruff
-        run: ruff check framework tests --output-format=github
+        run: ruff check . --output-format=github
 
       - name: Run tests with pytest
         run: pytest tests/ -v --cov=framework --cov-report=term-missing
