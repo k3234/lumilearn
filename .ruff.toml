@@ -5,7 +5,6 @@
 #   F7  : 循环内 return 等不可达代码
 #   F82 : 引用未定义名称
 # 这样既能捕获真实 bug，又不会因风格建议（typing.List、f-string 等）导致 CI 全红
-select = ["E9", "F63", "F7", "F82"]
 line-length = 120
 
 # 排除非 Python 源码目录（Jupyter notebook 结构不完整，ruff 会误报语法错误）
@@ -16,3 +15,7 @@ exclude = [
     "tianhong",
     "animation",
 ]
+
+[lint]
+# 宽松 CI 模式：仅检查真正可能导致程序错误的规则
+select = ["E9", "F63", "F7", "F82"]

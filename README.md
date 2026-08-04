@@ -90,6 +90,38 @@ curl -X POST http://localhost:18080/api/mindmap \
   -d '{"topic": "化学", "chapter": "有机化学"}'
 ```
 
+## 模型训练与部署（完整 Demo 流程）
+
+> 训练在远程 CPU 服务器（`<SERVER_IP>`，14GB RAM）上进行，目标模型为 Qwen2.5-3B CPU 微调。详见 [docs/development_summary.md](docs/development_summary.md)。
+
+```bash
+cd <PROJECT_DIR>
+
+# 1) 用真实费曼教学数据训练 LoRA adapter（CPU，约 44min/batch）
+OMP_NUM_THREADS=4 python3 -u scripts/train_real.py \
+    --data data/distil/train_data_real.jsonl \
+    --adapter models/distil/adapter \
+    --max-length 128 --epochs 1
+
+# 2) 合并 LoRA adapter 为完整模型，并跑 5 道题验证推理
+OMP_NUM_THREADS=4 python3 -u scripts/merge_and_test.py \
+    --base <BASE_MODEL_PATH> \
+    --adapter models/distil/adapter \
+    --output models/distil/merged_model
+
+# 3) 启动本地推理服务器（OpenAI/ollama 兼容接口）
+python inference_server.py --port 18080 --model-dir models/distil/merged_model
+```
+
+验证推理接口：
+
+```bash
+curl http://localhost:18080/health
+curl -X POST http://localhost:18080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"用费曼五步法讲解勾股定理"}]}'
+```
+
 ## 项目结构
 ```
 lumilearn/
@@ -121,6 +153,9 @@ lumilearn/
 │   ├── classroom.html      #   课堂模式
 │   └── lumiterm.html       #   对话终端
 ├── data_management/        # 数据管线
+├── scripts/                # 训练/部署脚本
+│   ├── train_real.py       #   真实数据 LoRA 训练（CPU）
+│   └── merge_and_test.py   #   LoRA 合并 + 推理测试
 ├── docs/                   # 学习笔记 & 研究文档
 ├── notebooks/              # Jupyter 教程
 ├── skills/                 # 技能模块
