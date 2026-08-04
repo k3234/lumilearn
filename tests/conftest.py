@@ -37,4 +37,4 @@ def model(default_config):
 def fast_model():
     """快速测试用小的小模型"""
     config = get_preset_configs()["fast_test"]
-    return LumiLearnModel(config)
+    return LumiLearnModel(config.model)
