@@ -61,7 +61,7 @@ class TestModelForward:
     def test_forward_shape(self):
         """测试前向传播输出形状"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         model.eval()
         input_ids = torch.randint(0, config.model.vocab_size, (2, 32))
         with torch.no_grad():
@@ -72,7 +72,7 @@ class TestModelForward:
     def test_forward_with_labels(self):
         """测试带标签的前向传播"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         input_ids = torch.randint(0, config.model.vocab_size, (2, 32))
         labels = input_ids.clone()
         output = model(input_ids, labels=labels)
@@ -83,7 +83,7 @@ class TestModelForward:
     def test_forward_no_labels(self):
         """测试不带标签的前向传播"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         input_ids = torch.randint(0, config.model.vocab_size, (2, 32))
         with torch.no_grad():
             output = model(input_ids)
@@ -96,7 +96,7 @@ class TestModelGenerate:
     def test_generate_basic(self):
         """测试基本生成功能"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         model.eval()
         input_ids = torch.randint(0, config.model.vocab_size, (1, 8))
         with torch.no_grad():
@@ -106,7 +106,7 @@ class TestModelGenerate:
     def test_generate_temperature(self):
         """测试温度采样"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         model.eval()
         input_ids = torch.randint(0, config.model.vocab_size, (1, 8))
         with torch.no_grad():
@@ -119,7 +119,7 @@ class TestModelGenerate:
     def test_generate_top_k(self):
         """测试 top-k 采样"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         model.eval()
         input_ids = torch.randint(0, config.model.vocab_size, (1, 8))
         with torch.no_grad():
@@ -133,7 +133,7 @@ class TestModelSaveLoad:
     def test_save_pretrained(self, tmp_path):
         """测试保存预训练模型"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         save_path = os.path.join(tmp_path, "model")
         model.save_pretrained(save_path)
         assert os.path.exists(os.path.join(save_path, "model.pt"))
@@ -142,7 +142,7 @@ class TestModelSaveLoad:
     def test_from_pretrained(self, tmp_path):
         """测试加载预训练模型"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         save_path = os.path.join(tmp_path, "model")
         model.save_pretrained(save_path)
         loaded = LumiLearnModel.from_pretrained(save_path)
@@ -152,7 +152,7 @@ class TestModelSaveLoad:
     def test_save_load_roundtrip(self, tmp_path):
         """测试保存-加载往返"""
         config = get_preset_configs()["fast_test"]
-        model = LumiLearnModel(config)
+        model = LumiLearnModel(config.model)
         save_path = os.path.join(tmp_path, "model")
         model.save_pretrained(save_path)
         loaded = LumiLearnModel.from_pretrained(save_path)
