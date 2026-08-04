@@ -11,6 +11,7 @@
 | **做什么？** | 自研微型 Transformer 模型 + 前端教学演示系统，自动生成数学/物理/化学的讲解内容 |
 | **为什么特别？** | 全部在 CPU 上训练（8M 参数），从 tokenizer 到推理全部自己实现 |
 | **适合谁？** | 想学习"从数据到模型到部署"完整流程的学生开发者 |
+| **教育价值** | 让老旧设备也能跑 AI 教学演示，推动"算力平权"，让资源不足的学校也能接触 AI 教育 |
 
 ## 快速导航
 
@@ -65,8 +66,31 @@ python framework/api/server.py --multi-port
 # 浏览器打开 http://localhost:18080/chat
 ```
 
-## 项目结构
+## API 基础用法
 
+启动服务后，可通过 REST API 与模型交互：
+
+```bash
+# 健康检查
+curl http://localhost:18080/api/health
+
+# 发送聊天请求
+curl -X POST http://localhost:18080/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "讲解牛顿第二定律", "session_id": "optional"}'
+
+# 生成幻灯片内容
+curl -X POST http://localhost:18080/api/slides \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "数学", "chapter": "函数"}'
+
+# 获取思维导图
+curl -X POST http://localhost:18080/api/mindmap \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "化学", "chapter": "有机化学"}'
+```
+
+## 项目结构
 ```
 lumilearn/
 ├── framework/              # 微型 Transformer 框架
@@ -120,18 +144,51 @@ lumilearn/
 
 详见 [PROJECT_PRINCIPLES.md](PROJECT_PRINCIPLES.md)
 
+## 路线图
+
+### 已完成
+- [x] 项目结构整理与开源
+- [x] README 完善（含安装/运行/API 文档）
+- [x] 微型 Transformer 模型（8M 参数）实现
+- [x] 课堂模式与对话终端前端
+- [x] 费曼五步学习法引擎
+- [x] 数据管线（清洗/验证/版本管理）
+- [x] MIT 许可证
+
+### 进行中
+- [ ] 单元测试覆盖率提升
+- [ ] API 文档站点（完整版）
+- [ ] 演示视频录制
+
+### 未来规划
+- [ ] 模型量化支持（INT8/INT4）
+- [ ] 多语言界面（中/英/日）
+- [ ] 贡献者指南与社区治理
+- [ ] 安全扫描工具链集成
+- [ ] 版本发布规范（语义化版本）
+
+## 教育场景与算力平权
+
+LumiLearn 的核心愿景是让**老旧设备也能运行 AI 教学演示**：
+
+- **低配置友好**：8M 参数模型，14GB 内存的 CPU 笔记本即可训练和推理
+- **无 GPU 依赖**：不依赖高端显卡，降低 AI 教育门槛
+- **资源不足地区适用**：让算力资源有限的学校也能接触 AI 教育
+- **完整学习路径**：从数据→模型→部署，一站式学习 AI 全流程
+
 ## 开源计划
 
 - [x] 整理项目结构
 - [x] 编写 README
 - [x] 创建 GitHub 仓库
+- [x] 添加 LICENSE
 - [ ] 写技术博客
 - [ ] 录制演示视频
 
 ## 许可证
 
-MIT License
+[MIT License](LICENSE)
 
 ---
 
-**最后更新**：2026-08-03
+**最后更新**：2026-08-04
