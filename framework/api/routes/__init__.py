@@ -21,6 +21,7 @@ from .animation import animation_bp  # Manim 动画生成
 from .providers import providers_bp  # API Key 管理
 from .slides import slides_bp  # 幻灯片生成
 from .mindmap import mindmap_bp  # 思维导图生成
+from .security import security_bp  # 安全网关
 
 __all__ = [
     "chat_bp",
@@ -36,4 +37,5 @@ __all__ = [
     "providers_bp",
     "slides_bp",
     "mindmap_bp",
+    "security_bp",
 ]
