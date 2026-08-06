@@ -1,0 +1,217 @@
+# ============================================
+# LumiLearn 部署配置文件
+# 版本: 2.0.0
+# 最后更新: 2026-08-06
+# 说明: 支持多模型、多端口、安全配置
+# ============================================
+
+# ==================== 模型配置 ====================
+models:
+  # 本地模型
+  local:
+    provider: ollama
+    enabled: true
+    host: http://localhost:11434
+    models:
+      - name: qwen2.5:7b
+        alias: qwen-7b
+        enabled: true
+      - name: deepseek-r1:7b
+        alias: deepseek-r1
+        enabled: false
+      - name: internlm3:8b
+        alias: internlm
+        enabled: false
+
+  # 云端模型
+  cloud:
+    openai:
+      enabled: false
+      api_key: ""
+      model: gpt-4o
+    anthropic:
+      enabled: false
+      api_key: ""
+      model: claude-sonnet-4-20250514
+    tongyi:
+      enabled: false
+      api_key: ""
+      model: qwen-plus
+    zhipu:
+      enabled: false
+      api_key: ""
+      model: glm-4-flash
+    kimi:
+      enabled: false
+      api_key: ""
+      model: kimi-k2.5
+    doubao:
+      enabled: false
+      api_key: ""
+      model: doubao-1.5-pro-32k
+    deepseek:
+      enabled: false
+      api_key: ""
+      model: deepseek-chat
+
+# ==================== 服务器配置 ====================
+server:
+  # 多端口模式
+  multi_port:
+    enabled: true
+    student_port: 18080    # 学生端
+    admin_port: 18081      # 管理员端
+    learning_port: 18082   # 学习端
+
+  # 绑定地址
+  bind_address: "0.0.0.0"
+
+  # 运行模式
+  debug: false
+  workers: 4
+
+# ==================== 用户端配置 ====================
+endpoints:
+  student:
+    port: 18080
+    features:
+      - chat
+      - speech
+      - ocr
+      - review
+      - resources
+      - animation
+      - slides
+      - mindmap
+    description: "学生端 - 学习交互界面"
+
+  admin:
+    port: 18081
+    features:
+      - models
+      - payment
+      - security
+      - feynman
+    description: "管理员端 - 模型管理和支付"
+
+  learning:
+    port: 18082
+    features:
+      - chat
+      - speech
+      - ocr
+      - review
+      - resources
+      - animation
+      - slides
+      - mindmap
+      - models
+      - security
+    description: "学习端 - 全功能学习平台"
+
+# ==================== 安全配置 ====================
+security:
+  # 网络配置
+  network:
+    allowed_networks:
+      - "192.168.0.0/16"
+      - "10.0.0.0/8"
+      - "172.16.0.0/12"
+    blocked_ips: []
+    trusted_gateways:
+      - "192.168.1.1"
+      - "192.168.0.1"
+      - "10.0.0.1"
+
+  # API网关
+  gateway:
+    enabled: true
+    rate_limit: 100      # 每秒请求数
+    burst_limit: 50      # 突发限制
+    max_body_size: 10485760  # 10MB
+
+  # 代码沙箱
+  sandbox:
+    enabled: true
+    max_execution_time: 30   # 秒
+    max_memory_mb: 512
+    max_cpu_percent: 80
+    blocked_modules:
+      - "os"
+      - "subprocess"
+      - "sys"
+      - "importlib"
+      - "socket"
+      - "http"
+      - "urllib"
+      - "requests"
+      - "ctypes"
+      - "pickle"
+      - "shutil"
+      - "tempfile"
+
+  # 防火墙
+  firewall:
+    enabled: true
+    default_policy: deny
+    rules:
+      - action: allow
+        source: "192.168.0.0/16"
+        port: 18080
+        description: "允许内网访问学生端"
+      - action: deny
+        source: "0.0.0.0/0"
+        port: 18081
+        description: "禁止外部访问管理端口"
+      - action: deny
+        source: "0.0.0.0/0"
+        port: 18082
+        description: "禁止外部访问学习端口"
+
+# ==================== Docker配置 ====================
+docker:
+  enabled: true
+  compose_file: "docker-compose.yml"
+  networks:
+    - lumilearn-net
+
+# ==================== 性能配置 ====================
+performance:
+  # 缓存
+  cache:
+    enabled: true
+    ttl: 3600
+    max_size: 1000
+
+  # 并发
+  concurrency:
+    max_workers: 10
+    queue_size: 100
+
+  # 日志
+  logging:
+    level: "INFO"
+    file: "./logs/app.log"
+    max_size: "100MB"
+    backup_count: 5
+
+# ==================== 扩展配置 ====================
+extensions:
+  # 语音合成
+  speech:
+    enabled: true
+    provider: edge-tts
+    language: "zh-CN"
+
+  # OCR
+  ocr:
+    enabled: true
+    provider: paddleocr
+    language: "chi"
+
+  # 支付
+  payment:
+    enabled: false
+    provider: alipay
+    app_id: ""
+    private_key: ""
