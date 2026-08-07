@@ -13,7 +13,7 @@
 
 1. 理解 OCR（光学字符识别）的基本原理：文本检测 + 文本识别两阶段流水线
 2. 使用 PaddleOCR 在本地 CPU 上运行文字识别模型（无需 GPU）
-3. 掌握 PaddleOCR 的模型配置：语言选择（lang）、角度分类（use_angle_cls）、GPU/CPU 切换
+3. 掌握 PaddleOCR 的模型配置：语言选择（lang）、文本行方向分类（use_textline_orientation）、CPU/GPU 切换（device）
 4. 使用 Flask 构建图片上传 API 端点，处理 multipart/form-data 请求
 5. 理解 PaddleOCR 返回结果的格式：检测框坐标 + 文本 + 置信度
 6. 掌握图片格式处理（PNG/JPG/JPEG/WEBP）及临时文件管理
@@ -60,16 +60,18 @@ PaddleOCR 采用经典的 **检测 + 识别** 两阶段架构：
 | 组件 | 模型 | 功能 | 说明 |
 |------|------|------|------|
 | 文本检测 | DB（Differentiable Binarization） | 定位图片中所有文字区域 | 输出每个文字区域的四点坐标框 |
-| 方向分类 | 轻量分类网络 | 检测文字方向并旋转矫正 | `use_angle_cls=True` 启用 |
+| 方向分类 | 轻量分类网络 | 检测文字方向并旋转矫正 | `use_textline_orientation=True` 启用 |
 | 文本识别 | CRNN / SVTR | 识别每个文字区域的内容 | 输出文本字符串和置信度 |
 
 ### 模型大小与性能
 
 | 模型配置 | 检测模型 | 识别模型 | 体积 | 速度 | 中文效果 |
 |----------|----------|----------|------|------|----------|
-| 默认（PP-OCRv5） | PP-OCRV5_det | PP-OCRV5_rec | ~15MB | 快 | 优秀 |
-| 移动端 | PP-OCRv5_mobile | PP-OCRv5_mobile | ~5MB | 极快 | 良好 |
-| 服务器端 | PP-OCRv5_server | PP-OCRv5_server | ~50MB | 中等 | 最佳 |
+| 默认（PP-OCRv5 mobile） | PP-OCRv5_mobile_det | PP-OCRv5_mobile_rec | ~4.7 + ~15MB | 快 | 优秀 |
+| 移动端 | PP-OCRv5_mobile | PP-OCRv5_mobile | 同上（~20MB 合计） | 极快 | 良好 |
+| 服务器端 | PP-OCRv5_server_det | PP-OCRv5_server_rec | ~84 + ~76MB | 中等 | 最佳 |
+
+> 注：以上为官方推理模型体积（det 与 rec 分开，合计约 100-160MB）；PP-OCRv5 默认使用 mobile 系列模型。
 
 ---
 
@@ -123,19 +125,18 @@ def _get_paddleocr():
     if _paddleocr_ocr is None:
         from paddleocr import PaddleOCR
         _paddleocr_ocr = PaddleOCR(
-            use_angle_cls=True,   # 启用文字方向分类（自动矫正旋转）
-            lang=PADDLEOCR_LANG,  # 语言配置
-            use_gpu=False,        # CPU 模式
-            show_log=False        # 关闭调试日志
+            use_textline_orientation=True,  # 启用文本行方向分类（自动矫正旋转）
+            lang=PADDLEOCR_LANG,            # 语言配置
+            device="cpu"                    # CPU 模式
         )
     return _paddleocr_ocr
 ```
 
-**参数说明**：
-- `use_angle_cls=True`：启用方向分类器，自动检测并矫正旋转文字（竖排文字也能识别）
+**参数说明**（PaddleOCR 3.x API）：
+- `use_textline_orientation=True`：启用文本行方向分类，自动检测并矫正旋转文字（竖排文字也能识别）；2.x 中的 `use_angle_cls` 已废弃
 - `lang`：语言，默认 `ch`（中文 + 英文）
-- `use_gpu=False`：强制 CPU 模式，确保在无 GPU 机器上运行
-- `show_log=False`：关闭模型加载时的冗余日志
+- `device="cpu"`：强制 CPU 模式，确保在无 GPU 机器上运行；2.x 中的 `use_gpu` 已废弃，`show_log` 已移除
+- 调用方式：`ocr.ocr(img, cls=True)`（2.x）在 3.x 中改为 `ocr.predict(img)`，`cls` 参数已并入初始化时的 `use_textline_orientation`
 
 ### 步骤 4：构建 Flask API 端点
 
@@ -169,7 +170,7 @@ def api_ocr():
 
         # 4. 调用 PaddleOCR 识别
         ocr = _get_paddleocr()
-        raw_result = ocr.ocr(tmp_path, cls=True)
+        raw_result = ocr.predict(tmp_path)  # 3.x API；2.x 为 ocr.ocr(tmp_path, cls=True)
 
         # 5. 解析并构建返回结果
         all_text_parts = []
@@ -248,10 +249,9 @@ def _get_paddleocr():
         from paddleocr import PaddleOCR
         print(f"[PaddleOCR] 正在加载模型: lang={PADDLEOCR_LANG}（CPU模式）...")
         _paddleocr_ocr = PaddleOCR(
-            use_angle_cls=True,   # 启用方向分类，自动矫正旋转文字
-            lang=PADDLEOCR_LANG,  # 语言配置（ch/en/chinese_cht 等）
-            use_gpu=False,        # CPU 模式，无需 GPU
-            show_log=False        # 关闭调试日志，保持输出整洁
+            use_textline_orientation=True,  # 启用方向分类，自动矫正旋转文字
+            lang=PADDLEOCR_LANG,            # 语言配置（ch/en/chinese_cht 等）
+            device="cpu"                    # CPU 模式，无需 GPU（2.x 的 use_gpu 已废弃）
         )
         print(f"[PaddleOCR] 模型 lang={PADDLEOCR_LANG} 加载完成")
     return _paddleocr_ocr
@@ -295,7 +295,7 @@ def api_ocr():
 
         # 加载模型并识别
         ocr = _get_paddleocr()
-        raw_result = ocr.ocr(tmp_path, cls=True)
+        raw_result = ocr.predict(tmp_path)  # 3.x API；2.x 为 ocr.ocr(tmp_path, cls=True)
 
         # 解析识别结果，构建统一格式
         # raw_result 格式: [[detection1, detection2, ...]]
@@ -390,12 +390,12 @@ print(response.json())
 
 ### 1. PaddleOCR 结果格式解析
 
-PaddleOCR 的 `ocr.ocr()` 方法返回一个嵌套列表，理解其结构是正确使用的关键：
+PaddleOCR 的 `predict()` 方法返回结果对象列表（结构兼容 2.x 的嵌套列表），理解其结构是正确使用的关键：
 
 ```python
-raw_result = ocr.ocr("image.png", cls=True)
+raw_result = ocr.predict("image.png")
 
-# 返回格式（多图片输入时为多个元素的列表）
+# 返回格式（3.x 的 predict() 返回结果对象列表，兼容 2.x 的嵌套列表结构）
 # raw_result = [
 #     [  # 第一张图片的检测结果
 #         [[[10, 20], [200, 20], [200, 50], [10, 50]],  # 检测框（四点坐标）
@@ -415,7 +415,7 @@ raw_result = ocr.ocr("image.png", cls=True)
 
 | 问题 | 原因 | 解决方案 |
 |------|------|----------|
-| 倾斜文字识别差 | 文字方向不正 | 设置 `use_angle_cls=True` 自动矫正 |
+| 倾斜文字识别差 | 文字方向不正 | 设置 `use_textline_orientation=True` 自动矫正 |
 | 小字识别率低 | 图片分辨率不足 | 提高图片 DPI（300+），或放大图片 |
 | 模糊图片失败 | 对焦不清或手抖 | 提高图片质量，或使用图像增强预处理 |
 | 多列文字错乱 | 检测框顺序问题 | 后处理时可对检测框按 y 坐标排序 |
@@ -487,7 +487,7 @@ latex = model("formula.png")  # 输出: '\\frac{x^2}{y^2}'
 **方案二：PaddleOCR 识别 + 后处理**
 ```python
 # 先识别公式区域文本，再转换
-text = ocr.ocr("formula.png")
+text = ocr.predict("formula.png")
 # 可能输出: "x2 / y2"，需要额外处理
 ```
 
@@ -519,14 +519,14 @@ pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 
 ### Q2: 首次运行 PaddleOCR 时卡在下载模型，怎么办？
 
-**A**: PaddleOCR 首次运行会自动从 GitHub 下载模型文件（约 15MB），如果网络不好可能失败。
+**A**: PaddleOCR 首次运行会自动从 GitHub 下载模型文件（mobile det 约 4.7MB + rec 约 15MB），如果网络不好可能失败。
 
 **解决方法**：
 1. **使用代理**：设置 `HTTP_PROXY` 和 `HTTPS_PROXY` 环境变量
 2. **手动下载模型**：从 [PaddleOCR GitHub Releases](https://github.com/PaddlePaddle/PaddleOCR/releases) 下载模型文件，放到 `C:\Users\用户名\.paddleocr\whl\` 目录
-3. **离线模式**：指定本地模型路径
+3. **离线模式**：指定本地模型路径（3.x 参数名为 `text_detection_model_dir` / `text_recognition_model_dir`）
    ```python
-   ocr = PaddleOCR(det_model_dir='./models/det', rec_model_dir='./models/rec')
+   ocr = PaddleOCR(text_detection_model_dir='./models/det', text_recognition_model_dir='./models/rec')
    ```
 
 ### Q3: 中文识别效果不好，特别是手写体，如何改进？
@@ -545,7 +545,7 @@ pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
        cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
    cv2.imwrite("enhanced.png", binary)
    ```
-3. **使用服务器端模型**：通过 `rec_model_dir` 指定更大的识别模型
+3. **使用服务器端模型**：通过 `text_recognition_model_name="PP-OCRv5_server_rec"` 指定更大的识别模型（或 `text_recognition_model_dir` 指向本地模型目录）
 4. **现实限制**：PaddleOCR 对手写体中文的识别率有限（约 70-80%），印刷体效果好（95%+）。对于手写体，考虑使用 TrOCR 等专用模型
 
 ### Q4: 返回的 details 中 box 坐标是什么含义？如何用于图片标注？
@@ -585,7 +585,7 @@ cv2.imwrite("annotated.png", img)
 |------|-----------|-----------|
 | 中文识别率 | 优秀（95%+ 印刷体） | 一般（需要额外语言包） |
 | 安装难度 | 中等（需 PaddlePaddle） | 简单（系统级安装） |
-| 模型体积 | ~15MB | ~50MB+（含语言包） |
+| 模型体积 | ~4.7MB（mobile det，rec 另计） | ~50MB+（含语言包） |
 | 速度 | 快（CPU 优化好） | 中等 |
 | 手写体支持 | 有限 | 几乎不支持 |
 | 竖排文字 | 支持（需方向分类） | 不支持 |
@@ -596,11 +596,11 @@ cv2.imwrite("annotated.png", img)
 
 ### Q6: 如何同时处理多个图片的 OCR 请求？
 
-**A**: 与 Whisper 类似，当前实现使用全局单例模型。PaddleOCR 的 `ocr` 方法**支持批量处理**：
+**A**: 与 Whisper 类似，当前实现使用全局单例模型。PaddleOCR 的 `predict` 方法**支持批量处理**：
 
 ```python
-# 批量识别多张图片（一次调用，内部并行）
-results = ocr.ocr(["img1.png", "img2.png", "img3.png"])
+# 批量识别多张图片（一次调用）
+results = ocr.predict(["img1.png", "img2.png", "img3.png"])
 ```
 
 对于并发请求，建议：
@@ -619,13 +619,13 @@ results = ocr.ocr(["img1.png", "img2.png", "img3.png"])
 | [PaddleOCR GitHub](https://github.com/PaddlePaddle/PaddleOCR) | 官方仓库，提供完整文档和模型下载 |
 | [PaddleOCR 在线体验](https://www.paddlepaddle.org.cn/hub/scene/ocr) | 在线 Demo，无需安装即可体验 |
 | [PaddlePaddle 安装指南](https://www.paddlepaddle.org.cn/install/quick) | 官方安装文档（CPU/GPU，Windows/Linux/Mac） |
-| [PP-OCRv5 技术报告](https://arxiv.org/abs/2309.00000) | 最新模型架构详解 |
+| [PP-OCRv5 发布说明](https://github.com/PaddlePaddle/PaddleOCR/releases/tag/v3.0.0) | PP-OCRv5 模型发布与更新说明（无独立 arxiv 论文） |
 | [Pix2Text (P2T)](https://github.com/breezedeus/Pix2Text) | 开源数学公式 + 文字识别工具 |
 | [LaTeX-OCR](https://github.com/lukas-blecher/LaTeX-OCR) | 基于 ViT 的公式转 LaTeX 工具 |
 | [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) | Google 开源 OCR 引擎（对比参考） |
 | [TrOCR](https://huggingface.co/microsoft/trocr-base-handwritten) | 微软手写体 OCR 模型 |
 | [Flask 文件上传文档](https://flask.palletsprojects.com/en/stable/patterns/fileuploads/) | Flask 官方文件上传指南 |
-| LumiLearn scripts/lumiterm_local_server.py | 本模块实现代码 |
+| LumiLearn archive/debug_scripts/lumiterm_local_server.py | 本模块实现代码（历史归档） |
 
 ---
 

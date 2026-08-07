@@ -131,7 +131,7 @@ fetch('/api/review', {
 
 ```javascript
 function showReviewResult(data, latency) {
-  var totalScore = data.total_score || 0;
+  var totalScore = data.overall || 0;  // 后端返回字段为 overall（见 Module 4.3 API）
   var scoreClass = totalScore >= 8 ? 'high' : (totalScore >= 5 ? 'medium' : 'low');
 
   // 总分显示
@@ -245,7 +245,7 @@ function clearChat() {
 | 问题 | 原因 | 解决方案 |
 |------|------|----------|
 | 审查按钮点击无反应 | 没有 AI 消息或 `lastAIMessage` 为 null | 检查 chatArea 中是否有 `.msg-avatar.model` 元素 |
-| 审查面板不显示 | `/api/review` 端点不可用或返回格式错误 | 检查后端 Flask 路由，确认返回 `{total_score, dimensions, suggestions}` |
+| 审查面板不显示 | `/api/review` 端点不可用或返回格式错误 | 检查后端 Flask 路由，确认返回 `{scores, overall, suggestions}` |
 | 评分条不显示颜色 | CSS 类名拼写错误或 CSS 变量未定义 | 检查 `.high/.medium/.low` 类名与 CSS 定义一致 |
 | 清屏后面板残留 | `clearChat` 未使用 `innerHTML` 整体替换 | 使用 `chatArea.innerHTML = '...'` 确保完全清理 |
 | 快捷键不生效 | `Ctrl+R` 与浏览器刷新快捷键冲突 | 已调用 `e.preventDefault()` 阻止浏览器默认行为 |
@@ -259,4 +259,4 @@ function clearChat() {
 - [MDN: Performance.now()](https://developer.mozilla.org/zh-CN/docs/Web/API/Performance/now)
 - [MDN: CSS transition](https://developer.mozilla.org/zh-CN/docs/Web/CSS/transition)
 - 项目文件: [lumiterm.html](file:///e:/学习LLM/lumilearn/tianhong/templates/lumiterm.html)
-- 项目文件: [review_engine.py](../tianhong/review_engine.py)
+- 项目文件: [review_engine.py](file:///e:/学习LLM/lumilearn/archive/debug_scripts/self_review_engine.py)（历史归档）

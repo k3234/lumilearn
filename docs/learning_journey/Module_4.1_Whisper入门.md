@@ -421,7 +421,7 @@ if __name__ == "__main__":
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # 限制 25MB
 ```
 
-超过限制时 Flask 会返回 413 状态码。建议根据预期音频时长设置合理上限（1 分钟 WAV ≈ 10MB）。
+超过限制时 Flask 会返回 413 状态码。建议根据预期音频时长设置合理上限（1 分钟 WAV 约 1.9MB，16kHz 单声道 16bit；44.1kHz 立体声约 10MB）。
 
 ### Q6: 返回的 language 字段是什么格式？
 
@@ -449,7 +449,7 @@ app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024  # 限制 25MB
 | [ffmpeg 官方下载](https://ffmpeg.org/download.html) | 音频解码必备工具 |
 | [Flask 文件上传文档](https://flask.palletsprojects.com/en/stable/patterns/fileuploads/) | Flask 官方文件上传指南 |
 | [Python tempfile 文档](https://docs.python.org/3/library/tempfile.html) | 临时文件管理 |
-| LumiLearn scripts/lumiterm_local_server.py | 本模块实现代码 |
+| LumiLearn archive/debug_scripts/lumiterm_local_server.py | 本模块实现代码（历史归档） |
 
 ---
 
