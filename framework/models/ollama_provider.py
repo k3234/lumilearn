@@ -216,6 +216,52 @@ class OllamaProvider(ModelProvider):
         
         return result
 
+    def pull_model(self, model_name: str, stream: bool = True) -> Dict[str, Any]:
+        """
+        拉取（下载）模型到本地
+
+        参数:
+            model_name: 模型名称（如 qwen2.5:7b）
+            stream: 是否流式输出进度
+
+        返回:
+            操作结果
+        """
+        payload = {"name": model_name, "stream": stream}
+        try:
+            resp = requests.post(
+                f"{self._base_url}/api/pull",
+                json=payload,
+                timeout=self._timeout
+            )
+            if resp.status_code == 200:
+                return {"status": "ok", "model": model_name, "message": "模型拉取成功"}
+            return {"error": f"Ollama returned {resp.status_code}: {resp.text[:300]}"}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def delete_model(self, model_name: str) -> Dict[str, Any]:
+        """
+        删除本地模型
+
+        参数:
+            model_name: 模型名称
+
+        返回:
+            操作结果
+        """
+        try:
+            resp = requests.delete(
+                f"{self._base_url}/api/delete",
+                json={"name": model_name},
+                timeout=30
+            )
+            if resp.status_code == 200:
+                return {"status": "ok", "model": model_name, "message": "模型已删除"}
+            return {"error": f"Ollama returned {resp.status_code}: {resp.text[:300]}"}
+        except Exception as e:
+            return {"error": str(e)}
+
 
 def get_ollama_provider(base_url: str = None, default_model: str = None) -> OllamaProvider:
     """

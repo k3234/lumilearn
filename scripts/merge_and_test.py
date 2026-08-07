@@ -77,8 +77,8 @@ def main() -> None:
 
     log(f"[内存] 加载基础模型: {args.base}")
     base = AutoModelForCausalLM.from_pretrained(
-        args.base, torch_dtype=torch.float16, device_map=None,
-        trust_remote_code=True, attn_implementation="sdpa",
+        args.base, torch_dtype=torch.bfloat16, device_map=None,
+        trust_remote_code=True, attn_implementation="eager",
     )
     tokenizer = AutoTokenizer.from_pretrained(args.base, trust_remote_code=True)
     tokenizer.pad_token = tokenizer.eos_token

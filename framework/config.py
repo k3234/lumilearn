@@ -242,4 +242,31 @@ def get_preset_configs() -> dict:
                 output_dir="outputs/airllm_smoke",
             ),
         ),
+        # === CPU-Small: ~8M 参数，CPU 可训练，框架兜底模型 ===
+        "cpu_small": LumiLearnConfig(
+            model=ModelConfig(
+                vocab_size=8000, hidden_size=256, num_layers=6,
+                num_heads=8, ff_dim=768, max_seq_len=256, dropout=0.3,
+                activation="gelu", use_rotary=False, use_rmsnorm=False,
+                tie_weights=True,
+            ),
+            training=TrainingConfig(
+                learning_rate=1e-3, min_lr=1e-5, max_steps=5000,
+                warmup_steps=500, batch_size=4, gradient_accumulation=2,
+                save_every=1000, eval_every=500, log_every=50,
+                early_stop_patience=10, use_amp=False,
+                weight_decay=0.1, max_grad_norm=1.0,
+            ),
+            data=DataConfig(
+                train_ratio=0.90, val_ratio=0.05,
+                min_content_length=80, max_content_length=2000,
+                num_workers=0, pin_memory=False,
+            ),
+            experiment=ExperimentConfig(
+                name="LumiLearn-CPU-Small", version="1.0.0",
+                description="~8M参数教育模型，CPU可训练，作为框架兜底模型",
+                output_dir="outputs/cpu_small",
+                seed=42,
+            ),
+        ),
     }
