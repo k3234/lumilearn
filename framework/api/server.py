@@ -30,7 +30,7 @@ from framework.models.registry import get_registry
 from framework.models.ollama_provider import get_ollama_provider
 from framework.services.chat_service import get_chat_service
 
-from framework.api.routes import chat_bp, speech_bp, ocr_bp, review_bp, resources_bp, models_bp, feynman_bp, payment_bp, voicebox_bp, animation_bp, providers_bp, slides_bp, mindmap_bp, security_bp
+from framework.api.routes import chat_bp, speech_bp, ocr_bp, review_bp, resources_bp, models_bp, feynman_bp, payment_bp, voicebox_bp, animation_bp, providers_bp, slides_bp, mindmap_bp, security_bp, admin_bp
 
 
 def create_app(debug: bool = None, template_dir: str = None) -> Flask:
@@ -47,7 +47,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     config = get_config()
 
     if debug is None:
-        debug = config.is_debug()
+        debug = config.get("debug", False)
 
     if template_dir is None:
         template_dir = str(BASE_DIR / "tianhong" / "templates")
@@ -77,7 +77,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"
         response.headers["X-Framework"] = "LumiLearn"
-        response.headers["X-Version"] = config.get_version()
+        response.headers["X-Version"] = config.get("version", "1.0.0")
         # CSP：API 端点返回的是 JSON/音频，设置为严格策略
         if "Content-Type" in response.headers and "text/html" in response.headers["Content-Type"]:
             response.headers["Content-Security-Policy"] = (
@@ -107,6 +107,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     app.register_blueprint(mindmap_bp)
     app.register_blueprint(payment_bp)
     app.register_blueprint(security_bp)
+    app.register_blueprint(admin_bp)
 
     # 挂载 output 静态目录（动画生成视频）
     @app.route('/output/<path:filename>')
@@ -124,6 +125,17 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
             response.headers["Content-Type"] = "text/html; charset=utf-8"
             return response
         return "<h1>LumiLearn API Server</h1><p>lumiterm.html not found</p>", 404
+
+    @app.route("/admin")
+    def admin_page():
+        """管理员管理面板"""
+        html_path = BASE_DIR / "tianhong" / "templates" / "admin.html"
+        if html_path.exists():
+            content = html_path.read_text(encoding="utf-8")
+            response = app.make_response(content)
+            response.headers["Content-Type"] = "text/html; charset=utf-8"
+            return response
+        return "<h1>LumiLearn Admin</h1><p>admin.html not found</p>", 404
 
     @app.route("/learn")
     def learn_page():
@@ -182,13 +194,13 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
         try:
             chat_service = get_chat_service()
             result = chat_service.health_check()
-            result["version"] = config.get_version()
+            result["version"] = config.get("version", "1.0.0")
             result["framework"] = "LumiLearn"
             return jsonify(result)
         except Exception as e:
             return jsonify({
                 "status": "error",
-                "version": config.get_version(),
+                "version": config.get("version", "1.0.0"),
                 "framework": "LumiLearn",
                 "error": str(e)
             }), 500
@@ -199,7 +211,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
         try:
             chat_service = get_chat_service()
             health = chat_service.health_check()
-            version = config.get_version()
+            version = config.get("version", "1.0.0")
 
             # 自定义模型统计
             custom_models = chat_service.list_custom_models()
@@ -227,7 +239,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
             })
         except Exception as e:
             return jsonify({
-                "version": config.get_version(),
+                "version": config.get("version", "1.0.0"),
                 "mode": "framework",
                 "gateway": "offline",
                 "error": str(e)
@@ -239,8 +251,14 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
 def get_server_ports() -> Dict[str, int]:
     """从配置获取端口配置，默认三端口"""
     config = get_config()
-    ports = config.get_server_ports()
-    if not ports:
+    # config 为 dict：从 server 配置节读取端口，缺失时回退默认三端口
+    server_conf = config.get("server", {})
+    ports = {
+        "terminal": server_conf.get("terminal_port", 18080),
+        "api": server_conf.get("api_port", 18081),
+        "models": server_conf.get("models_port", 18082),
+    }
+    if not ports.get("terminal"):
         ports = {
             "terminal": 18080,
             "api": 18081,
@@ -307,7 +325,7 @@ def run_server(port: int = None, host: str = "0.0.0.0", multi_port: bool = False
         port = ports.get("terminal", 18080)
 
     config = get_config()
-    version = config.get_version()
+    version = config.get("version", "1.0.0")
 
     init_model_registry()
 

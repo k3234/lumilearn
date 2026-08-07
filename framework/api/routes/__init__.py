@@ -22,6 +22,7 @@ from .providers import providers_bp  # API Key 管理
 from .slides import slides_bp  # 幻灯片生成
 from .mindmap import mindmap_bp  # 思维导图生成
 from .security import security_bp  # 安全网关
+from .admin import admin_bp  # 管理员管理
 
 __all__ = [
     "chat_bp",
@@ -38,4 +39,5 @@ __all__ = [
     "slides_bp",
     "mindmap_bp",
     "security_bp",
+    "admin_bp",
 ]
