@@ -49,14 +49,14 @@ import shutil
 # shutil.disk_usage 返回 namedtuple: (total, used, free)
 # 三个值都以字节为单位
 使用情况 = shutil.disk_usage("C:\\")
-总空间GB = 使用情况.total / (1024 ** 3)   # 除以 1024^3 转换为 GB
+总空间GB = 使用情况.total / (1024 ** 3)   # 除以 1024^3 转换为 GiB（二进制换算）
 已用GB = 使用情况.used / (1024 ** 3)
 可用GB = 使用情况.free / (1024 ** 3)
 ```
 
 **关键知识点**：
 - `shutil.disk_usage` 在所有主流操作系统（Windows/Linux/macOS）上均可用
-- 返回的数值是精确的字节数，需要除以 `1024³`（1073741824）才能转为 GB
+- 返回的数值是精确的字节数，需要除以 `1024³`（1073741824）才能转为 GiB（严格区分：磁盘厂商按 1000³ 计算 GB，系统按 1024³ 计算 GiB，二者相差约 7%）
 - 在清理前后各调用一次，对比差异即可验证释放效果
 
 ### 步骤 3：实现安全检查函数
@@ -368,7 +368,7 @@ for root, dirs, files in os.walk("."):
 | [Python json 官方文档](https://docs.python.org/3/library/json.html) | JSON 序列化/反序列化 |
 | [Python argparse 官方文档](https://docs.python.org/3/library/argparse.html) | 命令行参数解析 |
 | [Windows 符号链接说明](https://learn.microsoft.com/en-us/windows/win32/fileio/symbolic-links) | Microsoft 官方符号链接文档 |
-| LumiLearn storage_cleaner.py | 本模块实现代码 |
+| LumiLearn archive/debug_scripts/storage_cleaner.py | 本模块实现代码（历史归档） |
 
 ---
 

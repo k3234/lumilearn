@@ -63,7 +63,7 @@
 - **前置知识**: Module 0.1（推荐）
 - **简介**: 建立三级文档体系（README → 模块文档 → API 文档），采用统一 Markdown 模板，Docs as Code 理念纳入 Git 管理。理解"文档是软件工程的隐形基础设施"。
 - **核心技能**: Markdown 模板、文档分层、Git 版本控制、auto_logger 自动化
-- **对应项目文件**: `auto_logger.py`、`docs/learning_journey/template.md`
+- **对应项目文件**: `archive/debug_scripts/auto_logger.py`（历史归档）、`docs/learning_journey/template.md`
 
 ---
 
@@ -201,7 +201,7 @@
 1. **按顺序学习**：每个后端模块（4.x）对应一个前端模块（5.x），建议配对学习（4.1 → 5.1 → 4.2 → 5.2 ...），学完就能看到完整效果。
 2. **动手实践**：每个模块都包含完整的代码示例，建议边学边写，不要只看不练。
 3. **理解原理**：每个模块都有"原理简介"章节，先理解为什么，再学习怎么做。
-4. **参考投票记录**：`data/task_history.json` 中记录了每个模块的多模型投票决策过程，可以了解不同方案的优劣权衡。
+4. **参考投票记录**：项目历史中每个模块的多模型投票决策过程曾记录在 `data/task_history.json`（现已归档，可了解不同方案的优劣权衡）。
 5. **使用模板**：新笔记请使用 [template.md](template.md) 作为起点。
 
 ---

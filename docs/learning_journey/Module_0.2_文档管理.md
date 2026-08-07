@@ -53,7 +53,7 @@ lumilearn/
 │   └── INDEX.md                 ← Notebook 索引
 │
 ├── config/                      ← 配置文件及配置说明
-│   ├── CLAUDE_CLL_SETUP.md
+│   ├── CLAUDE_CLI_SETUP.md
 │   └── TRAE_SOLO_SETUP.md
 │
 ├── plans/                       ← 设计规划文档
@@ -516,7 +516,7 @@ def 长函数():
 
 1. **模板复用**：将 `template.md` 复制到各项目
 2. **规则复用**：使用 `.markdownlint.json` 统一 Lint 规则
-3. **工具复用**：共享文档生成脚本（类似 `auto_logger.py`）
+3. **工具复用**：共享文档生成脚本（类似 `archive/debug_scripts/auto_logger.py`）
 
 ### Q6: 如何处理过时的文档？
 

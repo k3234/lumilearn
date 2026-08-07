@@ -274,4 +274,4 @@ function clearChat() {
 - [MDN: CSS transition](https://developer.mozilla.org/zh-CN/docs/Web/CSS/transition)
 - [MDN: KeyboardEvent.key](https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key)
 - 项目文件: [lumiterm.html](file:///e:/学习LLM/lumilearn/tianhong/templates/lumiterm.html)
-- 项目文件: [resources.py](file:///e:/学习LLM/lumilearn/tianhong/resources.py)
+- 项目文件: [resources.py](file:///e:/学习LLM/lumilearn/framework/api/routes/resources.py)

@@ -562,8 +562,8 @@ return {
 | [HTTP 状态码大全](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/Status) | MDN HTTP 状态码参考 |
 | [RAG 技术概述](https://www.promptingguide.ai/techniques/rag) | Prompt Engineering Guide 的 RAG 介绍 |
 | [Full Stack Python - Web Scraping](https://www.fullstackpython.com/web-scraping.html) | Python 爬虫技术全景 |
-| LumiLearn web_resource_fetcher.py | 本模块核心实现 |
-| LumiLearn scripts/lumiterm_local_server.py | 本模块 API 端点实现 |
+| LumiLearn archive/debug_scripts/web_resource_fetcher.py | 本模块核心实现（历史归档） |
+| LumiLearn archive/debug_scripts/lumiterm_local_server.py | 本模块 API 端点实现（历史归档） |
 
 ---
 

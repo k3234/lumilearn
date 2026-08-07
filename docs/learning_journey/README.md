@@ -20,13 +20,15 @@
 
 ## 快速命令
 
+> 以下脚本位于 `archive/debug_scripts/auto_logger.py`（历史归档），如已删除则无需执行。
+
 ```bash
 # 同步 Git 提交记录到开发日志
-python auto_logger.py --sync
+python archive/debug_scripts/auto_logger.py --sync
 
 # 交互式关联 commit 到学习笔记
-python auto_logger.py --link
+python archive/debug_scripts/auto_logger.py --link
 
 # 查看开发报告
-python auto_logger.py --report
+python archive/debug_scripts/auto_logger.py --report
 ```

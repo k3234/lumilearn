@@ -347,26 +347,39 @@ def summary_stats(reviews):
     - 判断整体趋势（上升/下降/稳定）
     """
     count = len(reviews)
+    if count == 0:
+        return {"count": 0, "avg_overall": 0.0, "trend": "无数据",
+                "best_dimension": None, "worst_dimension": None}
+
     dims = ["accuracy", "completeness", "guidance", "difficulty_fit"]
-    
+    dim_labels = {"accuracy": "准确性", "completeness": "完整性",
+                  "guidance": "引导性", "difficulty_fit": "难度适合度"}
+
     # 计算各维度平均分
     avgs = {}
     for dim in dims:
         values = [r.get("scores", r).get(dim, 0) for r in reviews]
         avgs[dim] = round(sum(values) / count, 2)
-    
+
+    # 综合评分平均分
+    overall_values = [r.get("overall", 0) for r in reviews]
+    avg_overall = round(sum(overall_values) / count, 2)
+
+    # 识别最佳/最差维度（平均分最高/最低）
+    best_dim = max(avgs, key=avgs.get)
+    worst_dim = min(avgs, key=avgs.get)
+
     # 趋势分析：比较首次和末次审查的综合评分
+    trend = "保持稳定 →"
     if count >= 2:
-        first = reviews[0].get("overall", 0)
-        last = reviews[-1].get("overall", 0)
+        first = overall_values[0]
+        last = overall_values[-1]
         diff = last - first
         if diff > 0.5:
             trend = "上升趋势 ↑"
         elif diff < -0.5:
             trend = "下降趋势 ↓"
-        else:
-            trend = "保持稳定 →"
-    
+
     return {
         "count": count,
         "avg_overall": avg_overall,
@@ -559,8 +572,8 @@ dims = ["accuracy", "completeness", "guidance", "difficulty_fit", "engagement"]
 | [Prompt Engineering Guide](https://www.promptingguide.ai/) | Prompt 工程全面指南 |
 | [OpenAI Prompt Engineering](https://platform.openai.com/docs/guides/prompt-engineering) | OpenAI 官方 Prompt 工程指南 |
 | [qwen2.5 模型卡片](https://ollama.com/library/qwen2.5) | Ollama 上的 qwen2.5 模型 |
-| LumiLearn self_review_engine.py | 本模块审查引擎实现 |
-| LumiLearn scripts/lumiterm_local_server.py | 本模块 API 端点实现 |
+| LumiLearn archive/debug_scripts/self_review_engine.py | 本模块审查引擎实现（历史归档） |
+| LumiLearn archive/debug_scripts/lumiterm_local_server.py | 本模块 API 端点实现（历史归档） |
 
 ---
 

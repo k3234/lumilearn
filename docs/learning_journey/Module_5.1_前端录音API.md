@@ -178,7 +178,7 @@ catch (err) {
 | `getUserMedia` 返回 `undefined` | 非安全上下文（HTTP 非 localhost） | 使用 HTTPS 或 localhost |
 | `NotAllowedError` | 用户拒绝或系统禁止麦克风 | 引导用户在浏览器设置中允许 |
 | `NotFoundError` | 没有检测到麦克风设备 | 检查硬件连接 |
-| 录音文件为空 | `ondataavailable` 未触发（时间太短） | 确保录音至少 250ms |
+| 录音文件为空 | `ondataavailable` 未触发或 `e.data.size === 0` | 确认已调用 `start()`；数据会在 `stop()` 时一次性提供，若需分块请用 `start(timeslice)` 设置定时触发间隔 |
 | `MediaRecorder.isTypeSupported` 返回 false | 浏览器不支持该编码 | 降级到不指定 mimeType |
 | 后端收到空文件 | Blob 类型不匹配 | 确保 `type` 参数与后端预期一致 |
 
