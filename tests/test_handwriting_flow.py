@@ -2,7 +2,7 @@
 """手写识别流程测试"""
 import sys, os, time, json
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-os.chdir(r"e:\学习LLM\lumilearn")
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import importlib.util
 spec = importlib.util.spec_from_file_location("database", "framework/database.py")
