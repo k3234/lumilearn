@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+"""SSH 交互式启动 agent_core.py"""
+import paramiko
+import time
+
+HOST = "192.168.2.137"
+USER = "kai"
+PASS = "WWw2021x"
+PORT = 22
+
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ssh.connect(HOST, PORT, USER, PASS)
+
+# 使用 invoke_shell 获取交互式终端
+channel = ssh.invoke_shell()
+print("终端已连接，启动 agent_core.py ...\n")
+
+# 发送命令
+channel.send("/usr/bin/python3 /home/kai/lumilearn/agent_core.py\n")
+time.sleep(2)
+
+# 读取启动输出
+output = ""
+while channel.recv_ready():
+    output += channel.recv(4096).decode("utf-8", errors="replace")
+print(output)
+
+# 发送一个测试问题
+channel.send("你好，介绍一下你自己\n")
+time.sleep(5)
+while channel.recv_ready():
+    output = channel.recv(8192).decode("utf-8", errors="replace")
+    print(output)
+
+# 发送退出命令
+channel.send("exit\n")
+time.sleep(1)
+while channel.recv_ready():
+    output = channel.recv(4096).decode("utf-8", errors="replace")
+    print(output)
+
+channel.close()
+ssh.close()
+print("\nAgent 测试完成")
