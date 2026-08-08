@@ -5,9 +5,12 @@ import os
 import sys
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
+
 HOST = "192.168.2.xx"
 USER = "kai"
-PWD = "********"
+cfg = get_config(host=HOST, user=USER)
 REMOTE_DIR = "~/lumilearn/models/distil"
 LOCAL_DIR = r"e:\学习LLM\lumilearn\models\distil"
 
@@ -18,7 +21,7 @@ files = [
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(HOST, username=USER, password=PWD, timeout=15)
+ssh.connect(HOST, username=USER, password=cfg["password"], timeout=15)
 print(f"[OK] 已连接 {USER}@{HOST}")
 
 sftp = ssh.open_sftp()

@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
+import os
+import sys
 import paramiko
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
+
+cfg = get_config()
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect("192.168.2.xx", username="kai", password="********", timeout=15)
+ssh.connect(cfg["host"], username=cfg["user"], password=cfg["password"], timeout=15)
 
 def run(cmd, timeout=120):
     stdin, stdout, stderr = ssh.exec_command(cmd, timeout=timeout)

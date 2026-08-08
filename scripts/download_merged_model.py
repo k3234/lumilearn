@@ -2,10 +2,14 @@
 """从远程下载综合训练后的模型回本地"""
 import paramiko
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
 
 HOST = "192.168.2.xx"
 USER = "kai"
-PWD = "********"
+cfg = get_config(host=HOST, user=USER)
 REMOTE_BASE = "~/lumilearn"
 LOCAL_BASE = r"e:\学习LLM\lumilearn"
 
@@ -14,7 +18,7 @@ LOCAL_EXP = os.path.join(LOCAL_BASE, "outputs", "cpu_small", "merged_gpu_train")
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(HOST, username=USER, password=PWD, timeout=15)
+ssh.connect(HOST, username=USER, password=cfg["password"], timeout=15)
 sftp = ssh.open_sftp()
 
 # 下载 model/ 目录 (config.json + model.pt)

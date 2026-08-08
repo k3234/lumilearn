@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 """上传 agent_core.py 到天虹服务器"""
+import os
+import sys
 import paramiko
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
 
 HOST = "192.168.2.xx"
 USER = "kai"
-PASS = "********"
 PORT = 22
+cfg = get_config(host=HOST, user=USER)
 
 LOCAL_FILE = r"E:\学习LLM\air-agent\agent_core.py"
 REMOTE_DIR = "~/lumilearn"
@@ -14,7 +19,7 @@ REMOTE_FILE = f"{REMOTE_DIR}/agent_core.py"
 print(f"连接 {USER}@{HOST}:{PORT} ...")
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(HOST, PORT, USER, PASS)
+ssh.connect(HOST, PORT, USER, cfg["password"])
 print("SSH 连接成功")
 
 sftp = ssh.open_sftp()
