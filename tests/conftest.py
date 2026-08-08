@@ -6,6 +6,17 @@ import sys
 import torch
 import pytest
 
+# 脚本式集成测试：依赖本地 Web 服务(localhost:5000)与 Ollama，CI 无法运行
+collect_ignore = [
+    "test_api_performance.py",
+    "test_api_stress.py",
+    "test_classroom_concurrent.py",
+    "test_classroom_sequential.py",
+    "test_feynman_workflow.py",
+    "test_handwriting_flow.py",
+    "test_robustness_and_admin.py",
+]
+
 # 添加项目根目录到 Python 路径
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 framework_DIR = os.path.join(PROJECT_ROOT, "framework")

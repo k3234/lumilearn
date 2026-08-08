@@ -7,8 +7,8 @@
 import sys, os, time, json, requests, urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-sys.path.insert(0, r"e:\学习LLM\lumilearn")
-os.chdir(r"e:\学习LLM\lumilearn")
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from framework.database import db
 from framework.api.server import create_app

@@ -2,7 +2,7 @@
 """API 顺序性能测试（替代并发测试）"""
 import sys, os, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-os.chdir(r"e:\学习LLM\lumilearn")
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import requests
 
