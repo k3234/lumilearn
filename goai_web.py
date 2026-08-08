@@ -27,7 +27,7 @@ from goai_agent import LumiLearnAgent, TaskUnderstanding, FlowOrchestrator
 
 app = Flask(__name__)
 
-# 全局Agent实例
+# 全局Agent实例（Ollama 地址通过环境变量 OLLAMA_URL 配置，见 .env.example）
 agent = LumiLearnAgent()
 
 
