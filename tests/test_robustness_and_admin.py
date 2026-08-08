@@ -4,7 +4,7 @@
 - 随机提问含错别字、语法错误、不完整问题
 - 测试管理员 API（登录、用户管理、模型管理、Agent 管理）
 """
-import sys, os, time, json, random, requests, urllib3
+import sys, os, time, json, requests, urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 sys.path.insert(0, r"e:\学习LLM\lumilearn")
@@ -21,9 +21,7 @@ print("=" * 70)
 print("\n【1/2】鲁棒性测试（含错别字、语法错误、不完整问题）")
 print("-" * 70)
 
-# 真实学生提问场景（含常见错误）
 robustness_tests = [
-    # (场景描述, 问题内容)
     ("错别字 - 勾股定理", "帮偶讲讲勾股定理，a方加b方等c方是啥意思"),
     ("错别字 - 化学键", "离子键和共价键有啥区别？能举几个例字吗"),
     ("语法错误", "牛顿第二定律F等于ma怎么用举例说明"),
@@ -52,24 +50,20 @@ for desc, question in robustness_tests:
             completed = steps.get("completed_steps", 0)
             total = steps.get("total_steps", 0)
             mastery = data.get("mastery_assessment", {}).get("level", "N/A")
-            # 获取第一个步骤的预览
-            step1 = steps.get("steps_detail", [{}])[0].get("content", "")[:80] if steps.get("steps_detail") else ""
             results_robust.append({
                 "desc": desc,
-                "question": question[:40],
                 "success": completed == total,
                 "steps": f"{completed}/{total}",
                 "mastery": mastery,
                 "elapsed": elapsed,
-                "preview": step1,
             })
             status = "✅" if completed == total else "⚠️"
             print(f"   {status} {desc[:20]:<20} → {completed}/{total} 步, {mastery}, {elapsed:.1f}s")
         else:
-            results_robust.append({"desc": desc, "error": f"HTTP {r.status_code}"})
+            results_robust.append({"desc": desc, "success": False, "error": f"HTTP {r.status_code}"})
             print(f"   ❌ {desc[:20]:<20} → HTTP {r.status_code}")
     except Exception as e:
-        results_robust.append({"desc": desc, "error": str(e)[:50]})
+        results_robust.append({"desc": desc, "success": False, "error": str(e)[:50]})
         print(f"   ❌ {desc[:20]:<20} → {str(e)[:50]}")
 
 robust_passed = sum(1 for r in results_robust if r.get("success"))
@@ -79,7 +73,6 @@ print(f"\n   鲁棒性通过率: {robust_passed}/{len(results_robust)} ({robust_
 print("\n【2/2】管理员功能测试")
 print("-" * 70)
 
-# 使用 Flask test client 测试 admin API
 app = create_app()
 app.config["TESTING"] = True
 client = app.test_client()
@@ -104,11 +97,9 @@ login_ok = resp.status_code == 200
 token = resp.get_json().get("token", "") if login_ok else ""
 print(f"     正常登录: {'✅' if login_ok else '❌'} (HTTP {resp.status_code})")
 
-# 错误密码
 resp = admin_request("POST", "/api/admin/login", {"username": "admin", "password": "wrong"})
 print(f"     错误密码: {'✅ 返回401' if resp.status_code == 401 else '❌'} (HTTP {resp.status_code})")
 
-# 不存在的用户
 resp = admin_request("POST", "/api/admin/login", {"username": "nobody", "password": "x"})
 print(f"     不存在用户: {'✅ 返回401' if resp.status_code == 401 else '❌'} (HTTP {resp.status_code})")
 
@@ -134,28 +125,24 @@ resp = admin_request("GET", "/api/admin/overview", token=token)
 overview_ok = resp.status_code == 200
 data = resp.get_json() if resp.status_code == 200 else {}
 stats = data.get("stats", {})
-model_status = data.get("model_status", {})
 print(f"     HTTP: {'✅' if overview_ok else '❌'} (HTTP {resp.status_code})")
 if overview_ok:
-    print(f"     统计: users={stats.get('total_users',0)}, subjects={stats.get('total_subjects',0)}, sessions={stats.get('total_sessions',0)}")
-    print(f"     模型: {json.dumps(model_status, ensure_ascii=False)}")
+    print(f"     统计: users={stats.get('total_users',0)}, sessions={stats.get('total_sessions',0)}")
 admin_results.append(("系统总览", overview_ok))
 
-# 2.5 用户列表
+# 2.5 用户管理
 print("\n  [2.5] 用户管理")
 resp = admin_request("GET", "/api/admin/users", token=token)
 list_users_ok = resp.status_code == 200
 users = resp.get_json().get("users", []) if resp.status_code == 200 else []
 print(f"     用户列表: {'✅' if list_users_ok else '❌'} ({len(users)} 个用户)")
 
-# 创建用户
 resp = admin_request("POST", "/api/admin/users", {"name": "测试用户", "role": "student"}, token=token)
 create_user_ok = resp.status_code == 200
 new_user = resp.get_json().get("user", {}) if create_user_ok else {}
 new_user_id = new_user.get("id") if create_user_ok else None
 print(f"     创建用户: {'✅' if create_user_ok else '❌'} (id={new_user_id})")
 
-# 删除用户
 if new_user_id:
     resp = admin_request("DELETE", f"/api/admin/users/{new_user_id}", token=token)
     delete_user_ok = resp.status_code == 200
@@ -170,8 +157,7 @@ resp = admin_request("GET", "/api/admin/models", token=token)
 list_models_ok = resp.status_code == 200
 models = resp.get_json().get("models", []) if resp.status_code == 200 else []
 print(f"     模型列表: {'✅' if list_models_ok else '❌'} ({len(models)} 个模型)")
-for m in models[:3]:
-    print(f"       - {m.get('name', 'N/A')} ({m.get('size_mb', 0)/1024:.1f} GB)")
+admin_results.append(("模型管理", list_models_ok))
 
 # 2.7 Agent 管理
 print("\n  [2.7] Agent 管理")
@@ -179,32 +165,28 @@ resp = admin_request("GET", "/api/admin/agents", token=token)
 list_agents_ok = resp.status_code == 200
 agents = resp.get_json().get("agents", []) if resp.status_code == 200 else []
 print(f"     Agent列表: {'✅' if list_agents_ok else '❌'} ({len(agents)} 个Agent)")
-for a in agents[:3]:
-    print(f"       - {a.get('name', 'N/A')}: {a.get('status', 'N/A')}")
 
-# Agent 健康检查
 resp = admin_request("GET", "/api/admin/agents/health", token=token)
 health_ok = resp.status_code == 200
 print(f"     Agent健康: {'✅' if health_ok else '❌'} (HTTP {resp.status_code})")
 admin_results.append(("Agent管理", list_agents_ok and health_ok))
 
-# 2.8 API Key 管理
+# 2.8 API Key 管理（修复字段名）
 print("\n  [2.8] API Key 管理")
 resp = admin_request("GET", "/api/admin/api-keys", token=token)
 list_keys_ok = resp.status_code == 200
 keys = resp.get_json().get("api_keys", []) if resp.status_code == 200 else []
 print(f"     API Key列表: {'✅' if list_keys_ok else '❌'} ({len(keys)} 个Key)")
 
-# 创建 API Key
-resp = admin_request("POST", "/api/admin/api-keys", {"name": "测试Key", "permissions": ["read"]}, token=token)
+# 修复：使用正确的字段名 key_name 和 scope
+resp = admin_request("POST", "/api/admin/api-keys", {"key_name": "测试Key", "scope": "read"}, token=token)
 create_key_ok = resp.status_code == 200
 new_key = resp.get_json().get("api_key", {}) if create_key_ok else {}
-new_key_id = new_key.get("id") if create_key_ok else None
-print(f"     创建API Key: {'✅' if create_key_ok else '❌'} (id={new_key_id})")
+new_api_key = new_key.get("api_key") if create_key_ok else None
+print(f"     创建API Key: {'✅' if create_key_ok else '❌'} (key={new_api_key[:8] if new_api_key else 'None'}...)")
 
-# 删除 API Key
-if new_key_id:
-    resp = admin_request("DELETE", f"/api/admin/api-keys/{new_key_id}", token=token)
+if new_api_key:
+    resp = admin_request("DELETE", f"/api/admin/api-keys/{new_api_key}", token=token)
     delete_key_ok = resp.status_code == 200
     print(f"     删除API Key: {'✅' if delete_key_ok else '❌'} (HTTP {resp.status_code})")
 else:
@@ -216,10 +198,11 @@ print("\n  [2.9] 日志管理")
 resp = admin_request("GET", "/api/admin/logs", token=token)
 logs_ok = resp.status_code == 200
 print(f"     日志列表: {'✅' if logs_ok else '❌'} (HTTP {resp.status_code})")
+admin_results.append(("日志管理", logs_ok))
 
-# 2.10 修改密码
+# 2.10 修改密码（修复路径）
 print("\n  [2.10] 修改密码")
-resp = admin_request("POST", "/api/admin/change-password",
+resp = admin_request("POST", "/api/admin/password",  # 修复：正确路径
                      {"old_password": "admin123", "new_password": "admin123"}, token=token)
 change_pwd_ok = resp.status_code == 200
 print(f"     修改密码: {'✅' if change_pwd_ok else '❌'} (HTTP {resp.status_code})")
