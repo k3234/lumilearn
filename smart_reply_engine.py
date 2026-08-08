@@ -7,6 +7,7 @@ LumiLearn 智能混合回复引擎
 - 费曼教学模式：不直接给答案，引导式教学
 """
 
+import os as _os
 import re
 import random
 import json
@@ -1004,8 +1005,6 @@ def generate_slides(topic: str, slide_count: int = 5, style: str = "detailed") -
     返回：
         幻灯片列表，每张包含 title, subtitle, content, katex
     """
-    import os as _os
-
     # 优先从环境变量读取 Ollama 地址，否则使用共享默认值
     ollama_base = _os.environ.get("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE)
     model_name = _os.environ.get("LUMILEARN_SLIDE_MODEL", "qwen2.5:7b")
