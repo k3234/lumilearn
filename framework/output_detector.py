@@ -262,7 +262,7 @@ class OutputDetector:
             guide_question = self._generate_guide_question(concept, gap)
 
             # 构造本轮学生输出（模拟：将原输出+引导内容融合）
-            enriched_output = self._enrich_output(current_output, gap, guide_question)
+            enriched_output = self._enrich_output(current_output, gap, guide_question, concept)
 
             # 重新检测
             round_result = self.run_detection(concept, enriched_output, detection_type="guided_reinforcement")
@@ -622,7 +622,7 @@ class OutputDetector:
     # 内部方法：丰富学生输出
     # ============================================================
 
-    def _enrich_output(self, original: str, gap_info: Dict, guide_question: str) -> str:
+    def _enrich_output(self, original: str, gap_info: Dict, guide_question: str, concept: str = "") -> str:
         """
         将学生原始输出与引导内容融合，生成改进后的输出
 
@@ -643,7 +643,7 @@ class OutputDetector:
             if len(words) > 15:
                 original_clean = " ".join(words[:15]) + "..."
         elif weak_dim == "完整度":
-            supplement = "\n核心要点：定义上，{concept}指的是...；性质上，它具有...；应用上，我们常用来..."
+            supplement = f"\n核心要点：定义上，{concept}指的是...；性质上，它具有...；应用上，我们常用来..."
         elif weak_dim == "术语规避":
             supplement = "\n（用通俗语言重述：...）"
 
