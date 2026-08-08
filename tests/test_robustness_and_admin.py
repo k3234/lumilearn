@@ -17,7 +17,7 @@ print("=" * 70)
 print("  LumiLearn 鲁棒性 + 管理员功能测试")
 print("=" * 70)
 
-# ─── 1. 鲁棒性测试：含错别字/语法错误/不完整问题 ──────────────────────────
+# ─── 1. 鲁棒性测试 ──────────────────────────────────────────────────────────
 print("\n【1/2】鲁棒性测试（含错别字、语法错误、不完整问题）")
 print("-" * 70)
 
@@ -171,18 +171,18 @@ health_ok = resp.status_code == 200
 print(f"     Agent健康: {'✅' if health_ok else '❌'} (HTTP {resp.status_code})")
 admin_results.append(("Agent管理", list_agents_ok and health_ok))
 
-# 2.8 API Key 管理（修复字段名）
+# 2.8 API Key 管理（修复：api_key 是顶层字段）
 print("\n  [2.8] API Key 管理")
 resp = admin_request("GET", "/api/admin/api-keys", token=token)
 list_keys_ok = resp.status_code == 200
 keys = resp.get_json().get("api_keys", []) if resp.status_code == 200 else []
 print(f"     API Key列表: {'✅' if list_keys_ok else '❌'} ({len(keys)} 个Key)")
 
-# 修复：使用正确的字段名 key_name 和 scope
+# 修复：API 返回 {"success": True, "id": ..., "key_name": ..., "api_key": ..., "scope": ...}
 resp = admin_request("POST", "/api/admin/api-keys", {"key_name": "测试Key", "scope": "read"}, token=token)
 create_key_ok = resp.status_code == 200
-new_key = resp.get_json().get("api_key", {}) if create_key_ok else {}
-new_api_key = new_key.get("api_key") if create_key_ok else None
+new_key_data = resp.get_json() if create_key_ok else {}
+new_api_key = new_key_data.get("api_key") if create_key_ok else None
 print(f"     创建API Key: {'✅' if create_key_ok else '❌'} (key={new_api_key[:8] if new_api_key else 'None'}...)")
 
 if new_api_key:
@@ -200,9 +200,9 @@ logs_ok = resp.status_code == 200
 print(f"     日志列表: {'✅' if logs_ok else '❌'} (HTTP {resp.status_code})")
 admin_results.append(("日志管理", logs_ok))
 
-# 2.10 修改密码（修复路径）
+# 2.10 修改密码
 print("\n  [2.10] 修改密码")
-resp = admin_request("POST", "/api/admin/password",  # 修复：正确路径
+resp = admin_request("POST", "/api/admin/password",
                      {"old_password": "admin123", "new_password": "admin123"}, token=token)
 change_pwd_ok = resp.status_code == 200
 print(f"     修改密码: {'✅' if change_pwd_ok else '❌'} (HTTP {resp.status_code})")
