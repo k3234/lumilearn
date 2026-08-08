@@ -101,6 +101,10 @@ curl -X POST http://localhost:18080/api/mindmap \
 ```bash
 cd <PROJECT_DIR>
 
+# 0) 快速冒烟验证完整管线（模型初始化 → 训练 → 评测，约 200 步）
+python scripts/eval_model.py --preset fast_test --steps 200
+# 输出：参数量 / 最佳验证 Loss / 困惑度（Perplexity），自定义数据可用 --data data.jsonl
+
 # 1) 用真实费曼教学数据训练 LoRA adapter（CPU，约 44min/batch）
 OMP_NUM_THREADS=4 python3 -u scripts/train_real.py \
     --data data/distil/train_data_real.jsonl \
