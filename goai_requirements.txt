@@ -1,0 +1,5 @@
+# LumiLearn GOAI Agent — 依赖文件
+# 安装方式: pip install -r goai_require.txt
+
+flask>=2.3.0
+requests>=2.31.0
