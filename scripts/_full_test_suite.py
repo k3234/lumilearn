@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """完整测试套件：pytest + 端到端 + 手写识别 + API 性能 + 天虹 Ollama"""
 import sys, os, time, subprocess, json, requests, paramiko
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
+
 sys.path.insert(0, r"e:\学习LLM\lumilearn")
 os.chdir(r"e:\学习LLM\lumilearn")
 
@@ -70,7 +74,8 @@ print("-" * 70)
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 try:
-    ssh.connect("192.168.2.68", username="kai", password="WWw2021x", timeout=15)
+    cfg = get_config()
+    ssh.connect(cfg["host"], username=cfg["user"], password=cfg["password"], timeout=15)
     def run_ssh(cmd):
         s, out, err = ssh.exec_command(cmd, timeout=30)
         return out.read().decode(errors="replace")

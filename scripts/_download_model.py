@@ -2,16 +2,20 @@
 """从天虹下载 v2 合并模型到本地"""
 import paramiko
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
 
 HOST = "192.168.2.68"
 USER = "kai"
-PWD = "WWw2021x"
+cfg = get_config(host=HOST, user=USER)
 REMOTE_BASE = "/home/kai/lumilearn/models/distil/merged_model_15b_v2"
 LOCAL_BASE = r"e:\学习LLM\lumilearn\models\distil\merged_model_15b_v2"
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(HOST, username=USER, password=PWD, timeout=15)
+ssh.connect(HOST, username=USER, password=cfg["password"], timeout=15)
 sftp = ssh.open_sftp()
 print(f"[OK] 已连接 {USER}@{HOST}")
 

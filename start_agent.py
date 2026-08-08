@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """SSH 交互式启动 agent_core.py"""
+import os
+import sys
 import paramiko
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
+
 HOST = "192.168.2.137"
 USER = "kai"
-PASS = "WWw2021x"
 PORT = 22
+cfg = get_config(host=HOST, user=USER)
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(HOST, PORT, USER, PASS)
+ssh.connect(HOST, PORT, USER, cfg["password"])
 
 # 使用 invoke_shell 获取交互式终端
 channel = ssh.invoke_shell()

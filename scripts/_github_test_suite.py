@@ -2,6 +2,9 @@
 """GitHub 代码拉取 + 完整测试套件"""
 import subprocess, sys, os, json, requests, paramiko, time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
+
 os.chdir(r"e:\学习LLM\lumilearn")
 
 print("=" * 70)
@@ -68,7 +71,8 @@ print("-" * 70)
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 try:
-    ssh.connect("192.168.2.68", username="kai", password="WWw2021x", timeout=15)
+    cfg = get_config()
+    ssh.connect(cfg["host"], username=cfg["user"], password=cfg["password"], timeout=15)
     
     def run_ssh(cmd):
         s, out, err = ssh.exec_command(cmd, timeout=60)

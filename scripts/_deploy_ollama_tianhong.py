@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """在天虹服务器 (192.168.2.68) 上安装 Ollama 并注册 LumiLearn V2 模型"""
 import paramiko
+import os
+import sys
 import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _tianhong_config import get_config
 
 HOST = "192.168.2.68"
 USER = "kai"
-PWD = "WWw2021x"
+cfg = get_config(host=HOST, user=USER)
 REMOTE = "/home/kai/lumilearn"
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect(HOST, username=USER, password=PWD, timeout=15)
+ssh.connect(HOST, username=USER, password=cfg["password"], timeout=15)
 print(f"[OK] 已连接 {USER}@{HOST}")
 
 def run(cmd, timeout=60):
