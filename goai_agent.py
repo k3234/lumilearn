@@ -27,6 +27,9 @@ import time
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+# Ollama 服务地址（优先从环境变量读取，避免硬编码内网 IP）
+DEFAULT_OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
+
 # 确保能导入同目录模块
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -255,7 +258,7 @@ class ToolCaller:
     - rule_scoring: 基于规则的评分（兜底）
     """
     
-    def __init__(self, ollama_url: str = "http://192.168.2.xx:11434",
+    def __init__(self, ollama_url: str = DEFAULT_OLLAMA_URL,
                  preferred_model: str = "lumilearn-v2",
                  timeout: int = 120):
         self.ollama_url = ollama_url
@@ -634,7 +637,7 @@ class LumiLearnAgent:
     用户输入 → 任务理解 → 流程编排 → 工具调用 → 结果交付 → 学习报告
     """
     
-    def __init__(self, ollama_url: str = "http://192.168.2.xx:11434",
+    def __init__(self, ollama_url: str = DEFAULT_OLLAMA_URL,
                  model: str = "lumilearn-v2"):
         self.task_understanding = TaskUnderstanding()
         self.flow_orchestrator = FlowOrchestrator()
@@ -761,7 +764,7 @@ def main():
     parser.add_argument("topic", nargs="?", help="学习目标（如'函数的单调性'）")
     parser.add_argument("--interactive", "-i", action="store_true", help="交互模式")
     parser.add_argument("--difficulty", "-d", default=None, help="指定难度（初中/高中/大学）")
-    parser.add_argument("--ollama-url", default="http://192.168.2.xx:11434", help="Ollama地址")
+    parser.add_argument("--ollama-url", default=DEFAULT_OLLAMA_URL, help="Ollama地址")
     parser.add_argument("--model", default="lumilearn-v2", help="使用的模型")
     
     args = parser.parse_args()

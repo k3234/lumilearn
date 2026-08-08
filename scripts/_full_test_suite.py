@@ -69,7 +69,7 @@ except Exception as e:
     print(f"   结果: ❌ 无法连接 ({e})")
 
 # ─── 6. 天虹 Ollama 测试 ─────────────────────────────────────────────────────
-print("\n【6/6】天虹 Ollama (192.168.2.xx)")
+print("\n【6/6】天虹 Ollama")
 print("-" * 70)
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""在天虹服务器 (192.168.2.xx) 上安装 Ollama 并注册 LumiLearn V2 模型"""
+"""在天虹服务器上安装 Ollama 并注册 LumiLearn V2 模型"""
 import paramiko
 import os
 import sys
@@ -8,8 +8,8 @@ import time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _tianhong_config import get_config
 
-HOST = "192.168.2.xx"
-USER = "kai"
+HOST = os.environ.get("TIANHONG_HOST", "")
+USER = os.environ.get("TIANHONG_USER", "")
 cfg = get_config(host=HOST, user=USER)
 REMOTE = "~/lumilearn"
 

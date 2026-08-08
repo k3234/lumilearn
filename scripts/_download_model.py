@@ -7,8 +7,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _tianhong_config import get_config
 
-HOST = "192.168.2.xx"
-USER = "kai"
+HOST = os.environ.get("TIANHONG_HOST", "")
+USER = os.environ.get("TIANHONG_USER", "")
 cfg = get_config(host=HOST, user=USER)
 REMOTE_BASE = "~/lumilearn/models/distil/merged_model_15b_v2"
 LOCAL_BASE = r"e:\学习LLM\lumilearn\models\distil\merged_model_15b_v2"

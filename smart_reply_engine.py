@@ -418,12 +418,12 @@ def get_intelligent_reply(question: str) -> str:
 # LumiLearn 模型调用（尝试 + 乱码检测）
 # ============================================================
 
-# 注意：192.168.2.xx:18080 是 Flask 前端，不提供 /api/generate。
-# 实际的本地 LLM 推理由 Ollama 提供（http://192.168.2.xx:11434）。
+# 注意：localhost:18080 是 Flask 前端，不提供 /api/generate。
+# 实际的本地 LLM 推理由 Ollama 提供（OLLAMA_URL 环境变量，默认 localhost:11434）。
 # 这里保留 18080 作为默认 API_BASE，以便兼容 chat_service.py 中的流式 /api/chat 路由；
 # 真正直接调用 Ollama 的场景（如 generate_slides）请显式传入 ollama_base。
-DEFAULT_API_BASE = "http://192.168.2.xx:18080"
-DEFAULT_OLLAMA_BASE = "http://192.168.2.xx:11434"
+DEFAULT_API_BASE = _os.environ.get("API_BASE_URL", "http://localhost:18080")
+DEFAULT_OLLAMA_BASE = _os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
 
 def try_lumilearn(prompt: str, question: str = "", api_base: str = DEFAULT_OLLAMA_BASE, timeout: int = 15) -> Tuple[Optional[str], bool]:
@@ -1007,7 +1007,7 @@ def generate_slides(topic: str, slide_count: int = 5, style: str = "detailed") -
     import os as _os
 
     # 优先从环境变量读取 Ollama 地址，否则使用共享默认值
-    ollama_base = _os.environ.get("OLLAMA_BASE_URL", "http://192.168.2.xx:11434")
+    ollama_base = _os.environ.get("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE)
     model_name = _os.environ.get("LUMILEARN_SLIDE_MODEL", "qwen2.5:7b")
 
     # 1. 尝试调用 Ollama 本地模型生成（使用 /api/chat 接口，更通用）

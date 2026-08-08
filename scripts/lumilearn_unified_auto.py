@@ -8,7 +8,7 @@ import os, sys, json, time, csv, requests, re, random
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 
-OLLAMA_BASE = "http://192.168.2.xx:11434"
+OLLAMA_BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 LL_DIR = r"e:\学习LLM\lumilearn"
 MASTER_CSV = os.path.join(LL_DIR, "lumilearn_master.csv")
 REPORTS_DIR = os.path.join(LL_DIR, "reports")

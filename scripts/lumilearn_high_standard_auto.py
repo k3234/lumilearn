@@ -18,7 +18,7 @@ import re
 from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 
-OLLAMA_BASE_URL = "http://192.168.2.xx:11434"
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 LUMILEARN_DIR = r"e:\学习LLM\lumilearn"
 MASTER_CSV = os.path.join(LUMILEARN_DIR, "lumilearn_master.csv")
 REPORTS_DIR = os.path.join(LUMILEARN_DIR, "reports")
