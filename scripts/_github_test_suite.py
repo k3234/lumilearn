@@ -49,7 +49,7 @@ print("\n【4/6】goai_agent 集成测试")
 print("-" * 70)
 sys.path.insert(0, r"e:\学习LLM\lumilearn")
 from goai_agent import LumiLearnAgent
-agent = LumiLearnAgent(ollama_url=os.environ.get("OLLAMA_URL", "http://localhost:11434"))
+agent = LumiLearnAgent(ollama_url=os.environ.get("OLLAMA_URL", "http://192.168.2.xx:11434"))
 status = agent.get_status()
 print(f"   模型: {status['model']}")
 print(f"   Ollama可用: {'✅' if status['ollama_available'] else '❌'}")
@@ -75,7 +75,7 @@ print("\n【6/6】天虹 Ollama")
 print("-" * 70)
 try:
     tianhong_ok = False
-    ollama_host = os.environ.get("OLLAMA_HOST", "localhost")
+    ollama_host = os.environ.get("OLLAMA_HOST", "192.168.2.xx")
     r = requests.post(
         f"http://{ollama_host}:11434/api/generate",
         json={"model": "lumilearn-v2", "prompt": "用一句话解释勾股定理", "stream": False,
