@@ -178,7 +178,7 @@ class ChatService:
         route_result = self._router.route(route_request)
         model = route_result.model_name
 
-        result = self._ollama.chat(
+        result = self._ollama.chat_sync(
             messages,
             model=model,
             temperature=temperature,
