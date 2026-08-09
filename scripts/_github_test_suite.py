@@ -2,9 +2,10 @@
 """GitHub 代码拉取 + 完整测试套件"""
 import subprocess, sys, os, json, requests, time
 
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-os.chdir(r"e:\学习LLM\lumilearn")
+os.chdir(PROJECT_ROOT)
 
 print("=" * 70)
 print("  LumiLearn 完整测试套件")
@@ -47,9 +48,9 @@ print(f"   结果: {'✅ 通过' if e2e_ok else '❌ 失败'}")
 # 4. goai_agent 集成测试
 print("\n【4/6】goai_agent 集成测试")
 print("-" * 70)
-sys.path.insert(0, r"e:\学习LLM\lumilearn")
+sys.path.insert(0, PROJECT_ROOT)
 from goai_agent import LumiLearnAgent
-agent = LumiLearnAgent(ollama_url=os.environ.get("OLLAMA_URL", "http://192.168.2.xx:11434"))
+agent = LumiLearnAgent(ollama_url=os.environ.get("OLLAMA_URL", "http://localhost:11434"))
 status = agent.get_status()
 print(f"   模型: {status['model']}")
 print(f"   Ollama可用: {'✅' if status['ollama_available'] else '❌'}")
@@ -75,7 +76,7 @@ print("\n【6/6】天虹 Ollama")
 print("-" * 70)
 try:
     tianhong_ok = False
-    ollama_host = os.environ.get("OLLAMA_HOST", "192.168.2.xx")
+    ollama_host = os.environ.get("OLLAMA_HOST", "localhost")
     r = requests.post(
         f"http://{ollama_host}:11434/api/generate",
         json={"model": "lumilearn-v2", "prompt": "用一句话解释勾股定理", "stream": False,
