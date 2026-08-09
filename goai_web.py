@@ -537,8 +537,162 @@ function renderReport(report) {
 # ============================================================
 # API路由
 # ============================================================
+def get_local_ip():
+    """获取局域网 IP"""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return "127.0.0.1"
+
+
 @app.route('/')
 def index():
+    """服务仪表盘首页"""
+    local_ip = get_local_ip()
+
+    services = [
+        ("🎓 GOAI 学习智能体", "/learn", "5000", "AI 教官问答 + 费曼教学法五步学习", "在线"),
+        ("🖥️ 框架终端", f"http://{local_ip}:18080/", "18080", "LumiLearn 全功能终端界面", "在线" if check_port(18080) else "离线"),
+        ("🔌 REST API", f"http://{local_ip}:18081/", "18081", "纯 API 服务，供第三方集成", "在线" if check_port(18081) else "离线"),
+        ("🤖 模型管理", f"http://{local_ip}:18082/", "18082", "模型列表、切换、健康检查", "在线" if check_port(18082) else "离线"),
+    ]
+
+    dashboard_html = """
+    <!DOCTYPE html>
+    <html lang="zh-CN">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LumiLearn 服务仪表盘</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        min-height: 100vh;
+      }
+      .header {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e3a5f 100%);
+        padding: 24px 32px;
+        border-bottom: 1px solid #334155;
+      }
+      .header h1 { font-size: 28px; font-weight: 700; color: #f8fafc; }
+      .header h1 span { color: #818cf8; }
+      .header .sub { font-size: 14px; color: #94a3b8; margin-top: 6px; }
+      .header .ip-badge {
+        display: inline-block; background: #1e293b; color: #818cf8;
+        padding: 4px 12px; border-radius: 20px; font-size: 13px;
+        margin-top: 8px; border: 1px solid #334155;
+      }
+      .container { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 20px; }
+      .card {
+        background: #1e293b; border-radius: 16px; padding: 24px;
+        border: 1px solid #334155; transition: all 0.2s;
+        position: relative; overflow: hidden;
+      }
+      .card:hover { border-color: #6366f1; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99,102,241,0.15); }
+      .card .icon { font-size: 32px; margin-bottom: 12px; }
+      .card h3 { font-size: 18px; color: #f1f5f9; margin-bottom: 4px; }
+      .card .port { font-size: 12px; color: #64748b; font-family: monospace; }
+      .card .desc { font-size: 13px; color: #94a3b8; margin: 8px 0 16px; line-height: 1.5; }
+      .card .status {
+        display: inline-block; font-size: 12px; padding: 3px 10px;
+        border-radius: 12px; font-weight: 500;
+      }
+      .status-online { background: #065f46; color: #6ee7b7; }
+      .status-offline { background: #7f1d1d; color: #fca5a5; }
+      .card a {
+        display: inline-block; margin-top: 12px; padding: 8px 20px;
+        background: #312e81; color: #c7d2fe; border-radius: 8px;
+        text-decoration: none; font-size: 13px; font-weight: 500;
+        transition: all 0.2s;
+      }
+      .card a:hover { background: #4338ca; color: #e0e7ff; }
+      .quick-links {
+        margin-top: 32px; background: #1e293b; border-radius: 16px;
+        padding: 24px; border: 1px solid #334155;
+      }
+      .quick-links h3 { font-size: 16px; color: #f1f5f9; margin-bottom: 16px; }
+      .quick-links code {
+        display: block; background: #0f172a; padding: 10px 16px;
+        border-radius: 8px; font-size: 13px; color: #a5b4fc;
+        margin-bottom: 8px; font-family: 'Cascadia Code', 'Fira Code', monospace;
+      }
+      .quick-links .label { color: #94a3b8; font-size: 12px; margin-bottom: 2px; }
+      .footer { text-align: center; padding: 32px; color: #475569; font-size: 13px; }
+      .footer a { color: #818cf8; text-decoration: none; }
+    </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>LumiLearn <span>服务仪表盘</span></h1>
+        <div class="sub">全面配置 — 全部服务已开放</div>
+        <div class="ip-badge">🌐 本机 IP: """ + local_ip + """</div>
+      </div>
+      <div class="container">
+        <div class="grid">
+    """
+    for icon, path, port, desc, status in services:
+        status_class = "status-online" if status == "在线" else "status-offline"
+        link = path if path.startswith("http") else path
+        dashboard_html += f"""
+          <div class="card">
+            <div class="icon">{icon.split()[0]}</div>
+            <h3>{' '.join(icon.split()[1:])}</h3>
+            <div class="port">端口 {port}</div>
+            <div class="desc">{desc}</div>
+            <span class="status {status_class}">● {status}</span>
+            <a href="{link}" target="_blank">🚀 打开服务</a>
+          </div>
+        """
+    dashboard_html += """
+        </div>
+        <div class="quick-links">
+          <h3>📋 快速参考</h3>
+          <div class="label">GOAI 学习 API (POST)</div>
+          <code>curl -X POST http://localhost:5000/api/learn -H "Content-Type: application/json" -d '{"topic":"勾股定理","subject":"数学"}'</code>
+          <div class="label">框架健康检查 (GET)</div>
+          <code>curl http://localhost:18080/health</code>
+          <div class="label">框架 API 状态 (GET)</div>
+          <code>curl http://localhost:18080/api/status</code>
+          <div class="label">模型列表 (GET)</div>
+          <code>curl http://localhost:18080/api/models</code>
+          <div class="label">费曼教学 API (POST)</div>
+          <code>curl -X POST http://localhost:18080/api/feynman/explain -H "Content-Type: application/json" -d '{"topic":"勾股定理"}'</code>
+        </div>
+        <div class="footer">
+          LumiLearn · <a href="https://github.com/your-username/lumilearn" target="_blank">GitHub</a>
+        </div>
+      </div>
+    </body>
+    </html>
+    """
+    return dashboard_html
+
+
+def check_port(port):
+    """检查端口是否在监听"""
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.connect(("127.0.0.1", port))
+        s.close()
+        return True
+    except:
+        return False
+
+
+@app.route('/learn')
+def learn_page():
+    """GOAI 学习智能体页面"""
     return render_template_string(HTML_TEMPLATE)
 
 
@@ -581,13 +735,18 @@ def api_chat():
 # 启动
 # ============================================================
 def main():
+    local_ip = get_local_ip()
     print("\n" + "=" * 60)
-    print("  🎓 LumiLearn AI 教官 — Web Demo")
+    print("  🎓 LumiLearn AI 教官 — 服务仪表盘")
     print("  GOAI 无界应用赛道参赛作品")
     print("=" * 60)
-    print(f"  浏览器访问: http://localhost:5000")
-    print(f"  API地址: http://localhost:5000/api/learn")
-    print(f"  Ollama状态: {'可用' if agent.tool_caller.available else '不可用（兜底模式）'}")
+    print(f"  📊 仪表盘首页:  http://localhost:5000")
+    print(f"  🎓 学习智能体:  http://localhost:5000/learn")
+    print(f"  🖥️ 框架终端:    http://{local_ip}:18080")
+    print(f"  🔌 REST API:    http://{local_ip}:18081")
+    print(f"  🤖 模型管理:    http://{local_ip}:18082")
+    print(f"  📡 API地址:     http://localhost:5000/api/learn")
+    print(f"  🚀 Ollama状态:  {'可用' if agent.tool_caller.available else '不可用（兜底模式）'}")
     print("=" * 60)
     print("  按 Ctrl+C 停止服务\n")
 
