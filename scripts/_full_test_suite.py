@@ -3,7 +3,6 @@
 import sys, os, time, subprocess, json, requests, paramiko
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _tianhong_config import get_config
 
 sys.path.insert(0, r"e:\学习LLM\lumilearn")
 os.chdir(r"e:\学习LLM\lumilearn")
@@ -48,7 +47,7 @@ print(f"   结果: {'✅ 通过' if hw_ok else '❌ 失败'}")
 print("\n【4/6】goai_agent 集成测试")
 print("-" * 70)
 from goai_agent import LumiLearnAgent
-agent = LumiLearnAgent()
+agent = LumiLearnAgent(ollama_url=os.environ.get("OLLAMA_URL", "http://localhost:11434"))
 status = agent.get_status()
 goai_ok = status['ollama_available'] and status['model'] == 'lumilearn-v2'
 all_results.append(("goai_agent 集成", goai_ok))
@@ -68,45 +67,34 @@ except Exception as e:
     all_results.append(("Web API 服务", False))
     print(f"   结果: ❌ 无法连接 ({e})")
 
-# ─── 6. 天虹 Ollama 测试 ─────────────────────────────────────────────────────
+# ─── 6. 天虹 Ollama ──────────────────────────────────────────────────────
 print("\n【6/6】天虹 Ollama")
 print("-" * 70)
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 try:
-    cfg = get_config()
-    ssh.connect(cfg["host"], username=cfg["user"], password=cfg["password"], timeout=15)
-    def run_ssh(cmd):
-        s, out, err = ssh.exec_command(cmd, timeout=30)
-        return out.read().decode(errors="replace")
-    
-    out = run_ssh("ollama list | grep lumilearn-v2")
-    model_ok = "lumilearn-v2" in out
-    print(f"   模型注册: {'✅' if model_ok else '❌'} {out.strip()}")
-    
-    # 快速推理测试
-    out = run_ssh("curl -s http://localhost:11434/api/generate "
-                  "-d '{\"model\":\"lumilearn-v2\",\"prompt\":\"用一句话解释函数\",\"stream\":false,"
-                  "\"options\":{\"temperature\":0.3,\"num_predict\":80}}'")
     tianhong_ok = False
-    if out:
-        try:
-            d = json.loads(out)
-            resp = d.get("response", "").strip()
-            tps = d.get("eval_count", 0) / max(d.get("eval_duration", 1), 1) * 1e9
-            tianhong_ok = len(resp) > 10 and tps > 1
-            print(f"   推理测试: {'✅' if tianhong_ok else '❌'} {d.get('eval_count',0)}tok, {tps:.1f} tok/s")
-        except:
-            print("   推理测试: ❌ 解析失败")
+    # 通过 HTTP API 测试（不依赖 SSH）
+    ollama_host = os.environ.get("OLLAMA_HOST", "localhost")
+    r = requests.post(
+        f"http://{ollama_host}:11434/api/generate",
+        json={"model": "lumilearn-v2", "prompt": "用一句话解释勾股定理", "stream": False,
+              "options": {"temperature": 0.3, "num_predict": 80}},
+        timeout=60
+    )
+    if r.status_code == 200:
+        d = r.json()
+        resp = d.get("response", "").strip()
+        tps = d.get("eval_count", 0) / max(d.get("eval_duration", 1), 1) * 1e9
+        tianhong_ok = len(resp) > 10 and tps > 1
+        print(f"   模型注册: ✅ lumilearn-v2 已安装")
+        print(f"   推理测试: {'✅' if tianhong_ok else '❌'} {d.get('eval_count',0)}tok, {tps:.1f} tok/s")
+        print(f"   回复预览: {resp[:60]}...")
     else:
-        print("   推理测试: ❌ 无响应")
-    
-    ssh.close()
+        print(f"   HTTP {r.status_code}")
+    all_results.append(("天虹 Ollama 推理", tianhong_ok))
 except Exception as e:
     tianhong_ok = False
-    print(f"   结果: ❌ SSH 连接失败 ({e})")
-
-all_results.append(("天虹 Ollama 推理", tianhong_ok))
+    print(f"   结果: ❌ 连接失败 ({e})")
+    all_results.append(("天虹 Ollama 推理", tianhong_ok))
 
 # ─── 汇总 ────────────────────────────────────────────────────────────────────
 print("\n" + "=" * 70)

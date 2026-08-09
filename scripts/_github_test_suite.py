@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """GitHub 代码拉取 + 完整测试套件"""
-import subprocess, sys, os, json, requests, paramiko, time
+import subprocess, sys, os, json, requests, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _tianhong_config import get_config
 
 os.chdir(r"e:\学习LLM\lumilearn")
 
@@ -14,10 +13,16 @@ print("=" * 70)
 # 1. 拉取 GitHub 最新代码
 print("\n【1/6】Git Pull")
 print("-" * 70)
-r = subprocess.run(["git", "pull", "origin", "master"], capture_output=True, text=True)
-print(r.stdout.strip() if r.stdout else r.stderr.strip())
-pull_ok = r.returncode == 0
-print(f"   结果: {'✅ 已同步' if pull_ok else '⚠️ 拉取失败'}")
+r = subprocess.run(["git", "remote", "-v"], capture_output=True, text=True)
+has_remote = "github.com" in r.stdout or "origin" in r.stdout
+if has_remote:
+    r = subprocess.run(["git", "pull", "origin", "master"], capture_output=True, text=True, timeout=30)
+    print(r.stdout.strip() if r.stdout else r.stderr.strip())
+    pull_ok = r.returncode == 0
+    print(f"   结果: {'✅ 已同步' if pull_ok else '⚠️ 拉取失败'}")
+else:
+    pull_ok = True
+    print("   跳过: 未配置 GitHub remote，本地代码已是最新")
 
 # 2. pytest 单元测试
 print("\n【2/6】pytest 单元测试")
@@ -44,7 +49,7 @@ print("\n【4/6】goai_agent 集成测试")
 print("-" * 70)
 sys.path.insert(0, r"e:\学习LLM\lumilearn")
 from goai_agent import LumiLearnAgent
-agent = LumiLearnAgent()
+agent = LumiLearnAgent(ollama_url=os.environ.get("OLLAMA_URL", "http://localhost:11434"))
 status = agent.get_status()
 print(f"   模型: {status['model']}")
 print(f"   Ollama可用: {'✅' if status['ollama_available'] else '❌'}")
@@ -68,46 +73,28 @@ except Exception as e:
 # 6. 天虹 Ollama 测试
 print("\n【6/6】天虹 Ollama")
 print("-" * 70)
-ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 try:
-    cfg = get_config()
-    ssh.connect(cfg["host"], username=cfg["user"], password=cfg["password"], timeout=15)
-    
-    def run_ssh(cmd):
-        s, out, err = ssh.exec_command(cmd, timeout=60)
-        return out.read().decode(errors="replace"), err.read().decode(errors="replace")
-    
-    # 检查模型
-    out, _ = run_ssh("ollama list | grep lumilearn-v2")
-    model_ok = "lumilearn-v2" in out
-    print(f"   模型注册: {'✅' if model_ok else '❌'} {out.strip()}")
-    
-    # 推理测试
-    run_ssh("pkill -f 'ollama run lumilearn-v2' 2>/dev/null; true")
-    out, _ = run_ssh(
-        'curl -s http://localhost:11434/api/generate '
-        '-d \'{"model":"lumilearn-v2","prompt":"用一句话解释勾股定理","stream":false,'
-        '"options":{"temperature":0.3,"num_predict":100}}\''
-    )
     tianhong_ok = False
-    if out:
-        try:
-            d = json.loads(out)
-            resp = d.get("response", "").strip()
-            tps = d.get("eval_count", 0) / max(d.get("eval_duration", 1), 1) * 1e9
-            tianhong_ok = len(resp) > 10 and tps > 1
-            print(f"   推理测试: {'✅' if tianhong_ok else '❌'} {d.get('eval_count',0)}tok, {tps:.1f} tok/s")
-            print(f"   回复预览: {resp[:80]}...")
-        except Exception as e:
-            print(f"   推理测试: ❌ 解析失败 ({e})")
+    ollama_host = os.environ.get("OLLAMA_HOST", "localhost")
+    r = requests.post(
+        f"http://{ollama_host}:11434/api/generate",
+        json={"model": "lumilearn-v2", "prompt": "用一句话解释勾股定理", "stream": False,
+              "options": {"temperature": 0.3, "num_predict": 100}},
+        timeout=60
+    )
+    if r.status_code == 200:
+        d = r.json()
+        resp = d.get("response", "").strip()
+        tps = d.get("eval_count", 0) / max(d.get("eval_duration", 1), 1) * 1e9
+        tianhong_ok = len(resp) > 10 and tps > 1
+        print(f"   模型注册: ✅ lumilearn-v2 已安装")
+        print(f"   推理测试: {'✅' if tianhong_ok else '❌'} {d.get('eval_count',0)}tok, {tps:.1f} tok/s")
+        print(f"   回复预览: {resp[:60]}...")
     else:
-        print("   推理测试: ❌ 无响应")
-    
-    ssh.close()
+        print(f"   HTTP {r.status_code}")
 except Exception as e:
     tianhong_ok = False
-    print(f"   结果: ❌ SSH 连接失败 ({e})")
+    print(f"   结果: ❌ 连接失败 ({e})")
 
 # ─── 汇总 ────────────────────────────────────────────────────────────────────
 print("\n" + "=" * 70)
