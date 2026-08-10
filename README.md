@@ -112,10 +112,34 @@ LumiLearn 支持**本地模型容器**与**云端 API** 两类推理来源，其
 | 依赖 | 说明 |
 |:---|:---|
 | **Python ≥ 3.9** | 需自带 pip |
+| **Git**（仅从零部署需要） | 一键脚本自动克隆仓库时使用 |
 | **Ollama**（可选） | 本地模型推理服务，默认地址 `http://localhost:11434`；未安装时可先接入云端 API，稍后再补 |
 | **网络** | 安装依赖需访问 PyPI；使用云端大模型 API 需相应网络环境 |
 
-### 一键部署
+### 从零一键部署（含克隆仓库）
+
+**无需手动克隆**，下载 `deploy/bootstrap.bat` / `deploy/bootstrap.sh` 到任意目录运行，自动完成：
+`克隆/更新仓库 → 检测环境 → 安装依赖 → 配置端口与模型 → 启动服务`。
+
+**Windows：**
+
+```bat
+:: 下载 deploy/bootstrap.bat 后，在任意目录运行
+bootstrap.bat
+:: 无人值守：bootstrap.bat --quick
+```
+
+**Linux / macOS：**
+
+```bash
+# 下载 deploy/bootstrap.sh 后
+chmod +x bootstrap.sh
+./bootstrap.sh
+```
+
+### 已有仓库（更新 + 配置 + 启动）
+
+已克隆过仓库时，在仓库根目录运行：
 
 **Windows：**
 

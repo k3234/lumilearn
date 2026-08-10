@@ -4,10 +4,57 @@
 
 | 文件 | 作用 |
 | --- | --- |
+| `bootstrap.sh` | **从零一键部署（Linux/macOS）**：克隆/更新仓库 → 配置 → 启动 |
+| `bootstrap.bat` | **从零一键部署（Windows 入口）**：调用 bootstrap.ps1 |
+| `bootstrap.ps1` | **从零一键部署（Windows 核心逻辑）**：克隆/更新仓库 → 配置 → 启动 |
 | `setup.py` | 核心配置引导脚本（环境检测 / 依赖安装 / 端口配置 / 模型配置） |
-| `setup.bat` | Windows 一键入口 |
-| `setup.sh` | Linux / macOS 一键入口 |
+| `setup.bat` | Windows 配置入口（需已在仓库目录内） |
+| `setup.sh` | Linux / macOS 配置入口（需已在仓库目录内） |
+| `start.py` | 跨平台统一启动入口（读取 framework.yaml 与 .env，启动全部启用服务） |
+| `start.sh` | Linux / macOS 启动入口（委托 start.py） |
+| `stop.py` | 停止服务（读取 deploy/.pids.json） |
 | `README.md` | 本文档 |
+
+---
+
+## 0. 从零一键部署（含克隆仓库）
+
+**无需手动克隆**，把 `bootstrap.sh` / `bootstrap.bat` 下载到任意目录运行即可，脚本会自动完成全部流程：
+
+```
+克隆/更新仓库 → 检测环境 → 安装依赖 → 配置端口与模型 → 启动服务
+```
+
+### Windows
+
+```bat
+:: 下载 deploy/bootstrap.bat 后，在任意目录运行
+bootstrap.bat
+:: 常用参数
+bootstrap.bat --quick        :: 全默认值，无人值守
+bootstrap.bat --skip-deps    :: 跳过依赖安装
+bootstrap.bat --no-start     :: 只克隆+配置，不启动服务
+bootstrap.bat --dir D:\proj  :: 克隆到指定目录
+```
+
+### Linux / macOS
+
+```bash
+# 下载 deploy/bootstrap.sh 后
+chmod +x bootstrap.sh
+./bootstrap.sh
+# 常用参数
+./bootstrap.sh --quick        # 全默认值，无人值守
+./bootstrap.sh --skip-deps    # 跳过依赖安装
+./bootstrap.sh --no-start     # 只克隆+配置，不启动服务
+./bootstrap.sh --dir ~/proj   # 克隆到指定目录
+```
+
+> **已在仓库内运行**（`bash deploy/bootstrap.sh` 或双击 `deploy/bootstrap.bat`）时，
+> 脚本会跳过克隆、直接更新代码并进入配置/启动流程。
+
+> **fork 用户**：可通过环境变量覆盖仓库地址与分支
+> （`LUMILEARN_REPO_URL` / `LUMILEARN_BRANCH`，Windows 用 `set` 设置后运行）。
 
 ---
 

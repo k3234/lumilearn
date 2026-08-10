@@ -292,6 +292,10 @@ scripts/record_screen.py
 # 临时调试/修复脚本
 _fix_*.py
 _patch_*.py
+_scan_*.py
+# 临时文件（提交信息、配置快照等）
+*.tmp
+_commit_msg.tmp
 # 隐私清理工具（不提交）
 _msg_cleanup.py
 _mailmap.txt
