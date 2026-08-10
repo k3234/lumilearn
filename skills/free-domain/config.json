@@ -54,7 +54,7 @@
       "lumilearn.xyz"
     ]
   },
-  "tianhong_server": {
+  "remote_server": {
     "ip": "192.168.2.xx",
     "ollama_port": 11434,
     "terminal_port": 18080

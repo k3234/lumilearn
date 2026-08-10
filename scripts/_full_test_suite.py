@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""完整测试套件：pytest + 端到端 + 手写识别 + API 性能 + 天虹 Ollama"""
+"""完整测试套件：pytest + 端到端 + 手写识别 + API 性能 + 远程服务器 Ollama"""
 import sys, os, time, subprocess, json, requests, paramiko
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -68,11 +68,11 @@ except Exception as e:
     all_results.append(("Web API 服务", False))
     print(f"   结果: ❌ 无法连接 ({e})")
 
-# ─── 6. 天虹 Ollama ──────────────────────────────────────────────────────
-print("\n【6/6】天虹 Ollama")
+# ─── 6. 远程服务器 Ollama ──────────────────────────────────────────────────────
+print("\n【6/6】远程服务器 Ollama")
 print("-" * 70)
 try:
-    tianhong_ok = False
+    remote_ok = False
     # 通过 HTTP API 测试（不依赖 SSH）
     ollama_host = os.environ.get("OLLAMA_HOST", "localhost")
     r = requests.post(
@@ -85,17 +85,17 @@ try:
         d = r.json()
         resp = d.get("response", "").strip()
         tps = d.get("eval_count", 0) / max(d.get("eval_duration", 1), 1) * 1e9
-        tianhong_ok = len(resp) > 10 and tps > 1
+        remote_ok = len(resp) > 10 and tps > 1
         print(f"   模型注册: ✅ lumilearn-v2 已安装")
-        print(f"   推理测试: {'✅' if tianhong_ok else '❌'} {d.get('eval_count',0)}tok, {tps:.1f} tok/s")
+        print(f"   推理测试: {'✅' if remote_ok else '❌'} {d.get('eval_count',0)}tok, {tps:.1f} tok/s")
         print(f"   回复预览: {resp[:60]}...")
     else:
         print(f"   HTTP {r.status_code}")
-    all_results.append(("天虹 Ollama 推理", tianhong_ok))
+    all_results.append(("远程服务器 Ollama 推理", remote_ok))
 except Exception as e:
-    tianhong_ok = False
+    remote_ok = False
     print(f"   结果: ❌ 连接失败 ({e})")
-    all_results.append(("天虹 Ollama 推理", tianhong_ok))
+    all_results.append(("远程服务器 Ollama 推理", remote_ok))
 
 # ─── 汇总 ────────────────────────────────────────────────────────────────────
 print("\n" + "=" * 70)

@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""从天虹下载 v2 合并模型到本地"""
+"""从远程服务器下载 v2 合并模型到本地"""
 import paramiko
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _tianhong_config import get_config
+from _remote_config import get_config
 
-HOST = os.environ.get("TIANHONG_HOST", "")
-USER = os.environ.get("TIANHONG_USER", "")
+HOST = os.environ.get("REMOTE_HOST", "")
+USER = os.environ.get("REMOTE_USER", "")
 cfg = get_config(host=HOST, user=USER)
 REMOTE_BASE = "~/lumilearn/models/distil/merged_model_15b_v2"
 LOCAL_BASE = r"e:\学习LLM\lumilearn\models\distil\merged_model_15b_v2"

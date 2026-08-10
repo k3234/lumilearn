@@ -9,7 +9,7 @@
 
 ### 1. 教师端（Teacher Portal）⭐
 
-**新增文件**：`teacher_portal.py`（独立 Flask 应用，端口 5001）、`tianhong/templates/teacher.html`（明亮简洁风单页前端）
+**新增文件**：`teacher_portal.py`（独立 Flask 应用，端口 5001）、`remote/templates/teacher.html`（明亮简洁风单页前端）
 
 教师端为教师角色提供完整的教学管理工作台，复用 `users` 表认证（仅 `role=teacher` 可登录），与主框架、GOAI Web 共享同一数据库。
 
@@ -77,7 +77,7 @@ GOAI Web（端口 5000）从"仅演示"升级为完整学习平台：
 
 ### 2. Admin 面板增强
 
-**修改文件**：`tianhong/templates/admin.html`、`framework/api/routes/admin.py`
+**修改文件**：`remote/templates/admin.html`、`framework/api/routes/admin.py`
 
 - **设置**：侧边栏新增"⚙️ 设置"，支持修改管理员密码（旧密码 + 新密码 + 确认）
 - **学习记录**：新增"📚 学习记录"面板，查看所有学生的学习报告（可筛选用户）
@@ -88,7 +88,7 @@ GOAI Web（端口 5000）从"仅演示"升级为完整学习平台：
 
 ### 3. 端口模型配置机制
 
-**修改文件**：`framework/services/provider_service.py`、`framework/api/routes/chat.py`、`tianhong/templates/lumiterm.html`
+**修改文件**：`framework/services/provider_service.py`、`framework/api/routes/chat.py`、`remote/templates/lumiterm.html`
 
 - 新增 `port_model_mapping` 配置：为终端（18080）、REST API（18081）、模型管理（18082）、GOAI Web（5000）分别指定模型
 - `chat.py` 新增端口感知解析：根据请求端口自动选择该端口配置的模型
@@ -98,7 +98,7 @@ GOAI Web（端口 5000）从"仅演示"升级为完整学习平台：
 
 ### 4. 端口选择性配置（端口管理）
 
-**修改文件**：`framework/services/provider_service.py`、`framework/api/routes/admin.py`、`tianhong/templates/admin.html`、`config/framework.yaml`、`scripts/tianhong_start_all.sh`、`goai_web.py`、`teacher_portal.py`、`framework/api/server.py`
+**修改文件**：`framework/services/provider_service.py`、`framework/api/routes/admin.py`、`remote/templates/admin.html`、`config/framework.yaml`、`scripts/remote_start_all.sh`、`goai_web.py`、`teacher_portal.py`、`framework/api/server.py`
 
 Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁用各端口服务并自定义端口号**：
 
@@ -113,7 +113,7 @@ Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁
 - 每个服务独立开关 + 端口号输入框，实时显示运行状态（● 运行中 / ○ 未运行）
 - 保存时校验：端口号范围（1-65535）、端口冲突检测
 - 配置写入 `config/framework.yaml` 的 `port_settings` 节
-- 生效机制：保存后运行 `bash tianhong_start_all.sh`，脚本按配置选择性启停服务（禁用则杀进程，启用则启动）
+- 生效机制：保存后运行 `bash remote_start_all.sh`，脚本按配置选择性启停服务（禁用则杀进程，启用则启动）
 - `goai_web.py` / `teacher_portal.py` / `server.py` 启动时自动读取 `port_settings` 确定端口（支持环境变量覆盖）
 
 ---
@@ -153,17 +153,17 @@ Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁
 
 ### 1. 一键启动脚本
 
-**修改文件**：`scripts/tianhong_start_all.sh`（天虹服务器）、`start_services.bat`（Windows 本地）
+**修改文件**：`scripts/remote_start_all.sh`（远程服务器服务器）、`start_services.bat`（Windows 本地）
 
-- 天虹脚本：初始化数据库 → 确认/启动 Ollama → 启动框架三端口（18080/18081/18082）→ 启动 GOAI Web（5000），带幂等检查（已运行则跳过）与最终状态汇总
-- Windows 脚本：启动框架服务并指向天虹 Ollama
+- 远程服务器脚本：初始化数据库 → 确认/启动 Ollama → 启动框架三端口（18080/18081/18082）→ 启动 GOAI Web（5000），带幂等检查（已运行则跳过）与最终状态汇总
+- Windows 脚本：启动框架服务并指向远程服务器 Ollama
 
 ### 2. 环境变量
 
 **修改文件**：`.env.example`
 
 - `OLLAMA_URL` / `OLLAMA_BASE_URL`：Ollama 服务地址
-- `TIANHONG_HOST` / `TIANHONG_USER` / `TIANHONG_PASSWORD`：远程部署 SSH 连接（必填，不提交真实值）
+- `REMOTE_HOST` / `REMOTE_USER` / `REMOTE_PASSWORD`：远程部署 SSH 连接（必填，不提交真实值）
 - `LUMILEARN_DB_PATH`：数据库文件路径（可自定义）
 - `GOAI_SECRET_KEY` / `TEACHER_SECRET_KEY`：Web 会话密钥
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-天虹 GPU 版 LoRA 综合数据训练脚本
+远程服务器 GPU 版 LoRA 综合数据训练脚本
 使用 703 条综合数据训练 Qwen2.5-3B LoRA adapter
 用法: HSA_OVERRIDE_GFX_VERSION=11.0.0 python3 -u scripts/train_lora_gpu.py
 """

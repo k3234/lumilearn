@@ -26,5 +26,5 @@
 #   GOAI:   http://<server-ip>:5000/
 #
 # 一键启动 (非 systemd 环境):
-#   bash scripts/tianhong_start_all.sh
+#   bash scripts/remote_start_all.sh
 # ============================================================

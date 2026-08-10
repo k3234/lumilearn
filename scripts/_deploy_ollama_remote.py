@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""在天虹服务器上安装 Ollama 并注册 LumiLearn V2 模型"""
+"""在远程服务器服务器上安装 Ollama 并注册 LumiLearn V2 模型"""
 import paramiko
 import os
 import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _tianhong_config import get_config
+from _remote_config import get_config
 
-HOST = os.environ.get("TIANHONG_HOST", "")
-USER = os.environ.get("TIANHONG_USER", "")
+HOST = os.environ.get("REMOTE_HOST", "")
+USER = os.environ.get("REMOTE_USER", "")
 cfg = get_config(host=HOST, user=USER)
 REMOTE = "~/lumilearn"
 
@@ -76,4 +76,4 @@ print(out[:2000] if out else "(空)")
 print("stderr:", err[-500:] if err else "(无)")
 
 ssh.close()
-print("\n[完成] 天虹 Ollama 部署流程结束")
+print("\n[完成] 远程服务器 Ollama 部署流程结束")

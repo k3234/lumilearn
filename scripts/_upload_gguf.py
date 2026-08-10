@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""上传 GGUF 模型文件到天虹服务器"""
+"""上传 GGUF 模型文件到远程服务器服务器"""
 import paramiko
 import os
 import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _tianhong_config import get_config
+from _remote_config import get_config
 
-HOST = os.environ.get("TIANHONG_HOST", "")
-USER = os.environ.get("TIANHONG_USER", "")
+HOST = os.environ.get("REMOTE_HOST", "")
+USER = os.environ.get("REMOTE_USER", "")
 cfg = get_config(host=HOST, user=USER)
 REMOTE_DIR = "~/lumilearn/models/distil"
 LOCAL_DIR = r"e:\学习LLM\lumilearn\models\distil"

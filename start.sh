@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# LumiLearn Framework - Linux 启动脚本（天虹服务器）
+# LumiLearn Framework - Linux 启动脚本（远程服务器服务器）
 # 启动三端口服务：终端HTML / REST API / 模型管理
 #
 # 用法：

@@ -24,8 +24,8 @@
 | ✨ **Impeccable 技能** | 代码质量提升 | `skills/impeccable/` | ✅ 完成 |
 | 📋 **教学计划** | 4个详细教学计划 | `docs/superpowers/plans/` | ✅ 完成 |
 | 🎨 **设计系统** | UI设计规范 | `notebooks/design_system/` | ✅ 完成 |
-| 🏫 **课堂模板** | 在线课堂界面 | `tianhong/templates/classroom.html` | ✅ 完成 |
-| 🎬 **动画学习页** | 动画学习界面 | `tianhong/templates/animation_learn.html` | ✅ 完成 |
+| 🏫 **课堂模板** | 在线课堂界面 | `remote/templates/classroom.html` | ✅ 完成 |
+| 🎬 **动画学习页** | 动画学习界面 | `remote/templates/animation_learn.html` | ✅ 完成 |
 
 ---
 
@@ -124,7 +124,7 @@ docs/superpowers/plans/
 ### 3.6 新增前端模板
 
 ```
-tianhong/templates/
+remote/templates/
 ├── animation_learn.html     # 动画学习页面
 └── classroom.html           # 在线课堂页面
 ```
@@ -192,7 +192,7 @@ notebooks/
 - [ ] 测试动画生成 `animation/pipeline.py`
 - [ ] 测试思维导图API `framework/api/routes/mindmap.py`
 - [ ] 测试自适应学习 `framework/services/adaptive_learning.py`
-- [ ] 验证课堂模板 `tianhong/templates/classroom.html`
+- [ ] 验证课堂模板 `remote/templates/classroom.html`
 - [ ] 更新README，添加最新功能说明
 
 ---

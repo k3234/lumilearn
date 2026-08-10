@@ -17,7 +17,7 @@
 
 | 我想... | 去看 |
 |:---|:---|
-| 看这个项目长什么样 | [课堂模式演示](tianhong/templates/classroom.html) · [对话终端](tianhong/templates/lumiterm.html) |
+| 看这个项目长什么样 | [课堂模式演示](remote/templates/classroom.html) · [对话终端](remote/templates/lumiterm.html) |
 | 了解系统架构 | [docs/development_summary.md](docs/development_summary.md) |
 | 看模型怎么训练的 | `framework/model.py` · `framework/config.py` |
 | 看数据怎么处理的 | `data_management/` 目录 |
@@ -157,7 +157,7 @@ lumilearn/
 ├── framework/airllm/       # AirLLM优化模块
 │   ├── attention.py        #   GQA注意力
 │   └── rope.py             #   RoPE位置编码
-├── tianhong/templates/     # 前端页面
+├── remote/templates/     # 前端页面
 │   ├── classroom.html      #   课堂模式
 │   └── lumiterm.html       #   对话终端
 ├── data_management/        # 数据管线

@@ -11,7 +11,7 @@ print("=" * 70)
 print("  🎓 LumiLearn 真实学习场景模拟测试")
 print("=" * 70)
 
-# 初始化 agent（连天虹 Ollama）
+# 初始化 agent（连远程服务器 Ollama）
 agent = LumiLearnAgent()
 print(f"\n📊 Agent 状态:")
 print(f"   模型: {agent.tool_caller.preferred_model}")

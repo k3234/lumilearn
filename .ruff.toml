@@ -12,7 +12,7 @@ exclude = [
     "notebooks",
     "docs",
     "skills",
-    "tianhong",
+    "remote",
     "animation",
 ]
 

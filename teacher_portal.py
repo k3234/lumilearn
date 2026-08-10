@@ -32,7 +32,7 @@ from framework.database import db
 db.init()
 
 BASE_DIR = Path(__file__).resolve().parent
-TEMPLATE_DIR = BASE_DIR / "tianhong" / "templates"
+TEMPLATE_DIR = BASE_DIR / "remote" / "templates"
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("TEACHER_SECRET_KEY", "lumilearn-teacher-portal-secret")

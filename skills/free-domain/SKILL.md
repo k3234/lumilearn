@@ -103,7 +103,7 @@ domain = dm.register_vercel("lumilearn")
 ### 3. DNS 管理
 
 ```python
-# 添加 A 记录到天虹服务器
+# 添加 A 记录到远程服务器服务器
 dm.add_a_record("lumilearn.digitalplat.org", "192.168.2.xx")
 
 # 添加 CNAME
@@ -225,7 +225,7 @@ print(result)
 plan = dm.deploy_lumilearn_project(
     project_path="./",
     target_domain="lumilearn.pages.dev",
-    tianhong_server="192.168.2.xx"
+    remote_server="192.168.2.xx"
 )
 ```
 

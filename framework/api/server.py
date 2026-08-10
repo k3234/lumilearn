@@ -50,7 +50,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
         debug = config.get("debug", False)
 
     if template_dir is None:
-        template_dir = str(BASE_DIR / "tianhong" / "templates")
+        template_dir = str(BASE_DIR / "remote" / "templates")
 
     app = Flask(__name__, template_folder=template_dir)
     app.debug = debug
@@ -119,7 +119,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/")
     def index():
         """首页：加载lumiterm.html"""
-        html_path = BASE_DIR / "tianhong" / "templates" / "lumiterm.html"
+        html_path = BASE_DIR / "remote" / "templates" / "lumiterm.html"
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -130,7 +130,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/admin")
     def admin_page():
         """管理员管理面板"""
-        html_path = BASE_DIR / "tianhong" / "templates" / "admin.html"
+        html_path = BASE_DIR / "remote" / "templates" / "admin.html"
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -141,14 +141,14 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/learn")
     def learn_page():
         """学习页面：重定向到互动课堂"""
-        html_path = BASE_DIR / "tianhong" / "templates" / "classroom.html"
+        html_path = BASE_DIR / "remote" / "templates" / "classroom.html"
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
             response.headers["Content-Type"] = "text/html; charset=utf-8"
             return response
         # 回退到动画学习页面
-        html_path = BASE_DIR / "tianhong" / "templates" / "animation_learn.html"
+        html_path = BASE_DIR / "remote" / "templates" / "animation_learn.html"
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -159,7 +159,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/classroom")
     def classroom():
         """互动课堂页面（OpenMAIC 风格）"""
-        html_path = BASE_DIR / "tianhong" / "templates" / "classroom.html"
+        html_path = BASE_DIR / "remote" / "templates" / "classroom.html"
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -170,7 +170,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/test/video")
     def test_video_page():
         """视频播放诊断测试页面"""
-        html_path = BASE_DIR / "tianhong" / "templates" / "test_video.html"
+        html_path = BASE_DIR / "remote" / "templates" / "test_video.html"
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -181,7 +181,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/chat")
     def chat_page():
         """终端聊天页面（高级模式）"""
-        html_path = BASE_DIR / "tianhong" / "templates" / "lumiterm.html"
+        html_path = BASE_DIR / "remote" / "templates" / "lumiterm.html"
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)

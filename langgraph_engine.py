@@ -7,8 +7,8 @@ LumiLearn LangGraph 多模型编排引擎 · V1
   一次输入 → 全模型并行调用 → 多格式输出 → 汇总投票 → 一份全面数据
 
 模型来源 (共12个)：
-  天虹 Ollama (2):    qwen2.5:7b, deepseek-r1:1.5b
-  天虹 LumiLearn (1): lumilearn-v4
+  远程服务器 Ollama (2):    qwen2.5:7b, deepseek-r1:1.5b
+  远程服务器 LumiLearn (1): lumilearn-v4
   云端模型 (5):        Doubao-Seed-2.0-Code, Doubao-Seed-Code,
                       GLM-5, Kimi-K2.5, MiniMax-M2.5
   SOLO 内置 (5):      同上5个云端模型(降级模拟)
@@ -38,8 +38,8 @@ import requests
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from lumilearn_config import (
-    TIANHONG_HOST, TIANHONG_OLLAMA_PORT, TIANHONG_API_PORT,
-    CLOUD_MODELS, TIANHONG_MODELS, get_cloud_api_key, DISK_DATA,
+    REMOTE_HOST, REMOTE_OLLAMA_PORT, REMOTE_API_PORT,
+    CLOUD_MODELS, REMOTE_MODELS, get_cloud_api_key, DISK_DATA,
 )
 from lumilearn_shared import (
     OLLAMA_MODELS, SOLO_MODELS, MASTER_CSV,
@@ -58,17 +58,17 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 class ModelEntry:
     id:       str
     name:     str
-    provider: str          # "tianhong_ollama" | "tianhong_custom" | "cloud" | "solo"
+    provider: str          # "remote_ollama" | "remote_custom" | "cloud" | "solo"
     weight:   int          # 投票权重
     endpoint: str          # API 地址
     api_key:  str = ""
     model_ref: str = ""    # 实际调用时用的model name
 
     def call(self, prompt: str, timeout: int = 60) -> str:
-        if self.provider == "tianhong_ollama":
+        if self.provider == "remote_ollama":
             return self._call_ollama(prompt, timeout)
-        elif self.provider == "tianhong_custom":
-            return self._call_tianhong_api(prompt, timeout)
+        elif self.provider == "remote_custom":
+            return self._call_remote_api(prompt, timeout)
         elif self.provider == "cloud":
             return self._call_cloud(prompt, timeout)
         elif self.provider == "solo":
@@ -87,7 +87,7 @@ class ModelEntry:
         except Exception as e:
             return f"[{self.name} 不可用: {e}]"
 
-    def _call_tianhong_api(self, prompt: str, timeout: int) -> str:
+    def _call_remote_api(self, prompt: str, timeout: int) -> str:
         try:
             resp = requests.post(
                 f"{self.endpoint}/api/generate",
@@ -139,22 +139,22 @@ class ModelEntry:
 def _build_all_models() -> List[ModelEntry]:
     models: List[ModelEntry] = []
 
-    # 天虹 Ollama (权重1)
+    # 远程服务器 Ollama (权重1)
     for name, cfg in OLLAMA_MODELS.items():
         models.append(ModelEntry(
-            id=cfg["name"], name=cfg["name"], provider="tianhong_ollama",
+            id=cfg["name"], name=cfg["name"], provider="remote_ollama",
             weight=1,
-            endpoint=f"http://{TIANHONG_HOST}:{TIANHONG_OLLAMA_PORT}",
+            endpoint=f"http://{REMOTE_HOST}:{REMOTE_OLLAMA_PORT}",
             model_ref=cfg["name"],
         ))
 
-    # 天虹 LumiLearn 自有模型 (权重2)
-    for name, cfg in TIANHONG_MODELS.items():
-        if cfg["type"] == "tianhong_custom":
+    # 远程服务器 LumiLearn 自有模型 (权重2)
+    for name, cfg in REMOTE_MODELS.items():
+        if cfg["type"] == "remote_custom":
             models.append(ModelEntry(
-                id=cfg["name"], name=cfg["name"], provider="tianhong_custom",
+                id=cfg["name"], name=cfg["name"], provider="remote_custom",
                 weight=2,
-                endpoint=f"http://{TIANHONG_HOST}:{TIANHONG_API_PORT}",
+                endpoint=f"http://{REMOTE_HOST}:{REMOTE_API_PORT}",
                 model_ref=cfg["name"],
             ))
 
@@ -205,7 +205,7 @@ class MultiFormatGenerator:
                "qa_pair", "markdown_note"]
 
     def __init__(self, helper_model: str = "qwen2.5:7b"):
-        self.ollama_url = f"http://{TIANHONG_HOST}:{TIANHONG_OLLAMA_PORT}"
+        self.ollama_url = f"http://{REMOTE_HOST}:{REMOTE_OLLAMA_PORT}"
 
     def _call_helper(self, prompt: str, timeout: int = 45) -> str:
         try:
@@ -698,7 +698,7 @@ class OrchestrationEngine:
         print("=" * 70)
         print(f"  主题: {topic}")
         print(f"  模型总数: {len(self.models)}")
-        print(f"  天虹: {sum(1 for m in self.models if 'tianhong' in m.provider)}")
+        print(f"  远程服务器: {sum(1 for m in self.models if 'remote' in m.provider)}")
         print(f"  云端: {sum(1 for m in self.models if m.provider == 'cloud')}")
         print(f"  SOLO: {sum(1 for m in self.models if m.provider == 'solo')}")
 
@@ -776,7 +776,7 @@ def main():
     print("=" * 70)
     print(f"\n  已注册 {len(ALL_MODELS)} 个模型:")
     for m in ALL_MODELS:
-        icon = {"tianhong_ollama":"🏠","tianhong_custom":"🔧",
+        icon = {"remote_ollama":"🏠","remote_custom":"🔧",
                 "cloud":"☁️","solo":"🤖"}.get(m.provider,"❓")
         print(f"    {icon} {m.name:30s} [{m.provider}] 权重{m.weight}")
 

@@ -5,7 +5,7 @@ import paramiko
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _tianhong_config import get_config
+from _remote_config import get_config
 
 cfg = get_config()
 ssh = paramiko.SSHClient()

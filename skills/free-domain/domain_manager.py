@@ -22,7 +22,7 @@ class DeploymentPlan:
     main_domain: str
     api_subdomain: str
     terminal_subdomain: str
-    tianhong_ip: str
+    remote_ip: str
     dns_records: List[Dict]
     free_options: List[str]
     paid_options: List[str]
@@ -39,7 +39,7 @@ class DomainManager:
             self.config = json.load(f)
 
         self.providers = self.config["providers"]
-        self.tianhong_config = self.config["tianhong_server"]
+        self.remote_config = self.config["remote_server"]
 
     def check_availability(self, domain: str) -> DomainCheckResult:
         """检查域名可用性（模拟）"""
@@ -92,20 +92,20 @@ class DomainManager:
             {
                 "subdomain": "",
                 "type": "A",
-                "target": self.tianhong_config["ip"],
+                "target": self.remote_config["ip"],
                 "description": "主站 A 记录"
             },
             {
                 "subdomain": "api",
                 "type": "A",
-                "target": self.tianhong_config["ip"],
-                "description": f"API 网关: {self.tianhong_config['ollama_port']}"
+                "target": self.remote_config["ip"],
+                "description": f"API 网关: {self.remote_config['ollama_port']}"
             },
             {
                 "subdomain": "terminal",
                 "type": "A",
-                "target": self.tianhong_config["ip"],
-                "description": f"终端服务: {self.tianhong_config['terminal_port']}"
+                "target": self.remote_config["ip"],
+                "description": f"终端服务: {self.remote_config['terminal_port']}"
             }
         ]
 
@@ -113,7 +113,7 @@ class DomainManager:
             main_domain=main_domain,
             api_subdomain=f"api.{main_domain}",
             terminal_subdomain=f"terminal.{main_domain}",
-            tianhong_ip=self.tianhong_config["ip"],
+            remote_ip=self.remote_config["ip"],
             dns_records=dns_records,
             free_options=free_domains,
             paid_options=paid_domains
@@ -165,14 +165,14 @@ class DomainManager:
         self,
         project_path: str = "./",
         target_domain: str = None,
-        tianhong_server: str = None
+        remote_server: str = None
     ) -> Dict:
         """部署 LumiLearn 项目（模拟）"""
         if target_domain is None:
             target_domain = self.config["recommended_lumilearn_domains"]["free"][0]
 
-        if tianhong_server is None:
-            tianhong_server = self.tianhong_config["ip"]
+        if remote_server is None:
+            remote_server = self.remote_config["ip"]
 
         print("=" * 60)
         print("🚀 LumiLearn 免费域名部署计划")
@@ -184,7 +184,7 @@ class DomainManager:
         print(f"   主站: {plan.main_domain}")
         print(f"   API: {plan.api_subdomain}")
         print(f"   终端: {plan.terminal_subdomain}")
-        print(f"   天虹服务器 IP: {tianhong_server}")
+        print(f"   远程服务器服务器 IP: {remote_server}")
 
         print(f"\n📝 域名列表:")
         print(f"   免费选项: {', '.join(plan.free_options)}")
@@ -197,9 +197,9 @@ class DomainManager:
 
         print(f"\n🔧 部署步骤:")
         print(f"   1. 注册 {target_domain} (见对应平台文档)")
-        print(f"   2. 添加 A 记录指向 {tianhong_server}")
+        print(f"   2. 添加 A 记录指向 {remote_server}")
         print(f"   3. 配置子域名 api/terminal")
-        print(f"   4. 在天虹服务器上部署 LumiLearn")
+        print(f"   4. 在远程服务器服务器上部署 LumiLearn")
         print(f"   5. 验证连接")
 
         return asdict(plan)

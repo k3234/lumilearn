@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:spec-to-implementation (recommended) to break into tasks and implement.
 
-**Goal:** 部署动画模块到天虹服务器，并实现费曼五步法教学的自动检测与动画联动。当模型使用费曼五步法教学时，自动识别主题并生成 Manim 动画。
+**Goal:** 部署动画模块到远程服务器服务器，并实现费曼五步法教学的自动检测与动画联动。当模型使用费曼五步法教学时，自动识别主题并生成 Manim 动画。
 
 **Architecture:** 在现有 feynman 教学引擎和 animation 动画管线之间建立桥接层 (feynman_animation_bridge.py)。feynman/explain 接口返回时检测响应是否包含费曼五步特征，自动提取主题，异步触发动画生成，将 animation_task_id 返回给前端。前端交互学习页面展示动画生成进度。
 
@@ -17,7 +17,7 @@
 | `framework/services/feynman_animation_bridge.py` | 创建 | 费曼检测 + 主题提取 + 动画触发桥接层 |
 | `framework/api/routes/feynman.py` | 修改 | feynman/explain 接口增加动画联动 |
 | `framework/api/routes/animation.py` | 修改 | 增加 SSE 进度推送端点 |
-| `tianhong/templates/animation_learn.html` | 修改 | 集成费曼教学面板 + 动画进度展示 |
+| `remote/templates/animation_learn.html` | 修改 | 集成费曼教学面板 + 动画进度展示 |
 | 部署脚本 | 创建 | 一键部署所有文件到服务器 |
 
 ---
@@ -154,7 +154,7 @@ def progress_stream(task_id):
 ### Task 4: 更新前端界面
 
 **Files:**
-- Modify: `tianhong/templates/animation_learn.html`
+- Modify: `remote/templates/animation_learn.html`
 
 - [ ] **Step 7: 集成费曼教学面板**
 
@@ -166,10 +166,10 @@ def progress_stream(task_id):
 
 ---
 
-### Task 5: 部署到天虹服务器
+### Task 5: 部署到远程服务器服务器
 
 **Files:**
-- Create: `tianhong/deploy_animation_v2.sh` (部署脚本)
+- Create: `remote/deploy_animation_v2.sh` (部署脚本)
 
 - [ ] **Step 8: 创建部署脚本**
 

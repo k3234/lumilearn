@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 将综合数据 merged_corpus.jsonl 转换为 LoRA 训练格式 (instruction/response)
-适配天虹 train_real.py 的输入格式
+适配远程服务器 train_real.py 的输入格式
 """
 import json
 import random

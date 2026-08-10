@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""测试天虹 Ollama lumilearn-v2 对 slides prompt 的实际输出"""
+"""测试远程服务器 Ollama lumilearn-v2 对 slides prompt 的实际输出"""
 import requests, json
 
 BASE = "http://192.168.2.xx:11434"

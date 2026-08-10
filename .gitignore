@@ -79,7 +79,7 @@ gateway_*.py
 import_to_ollama.py
 push_to_ollama.py
 deploy_to_ollama*.py
-deploy_to_tianhong.py
+deploy_to_remote.py
 dockercp_deploy*.py
 convert_and_deploy.py
 export_and_import*.py
@@ -102,7 +102,7 @@ lumilearn_full*.py
 lumllearn_full*.py
 lumilearn_continue*.py
 train_from_scratch.py
-train_tianhong*.py
+train_remote*.py
 train_v5*.py
 
 # Test reports
@@ -150,7 +150,7 @@ web_scraper.py
 shell_launch.py
 reliable_launch.py
 ssh_controller.py
-tianhong_deployer.py
+remote_deployer.py
 dashboard.py
 monitor_training.py
 watch_training.py
@@ -163,7 +163,7 @@ model_files_check.py
 verify_train.py
 remote_access.ps1
 remote_test_infer.py
-deploy_tianhong.ps1
+deploy_remote.ps1
 
 # Temp scripts (underscore prefix)
 _analyze*.py

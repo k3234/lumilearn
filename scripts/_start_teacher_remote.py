@@ -6,9 +6,9 @@ import time
 import paramiko
 
 REMOTE_BASE = "~/lumilearn"
-host = os.environ.get("TIANHONG_HOST", "192.168.2.xx")
-user = os.environ.get("TIANHONG_USER", "kai")
-password = os.environ.get("TIANHONG_PASSWORD", "")
+host = os.environ.get("REMOTE_HOST", "192.168.2.xx")
+user = os.environ.get("REMOTE_USER", "kai")
+password = os.environ.get("REMOTE_PASSWORD", "")
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())

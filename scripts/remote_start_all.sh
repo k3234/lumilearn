@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# LumiLearn 天虹主机全服务启动脚本（按端口配置选择性启动）
+# LumiLearn 远程服务器主机全服务启动脚本（按端口配置选择性启动）
 # 端口启停由 Admin 面板「端口管理」配置（config/framework.yaml 的 port_settings）
 set -e
 cd $HOME/lumilearn
 
 export OLLAMA_BASE_URL="http://localhost:11434"
 export OLLAMA_MODEL="lumilearn-v2:latest"
-export TIANHONG_HOST="${TIANHONG_HOST:-}"
-export TIANHONG_USER="${TIANHONG_USER:-}"
+export REMOTE_HOST="${REMOTE_HOST:-}"
+export REMOTE_USER="${REMOTE_USER:-}"
 
 mkdir -p logs
 

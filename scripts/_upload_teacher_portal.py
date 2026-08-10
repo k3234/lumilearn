@@ -6,12 +6,12 @@ import time
 import paramiko
 
 REMOTE_BASE = "~/lumilearn"
-host = os.environ.get("TIANHONG_HOST", "192.168.2.xx")
-user = os.environ.get("TIANHONG_USER", "kai")
-password = os.environ.get("TIANHONG_PASSWORD", "")
+host = os.environ.get("REMOTE_HOST", "192.168.2.xx")
+user = os.environ.get("REMOTE_USER", "kai")
+password = os.environ.get("REMOTE_PASSWORD", "")
 
 if not password:
-    print("缺少 TIANHONG_PASSWORD")
+    print("缺少 REMOTE_PASSWORD")
     sys.exit(1)
 
 ssh = paramiko.SSHClient()
@@ -23,7 +23,7 @@ sftp = ssh.open_sftp()
 files = [
     ("framework/database.py", f"{REMOTE_BASE}/framework/database.py"),
     ("teacher_portal.py", f"{REMOTE_BASE}/teacher_portal.py"),
-    ("tianhong/templates/teacher.html", f"{REMOTE_BASE}/tianhong/templates/teacher.html"),
+    ("remote/templates/teacher.html", f"{REMOTE_BASE}/remote/templates/teacher.html"),
 ]
 for local, remote in files:
     print(f"上传 {local} ...")

@@ -139,7 +139,7 @@ plan = dm.get_deployment_plan("lumilearn")
 # 部署 LumiLearn 项目
 dm.deploy_lumilearn_project(
     target_domain="lumilearn.pages.dev",
-    tianhong_server="192.168.2.xx"
+    remote_server="192.168.2.xx"
 )
 ```
 

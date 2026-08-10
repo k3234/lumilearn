@@ -28,7 +28,7 @@ framework/
 └── core/config.py                  # 修改：admin 配置项
 config/framework.yaml               # 修改：admin 配置
 scripts/db_admin.py                 # 修改：admin 子命令
-tianhong/templates/admin.html       # 新建：管理面板前端
+remote/templates/admin.html       # 新建：管理面板前端
 tests/
 ├── test_admin_auth.py              # 新建：认证测试
 ├── test_admin_api.py               # 新建：管理 API 测试
@@ -1293,7 +1293,7 @@ from framework.api.routes import (..., security_bp, admin_bp)
     @app.route("/admin")
     def admin_page():
         """管理员管理面板"""
-        html_path = BASE_DIR / "tianhong" / "templates" / "admin.html"
+        html_path = BASE_DIR / "remote" / "templates" / "admin.html"
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -1512,9 +1512,9 @@ git commit -m "feat(models): add pull/delete model support to OllamaProvider"
 ### Task 6: 管理面板前端 admin.html
 
 **Files:**
-- Create: `tianhong/templates/admin.html`
+- Create: `remote/templates/admin.html`
 
-- [ ] **Step 1: 创建 `tianhong/templates/admin.html`（完整实现）**
+- [ ] **Step 1: 创建 `remote/templates/admin.html`（完整实现）**
 
 单文件管理面板：登录页 + 主面板（概览 / 用户 / 模型 / Agent / 日志 / 密钥）。复用现有模板深色终端风格。
 
@@ -1920,7 +1920,7 @@ Expected: 访问 `http://localhost:18080/admin` 显示登录页；用 admin/admi
 - [ ] **Step 3: Commit**
 
 ```bash
-git add tianhong/templates/admin.html
+git add remote/templates/admin.html
 git commit -m "feat(admin): add admin dashboard frontend"
 ```
 

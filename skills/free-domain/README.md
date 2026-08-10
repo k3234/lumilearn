@@ -34,7 +34,7 @@ print(plan)
 ```python
 dm.deploy_lumilearn_project(
     target_domain="lumilearn.pages.dev",
-    tianhong_server="192.168.2.xx"
+    remote_server="192.168.2.xx"
 )
 ```
 

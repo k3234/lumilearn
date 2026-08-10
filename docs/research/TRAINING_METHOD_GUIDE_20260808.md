@@ -163,9 +163,9 @@ ollama create lumilearn-v2 -f Modelfile
 
 ```bash
 # PowerShell
-$env:TIANHONG_HOST='服务器IP'; $env:TIANHONG_USER='用户名'; $env:TIANHONG_PASSWORD='密码'
+$env:REMOTE_HOST='服务器IP'; $env:REMOTE_USER='用户名'; $env:REMOTE_PASSWORD='密码'
 python scripts/_upload_gguf.py     # 上传 GGUF
-python scripts/_deploy_ollama_tianhong.py  # 注册到 Ollama
+python scripts/_deploy_ollama_remote.py  # 注册到 Ollama
 ```
 
 ### 5.6 应用侧配置
@@ -179,7 +179,7 @@ $env:OLLAMA_URL='http://<ollama_host>:11434'
 
 ## 六、模型质量评估
 
-### 6.1 推理性能（天虹 CPU，q8_0）
+### 6.1 推理性能（远程服务器 CPU，q8_0）
 
 | 指标 | 值 |
 |------|-----|

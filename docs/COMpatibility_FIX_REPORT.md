@@ -65,7 +65,7 @@ trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 ### 基础设施文件（11个）
 - `Dockerfile`, `Dockerfile.api`, `Dockerfile.data`, `Dockerfile.gateway`, `Dockerfile.train`, `Dockerfile.v4`
-- `docker-compose.yml`, `docker-compose.tianhong.yml`
+- `docker-compose.yml`, `docker-compose.remote.yml`
 - `.github/workflows/ci.yml`
 - `.ruff.toml`
 - `LICENSE`（MIT 许可证）
@@ -78,7 +78,7 @@ trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
 
 ### 其他文档（6个）
 - `README_DEPLOY.md`
-- `TIANHONG_DEPLOY_GUIDE.md`
+- `REMOTE_DEPLOY_GUIDE.md`
 - `batch_data_collector.py`
 - `deploy_inference_server.py`
 - `deploy_smart_engine.py`

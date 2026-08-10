@@ -258,5 +258,5 @@ function clearChat() {
 - [MDN: querySelectorAll](https://developer.mozilla.org/zh-CN/docs/Web/API/Document/querySelectorAll)
 - [MDN: Performance.now()](https://developer.mozilla.org/zh-CN/docs/Web/API/Performance/now)
 - [MDN: CSS transition](https://developer.mozilla.org/zh-CN/docs/Web/CSS/transition)
-- 项目文件: [lumiterm.html](file:///e:/学习LLM/lumilearn/tianhong/templates/lumiterm.html)
+- 项目文件: [lumiterm.html](file:///e:/学习LLM/lumilearn/remote/templates/lumiterm.html)
 - 项目文件: [review_engine.py](file:///e:/学习LLM/lumilearn/archive/debug_scripts/self_review_engine.py)（历史归档）

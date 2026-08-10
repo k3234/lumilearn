@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""上传 agent_core.py 到天虹服务器"""
+"""上传 agent_core.py 到远程服务器服务器"""
 import os
 import sys
 import paramiko
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _tianhong_config import get_config
+from _remote_config import get_config
 
-HOST = os.environ.get("TIANHONG_HOST", "")
-USER = os.environ.get("TIANHONG_USER", "")
+HOST = os.environ.get("REMOTE_HOST", "")
+USER = os.environ.get("REMOTE_USER", "")
 PORT = 22
 cfg = get_config(host=HOST, user=USER)
 
