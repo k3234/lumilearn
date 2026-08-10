@@ -9,27 +9,16 @@ echo.
 
 cd /d "%~dp0"
 
-echo [1/2] 查找并停止 GOAI Web 服务...
-for /f "tokens=2 delims=," %%i in ('tasklist /fi "imagename eq python.exe" /fo csv /nh 2^>nul ^| findstr /i "goai_web"') do (
-    taskkill /f /pid %%i >nul 2>&1 && echo   ✓ 已停止 GOAI Web (PID: %%i)
+:: 检查Python
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo   ❌ Python 未安装或不在 PATH 中
+    pause
+    exit /b 1
 )
 
-echo [2/2] 查找并停止 Framework API 服务...
-for /f "tokens=2 delims=," %%i in ('tasklist /fi "imagename eq python.exe" /fo csv /nh 2^>nul ^| findstr /i "framework.api.server"') do (
-    taskkill /f /pid %%i >nul 2>&1 && echo   ✓ 已停止 Framework API (PID: %%i)
-)
-
-echo.
-timeout /t 2 /nobreak >nul
-
-:: 确认是否还有残留
-set REMAINING=0
-for /f "tokens=2 delims=," %%i in ('tasklist /fi "imagename eq python.exe" /fo csv /nh 2^>nul ^| findstr /i "goai_web framework"') do set REMAINING=1
-if "%REMAINING%"=="0" (
-    echo ✅ 所有 LumiLearn 服务已停止
-) else (
-    echo ⚠️  部分服务可能未完全停止，请手动检查
-)
+:: 调用统一停止脚本
+python deploy/stop.py %*
 
 echo.
 pause

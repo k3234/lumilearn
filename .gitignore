@@ -235,6 +235,9 @@ archive/
 scripts/archive/
 
 # ============================================
+# LumiLearn: 运行时状态文件（PID 记录，不入库）
+deploy/.pids.json
+
 # Runtime data directories
 # ============================================
 data/

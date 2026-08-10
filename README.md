@@ -53,6 +53,102 @@
 | 参数量 | ~8.3M |
 | Tokenizer | BPE (HuggingFace tokenizers) |
 
+## 🚀 快速开始 / 一键部署
+
+从零到跑通全部服务，只需一条命令。部署工具位于 `deploy/` 目录，交互式引导完成环境检测、依赖安装、端口配置与模型接入，无需手工编辑配置文件。
+
+### 环境要求
+
+| 依赖 | 说明 |
+|:---|:---|
+| **Python ≥ 3.9** | 需自带 pip |
+| **Ollama**（可选） | 本地模型推理服务，默认地址 `http://localhost:11434`；未安装时可先接入云端 API，稍后再补 |
+| **网络** | 安装依赖需访问 PyPI；使用云端大模型 API 需相应网络环境 |
+
+### 一键部署
+
+**Windows：**
+
+```bat
+deploy\setup.bat
+```
+
+**Linux / macOS：**
+
+```bash
+bash deploy/setup.sh
+```
+
+脚本会自动完成：
+
+1. 检测环境（Python / pip）
+2. 安装依赖（`pip install -r requirements.txt`，可输入 `n` 跳过）
+3. 引导配置各服务端口（默认沿用当前配置）
+4. 引导接入模型（Ollama 本地/远程地址 + 云端 API Key）
+5. 输出启动指引
+
+### 选择端口
+
+五个服务可独立设置 `enabled`（是否启用）与 `port`（端口号），配置持久化到 `config/framework.yaml` 的 `port_settings` 段：
+
+| 服务键 | 默认端口 | 用途 |
+|:---|:---|:---|
+| `goai_web` | 5000 | GOAI 学习 Web |
+| `teacher_portal` | 5001 | 教师门户 |
+| `terminal` | 18080 | 框架终端（HTML 界面） |
+| `api` | 18081 | REST API |
+| `models` | 18082 | 模型管理 |
+
+端口随时可改：再次运行 setup 引导，或在 Admin 面板「端口管理」中直接调整，改后重启对应服务生效。
+
+### 接入模型
+
+| 方式 | 说明 |
+|:---|:---|
+| **本地 Ollama**（默认） | 地址保持 `http://localhost:11434`，脚本会校验连通并列出本机模型供选择 |
+| **远程 Ollama** | 填写你的远程服务器 Ollama 地址，脚本会校验连通性并列出可用模型 |
+| **云端 API** | 豆包 / 智谱 / Kimi / MiniMax 填入 API Key 即可，之后可在 Admin 面板「端口模型配置」中选用 |
+
+API Key 仅写入本仓库 `.env`（已被 `.gitignore` 忽略）。请勿将真实 IP、密码、API Key 提交到公开仓库。
+
+### 启动服务
+
+配置完成后按脚本提示启动：
+
+- **Windows**：`start_services.bat`（内部调用 `deploy/start.py`）
+- **Linux**：`deploy/start.sh`
+
+启动器按已保存的配置拉起全部服务，二次启动无需重新配置。
+
+### 快速模式（自动化）
+
+```bash
+python deploy/setup.py --quick        # 全部使用默认值，无交互（适合 CI/自动化）
+python deploy/setup.py --skip-deps    # 跳过依赖安装
+```
+
+`--quick` 模式：端口沿用当前配置，Ollama 用默认地址并探测，云端 API 全部跳过，适合无人值守部署。
+
+### 访问地址
+
+| 服务 | 默认地址 |
+|:---|:---|
+| GOAI 学习 Web | http://localhost:5000 |
+| 教师门户 | http://localhost:5001 |
+| 框架终端 | http://localhost:18080 |
+| REST API | http://localhost:18081 |
+| 模型管理 | http://localhost:18082 |
+
+### 排障提示
+
+- **提示缺少 PyYAML**：执行 `pip install pyyaml`（或 `pip install -r requirements.txt`）后重试
+- **Ollama 探测失败**：确认 Ollama 已启动（`ollama serve`）且地址正确；未安装 Ollama 可直接跳过，先使用云端 API
+- **端口被占用 / 修改后不生效**：确认 `port_settings` 中 `enabled: true`、端口未被占用，并重启对应服务
+- **`.env` 缺失**：脚本会自动从 `.env.example` 复制生成，无需手动创建
+- **远程 Ollama 连不上**：确认 `.env` 中 `OLLAMA_BASE_URL` 与 `OLLAMA_URL` 已同步更新（部署脚本会自动写入）
+
+更多细节见 [deploy/README.md](deploy/README.md)。
+
 ## 快速开始
 
 ```bash
@@ -234,4 +330,4 @@ LumiLearn 的核心愿景是让**老旧设备也能运行 AI 教学演示**：
 
 ---
 
-**最后更新**：2026-08-04
+**最后更新**：2026-08-10
