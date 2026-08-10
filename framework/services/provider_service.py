@@ -140,6 +140,7 @@ class ProviderService:
                 "base_url": cfg.get("base_url", ""),
                 "enabled": cfg.get("enabled", False),
                 "has_api_key": bool(cfg.get("api_key", "")),
+                "local": bool(cfg.get("local", False)),   # 本地 OpenAI 兼容容器（无需 API Key）
                 "models": cfg.get("models", []),
             })
         return result
@@ -194,6 +195,7 @@ class ProviderService:
             "base_url": cfg.get("base_url", ""),
             "has_api_key": bool(cfg.get("api_key", "")),
             "enabled": cfg.get("enabled", False),
+            "local": bool(cfg.get("local", False)),
             "models": cfg.get("models", []),
         }
 
@@ -203,10 +205,10 @@ class ProviderService:
         return cfg.get("api_key", "")
 
     def get_enabled_providers(self) -> Dict[str, Dict]:
-        """获取所有已启用的提供者（内部使用）"""
+        """获取所有已启用的提供者（内部使用；本地容器无需 API Key）"""
         return {
             k: v for k, v in self._providers.items()
-            if v.get("enabled", False) and v.get("api_key")
+            if v.get("enabled", False) and (v.get("api_key") or v.get("local", False))
         }
 
     def reload(self):
@@ -243,10 +245,13 @@ class ProviderService:
         return {"success": True, "message": f"{PORT_DISPLAY_NAMES.get(port_key, port_key)} 已设置为 {provider}/{model}"}
 
     def get_ollama_models(self) -> List[Dict]:
-        """获取本地 Ollama 模型列表"""
+        """获取本地 Ollama 模型列表（地址优先 .env 的 OLLAMA_BASE_URL）"""
         try:
             import requests
-            base_url = "http://localhost:11434"
+            base_url = os.environ.get(
+                "OLLAMA_BASE_URL",
+                os.environ.get("OLLAMA_URL", "http://localhost:11434"),
+            ).rstrip("/")
             resp = requests.get(f"{base_url}/api/tags", timeout=5)
             if resp.status_code == 200:
                 return [{"name": m.get("name", "unknown"), "provider": "ollama"}
@@ -256,22 +261,26 @@ class ProviderService:
         return []
 
     def get_all_available_models(self) -> List[Dict]:
-        """获取所有可用的模型（Ollama + 已启用云提供者）"""
+        """获取所有可用的模型（Ollama + 已启用云提供者 + 本地 OpenAI 兼容容器）"""
         models = []
         # Ollama 本地模型
         ollama_models = self.get_ollama_models()
         for m in ollama_models:
             m["provider_display"] = "Ollama (本地)"
             models.append(m)
-        # 云端提供者模型
+        # 云端提供者 / 本地容器模型
         for key, cfg in self._providers.items():
-            if not cfg.get("enabled", False) or not cfg.get("api_key"):
+            if not cfg.get("enabled", False):
                 continue
+            # 云端提供者需要 API Key；本地容器（vLLM / LM Studio / LocalAI 等）无需
+            if not cfg.get("api_key") and not cfg.get("local", False):
+                continue
+            is_local = bool(cfg.get("local", False))
             for model in cfg.get("models", []):
                 models.append({
                     "name": model.get("id", ""),
                     "provider": key,
-                    "provider_display": f"{cfg.get('name', key)} (云端)",
+                    "provider_display": f"{cfg.get('name', key)} ({'本地容器' if is_local else '云端'})",
                 })
         return models
 

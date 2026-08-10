@@ -1001,7 +1001,7 @@ def api_learn():
         return jsonify({'error': '请提供学习目标'}), 400
 
     try:
-        report = agent.run(topic, interactive=False)
+        report = agent.run(topic, interactive=False, user_id=user['id'])
         # 保存学习报告到共享数据库（Admin 面板可见）
         score = (report.get('mastery_assessment') or {}).get('score', 0)
         db.add_learning_report(user['id'], topic, report, score=score)

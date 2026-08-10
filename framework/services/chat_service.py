@@ -37,9 +37,17 @@ class ChatService:
         self._default_model = self._ollama.default_model or DEFAULT_MODEL
 
     def _get_feynman(self) -> FeynmanEngine:
-        """懒加载费曼引擎"""
+        """懒加载费曼引擎（优先使用配置的 feynman_model，回退默认模型）"""
         if self._feynman is None:
-            self._feynman = FeynmanEngine(model_name=self._default_model)
+            model = self._default_model
+            try:
+                cfg = self._config or get_config()
+                feynman_model = (cfg or {}).get("ollama", {}).get("feynman_model")
+                if feynman_model:
+                    model = feynman_model
+            except Exception as _e:
+                logger.warning(f"读取 feynman_model 配置失败，回退默认模型: {_e}")
+            self._feynman = FeynmanEngine(model_name=model)
         return self._feynman
 
     def chat(self, messages: List[Dict[str, str]],
@@ -141,19 +149,54 @@ class ChatService:
             }, ensure_ascii=False)
             return
 
-        # 判断学生水平
+        # 判断学生水平（逐条消息按 college → senior → junior 顺序检测）
         level = "junior"
         for msg in reversed(messages):
             content = msg.get("content", "").lower()
+            # 大学/college：含"大学"或"college"（保持现状）
             if "大学" in content or "college" in content:
                 level = "college"
+                break
+            # 高中/senior：先精确判断"高一""高二""高三"（在"高中"之前判断，避免混淆），再判断"高中""senior"
+            elif any(kw in content for kw in ("高一", "高二", "高三")):
+                level = "senior"
                 break
             elif "高中" in content or "senior" in content:
                 level = "senior"
                 break
+            # 初中/junior：含"初中""初一""初二""初三"或"八年级""九年级"
+            elif any(kw in content for kw in ("初中", "初一", "初二", "初三", "八年级", "九年级")):
+                level = "junior"
+                break
 
         # 交互式引导：把完整对话历史交给引擎，只生成下一步
         step_data = feynman.explain_step(topic, level, dialogue=messages)
+
+        # 推理过程写库（供管理员检查 / 教师查看 / 模型自查）
+        try:
+            from framework.database import db
+            db.init()
+            ctx_parts = []
+            for m in messages[:-1]:
+                if m.get("role") == "user":
+                    ctx_parts.append("学生：" + str(m.get("content", ""))[:300])
+                else:
+                    ctx_parts.append("引导者：" + str(m.get("content", ""))[:300])
+            db.add_reasoning_log(
+                user_id=0,  # 终端匿名会话；关联用户由上层会话系统负责
+                session_id="feynman:" + topic[:50],
+                mode="feynman",
+                topic=topic[:200],
+                step_order=step_data["step"],
+                step_name=step_data["step_name"],
+                model_used=step_data["model_used"],
+                input_context="\n".join(ctx_parts)[:2000],
+                output=step_data["content"][:4000],
+                latency_ms=0,
+                status="success",
+            )
+        except Exception as _e:
+            logger.warning(f"费曼推理过程写库失败: {_e}")
 
         yield json.dumps({
             "step": step_data["step"],

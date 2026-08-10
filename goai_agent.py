@@ -27,6 +27,13 @@ import time
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
+# 尝试加载 .env（OLLAMA_URL / OLLAMA_MODEL / 云端 Key 等）；缺失时不报错
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
+
 # Ollama 服务地址（优先从环境变量读取，避免硬编码内网 IP）
 DEFAULT_OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434")
 
@@ -263,8 +270,14 @@ class ToolCaller:
     """
     
     def __init__(self, ollama_url: str = DEFAULT_OLLAMA_URL,
-                 preferred_model: str = "lumilearn-v2",
+                 preferred_model: str = None,
                  timeout: int = 120):
+        # 默认模型：优先 .env 的 OLLAMA_MODEL，其次环境变量，最后内置兜底
+        if not preferred_model:
+            preferred_model = os.environ.get(
+                "OLLAMA_MODEL",
+                os.environ.get("LUMILEARN_DEFAULT_MODEL", "lumilearn-v2"),
+            )
         self.ollama_url = ollama_url
         self.preferred_model = preferred_model
         self.timeout = timeout
@@ -353,7 +366,7 @@ class ToolCaller:
 
     def _resolve_cloud_model(self) -> Optional[Dict]:
         """
-        从 ProviderService 读取本端口配置的云端模型。
+        从 ProviderService 读取本端口配置的模型（云端 API 或本地 OpenAI 兼容容器）。
         返回 {"provider": key, "model": id, "api_key": str, "base_url": str} 或 None。
         """
         try:
@@ -368,7 +381,10 @@ class ToolCaller:
             if provider == "ollama" or not model:
                 return None
             provider_cfg = ps.get_provider(provider)
-            if not provider_cfg or not provider_cfg.get("enabled") or not provider_cfg.get("has_api_key"):
+            if not provider_cfg or not provider_cfg.get("enabled"):
+                return None
+            # 云端需 API Key；本地容器（local=true，vLLM / LM Studio 等）无需
+            if not provider_cfg.get("has_api_key") and not provider_cfg.get("local"):
                 return None
             # 检查模型是否在提供者列表
             model_ids = [m.get("id") for m in provider_cfg.get("models", [])]
@@ -384,7 +400,7 @@ class ToolCaller:
             return None
 
     def _call_cloud(self, cloud: Dict, prompt: str) -> str:
-        """调用云端 OpenAI 兼容 API"""
+        """调用云端 / 本地容器 OpenAI 兼容 API（本地容器可无 API Key）"""
         try:
             import requests
             resp = requests.post(
@@ -396,7 +412,7 @@ class ToolCaller:
                     "temperature": 0.3,
                 },
                 headers={
-                    "Authorization": f"Bearer {cloud['api_key']}",
+                    "Authorization": f"Bearer {cloud.get('api_key') or 'not-needed'}",
                     "Content-Type": "application/json",
                 },
                 timeout=self.timeout,
@@ -725,13 +741,15 @@ class LumiLearnAgent:
         self.result_delivery = ResultDelivery()
         self.session_count = 0
     
-    def run(self, user_input: str, interactive: bool = True) -> Dict:
+    def run(self, user_input: str, interactive: bool = True,
+            user_id: int = 0) -> Dict:
         """
         运行完整的学习辅导流程
         
         Args:
             user_input: 用户输入的学习目标
             interactive: 是否交互式（显示进度）
+            user_id: 关联用户 id（0 表示匿名，如 CLI 场景）
         
         Returns:
             完整学习报告 Dict
@@ -810,6 +828,30 @@ class LumiLearnAgent:
             print(f"\n  📁 报告已保存:")
             print(f"     JSON: {json_path}")
             print(f"     Markdown: {md_path}")
+        
+        # === 推理过程写库（供管理员/教师检查；失败不影响主流程） ===
+        try:
+            from framework.database import db
+            # 确保数据库已初始化（幂等，可重复调用）
+            db.init()
+            # 报告要点摘要（截断到 2000 字）
+            output_summary = json.dumps({
+                "title": report.get("title", ""),
+                "mastery": report.get("mastery_assessment", {}),
+                "weak_points": report.get("weak_points", []),
+                "next_steps": report.get("next_steps", []),
+            }, ensure_ascii=False)[:2000]
+            db.add_reasoning_log(
+                user_id=user_id,   # 关联用户（CLI 匿名场景为 0）
+                session_id=f"goai-{self.session_count}",
+                mode="goai",
+                topic=task.get("core_topic", "") or user_input[:100],
+                model_used=self.tool_caller.preferred_model,
+                output=output_summary,
+                status="success",
+            )
+        except Exception as e:
+            print(f"  ⚠️ 推理过程写库失败（不影响主流程）: {e}")
         
         return report
     

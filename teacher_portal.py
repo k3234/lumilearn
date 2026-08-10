@@ -32,7 +32,10 @@ from framework.database import db
 db.init()
 
 BASE_DIR = Path(__file__).resolve().parent
+# 兼容两种部署目录：本地 remote/templates 与远程 tianhong/templates
 TEMPLATE_DIR = BASE_DIR / "remote" / "templates"
+if not TEMPLATE_DIR.exists():
+    TEMPLATE_DIR = BASE_DIR / "tianhong" / "templates"
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("TEACHER_SECRET_KEY", "lumilearn-teacher-portal-secret")
@@ -382,6 +385,101 @@ def api_student_stats(user_id):
     stats["weak_topics"] = weak
     stats["success"] = True
     return jsonify(stats)
+
+
+# ============================================================
+# 推理记录 API（模型推理过程，仅限本班学生）
+# ============================================================
+
+def _visible_student_ids(teacher_id):
+    """获取当前教师可见的学生 id 列表（仅自己班级的学生），失败时返回空列表"""
+    try:
+        students = db.get_students(teacher_id=teacher_id)
+        return sorted({s["id"] for s in students})
+    except Exception:
+        return []
+
+
+def _query_reasoning_logs_by_users(user_ids, limit=100, offset=0):
+    """按学生 id 集合查询推理记录（字段与 db.get_reasoning_logs 保持一致），返回 (items, total)"""
+    if not user_ids:
+        return [], 0
+    placeholders = ",".join("?" * len(user_ids))
+    cond = f"r.user_id IN ({placeholders})"
+    items = db._query(
+        f"""SELECT r.*, COALESCE(u.name, '') AS student_name
+            FROM reasoning_logs r
+            LEFT JOIN users u ON r.user_id = u.id
+            WHERE {cond}
+            ORDER BY r.created_at DESC, r.id DESC
+            LIMIT ? OFFSET ?""",
+        tuple(user_ids) + (limit, offset)
+    )
+    total = db._query_one(
+        f"SELECT COUNT(*) AS n FROM reasoning_logs r WHERE {cond}",
+        tuple(user_ids)
+    )["n"]
+    return items, total
+
+
+@app.route("/api/teacher/reasoning-logs", methods=["GET"])
+def api_teacher_reasoning_logs():
+    """教师查看本班学生的推理记录（权限隔离：user_id 不在本班学生列表时返回空结果）"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids(teacher["id"])
+    try:
+        limit = min(max(int(request.args.get("limit", 50)), 1), 200)
+        offset = max(int(request.args.get("offset", 0)), 0)
+    except ValueError:
+        limit, offset = 50, 0
+    uid = request.args.get("user_id", type=int)
+    if uid is not None:
+        # 权限隔离：仅可查看自己班级的学生，其余一律返回空
+        if uid not in user_ids:
+            return jsonify({"success": True, "items": [], "total": 0})
+        user_ids = [uid]
+    items, total = _query_reasoning_logs_by_users(user_ids, limit=limit, offset=offset)
+    return jsonify({"success": True, "items": items, "total": total})
+
+
+@app.route("/api/teacher/reasoning-logs/stats", methods=["GET"])
+def api_teacher_reasoning_stats():
+    """教师可见范围内（仅本班学生）的推理记录统计（db.get_reasoning_stats 不支持按学生过滤，故在 API 层聚合）"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids(teacher["id"])
+    days = request.args.get("days", 7, type=int) or 0
+    stats = {"total": 0, "by_model": {}, "by_step": {}, "avg_latency_ms": 0, "error_count": 0}
+    if not user_ids:
+        return jsonify({"success": True, **stats})
+    placeholders = ",".join("?" * len(user_ids))
+    params = list(user_ids)
+    cond = f"r.user_id IN ({placeholders})"
+    if days > 0:
+        cond += " AND r.created_at >= datetime('now', ?)"
+        params.append(f"-{days} days")
+    rows = db._query(
+        f"""SELECT r.mode, r.step_name, r.model_used, r.latency_ms, r.status
+            FROM reasoning_logs r WHERE {cond}""",
+        tuple(params)
+    )
+    latency_sum = 0
+    for row in rows:
+        model = (row.get("model_used") or "").strip()
+        step = (row.get("step_name") or "").strip()
+        if model:
+            stats["by_model"][model] = stats["by_model"].get(model, 0) + 1
+        if step:
+            stats["by_step"][step] = stats["by_step"].get(step, 0) + 1
+        if row.get("status") == "error":
+            stats["error_count"] += 1
+        latency_sum += row.get("latency_ms") or 0
+    stats["total"] = len(rows)
+    stats["avg_latency_ms"] = round(latency_sum / len(rows), 1) if rows else 0
+    return jsonify({"success": True, **stats})
 
 
 # ============================================================

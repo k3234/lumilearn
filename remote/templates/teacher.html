@@ -191,6 +191,13 @@
   }
   .tag { display: inline-block; margin-right: 6px; margin-bottom: 6px; padding: 2px 10px; border-radius: 16px; font-size: 11px; background: #f1f5f9; color: #64748b; }
 
+  /* 推理记录详情 */
+  .reasoning-block {
+    white-space: pre-wrap; word-break: break-word; font-size: 12.5px; line-height: 1.7; color: #334155;
+    background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 12px;
+    max-height: 260px; overflow-y: auto;
+  }
+
   .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; }
   .flex { display: flex; align-items: center; gap: 10px; }
   .between { display: flex; align-items: center; justify-content: space-between; }
@@ -231,6 +238,7 @@
     <button class="nav-item active" data-page="overview" onclick="switchPage('overview')">📊 总览</button>
     <button class="nav-item" data-page="classes" onclick="switchPage('classes')">🏫 班级管理</button>
     <button class="nav-item" data-page="students" onclick="switchPage('students')">👩‍🎓 学生管理</button>
+    <button class="nav-item" data-page="reasoning" onclick="switchPage('reasoning')">🧠 推理记录</button>
     <button class="nav-item" data-page="tasks" onclick="switchPage('tasks')">📋 任务管理</button>
     <button class="nav-item" data-page="resources" onclick="switchPage('resources')">📚 教学资源</button>
     <div class="user-card">
@@ -289,6 +297,31 @@
             <tbody id="studentTable"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- 推理记录 -->
+    <div class="page" id="page-reasoning">
+      <div class="between">
+        <div>
+          <div class="page-title">🧠 推理记录</div>
+          <div class="page-sub">查看学生模型推理过程（费曼引导 / GOAI 学习），点击行可展开输出详情</div>
+        </div>
+        <div class="flex">
+          <select id="reasoningStudentSelect" onchange="onReasoningStudentChange()" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+            <option value="">全部学生</option>
+          </select>
+        </div>
+      </div>
+      <div class="stat-grid" id="reasoningStats"></div>
+      <div class="card mt-3">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>学生</th><th>主题</th><th>模式</th><th>模型</th><th>步骤</th><th>状态</th><th>时间</th></tr></thead>
+            <tbody id="reasoningTable"></tbody>
+          </table>
+        </div>
+        <div class="flex between mt-3" id="reasoningPager"></div>
       </div>
     </div>
 
@@ -687,6 +720,7 @@ function renderStudents() {
       <td><span class="badge ${((s.stats || {}).accuracy || 0) >= 70 ? 'badge-green' : ((s.stats || {}).accuracy || 0) >= 50 ? 'badge-orange' : 'badge-red'}">${(s.stats || {}).accuracy || 0}%</span></td>
       <td>
         <button class="btn btn-ghost btn-sm" onclick="openStudentModal(${s.id}, '${esc(s.name)}')">详情</button>
+        <button class="btn btn-ghost btn-sm" onclick="openReasoningForStudent(${s.id}, '${esc(s.name)}')">推理记录</button>
         <button class="btn btn-ghost btn-sm" onclick="resetPassword(${s.id}, '${esc(s.name)}')">重置密码</button>
       </td>
     </tr>`;
@@ -808,6 +842,128 @@ async function viewReportDetail(userId, reportId) {
     ${(r.next_steps || []).map(n => `<div class="tag">${esc(n)}</div>`).join('') || '<span class="muted">无</span>'}
   `;
   $('resourceModal').classList.add('active');
+}
+
+// ═══════════ 推理记录 ═══════════
+let reasoningUserId = null;       // 当前筛选的学生 id（null = 全部学生）
+let reasoningOffset = 0;
+const REASONING_PAGE_SIZE = 20;
+let REASONING = { items: [], total: 0 };
+
+async function loadReasoningPage() {
+  if (!ALL_DATA.students.length) await loadStudents();
+  renderReasoningStudentSelect();
+  await Promise.all([loadReasoningLogs(), loadReasoningStats()]);
+}
+
+function renderReasoningStudentSelect() {
+  const sel = $('reasoningStudentSelect');
+  sel.innerHTML = '<option value="">全部学生</option>' +
+    ALL_DATA.students.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  sel.value = reasoningUserId ? String(reasoningUserId) : '';
+}
+
+function onReasoningStudentChange() {
+  const v = $('reasoningStudentSelect').value;
+  reasoningUserId = v ? parseInt(v) : null;
+  reasoningOffset = 0;
+  loadReasoningLogs();
+  loadReasoningStats();
+}
+
+// 从学生管理/学生详情弹窗跳转过来，带学生筛选
+function openReasoningForStudent(userId) {
+  closeModal('studentModal');
+  reasoningUserId = userId;
+  reasoningOffset = 0;
+  switchPage('reasoning');
+}
+
+function reasoningFromStudentModal() {
+  const uid = currentStudentId;
+  if (!uid) return;
+  closeModal('studentModal');
+  reasoningUserId = uid;
+  reasoningOffset = 0;
+  switchPage('reasoning');
+}
+
+async function loadReasoningLogs() {
+  const q = new URLSearchParams({ limit: REASONING_PAGE_SIZE, offset: reasoningOffset });
+  if (reasoningUserId) q.set('user_id', reasoningUserId);
+  const d = await api('/api/teacher/reasoning-logs?' + q.toString());
+  if (!d.success) return;
+  REASONING = { items: d.items || [], total: d.total || 0 };
+  renderReasoningTable();
+}
+
+function renderReasoningTable() {
+  const items = REASONING.items;
+  const modeMap = { feynman: ['费曼引导', 'badge-blue'], goai: ['GOAI 学习', 'badge-green'], chat: ['对话', 'badge-gray'] };
+  const statusMap = { success: ['成功', 'badge-green'], error: ['失败', 'badge-red'] };
+  if (!items.length) {
+    $('reasoningTable').innerHTML = '<tr><td colspan="7"><div class="empty"><div class="e-icon">🧠</div>暂无推理记录</div></td></tr>';
+  } else {
+    $('reasoningTable').innerHTML = items.map((it, i) => {
+      const m = modeMap[it.mode] || [it.mode || '—', 'badge-gray'];
+      const st = statusMap[it.status] || [it.status || '—', 'badge-gray'];
+      const stepName = it.step_name || (it.step_order ? '第' + it.step_order + '步' : '—');
+      return `
+        <tr class="reasoning-row" style="cursor:pointer;" onclick="toggleReasoningDetail(${i})">
+          <td><b>${esc(it.student_name || '匿名')}</b></td>
+          <td>${esc(it.topic || '—')}</td>
+          <td><span class="badge ${m[1]}">${m[0]}</span></td>
+          <td class="muted">${esc(it.model_used || '—')}</td>
+          <td>${esc(stepName)}</td>
+          <td><span class="badge ${st[1]}">${st[0]}</span></td>
+          <td class="muted small">${esc(it.created_at || '')}</td>
+        </tr>
+        <tr class="reasoning-detail" id="reasoningDetail_${i}" style="display:none;">
+          <td colspan="7">
+            <div class="flex between" style="gap:8px;margin-bottom:8px;">
+              <span class="muted small">会话 ${esc(it.session_id || '—')} · 耗时 ${it.latency_ms ? it.latency_ms + ' ms' : '—'}</span>
+              <button class="btn btn-ghost btn-sm" onclick="toggleReasoningDetail(${i})">收起</button>
+            </div>
+            ${it.prompt ? `<div class="card-title" style="font-size:13px;">📥 输入提示词</div><div class="reasoning-block">${esc(it.prompt)}</div>` : ''}
+            ${it.output ? `<div class="card-title mt-2" style="font-size:13px;">📤 模型输出</div><div class="reasoning-block">${esc(it.output)}</div>` : ''}
+          </td>
+        </tr>`;
+    }).join('');
+  }
+  // 分页
+  const totalPages = Math.max(1, Math.ceil(REASONING.total / REASONING_PAGE_SIZE));
+  const curPage = Math.floor(reasoningOffset / REASONING_PAGE_SIZE) + 1;
+  $('reasoningPager').innerHTML = `
+    <span class="muted small">共 ${REASONING.total} 条记录</span>
+    <div class="flex">
+      <button class="btn btn-ghost btn-sm" ${reasoningOffset <= 0 ? 'disabled' : ''} onclick="reasoningPage(-1)">上一页</button>
+      <span class="small muted" style="padding:0 10px;">${curPage} / ${totalPages}</span>
+      <button class="btn btn-ghost btn-sm" ${reasoningOffset + REASONING_PAGE_SIZE >= REASONING.total ? 'disabled' : ''} onclick="reasoningPage(1)">下一页</button>
+    </div>`;
+}
+
+function toggleReasoningDetail(i) {
+  const row = $('reasoningDetail_' + i);
+  if (row) row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+function reasoningPage(dir) {
+  reasoningOffset = Math.max(0, reasoningOffset + dir * REASONING_PAGE_SIZE);
+  loadReasoningLogs();
+}
+
+async function loadReasoningStats() {
+  const d = await api('/api/teacher/reasoning-logs/stats?days=7');
+  if (!d.success) return;
+  const top3 = obj => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const models = top3(d.by_model || {});
+  const steps = top3(d.by_step || {});
+  $('reasoningStats').innerHTML = `
+    <div class="stat-card"><div class="num">${d.total}</div><div class="label">🧠 近7天推理</div></div>
+    <div class="stat-card"><div class="num" style="font-size:18px;">${models.length ? models.map(([k, v]) => `${esc(k)} ${v}`).join(' · ') : '—'}</div><div class="label">🤖 模型分布</div></div>
+    <div class="stat-card"><div class="num" style="font-size:18px;">${steps.length ? steps.map(([k, v]) => `${esc(k)} ${v}`).join(' · ') : '—'}</div><div class="label">🪜 步骤分布</div></div>
+    <div class="stat-card"><div class="num">${d.avg_latency_ms || 0}ms</div><div class="label">⚡ 平均耗时</div></div>
+    <div class="stat-card"><div class="num" style="color:${d.error_count ? '#dc2626' : '#16a34a'}">${d.error_count}</div><div class="label">⚠️ 失败次数</div></div>`;
 }
 
 // ═══════════ 任务管理 ═══════════
@@ -975,7 +1131,7 @@ async function refreshAll() {
   await loadResources();
   const active = document.querySelector('.nav-item.active');
   const page = active ? active.dataset.page : 'overview';
-  ({ overview: loadOverview, classes: renderOrg, students: loadStudents, tasks: loadTasks, resources: loadResources })[page]();
+  ({ overview: loadOverview, classes: renderOrg, students: loadStudents, tasks: loadTasks, resources: loadResources, reasoning: loadReasoningPage })[page]();
 }
 
 checkLogin();

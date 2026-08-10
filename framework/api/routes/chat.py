@@ -15,6 +15,7 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 
 from framework.services.chat_service import get_chat_service
 from framework.services.provider_service import get_provider_service, ProviderService
+from framework.database import db
 
 logger = logging.getLogger("lumilearn.routes.chat")
 
@@ -65,8 +66,10 @@ def _resolve_port_config():
 
 def _resolve_cloud_model(model: str):
     """
-    检查 model 是否属于云端提供商，如果是则返回 (provider_key, api_key, base_url)。
-    如果 model 是本地模型，返回 None。
+    检查 model 是否属于配置的提供者（云端 API 或本地 OpenAI 兼容容器）。
+    如果是则返回 (provider_key, api_key, base_url)；本地模型返回 None。
+    云端提供者需 API Key；本地容器（vLLM / LM Studio / LocalAI / llama.cpp 等，
+    配置里 local: true）即使没有 API Key 也会被解析，走同一 OpenAI 兼容接口。
     """
     ps = _get_provider_service()
     providers = ps._providers
@@ -77,15 +80,17 @@ def _resolve_cloud_model(model: str):
             if m.get("id") == model:
                 api_key = cfg.get("api_key")
                 base_url = cfg.get("base_url")
-                if api_key:
+                # 云端需 API Key；本地容器（local=true）无 Key 也可用
+                if api_key or cfg.get("local", False):
                     return (key, api_key, base_url)
     return None
 
 
 def _cloud_chat_stream(model, messages, api_key, base_url, temperature, max_tokens):
-    """调用云端 OpenAI 兼容 API 进行流式对话"""
+    """调用云端/本地容器 OpenAI 兼容 API 进行流式对话（本地容器可无 API Key）"""
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        # 本地容器（vLLM / LM Studio 等）通常不校验 Key，仍发送占位 Authorization
+        "Authorization": f"Bearer {api_key or 'not-needed'}",
         "Content-Type": "application/json",
     }
     payload = {
@@ -141,9 +146,9 @@ def _cloud_chat_stream(model, messages, api_key, base_url, temperature, max_toke
 
 
 def _cloud_chat_sync(model, messages, api_key, base_url, temperature, max_tokens):
-    """调用云端 OpenAI 兼容 API 进行同步对话"""
+    """调用云端/本地容器 OpenAI 兼容 API 进行同步对话（本地容器可无 API Key）"""
     headers = {
-        "Authorization": f"Bearer {api_key}",
+        "Authorization": f"Bearer {api_key or 'not-needed'}",
         "Content-Type": "application/json",
     }
     payload = {
@@ -290,3 +295,41 @@ def chat():
             "Connection": "keep-alive"
         }
     )
+
+
+@chat_bp.route("/api/reasoning-logs", methods=["GET", "OPTIONS"])
+def reasoning_logs():
+    """
+    模型/智能体自查接口（只读，无需管理员权限）
+    按 session_id 或 topic（至少一个）查询该会话/主题的完整推理链列表，
+    供模型自我回顾学习过程。返回每条日志的
+    step_order / step_name / output / latency_ms / model_used / created_at，
+    其中 output 统一截断 2000 字。
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+    session_id = request.args.get("session_id") or None
+    topic = request.args.get("topic") or None
+    if not session_id and not topic:
+        return jsonify({"error": "缺少参数：至少提供 session_id 或 topic 之一"}), 400
+    logs = db.get_reasoning_logs(session_id=session_id, limit=500)
+    # topic 按包含匹配（写库时 topic 为完整首条消息，用户常只记得关键词）
+    if topic:
+        logs = [log for log in logs if topic in (log.get("topic") or "")]
+    items = []
+    for log in logs:
+        output = log.get("output") or ""
+        truncated = len(output) > 2000
+        if truncated:
+            output = output[:2000] + "…（已截断）"
+        items.append({
+            "id": log["id"],
+            "step_order": log.get("step_order"),
+            "step_name": log.get("step_name"),
+            "output": output,
+            "truncated": truncated,
+            "latency_ms": log.get("latency_ms"),
+            "model_used": log.get("model_used"),
+            "created_at": log.get("created_at"),
+        })
+    return jsonify({"success": True, "items": items})

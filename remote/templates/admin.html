@@ -168,7 +168,7 @@ function logout() {
 
 function switchPanel(name) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.panel === name));
-  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', keys: 'API密钥', ports: '端口管理', settings: '设置' };
+  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', reasoning: '推理记录', keys: 'API密钥', ports: '端口管理', settings: '设置' };
   document.getElementById('panelTitle').textContent = titles[name];
   loaders[name]();
 }
@@ -181,6 +181,7 @@ const loaders = {
   logs: loadLogs,
   keys: loadKeys,
   reports: loadReports,
+  reasoning: loadReasoning,
   ports: loadPorts,
   settings: loadSettings,
 };
@@ -828,6 +829,173 @@ async function viewReport(reportId) {
   } catch (e) {
     toast('加载失败: ' + e.message);
   }
+}
+
+// ---------- 推理记录 ----------
+const reasoningState = { page: 0, pageSize: 20, filters: {}, users: [] };
+
+// HTML 转义，防止模型输出中的特殊字符破坏页面结构
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function loadReasoning() {
+  // 加载学生列表用于筛选下拉
+  try {
+    const ud = await api('/users?role=student');
+    reasoningState.users = ud.users || [];
+  } catch (e) { reasoningState.users = []; }
+  await renderReasoning();
+}
+
+async function renderReasoning() {
+  try {
+    const f = reasoningState.filters;
+    const params = new URLSearchParams();
+    if (f.user_id) params.set('user_id', f.user_id);
+    if (f.model) params.set('model', f.model);
+    if (f.mode) params.set('mode', f.mode);
+    if (f.start_date) params.set('start_date', f.start_date);
+    if (f.end_date) params.set('end_date', f.end_date + ' 23:59:59');
+    params.set('limit', reasoningState.pageSize);
+    params.set('offset', reasoningState.page * reasoningState.pageSize);
+    const qs = params.toString();
+    const [data, stats] = await Promise.all([
+      api('/reasoning-logs' + (qs ? '?' + qs : '')),
+      api('/reasoning-logs/stats?days=0'),
+    ]);
+    const items = data.items || [];
+    const total = data.total || 0;
+    const s = stats || {};
+    const modeNames = { feynman: '费曼', chat: '对话', goai: 'GOAI' };
+
+    // 统计卡片：按模型 / 按步骤分布以标签形式展示
+    const byModelChips = Object.entries(s.by_model || {})
+      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('')
+      || '<span style="color:#8b949e;font-size:12px;">无</span>';
+    const byStepChips = Object.entries(s.by_step || {})
+      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('')
+      || '<span style="color:#8b949e;font-size:12px;">无</span>';
+
+    // 筛选栏（回显当前已应用的筛选条件）
+    const filterBar = `
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px;margin-bottom:16px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <select id="rfUser" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;min-width:130px;">
+            <option value="">全部学生</option>
+            ${reasoningState.users.map(u => `<option value="${u.id}" ${String(u.id) === String(f.user_id || '') ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}
+          </select>
+          <input id="rfModel" value="${esc(f.model || '')}" placeholder="模型（如 qwen2.5:7b）" style="flex:1;min-width:150px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <select id="rfMode" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+            <option value="">全部模式</option>
+            <option value="feynman" ${f.mode === 'feynman' ? 'selected' : ''}>费曼</option>
+            <option value="chat" ${f.mode === 'chat' ? 'selected' : ''}>对话</option>
+            <option value="goai" ${f.mode === 'goai' ? 'selected' : ''}>GOAI</option>
+          </select>
+          <input type="date" id="rfStart" value="${f.start_date || ''}" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;color-scheme:dark;">
+          <input type="date" id="rfEnd" value="${f.end_date || ''}" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;color-scheme:dark;">
+          <button class="act" onclick="queryReasoning()">查询</button>
+          <button class="act" onclick="resetReasoning()">重置</button>
+        </div>
+      </div>`;
+
+    // 记录表格：行点击展开详情（prompt 摘要 / input_context / output），可折叠
+    const rows = items.map(it => {
+      const stepTxt = it.step_name ? (it.step_order ? `${it.step_order}. ${it.step_name}` : it.step_name) : '-';
+      const statusBadge = it.status === 'error'
+        ? '<span class="badge err">失败</span>'
+        : '<span class="badge ok">成功</span>';
+      const promptFull = it.prompt || '';
+      const promptSummary = esc(promptFull.slice(0, 300));
+      return `
+      <tr class="reasoning-row" onclick="toggleReasoningDetail(${it.id})" style="cursor:pointer;">
+        <td>${it.id}</td>
+        <td>${esc(it.student_name || ('#' + (it.user_id || 0)))}</td>
+        <td>${esc(it.topic || '-')}</td>
+        <td>${modeNames[it.mode] || esc(it.mode || '-')}</td>
+        <td>${esc(it.model_used || '-')}</td>
+        <td>${esc(stepTxt)}</td>
+        <td>${statusBadge}</td>
+        <td style="white-space:nowrap;">${esc(it.created_at || '-')}</td>
+        <td>${it.latency_ms != null ? it.latency_ms + 'ms' : '-'}</td>
+      </tr>
+      <tr id="reasoning-detail-${it.id}" style="display:none;background:#0d1117;">
+        <td colspan="9" style="padding:14px 16px;">
+          <div style="font-size:13px;line-height:1.7;">
+            <div style="color:#8b949e;font-size:12px;margin-bottom:4px;">📋 Prompt 摘要</div>
+            <div style="margin-bottom:12px;white-space:pre-wrap;">${promptSummary}${promptFull.length > 300 ? '<span style="color:#8b949e;">…（已截断）</span>' : ''}</div>
+            <div style="color:#8b949e;font-size:12px;margin-bottom:4px;">💬 输入上下文（input_context）</div>
+            <div style="margin-bottom:12px;white-space:pre-wrap;">${esc(it.input_context) || '<span style="color:#8b949e;">（无）</span>'}</div>
+            <div style="color:#8b949e;font-size:12px;margin-bottom:4px;">🧾 模型输出（output）</div>
+            <div style="white-space:pre-wrap;">${esc(it.output) || '<span style="color:#8b949e;">（无）</span>'}</div>
+          </div>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="9" style="color:#8b949e;">暂无推理记录</td></tr>';
+
+    // 分页
+    const totalPages = Math.max(1, Math.ceil(total / reasoningState.pageSize));
+    const pager = `
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:13px;color:#8b949e;">
+        <button class="act" onclick="prevReasoningPage()" ${reasoningState.page === 0 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>← 上一页</button>
+        <span>第 ${reasoningState.page + 1} / ${totalPages} 页（共 ${total} 条）</span>
+        <button class="act" onclick="nextReasoningPage()" ${(reasoningState.page + 1) * reasoningState.pageSize >= total ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>下一页 →</button>
+      </div>`;
+
+    document.getElementById('content').innerHTML = `
+      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">模型推理过程日志：费曼引导每步、GOAI 学习过程等。点击行可展开查看输入输出详情。</div>
+      <div class="cards">
+        <div class="card"><div class="num">${s.total ?? 0}</div><div class="label">总记录数</div></div>
+        <div class="card"><div class="num">${s.avg_latency_ms ?? 0}ms</div><div class="label">平均耗时</div></div>
+        <div class="card"><div class="num" style="color:${s.error_count ? '#f85149' : '#3fb950'};">${s.error_count ?? 0}</div><div class="label">失败数</div></div>
+        <div class="card"><div class="label" style="margin-top:0;">按模型分布</div><div style="margin-top:8px;">${byModelChips}</div></div>
+        <div class="card"><div class="label" style="margin-top:0;">按步骤分布</div><div style="margin-top:8px;">${byStepChips}</div></div>
+      </div>
+      ${filterBar}
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;">
+        <table>
+          <tr><th>ID</th><th>学生</th><th>主题</th><th>模式</th><th>模型</th><th>步骤</th><th>状态</th><th>时间</th><th>耗时</th></tr>
+          ${rows}
+        </table>
+        ${pager}
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${e.message}</div>`;
+  }
+}
+
+function toggleReasoningDetail(id) {
+  const detailRow = document.getElementById('reasoning-detail-' + id);
+  if (!detailRow) return;
+  detailRow.style.display = detailRow.style.display === 'none' ? '' : 'none';
+}
+
+function queryReasoning() {
+  reasoningState.filters = {
+    user_id: document.getElementById('rfUser').value,
+    model: document.getElementById('rfModel').value.trim(),
+    mode: document.getElementById('rfMode').value,
+    start_date: document.getElementById('rfStart').value,
+    end_date: document.getElementById('rfEnd').value,
+  };
+  reasoningState.page = 0;
+  renderReasoning();
+}
+
+function resetReasoning() {
+  ['rfUser', 'rfModel', 'rfMode', 'rfStart', 'rfEnd'].forEach(id => document.getElementById(id).value = '');
+  reasoningState.filters = {};
+  reasoningState.page = 0;
+  renderReasoning();
+}
+
+function prevReasoningPage() {
+  if (reasoningState.page > 0) { reasoningState.page--; renderReasoning(); }
+}
+
+function nextReasoningPage() {
+  reasoningState.page++;
+  renderReasoning();
 }
 
 // ---------- 端口管理（选择性配置） ----------

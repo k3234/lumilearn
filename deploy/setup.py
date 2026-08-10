@@ -74,6 +74,16 @@ CLOUD_PROVIDERS = [
 OLLAMA_BASE_URL_DEFAULT = "http://localhost:11434"
 OLLAMA_MODEL_DEFAULT = "lumilearn-v2:latest"
 
+# 本地 OpenAI 兼容容器（除 Ollama 外，支持 vLLM / LM Studio / LocalAI / llama.cpp 等）
+# 它们均提供 /v1/models 与 /v1/chat/completions 的 OpenAI 兼容接口
+LOCAL_CONTAINER_EXAMPLES = [
+    ("vLLM", "http://localhost:8000/v1"),
+    ("LM Studio", "http://localhost:1234/v1"),
+    ("LocalAI", "http://localhost:8080/v1"),
+    ("llama.cpp server", "http://localhost:8080/v1"),
+]
+PROVIDERS_YAML = os.path.join(ROOT, "config", "providers.yaml")
+
 
 # ============================================================
 # 交互工具
@@ -335,6 +345,81 @@ def configure_cloud_providers(quick):
             print("  ⏭ 未输入，跳过 {}".format(label))
 
 
+def probe_openai_compatible(base_url, timeout=5):
+    """探测 OpenAI 兼容容器的 /models 接口，成功返回模型 id 列表，失败返回 None。"""
+    if requests is None:
+        print("  ⚠ 未安装 requests，跳过容器探测")
+        return None
+    url = base_url.rstrip("/") + "/models"
+    try:
+        resp = requests.get(url, timeout=timeout)
+        if resp.status_code != 200:
+            print("  ⚠ 容器返回状态码 {}（{}），跳过模型列表".format(resp.status_code, url))
+            return None
+        data = resp.json()
+        models = [m.get("id", "") for m in data.get("data", []) if m.get("id")]
+        return models or None
+    except Exception as exc:
+        print("  ⚠ 无法连接容器（{}），跳过模型列表".format(exc))
+        return None
+
+
+def _write_provider_to_yaml(key, name, base_url, api_key, models):
+    """把本地 OpenAI 兼容容器注册到 config/providers.yaml（追加/覆盖指定 key）。"""
+    try:
+        with open(PROVIDERS_YAML, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+    except Exception:
+        data = {}
+    providers = data.setdefault("providers", {})
+    providers[key] = {
+        "name": name,
+        "base_url": base_url,
+        "api_key": api_key,
+        "enabled": True,
+        "local": True,   # 本地 OpenAI 兼容容器标记：无需 API Key 即可在模型列表/端口配置中使用
+        "models": [{"id": m, "name": m} for m in models],
+    }
+    with open(PROVIDERS_YAML, "w", encoding="utf-8") as f:
+        yaml.dump(data, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    print("  ✓ 已注册到 config/providers.yaml: {}（{} 个模型）".format(name, len(models)))
+
+
+def configure_openai_local(quick):
+    """引导接入本地 OpenAI 兼容容器（vLLM / LM Studio / LocalAI / llama.cpp 等）。
+
+    容器地址形如 http://localhost:8000/v1，脚本会调用 /models 自动发现其全部模型，
+    并注册到 config/providers.yaml，之后可在 Admin 面板「端口模型配置」中选用。
+    """
+    print("\n  ── 其他本地模型容器（可选，OpenAI 兼容：vLLM / LM Studio / LocalAI / llama.cpp）──")
+    if not ask_yes_no("  是否接入其他本地模型容器（推荐：继续使用上面的 Ollama 即可）?", False, quick):
+        return
+    print("  常见容器地址示例：")
+    for name, url in LOCAL_CONTAINER_EXAMPLES:
+        print("    {}  →  {}".format(name, url))
+    base_url = ask("  容器服务地址（形如 http://localhost:8000/v1，留空跳过）")
+    base_url = str(base_url).strip().rstrip("/")
+    if not base_url:
+        print("  ⏭ 未输入地址，跳过本地容器接入")
+        return
+    # 兼容用户只填主机名（无 /v1）
+    if not base_url.endswith("/v1"):
+        base_url = base_url + "/v1"
+    models = probe_openai_compatible(base_url)
+    if not models:
+        print("  ⏭ 容器不可达或未返回模型，跳过（可稍后在 Admin 面板手动添加）")
+        return
+    print("  ✓ 连接成功，发现模型 {} 个：".format(len(models)))
+    for i, m in enumerate(models, 1):
+        print("     [{}] {}".format(i, m))
+    default_key = "local_container"
+    key = ask("  为该容器设置标识 key（默认 {}，用于 Admin 面板区分）".format(default_key), default_key, quick)
+    key = str(key).strip() or default_key
+    api_key = ask("  容器若需要 API Key 请填写（本地容器通常留空）", "", quick)
+    _write_provider_to_yaml(key, key, base_url, str(api_key).strip(), models)
+    print("  提示：可在 Admin 面板「模型管理 → 端口模型配置」中把某个端口切换到此容器模型")
+
+
 # ============================================================
 # 主流程
 # ============================================================
@@ -371,6 +456,7 @@ def main():
 
     # [3/4] 模型配置
     configure_ollama(args.quick)
+    configure_openai_local(args.quick)
     configure_cloud_providers(args.quick)
 
     # [4/4] 完成

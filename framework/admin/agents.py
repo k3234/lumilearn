@@ -62,11 +62,25 @@ class FeynmanAgent(BaseAgent):
         from framework.engines.feynman_engine import FeynmanEngine
         topic = payload.get("topic", "")
         level = payload.get("level", "junior")
+        dialogue = payload.get("dialogue")  # 提供对话历史则走交互式单步引导
         if not topic:
             return {"success": False, "error": "缺少 topic 参数"}
-        engine = FeynmanEngine()
+        # 优先使用配置的 feynman_model（上下文利用更强）
+        model_name = None
+        try:
+            from framework.core.config import get_config
+            cfg = get_config() or {}
+            model_name = (cfg or {}).get("ollama", {}).get("feynman_model")
+        except Exception:
+            model_name = None
+        engine = FeynmanEngine(model_name=model_name) if model_name else FeynmanEngine()
+        if dialogue:
+            step = engine.explain_step(topic=topic, level=level, dialogue=dialogue)
+            return {"success": True, "topic": topic, "level": level, "step": step,
+                    "mode": "interactive"}
         steps = engine.explain(topic=topic, level=level)
-        return {"success": True, "topic": topic, "level": level, "steps": steps}
+        return {"success": True, "topic": topic, "level": level, "steps": steps,
+                "mode": "full"}
 
 
 class DetectionAgent(BaseAgent):

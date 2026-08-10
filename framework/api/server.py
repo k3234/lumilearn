@@ -20,10 +20,19 @@ import threading
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify, redirect, send_from_directory
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
+
+
+def _template_path(name: str):
+    """兼容两种部署目录：本地 remote/templates 与远程 tianhong/templates"""
+    for base in (BASE_DIR / "remote" / "templates", BASE_DIR / "tianhong" / "templates"):
+        p = base / name
+        if p.exists():
+            return p
+    return BASE_DIR / "remote" / "templates" / name  # 兜底：保持 .exists() 调用安全
 
 from framework.core.config import get_config
 from framework.models.registry import get_registry
@@ -33,13 +42,14 @@ from framework.services.chat_service import get_chat_service
 from framework.api.routes import chat_bp, speech_bp, ocr_bp, review_bp, resources_bp, models_bp, feynman_bp, payment_bp, voicebox_bp, animation_bp, providers_bp, slides_bp, mindmap_bp, security_bp, admin_bp
 
 
-def create_app(debug: bool = None, template_dir: str = None) -> Flask:
+def create_app(debug: bool = None, template_dir: str = None, homepage: str = "terminal") -> Flask:
     """
     创建Flask应用
 
     参数：
         debug: 是否调试模式，None则从配置读取
         template_dir: 模板目录路径，None则自动检测
+        homepage: 首页类型：terminal(终端) / api(REST API概览) / models(模型管理面板)
 
     返回：
         配置好的Flask应用
@@ -51,6 +61,8 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
 
     if template_dir is None:
         template_dir = str(BASE_DIR / "remote" / "templates")
+        if not os.path.isdir(template_dir):
+            template_dir = str(BASE_DIR / "tianhong" / "templates")
 
     app = Flask(__name__, template_folder=template_dir)
     app.debug = debug
@@ -118,8 +130,22 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
 
     @app.route("/")
     def index():
-        """首页：加载lumiterm.html"""
-        html_path = BASE_DIR / "remote" / "templates" / "lumiterm.html"
+        """首页：按应用类型返回对应页面"""
+        # REST API 端口：返回服务状态与端点概览
+        if homepage == "api":
+            endpoints = sorted(str(r) for r in app.url_map.iter_rules() if str(r).startswith("/api/"))
+            return jsonify({
+                "framework": "LumiLearn",
+                "service": "REST API",
+                "version": config.get("version", "1.0.0"),
+                "api_endpoints": endpoints,
+                "usage": "访问 /api/status 查看服务健康状态；支持费曼教学(feynman)、对话(chat)、推理记录(reasoning-logs)等接口"
+            })
+        # 模型管理端口：重定向到 Admin 面板（模型管理页）
+        if homepage == "models":
+            return redirect("/admin")
+        # 终端端口：加载 lumiterm.html
+        html_path = _template_path("lumiterm.html")
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -130,7 +156,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/admin")
     def admin_page():
         """管理员管理面板"""
-        html_path = BASE_DIR / "remote" / "templates" / "admin.html"
+        html_path = _template_path("admin.html")
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -141,14 +167,14 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/learn")
     def learn_page():
         """学习页面：重定向到互动课堂"""
-        html_path = BASE_DIR / "remote" / "templates" / "classroom.html"
+        html_path = _template_path("classroom.html")
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
             response.headers["Content-Type"] = "text/html; charset=utf-8"
             return response
         # 回退到动画学习页面
-        html_path = BASE_DIR / "remote" / "templates" / "animation_learn.html"
+        html_path = _template_path("animation_learn.html")
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -159,7 +185,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/classroom")
     def classroom():
         """互动课堂页面（OpenMAIC 风格）"""
-        html_path = BASE_DIR / "remote" / "templates" / "classroom.html"
+        html_path = _template_path("classroom.html")
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -170,7 +196,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/test/video")
     def test_video_page():
         """视频播放诊断测试页面"""
-        html_path = BASE_DIR / "remote" / "templates" / "test_video.html"
+        html_path = _template_path("test_video.html")
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -181,7 +207,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
     @app.route("/chat")
     def chat_page():
         """终端聊天页面（高级模式）"""
-        html_path = BASE_DIR / "remote" / "templates" / "lumiterm.html"
+        html_path = _template_path("lumiterm.html")
         if html_path.exists():
             content = html_path.read_text(encoding="utf-8")
             response = app.make_response(content)
@@ -378,7 +404,8 @@ def _start_multi_port(host: str, ports: Dict[str, int], app: Flask):
     print(f"   REST API: http://{host}:{api_port}")
     print(f"   模型管理: http://{host}:{models_port}")
 
-    api_app = create_app()
+    api_app = create_app(homepage="api")
+    models_app = create_app(homepage="models")
 
     def run_app(flask_app, port, name):
         print(f"  [{name}] 启动端口 {port}...")
@@ -392,7 +419,7 @@ def _start_multi_port(host: str, ports: Dict[str, int], app: Flask):
     for flask_app, port, name in [
         (app, terminal_port, "Terminal"),
         (api_app, api_port, "API"),
-        (api_app, models_port, "Models")
+        (models_app, models_port, "Models")
     ]:
         t = threading.Thread(target=run_app, args=(flask_app, port, name),
                              daemon=True)

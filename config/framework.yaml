@@ -33,6 +33,7 @@ ollama:
   # 默认连接本地 Ollama；也可通过环境变量 OLLAMA_BASE_URL 覆盖远程地址
   base_url: "http://localhost:11434"
   default_model: "lumilearn-v2:latest"
+  feynman_model: "qwen2.5:7b"   # 费曼引导默认模型（上下文利用更强）
   timeout: 300
 
 models:

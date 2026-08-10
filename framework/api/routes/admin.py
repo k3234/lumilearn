@@ -215,6 +215,86 @@ def admin_get_learning_report(report_id):
 
 
 # ---------------------------------------------------------------------------
+# 推理过程日志
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/reasoning-logs", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_reasoning_logs():
+    """获取模型推理过程日志列表（可按学生/模型/主题/模式/日期筛选，分页）"""
+    user_id = request.args.get("user_id", type=int)
+    model = request.args.get("model") or None
+    topic = request.args.get("topic") or None
+    mode = request.args.get("mode") or None
+    session_id = request.args.get("session_id") or None
+    start_date = request.args.get("start_date") or None
+    end_date = request.args.get("end_date") or None
+    limit = min(int(request.args.get("limit", 20)), 200)
+    offset = max(int(request.args.get("offset", 0)), 0)
+    # 结束日期只传日期时默认补到当天 23:59:59，便于按天筛选
+    if end_date and len(end_date) <= 10:
+        end_date = end_date + " 23:59:59"
+    items = db.get_reasoning_logs(
+        user_id=user_id, model=model, topic=topic, mode=mode,
+        session_id=session_id, start_date=start_date, end_date=end_date,
+        limit=limit, offset=offset,
+    )
+    # 统计总数（与 get_reasoning_logs 相同的筛选条件，用于分页）
+    conds, params = [], []
+    if user_id is not None:
+        conds.append("user_id = ?")
+        params.append(user_id)
+    if model:
+        conds.append("model_used = ?")
+        params.append(model)
+    if topic:
+        conds.append("topic = ?")
+        params.append(topic)
+    if mode:
+        conds.append("mode = ?")
+        params.append(mode)
+    if session_id:
+        conds.append("session_id = ?")
+        params.append(session_id)
+    if start_date:
+        conds.append("created_at >= ?")
+        params.append(start_date)
+    if end_date:
+        conds.append("created_at <= ?")
+        params.append(end_date)
+    where = ("WHERE " + " AND ".join(conds)) if conds else ""
+    total = db._query_one(
+        f"SELECT COUNT(*) AS n FROM reasoning_logs {where}", tuple(params)
+    )["n"]
+    return jsonify({
+        "success": True,
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    })
+
+
+@admin_bp.route("/api/admin/reasoning-logs/<int:log_id>", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_get_reasoning_log(log_id):
+    """获取单条推理过程日志详情"""
+    log = db.get_reasoning_log_by_id(log_id)
+    if not log:
+        return jsonify({"error": "日志不存在"}), 404
+    return jsonify({"success": True, "log": log})
+
+
+@admin_bp.route("/api/admin/reasoning-logs/stats", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_reasoning_logs_stats():
+    """推理过程日志统计（days=0 表示不按时间过滤，取全部）"""
+    days = int(request.args.get("days", 7))
+    stats = db.get_reasoning_stats(days=days)
+    return jsonify({"success": True, "days": days, **stats})
+
+
+# ---------------------------------------------------------------------------
 # 模型管理
 # ---------------------------------------------------------------------------
 

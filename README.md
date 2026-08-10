@@ -26,6 +26,43 @@
 | 看 Jupyter 教程 | [notebooks/](notebooks/) |
 | 看研究规划 | [docs/research/](docs/research/) |
 
+## 🤖 Agent 智能体
+
+LumiLearn 内置一套可独立启停、统一生命周期的 Agent 框架（`framework/admin/agents.py`），并在 Admin 面板「Agent 管理」中可视化运行；另有一个面向完整学习闭环的 GOAI 教育智能体（`goai_agent.py`）。
+
+| Agent | ID | 能力 |
+|:---|:---|:---|
+| **费曼教学 Agent** | `feynman_teacher` | 基于费曼五步法讲解知识点；传入对话历史时自动切换为**交互式单步引导**（现象引入 → 认知冲突 → 思维模型 → 自主推导 → 费曼测试），上下文连贯、逐步推进 |
+| **输出检测 Agent** | `output_detector` | 检测学生学习输出质量（简洁/准确/比喻/完整/术语五维评分），给出改进建议 |
+| **自适应学习 Agent** | `adaptive_path` | 根据学生学习进度与掌握度推荐个性化学习路径 |
+| **对话助手 Agent** | `chat_assistant` | 通用多轮对话，自动路由到当前端口配置的模型 |
+| **GOAI 教育智能体** | `goai_agent.py` | 任务理解 → 流程编排（费曼五步） → 多模型工具调用 → 完整学习报告（掌握度 + 薄弱点 + 建议），推理过程写入本地推理记录库，供管理员/教师/模型自查 |
+
+所有 Agent 支持 `start / stop / status / run` 统一生命周期，Agent 运行状态持久化到数据库；推理过程（费曼每步、GOAI 学习）自动写入 `reasoning_logs` 推理记录库，可通过 Admin「推理记录」、教师端「推理记录」、API `/api/reasoning-logs` 三方查看。
+
+## 🧠 模型与模型容器
+
+LumiLearn 支持**本地模型容器**与**云端 API** 两类推理来源，其中 **Ollama 为默认推荐容器**。全部接入模型可通过 Admin 面板「模型管理」集中配置，并按端口指定各服务使用的模型。
+
+| 来源 | 说明 | 模型发现 |
+|:---|:---|:---|
+| **Ollama（推荐）** | 本地/远程 Ollama 服务，默认 `http://localhost:11434` | 自动调用 `/api/tags` 发现容器内**全部模型** |
+| **其他本地容器** | OpenAI 兼容接口：vLLM / LM Studio / LocalAI / llama.cpp server 等 | 自动调用 `/models` 发现容器内**全部模型** |
+| **云端 API** | 豆包 / 智谱 / Kimi / MiniMax / OpenAI / DeepSeek 等（OpenAI 兼容） | 配置时登记模型列表 |
+
+**模型接入**：运行 `deploy/setup.py` 交互式引导（探测并列出容器内全部模型供选择），或在 Admin 面板「模型管理」中手动添加。
+
+**主要模型资产**：
+
+| 模型 | 来源 | 用途 |
+|:---|:---|:---|
+| `lumilearn-v2:latest` | 自研 LoRA 微调（Qwen2.5-1.5B，Q8_0 量化） | 默认对话/学习模型，CPU 推理 26+ tok/s |
+| `qwen2.5:7b` | Ollama 官方 | 费曼引导默认模型（上下文利用更强） |
+| 微调 Transformer（8M） | 从零训练 | 课堂演示、教学编排 |
+| 云端模型（可选） | 各厂商 API | 高质量生成场景 |
+
+**端口模型配置**：每个端口（终端/API/模型管理/GOAI Web/教师端）可独立指定使用哪个提供商的哪个模型，配置实时生效，无需重启。
+
 ## 文档索引
 
 | 文档 | 说明 |
@@ -118,8 +155,9 @@ bash deploy/setup.sh
 
 | 方式 | 说明 |
 |:---|:---|
-| **本地 Ollama**（默认） | 地址保持 `http://localhost:11434`，脚本会校验连通并列出本机模型供选择 |
+| **本地 Ollama**（默认推荐） | 地址保持 `http://localhost:11434`，脚本会校验连通并列出本机全部模型供选择 |
 | **远程 Ollama** | 填写你的远程服务器 Ollama 地址，脚本会校验连通性并列出可用模型 |
+| **其他本地容器** | vLLM / LM Studio / LocalAI / llama.cpp 等 OpenAI 兼容容器，填写地址后自动探测 `/models` 并注册其全部模型 |
 | **云端 API** | 豆包 / 智谱 / Kimi / MiniMax 填入 API Key 即可，之后可在 Admin 面板「端口模型配置」中选用 |
 
 API Key 仅写入本仓库 `.env`（已被 `.gitignore` 忽略）。请勿将真实 IP、密码、API Key 提交到公开仓库。
@@ -363,4 +401,4 @@ LumiLearn 的核心愿景是让**老旧设备也能运行 AI 教学演示**：
 
 ---
 
-**最后更新**：2026-08-10
+**最后更新**：2026-08-11

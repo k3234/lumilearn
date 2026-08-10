@@ -1,5 +1,27 @@
 # LumiLearn 云端大模型提供商配置
 # 此文件由 provider_service.py 管理，也可手动编辑
+#
+# 除云端 API 外，也支持本地 OpenAI 兼容模型容器（vLLM / LM Studio / LocalAI /
+# llama.cpp server 等），把 base_url 指向本地地址即可，例如：
+#   vllm:
+#     name: vLLM (本地)
+#     base_url: http://localhost:8000/v1
+#     api_key: ""
+#     enabled: true
+#     models:
+#       - id: Qwen2.5-7B-Instruct
+#         name: Qwen2.5-7B-Instruct
+#   lmstudio:
+#     name: LM Studio (本地)
+#     base_url: http://localhost:1234/v1
+#     api_key: ""
+#     enabled: true
+#     models:
+#       - id: local-model
+#         name: local-model
+#
+# 运行 deploy/setup.py 可交互式探测并自动注册本地容器及其全部模型；
+# Ollama 仍为默认推荐容器（通过 OLLAMA_BASE_URL 连接，/api/tags 自动发现模型）。
 
 providers: {}
 # 示例配置（取消注释并填入API Key即可使用）:

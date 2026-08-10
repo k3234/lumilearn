@@ -111,7 +111,24 @@ chmod +x deploy/setup.sh
 - 脚本会探测该地址的 `/api/tags` 校验连通性并列出可用模型
 - 若探测失败，会提示跳过，可稍后手动修改 `.env` 中的 `OLLAMA_BASE_URL`
 
-### 5.3 云端大模型 API（OpenAI 兼容）
+### 5.3 其他本地模型容器（可选，OpenAI 兼容）
+
+支持 **vLLM / LM Studio / LocalAI / llama.cpp server** 等提供 OpenAI 兼容接口的本地容器。
+运行 `deploy/setup.py` 后输入容器地址（如 `http://localhost:8000/v1`），脚本会自动调用 `/models`
+发现容器内**全部模型**并注册到 `config/providers.yaml`；之后可在 Admin 面板「端口模型配置」中为任意端口选用。
+
+常用容器默认地址：
+
+| 容器 | 默认地址 |
+| --- | --- |
+| vLLM | `http://localhost:8000/v1` |
+| LM Studio | `http://localhost:1234/v1` |
+| LocalAI | `http://localhost:8080/v1` |
+| llama.cpp server | `http://localhost:8080/v1` |
+
+> 本地容器不需要 API Key（系统已兼容无 Key 场景）；`Ollama` 仍是默认推荐容器。
+
+### 5.4 云端大模型 API（OpenAI 兼容）
 
 脚本可选配置以下提供者（默认跳过，输入 `y` 后粘贴 API Key）：
 
@@ -124,7 +141,7 @@ chmod +x deploy/setup.sh
 
 API Key 仅写入本仓库 `.env`（已被 `.gitignore` 忽略），不会硬编码在代码或配置模板中。
 
-### 5.4 .env 说明
+### 5.5 .env 说明
 
 - `.env` 不存在时，脚本会从 `.env.example` 复制生成
 - 写入采用"更新/追加"方式：只更新 `OLLAMA_BASE_URL`、`OLLAMA_URL`、`OLLAMA_MODEL` 与填写的 API Key，其他行与注释原样保留

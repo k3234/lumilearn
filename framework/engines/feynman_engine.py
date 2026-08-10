@@ -472,13 +472,22 @@ class FeynmanEngine:
         ]
         step_key, step_name = steps_config[step_order - 1]
 
+        # 提取学生最近一次回答（最后一条 role=user 消息），完整保留并单独展示
+        last_student_answer = ""
         # 构建对话上下文（师生轮流记录，供模型参考学生已说过什么）
         dialogue_str = ""
         if dialogue:
+            user_indices = [i for i, m in enumerate(dialogue) if m.get("role") == "user"]
+            if user_indices:
+                last_student_answer = dialogue[user_indices[-1]].get("content", "").strip()
             parts = []
-            for m in dialogue:
+            for i, m in enumerate(dialogue):
+                if i == user_indices[-1]:
+                    # 最近一条学生回答已单独展示在 last_student_answer，此处不重复
+                    continue
                 if m.get("role") == "assistant":
-                    parts.append(f"引导者（你）：{m.get('content', '')[:300]}")
+                    # 引导者内容截断放宽到 600 字（上下文利用更强）
+                    parts.append(f"引导者（你）：{m.get('content', '')[:600]}")
                 else:
                     parts.append(f"学生：{m.get('content', '')[:300]}")
             dialogue_str = "此前对话：\n" + "\n\n".join(parts) + "\n\n"
@@ -497,11 +506,17 @@ class FeynmanEngine:
         step_descriptions = {
             "phenomenon": "用生活中的具体场景引入概念，让学生觉得'哦，原来这就是...'，不要直接说出答案或概念名称",
             "conflict": "抛出一个看似简单但让学生愣住的问题，制造认知冲突。让学生意识到自己原来理解得不对或不完整",
-            "model": "给学生一个脑中能操作的画面或比喻。比如'就像...一样'。让抽象概念变得可触摸",
+            "model": "给学生一个脑中能操作的画面或比喻，让抽象概念变得可触摸。输出必须包含三个要素：(1)一个具体比喻，用'就像...一样'句式；(2)比喻的每个部分如何对应概念中的要素（逐项对照说明）；(3)以引导性问题结尾。输出必须至少80字，包含具体比喻与对应关系说明，禁止只输出一句话",
             "derive": "引导学生自主分析推导。先指出分析方向，再给出一个关键提示或线索，用追问方式让学生自己迈出下一步。不直接给答案，要像教练一样给方向、给线索、给鼓励",
             "test": "让学生用30秒讲给一个完全不懂的人听。要求：必须用最简单的话，最少的术语",
         }
         step_desc = step_descriptions.get(step_key, "")
+
+        # 各步骤禁止重复第2步已讲内容的提示（防止第4/5步与第2步内容雷同，从新角度推进）
+        step_forbidden_hints = {
+            "derive": "【禁止】重复第2步认知冲突中已讲过的内容（如变化率、速度是路程除以时间等通用说法），必须从新角度推进，聚焦本步的推导引导任务",
+            "test": "【禁止】重复第2步认知冲突中已讲过的内容（如变化率、速度是路程除以时间等通用说法），本步聚焦新任务：让学生用最简单的话讲给完全不懂的人听",
+        }
 
         if step_order == 1:
             # 第一步没有前序对话，直接引导
@@ -524,32 +539,58 @@ class FeynmanEngine:
 
 请直接输出引导内容："""
         else:
+            # 注入本步禁止重复的提示（第4/5步），防止与第2步内容雷同
+            forbidden_hint = step_forbidden_hints.get(step_key, "")
+            # 第3步思维模型：在 prompt 中强制三要素结构与最少字数
+            model_extra = ""
+            if step_key == "model":
+                model_extra = ("输出必须包含三个要素：(1)一个具体比喻，用'就像...一样'句式；"
+                               "(2)比喻的每个部分如何对应概念中的要素（逐项对照说明）；"
+                               "(3)以引导性问题结尾。输出必须至少80字，包含具体比喻与对应关系说明，禁止只输出一句话")
+            # 学生最近一次回答的回应要求（无学生回答时不注入）
+            answer_hint = ""
+            if last_student_answer:
+                answer_hint = (f"【重要】先具体回应学生刚才的回答「{last_student_answer}」"
+                               "——肯定正确的部分或指出需要修正的地方（一两句话），再推进本步教学。"
+                               "禁止无视学生回答重新从头讲解。")
+
             prompt = f"""【费曼教学法 - {step_name}】（第{step_order}/5步）
 
 学生水平：{level_desc}
 教学主题：{topic}
-{step_desc}
+任务：{step_desc}
+
+参考引导语：{template}
 
 {dialogue_str}
-请基于学生刚刚的回答继续引导。
-
+{answer_hint}
+{forbidden_hint}
 要求：
-1. 先简短回应学生刚才的回答（一两句，肯定正确的部分或指出需修正的），再推进本步教学
-2. 直接对"你"（学生）本人说话
+1. 直接对"你"（学生）本人说话
+2. 语言极度简单口语化，用具体生活例子
 3. 【禁止】输出"老师：""学生："等角色对话剧本，禁止自导自演完整课堂
 4. 【禁止】重复前几步已讲过的内容，不要从头重新讲解
-5. 结束时必须用一句话提出一个引导性问题，把思考权交给学生，等待学生回答
+5. 最后一句必须以问号（？）结尾的引导性问题，把思考权交给学生，等待学生回答
 6. 控制在200字以内
-
+{model_extra}
 请直接输出引导内容："""
         response = call_ollama(self.model_name, prompt, timeout=self.timeout)
         if not response:
             response = template
+        # 轻量后处理：剥离模型偶尔泄漏的 prompt 尾部元文本（如"（请直接输出引导内容）"）
+        response = response.strip()
+        for _tail in ("（请直接输出引导内容）", "（总字数：", "【结束语】"):
+            _idx = response.rfind(_tail)
+            if _idx > 0:
+                response = response[:_idx].rstrip()
+        # 剥离结尾的括号问号"（？）"等强调符号，确保以问号收尾
+        if response.endswith("（？）") or response.endswith("(?)"):
+            response = response[:-3].rstrip()
 
         return {
             "step": step_order,
             "step_name": step_name,
-            "content": response.strip(),
+            "content": response,
             "is_last": (step_order == 5),
             "model_used": self.model_name,
         }

@@ -591,6 +591,28 @@ CREATE TABLE IF NOT EXISTS system_logs (
 CREATE INDEX IF NOT EXISTS idx_logs_level ON system_logs(level);
 CREATE INDEX IF NOT EXISTS idx_logs_created ON system_logs(created_at);
 
+-- 模型推理过程记录库：供管理员检查、教师查看、模型自查使用
+CREATE TABLE IF NOT EXISTS reasoning_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER DEFAULT 0,            -- 学生用户 id（0 表示未登录/匿名）
+    session_id TEXT DEFAULT '',           -- 会话标识
+    mode TEXT DEFAULT 'feynman',          -- feynman / chat / goai
+    topic TEXT DEFAULT '',                -- 学习主题
+    step_order INTEGER DEFAULT 0,         -- 费曼步骤序号 1-5（非费曼为 0）
+    step_name TEXT DEFAULT '',            -- 费曼步骤名
+    model_used TEXT DEFAULT '',           -- 使用的模型
+    prompt TEXT DEFAULT '',               -- 输入 prompt（完整）
+    input_context TEXT DEFAULT '',        -- 前序对话摘要
+    output TEXT DEFAULT '',               -- 模型输出
+    latency_ms INTEGER DEFAULT 0,         -- 推理耗时毫秒
+    status TEXT DEFAULT 'success',        -- success / error
+    created_at TEXT DEFAULT (datetime('now', 'localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_reasoning_user ON reasoning_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_reasoning_session ON reasoning_logs(session_id);
+CREATE INDEX IF NOT EXISTS idx_reasoning_topic ON reasoning_logs(topic);
+CREATE INDEX IF NOT EXISTS idx_reasoning_created ON reasoning_logs(created_at);
+
 CREATE TABLE IF NOT EXISTS api_keys (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     key_name   TEXT NOT NULL,
@@ -3351,6 +3373,163 @@ class DatabaseManager:
             (f'-{older_than_days} days',)
         )
         return cur.rowcount
+
+    # ============================================================
+    # Z3.5 模型推理过程记录（reasoning_logs）
+    # ============================================================
+
+    def add_reasoning_log(self, user_id=0, session_id="", mode="feynman", topic="",
+                          step_order=0, step_name="", model_used="", prompt="",
+                          input_context="", output="", latency_ms=0, status="success") -> int:
+        """
+        记录一条模型推理过程日志
+
+        参数：
+            user_id:       学生用户 id（0 表示未登录/匿名）
+            session_id:    会话标识
+            mode:          模式（feynman / chat / goai）
+            topic:         学习主题
+            step_order:    费曼步骤序号 1-5（非费曼为 0）
+            step_name:     费曼步骤名
+            model_used:    使用的模型
+            prompt:        输入 prompt（完整）
+            input_context: 前序对话摘要
+            output:        模型输出
+            latency_ms:    推理耗时毫秒
+            status:        success / error
+
+        返回：
+            新记录 id
+        """
+        cur = self._execute(
+            """INSERT INTO reasoning_logs
+               (user_id, session_id, mode, topic, step_order, step_name,
+                model_used, prompt, input_context, output, latency_ms, status)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (user_id, session_id, mode, topic, step_order, step_name,
+             model_used, prompt, input_context, output, latency_ms, status)
+        )
+        return cur.lastrowid
+
+    def get_reasoning_logs(self, user_id=None, model=None, topic=None, mode=None,
+                           session_id=None, start_date=None, end_date=None,
+                           limit=100, offset=0) -> List[Dict]:
+        """
+        多条件筛选推理过程日志（条件为空则不参与过滤），按时间倒序
+
+        参数：
+            user_id:     按用户 id 筛选
+            model:       按模型名筛选
+            topic:       按学习主题筛选
+            mode:        按模式筛选（feynman / chat / goai）
+            session_id:  按会话标识筛选
+            start_date:  起始时间（含），如 '2026-01-01 00:00:00'
+            end_date:    结束时间（含）
+            limit:       返回条数上限
+            offset:      偏移量（分页）
+
+        返回：
+            字典列表，含 student_name（LEFT JOIN users 取学生姓名）
+        """
+        conds, params = [], []
+        if user_id is not None:
+            conds.append("r.user_id = ?")
+            params.append(user_id)
+        if model:
+            conds.append("r.model_used = ?")
+            params.append(model)
+        if topic:
+            conds.append("r.topic = ?")
+            params.append(topic)
+        if mode:
+            conds.append("r.mode = ?")
+            params.append(mode)
+        if session_id:
+            conds.append("r.session_id = ?")
+            params.append(session_id)
+        if start_date:
+            conds.append("r.created_at >= ?")
+            params.append(start_date)
+        if end_date:
+            conds.append("r.created_at <= ?")
+            params.append(end_date)
+        where = ("WHERE " + " AND ".join(conds)) if conds else ""
+        params.extend([limit, offset])
+        return self._query(
+            f"""SELECT r.*, COALESCE(u.name, '') AS student_name
+                FROM reasoning_logs r
+                LEFT JOIN users u ON r.user_id = u.id
+                {where}
+                ORDER BY r.created_at DESC, r.id DESC
+                LIMIT ? OFFSET ?""",
+            tuple(params)
+        )
+
+    def get_reasoning_log_by_id(self, log_id: int) -> Optional[Dict]:
+        """按 id 查询推理过程日志详情（含学生姓名）"""
+        return self._query_one(
+            """SELECT r.*, COALESCE(u.name, '') AS student_name
+               FROM reasoning_logs r
+               LEFT JOIN users u ON r.user_id = u.id
+               WHERE r.id = ?""",
+            (log_id,)
+        )
+
+    def get_reasoning_stats(self, days: int = 7) -> Dict:
+        """
+        统计推理过程日志
+
+        参数：
+            days: 最近天数过滤（0 表示不过滤）
+
+        返回：
+            {"total": 总数, "by_model": {模型名: 次数}, "by_step": {步骤名: 次数},
+             "avg_latency_ms": 平均耗时, "error_count": 失败数}
+        """
+        conds, params = [], []
+        if days and days > 0:
+            conds.append("created_at >= datetime('now', ?)")
+            params.append(f'-{days} days')
+        where = ("WHERE " + " AND ".join(conds)) if conds else ""
+
+        def _cond_sql(cond: str) -> str:
+            """在现有时间过滤基础上追加一个 WHERE/AND 条件"""
+            return where + " AND " + cond if where else "WHERE " + cond
+
+        total = self._query_one(
+            f"SELECT COUNT(*) AS n FROM reasoning_logs {where}", tuple(params)
+        )["n"]
+        by_model = {}
+        no_model_cond = "model_used != ''"
+        for row in self._query(
+            f"SELECT model_used AS k, COUNT(*) AS n FROM reasoning_logs "
+            f"{_cond_sql(no_model_cond)} GROUP BY model_used ORDER BY n DESC",
+            tuple(params)
+        ):
+            by_model[row["k"]] = row["n"]
+        by_step = {}
+        no_step_cond = "step_name != ''"
+        for row in self._query(
+            f"SELECT step_name AS k, COUNT(*) AS n FROM reasoning_logs "
+            f"{_cond_sql(no_step_cond)} GROUP BY step_name ORDER BY n DESC",
+            tuple(params)
+        ):
+            by_step[row["k"]] = row["n"]
+        avg_latency = self._query_one(
+            f"SELECT AVG(latency_ms) AS v FROM reasoning_logs {where}", tuple(params)
+        )["v"] or 0
+        err_cond = "status = 'error'"
+        error_count = self._query_one(
+            f"SELECT COUNT(*) AS n FROM reasoning_logs {_cond_sql(err_cond)}",
+            tuple(params)
+        )["n"]
+        return {
+            "total": total,
+            "by_model": by_model,
+            "by_step": by_step,
+            "avg_latency_ms": round(avg_latency, 1) if avg_latency else 0,
+            "error_count": error_count,
+        }
 
     # ============================================================
     # Z4. API 密钥管理
