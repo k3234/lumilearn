@@ -36,8 +36,9 @@ class ModelRouter:
             "ollama": {
                 "base_url": "http://localhost:11434",
                 "models": [
-                    {"id": "qwen2.5:7b", "weight": 1.0, "type": "chat"},
-                    {"id": "deepseek-r1:1.5b", "weight": 0.8, "type": "reasoning"},
+                    {"id": "lumilearn-v2:latest", "weight": 3.0, "type": "chat"},
+                    {"id": "qwen2.5:7b", "weight": 0.5, "type": "chat"},
+                    {"id": "deepseek-r1:1.5b", "weight": 0.5, "type": "reasoning"},
                 ]
             }
         }
@@ -56,7 +57,7 @@ class ModelRouter:
             )
         if request.mode == "feynman":
             return RouteResult(
-                model_name="qwen2.5:7b",
+                model_name="lumilearn-v2:latest",
                 provider="ollama",
                 base_url=self._models.get("ollama", {}).get("base_url", ""),
                 reason="费曼教学默认模型"
@@ -95,7 +96,7 @@ class ModelRouter:
                 reason="默认聊天模型"
             )
         return RouteResult(
-            model_name="qwen2.5:7b",
+            model_name="lumilearn-v2:latest",
             provider="ollama",
             base_url="http://localhost:11434",
             reason="兜底默认"

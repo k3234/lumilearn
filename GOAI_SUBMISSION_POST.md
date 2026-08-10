@@ -4,7 +4,7 @@
 > **项目名称**：LumiLearn AI 教官 — 教育智能体  
 > **项目地址**：https://github.com/your-username/lumilearn  
 > **Demo地址**：本地运行（见下方说明）  
-> **团队**：LumiLearn (LumiLearn，高一学生)
+> **团队**：LumiLearn（一名高中生）
 
 ---
 
@@ -198,7 +198,7 @@ $ python goai_agent.py "我想理解函数的单调性"
 
 ## 关于我
 
-LumiLearn，一名高一学生。LumiLearn 是我独立开发的教育AI项目，始于2025年。
+一名高中生。LumiLearn 是我独立开发的教育AI项目，始于2025年。
 
 **我相信**：未来的教育不是"一个老师教40个学生"，而是"40个AI智能体陪1个学生"。LumiLearn正在朝这个方向努力。
 

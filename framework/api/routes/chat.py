@@ -14,14 +14,53 @@ import requests
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 
 from framework.services.chat_service import get_chat_service
-from framework.services.provider_service import ProviderService
+from framework.services.provider_service import get_provider_service, ProviderService
 
 logger = logging.getLogger("lumilearn.routes.chat")
 
 chat_bp = Blueprint("chat", __name__)
-provider_service = ProviderService()
 
 CLOUD_TIMEOUT = 300
+
+
+@chat_bp.route("/api/port-config", methods=["GET", "OPTIONS"])
+def port_config():
+    """获取当前请求端口配置的模型（供前端终端显示/默认选择）"""
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+    provider, model = _resolve_port_config()
+    return jsonify({
+        "success": True,
+        "provider": provider,
+        "model": model,
+    })
+
+
+def _get_provider_service():
+    """获取 ProviderService 单例（与 Admin 面板共享配置，热更新）"""
+    return get_provider_service()
+
+
+def _resolve_port_config():
+    """
+    根据请求来源端口解析该端口配置的 provider/model。
+    返回 (provider, model) 或 (None, None)。
+    """
+    try:
+        from flask import request as req
+        host = req.host  # 形如 localhost:18080
+        port = host.rsplit(":", 1)[-1]
+        if not port.isdigit():
+            return None, None
+        port_int = int(port)
+        ps = _get_provider_service()
+        port_map = ps.get_port_model_map()
+        for key, cfg in port_map.items():
+            if int(cfg.get("port", 0)) == port_int:
+                return cfg.get("provider", "ollama"), cfg.get("model", "")
+        return None, None
+    except Exception:
+        return None, None
 
 
 def _resolve_cloud_model(model: str):
@@ -29,7 +68,8 @@ def _resolve_cloud_model(model: str):
     检查 model 是否属于云端提供商，如果是则返回 (provider_key, api_key, base_url)。
     如果 model 是本地模型，返回 None。
     """
-    providers = provider_service._load().get("providers", {})
+    ps = _get_provider_service()
+    providers = ps._providers
     for key, cfg in providers.items():
         if not cfg.get("enabled", True):
             continue
@@ -167,6 +207,13 @@ def chat():
 
     if not messages:
         return jsonify({"error": "缺少 messages 字段"}), 400
+
+    # 端口模型配置解析：未指定 model 时，根据请求端口自动选择该端口配置的模型
+    if not model:
+        port_provider, port_model = _resolve_port_config()
+        if port_model:
+            model = port_model
+            logger.info(f"端口配置自动选择模型: {port_provider}/{port_model}")
 
     # 多智能体角色 System Prompt
     ROLE_PROMPTS = {

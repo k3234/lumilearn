@@ -18,7 +18,7 @@ from framework.engines.feynman_engine import FeynmanEngine
 
 logger = logging.getLogger("lumilearn.chat_service")
 
-DEFAULT_MODEL = "qwen2.5:7b"
+DEFAULT_MODEL = "lumilearn-v2:latest"
 GATEWAY_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 TIMEOUT = 300
 

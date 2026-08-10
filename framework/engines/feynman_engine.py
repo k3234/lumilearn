@@ -94,7 +94,7 @@ class FeynmanEngine:
     5. 30秒测试：必须能用极简语言讲给完全不懂的人听
     """
 
-    def __init__(self, model_name: str = "qwen2.5:7b", timeout: int = 60):
+    def __init__(self, model_name: str = "lumilearn-v2:latest", timeout: int = 60):
         """
         初始化费曼引擎
         

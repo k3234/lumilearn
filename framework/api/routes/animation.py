@@ -11,6 +11,14 @@ logger = logging.getLogger("lumilearn.routes.animation")
 animation_bp = Blueprint("animation", __name__)
 
 
+@animation_bp.route("/api/animation/health", methods=["GET", "OPTIONS"])
+def animation_health():
+    """动画服务健康检查（Manim 未部署时返回 unavailable，前端走 canvas 占位）"""
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+    return jsonify({"status": "unavailable", "message": "Manim 后端未部署，使用画布占位动画"})
+
+
 @animation_bp.route("/api/animation/generate", methods=["POST", "OPTIONS"])
 def generate_animation():
     """

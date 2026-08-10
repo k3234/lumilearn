@@ -1029,16 +1029,11 @@ body.keyboard-open .chat {
 <span class="model-badge" id="modelBadge">v5</span>
 </div>
 <div class="header-right">
-<select id="modelSelect" onchange="switchModel()">
-<option value="lumilearn-v5:real">lumilearn-v5:real</option>
-<option value="qwen2.5:7b">qwen2.5:7b</option>
-<option value="deepseek-r1:1.5b">deepseek-r1:1.5b</option>
-</select>
 <div class="feynman-toggle" id="feynmanToggle" onclick="toggleFeynman()" title="费曼引导模式：不直接给答案，用提问引导学生思考">
 <div class="feynman-switch" id="feynmanSwitch"></div>
 <span>费曼引导</span>
 </div>
-<button id="settings-btn" title="设置" style="background:none;border:none;color:#a6adc8;cursor:pointer;font-size:18px;padding:4px 8px;" onclick="openSettings()">⚙</button>
+<a href="/admin" target="_blank" title="管理面板（模型配置、用户管理等）" style="background:none;border:none;color:#a6adc8;cursor:pointer;font-size:18px;padding:4px 8px;text-decoration:none;display:inline-flex;align-items:center;">⚙</a>
 <div class="status-dot" id="statusDot"></div>
 <span class="latency" id="latencyDisplay">--</span>
 </div>
@@ -1049,26 +1044,7 @@ body.keyboard-open .chat {
 <div class="resources-list" id="resourcesList"></div>
 </div>
 
-<!-- 设置面板 Modal -->
-<div id="settings-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
-<div style="background:#1e1e2e;border-radius:12px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto;padding:24px;color:#cdd6f4;border:1px solid #313244;">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-<h3 style="margin:0;font-size:18px;">设置</h3>
-<button onclick="closeSettings()" style="background:none;border:none;color:#a6adc8;cursor:pointer;font-size:20px;">✕</button>
-</div>
-<div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid #313244;">
-<button class="settings-tab active" onclick="switchSettingsTab('providers')" style="background:none;border:none;color:#cdd6f4;padding:8px 16px;cursor:pointer;border-bottom:2px solid #89b4fa;">API Key 管理</button>
-</div>
-<div id="tab-providers">
-<div id="provider-list" style="margin-bottom:12px;"></div>
-<div style="display:flex;gap:8px;">
-<select id="provider-select" style="flex:1;background:#313244;color:#cdd6f4;border:1px solid #45475a;padding:8px;border-radius:6px;"></select>
-<input id="api-key-input" type="password" placeholder="sk-xxx..." style="flex:2;background:#313244;color:#cdd6f4;border:1px solid #45475a;padding:8px;border-radius:6px;">
-<button onclick="addProviderKey()" style="background:#89b4fa;color:#1e1e2e;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:bold;">保存</button>
-</div>
-</div>
-</div>
-</div>
+
 
 <div class="chat" id="chatArea">
 <div class="welcome">
@@ -1184,8 +1160,19 @@ const brandDot = document.getElementById('brandDot');
 const statusDot = document.getElementById('statusDot');
 const latencyDisplay = document.getElementById('latencyDisplay');
 const modelBadge = document.getElementById('modelBadge');
-const modelSelect = document.getElementById('modelSelect');
 
+// 读取当前端口配置的模型（Admin 面板 → 端口模型配置）
+(function loadPortModelConfig() {
+  fetch('/api/port-config')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data && data.success && data.model) {
+        currentModel = data.model;
+        if (modelBadge) modelBadge.textContent = data.provider === 'ollama' ? '本地' : '云端';
+      }
+    })
+    .catch(function() { /* 保持默认 */ });
+})();
 function handleKey(e) {
 if (e.key === 'Enter' && !e.shiftKey) {
 e.preventDefault();
@@ -1212,39 +1199,9 @@ e.preventDefault();
 fetchResources();
 }
 if (e.key === 't' && e.ctrlKey) {
-e.preventDefault();
-toggleFeynman();
-}
-}
-
-async function switchModel() {
-var newModel = modelSelect.value;
-var previousModel = currentModel;
-
-currentModel = newModel;
-var short = currentModel.includes('v5') ? 'v5' :
-currentModel.includes('qwen') ? 'qwen' :
-currentModel.includes('deepseek') ? 'r1' : '--';
-modelBadge.textContent = short;
-if (short === 'v5') modelBadge.style.color = '#d97757';
-else if (short === 'qwen') modelBadge.style.color = '#6a9bcc';
-else modelBadge.style.color = '#788c5d';
-
-if (previousModel !== newModel && previousModel) {
-try {
-var resp = await fetch('/api/models/switch', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ model: newModel })
-});
-var data = await resp.json();
-if (data.success) {
-console.log('模型已切换: ' + data.previous_model + ' → ' + data.current_model);
-}
-} catch(e) {
-console.warn('模型切换API调用失败（框架兼容模式）: ' + e.message);
-}
-}
+  e.preventDefault();
+  toggleFeynman();
+  }
 }
 
 function toggleFeynman() {
@@ -2421,117 +2378,6 @@ renderChart(c, config);
 } catch(e) {
 c.innerHTML = '<div class="chart-fallback">[图表数据解析失败]</div>';
 }
-}
-}
-
-/* ═══════════════════════════════════════
-SETTINGS · API Key 管理面板
-═══════════════════════════════════════ */
-function openSettings() {
-document.getElementById('settings-modal').style.display = 'flex';
-fetchProviders();
-}
-
-function closeSettings() {
-document.getElementById('settings-modal').style.display = 'none';
-}
-
-function switchSettingsTab(tab) {
-var tabs = document.querySelectorAll('.settings-tab');
-for (var i = 0; i < tabs.length; i++) {
-tabs[i].style.borderBottom = 'none';
-tabs[i].classList.remove('active');
-}
-event.target.style.borderBottom = '2px solid #89b4fa';
-event.target.classList.add('active');
-}
-
-async function fetchProviders() {
-try {
-var resp = await fetch('/api/providers');
-var data = await resp.json();
-var list = document.getElementById('provider-list');
-var presets = await (await fetch('/api/providers/presets')).json();
-var sel = document.getElementById('provider-select');
-sel.innerHTML = '';
-for (var i = 0; i < presets.presets.length; i++) {
-var p = presets.presets[i];
-sel.innerHTML += '<option value="' + p.id + '">' + p.name + '</option>';
-}
-var providers = data.providers || [];
-var html = '';
-for (var j = 0; j < providers.length; j++) {
-var prov = providers[j];
-html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#313244;border-radius:6px;margin-bottom:4px;">' +
-'<span><strong>' + prov.name + '</strong> <code style="color:#a6adc8;">' + prov.masked_key + '</code></span>' +
-'<button onclick="deleteProviderKey(\'' + prov.id + '\')" style="background:#f38ba8;color:#1e1e2e;border:none;padding:4px 8px;border-radius:4px;cursor:pointer;">删除</button>' +
-'</div>';
-}
-if (!html) html = '<div style="color:#a6adc8;font-size:13px;padding:8px 0;">暂无已保存的 API Key</div>';
-list.innerHTML = html;
-updateModelList();
-} catch(e) {
-console.error('fetchProviders error:', e);
-var list = document.getElementById('provider-list');
-list.innerHTML = '<div style="color:#f38ba8;font-size:13px;padding:8px 0;">加载失败: ' + e.message + '</div>';
-}
-}
-
-async function addProviderKey() {
-var provider = document.getElementById('provider-select').value;
-var apiKey = document.getElementById('api-key-input').value.trim();
-if (!apiKey) return alert('请输入 API Key');
-try {
-var resp = await fetch('/api/providers/keys', {
-method: 'POST',
-headers: { 'Content-Type': 'application/json' },
-body: JSON.stringify({ provider: provider, api_key: apiKey })
-});
-var data = await resp.json();
-if (data.error) { alert(data.error); return; }
-document.getElementById('api-key-input').value = '';
-fetchProviders();
-} catch(e) {
-alert('保存失败: ' + e.message);
-}
-}
-
-async function deleteProviderKey(provider) {
-if (!confirm('确定删除 ' + provider + ' 的 API Key？')) return;
-try {
-await fetch('/api/providers/keys/' + provider, { method: 'DELETE' });
-fetchProviders();
-} catch(e) {
-alert('删除失败: ' + e.message);
-}
-}
-
-async function updateModelList() {
-try {
-var resp = await fetch('/api/providers');
-var data = await resp.json();
-var cloudModels = data.cloud_models || [];
-var sel = document.getElementById('modelSelect');
-// 保留本地模型
-var localModels = [
-{ value: 'lumilearn-v5:real', text: 'lumilearn-v5:real' },
-{ value: 'qwen2.5:7b', text: 'qwen2.5:7b' },
-{ value: 'deepseek-r1:1.5b', text: 'deepseek-r1:1.5b' }
-];
-var html = '';
-for (var i = 0; i < localModels.length; i++) {
-html += '<option value="' + localModels[i].value + '">' + localModels[i].text + '</option>';
-}
-if (cloudModels.length > 0) {
-html += '<optgroup label="云端模型">';
-for (var j = 0; j < cloudModels.length; j++) {
-html += '<option value="' + cloudModels[j].value + '">' + cloudModels[j].text + '</option>';
-}
-html += '</optgroup>';
-}
-sel.innerHTML = html;
-} catch(e) {
-console.warn('updateModelList error:', e);
 }
 }
 

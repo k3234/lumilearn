@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================
-# LumiLearn 天虹主机部署说明
+# LumiLearn 服务器部署说明
 # ============================================================
-# 天虹主机: 192.168.2.xx (Ubuntu, 用户 kai)
+# 服务器: <server-ip> (Ubuntu, 用户 <username>)
 #
 # 已部署服务 (systemd user 服务，开机自启):
 #   11434  Ollama (lumilearn-v2:latest 主模型, qwen2.5:7b 备用)
@@ -18,12 +18,12 @@
 #   journalctl --user -u lumilearn-api -f
 #
 # 访问入口:
-#   终端:   http://192.168.2.xx:18080/
-#   课堂:   http://192.168.2.xx:18080/classroom
-#   聊天:   http://192.168.2.xx:18080/chat
-#   管理:   http://192.168.2.xx:18080/admin  (admin / admin123)
-#   API:    http://192.168.2.xx:18081/health
-#   GOAI:   http://192.168.2.xx:5000/
+#   终端:   http://<server-ip>:18080/
+#   课堂:   http://<server-ip>:18080/classroom
+#   聊天:   http://<server-ip>:18080/chat
+#   管理:   http://<server-ip>:18080/admin  (admin / <your-password>)
+#   API:    http://<server-ip>:18081/health
+#   GOAI:   http://<server-ip>:5000/
 #
 # 一键启动 (非 systemd 环境):
 #   bash scripts/tianhong_start_all.sh

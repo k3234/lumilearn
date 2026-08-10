@@ -22,10 +22,15 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template_string, session, redirect, url_for
 from goai_agent import LumiLearnAgent, TaskUnderstanding, FlowOrchestrator
 
+# 连接 Framework 数据库（与 18080 管理端共享 lumilearn.db）
+from framework.database import db
+db.init()
+
 app = Flask(__name__)
+app.secret_key = os.environ.get("GOAI_SECRET_KEY", "lumilearn-goai-web-secret")
 
 # 全局Agent实例（Ollama 地址通过环境变量 OLLAMA_URL 配置，见 .env.example）
 agent = LumiLearnAgent()
@@ -291,6 +296,52 @@ HTML_TEMPLATE = """
     .input-row { flex-direction: column; }
     .header { flex-direction: column; gap: 8px; }
   }
+
+  /* 登录界面 */
+  .login-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+  }
+  .login-box {
+    background: white; border-radius: 16px; padding: 32px;
+    width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .login-box h2 { font-size: 20px; color: #1e293b; margin-bottom: 20px; text-align: center; }
+  .login-box input {
+    width: 100%; padding: 12px 16px; margin-bottom: 12px;
+    border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 15px; outline: none;
+  }
+  .login-box input:focus { border-color: #6366f1; }
+  .login-box button {
+    width: 100%; padding: 12px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 500;
+    cursor: pointer; margin-top: 4px;
+  }
+  .login-error { color: #ef4444; font-size: 13px; margin-bottom: 10px; min-height: 18px; text-align: center; }
+  .login-hint { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 14px; }
+
+  /* 学习历史 */
+  .history-section {
+    background: white; border-radius: 12px; padding: 20px;
+    margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    display: none;
+  }
+  .history-section.active { display: block; }
+  .history-section h3 { font-size: 16px; color: #334155; margin-bottom: 12px; }
+  .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 8px;
+    margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+  }
+  .history-item:hover { border-color: #6366f1; background: #f8fafc; }
+  .history-item .h-topic { font-size: 14px; font-weight: 500; color: #334155; }
+  .history-item .h-meta { font-size: 12px; color: #94a3b8; }
+  .history-item .h-score {
+    font-size: 14px; font-weight: 700; color: #6366f1;
+    background: #e0e7ff; padding: 4px 10px; border-radius: 12px;
+  }
 </style>
 </head>
 <body>
@@ -301,14 +352,40 @@ HTML_TEMPLATE = """
     <h1>🎓 LumiLearn AI 教官</h1>
     <div class="subtitle">教育智能体 · GOAI 无界应用赛道参赛作品</div>
   </div>
-  <div class="status">
-    <span class="status-dot" id="statusDot"></span>
-    <span id="statusText">就绪</span>
+  <div class="header-right" style="display:flex;align-items:center;gap:14px;">
+    <div class="user-info" id="userInfo" style="font-size:13px;display:none;">
+      <span id="userName"></span>
+      <button onclick="logout()" style="margin-left:8px;padding:4px 10px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:white;cursor:pointer;font-size:12px;">退出</button>
+    </div>
+    <button id="historyBtn" onclick="toggleHistory()" style="display:none;padding:6px 12px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;color:white;cursor:pointer;font-size:12px;">📚 学习历史</button>
+    <div class="status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">就绪</span>
+    </div>
   </div>
 </header>
 
+<!-- 登录界面 -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h2>🔐 登录 LumiLearn</h2>
+    <div class="login-error" id="loginError"></div>
+    <input type="text" id="loginUsername" placeholder="用户名" autocomplete="username">
+    <input type="password" id="loginPassword" placeholder="密码" autocomplete="current-password"
+           onkeypress="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">登 录</button>
+    <div class="login-hint">账号由管理员在管理面板 (18080/admin) 创建</div>
+  </div>
+</div>
+
 <!-- 主容器 -->
 <div class="container">
+
+  <!-- 学习历史 -->
+  <div class="history-section" id="historySection">
+    <h3>📚 我的学习历史</h3>
+    <div id="historyList" style="color:#94a3b8;font-size:13px;">加载中...</div>
+  </div>
 
   <!-- 输入区域 -->
   <div class="input-section">
@@ -401,6 +478,125 @@ HTML_TEMPLATE = """
 // 全局状态
 let isProcessing = false;
 
+// ---------- 登录认证 ----------
+async function checkLogin() {
+  try {
+    const resp = await fetch('/api/me');
+    const data = await resp.json();
+    if (data.success) {
+      document.getElementById('loginOverlay').style.display = 'none';
+      document.getElementById('userInfo').style.display = 'flex';
+      document.getElementById('historyBtn').style.display = 'inline-block';
+      document.getElementById('userName').textContent = `👤 ${data.user.name} (${data.user.role === 'teacher' ? '教师' : '学生'})`;
+      loadHistory();
+      return true;
+    }
+  } catch (e) { /* 忽略 */ }
+  document.getElementById('loginOverlay').style.display = 'flex';
+  return false;
+}
+
+async function doLogin() {
+  const username = document.getElementById('loginUsername').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  document.getElementById('loginError').textContent = '';
+  if (!username || !password) {
+    document.getElementById('loginError').textContent = '请输入用户名和密码';
+    return;
+  }
+  try {
+    const resp = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const data = await resp.json();
+    if (!data.success) {
+      document.getElementById('loginError').textContent = data.error || '登录失败';
+      return;
+    }
+    document.getElementById('loginPassword').value = '';
+    await checkLogin();
+  } catch (e) {
+    document.getElementById('loginError').textContent = '登录请求失败: ' + e.message;
+  }
+}
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+  location.reload();
+}
+
+// ---------- 学习历史 ----------
+async function loadHistory() {
+  try {
+    const resp = await fetch('/api/history');
+    const data = await resp.json();
+    const list = document.getElementById('historyList');
+    if (!data.success) { list.textContent = '加载失败'; return; }
+    const reports = data.reports || [];
+    if (!reports.length) {
+      list.textContent = '暂无学习记录，输入学习目标开始你的第一次学习吧！';
+      return;
+    }
+    list.innerHTML = '';
+    reports.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      const s = r.summary || {};
+      div.innerHTML = `
+        <div>
+          <div class="h-topic">${s.core_topic || r.topic}</div>
+          <div class="h-meta">${s.subject || ''} · ${s.generated_at || r.created_at || ''}</div>
+        </div>
+        <div class="h-score">${s.score ?? '-'}分</div>`;
+      div.onclick = () => showSavedReport(r);
+      list.appendChild(div);
+    });
+  } catch (e) {
+    document.getElementById('historyList').textContent = '加载失败: ' + e.message;
+  }
+}
+
+function toggleHistory() {
+  const sec = document.getElementById('historySection');
+  const open = sec.classList.toggle('active');
+  if (open) loadHistory();
+  document.getElementById('historyBtn').textContent = open ? '📚 收起历史' : '📚 学习历史';
+}
+
+function showSavedReport(r) {
+  const rep = r.report || {};
+  const task = rep.task_understanding || {};
+  const mastery = rep.mastery_assessment || {};
+  const steps = rep.teaching_flow?.steps_detail || [];
+  const stepNames = ['现象引入', '认知冲突', '思维模型', '自主推导', '费曼测试'];
+  document.getElementById('reportTitle').textContent = rep.title || '学习报告';
+  document.getElementById('reportMeta').textContent = (rep.generated_at || '') + ' · 历史记录';
+  document.getElementById('taskCard').innerHTML = `
+    <div class="task-item"><div class="label">学科</div><div class="value">${task.subject || '-'}</div></div>
+    <div class="task-item"><div class="label">类型</div><div class="value">${task.topic_type || '-'}</div></div>
+    <div class="task-item"><div class="label">难度</div><div class="value">${task.difficulty || '-'}</div></div>
+    <div class="task-item"><div class="label">学习类型</div><div class="value">${task.learning_type || '-'}</div></div>
+    <div class="task-item"><div class="label">置信度</div><div class="value">${((task.confidence || 0) * 100).toFixed(0)}%</div></div>`;
+  document.getElementById('teachSteps').innerHTML = steps.map((s, i) => `
+    <div class="teach-step ${s.success ? 'done' : ''}">
+      <div class="step-num">${s.success ? '✓' : i + 1}</div>
+      <div class="step-content">
+        <div class="step-name">${stepNames[i] || s.name || ('步骤' + (i + 1))}</div>
+        <div class="step-detail">${(s.content || '').substring(0, 100)}...</div>
+      </div>
+    </div>`).join('');
+  document.getElementById('assessmentBox').innerHTML = `
+    <div class="assessment-item"><div class="score">${mastery.score || 0}</div><div class="label">综合评分</div></div>
+    <div class="assessment-item"><div class="score" style="font-size:16px">${mastery.level || '-'}</div><div class="label">掌握等级</div></div>
+    <div class="assessment-item"><div class="score" style="font-size:14px">${mastery.emoji || ''}</div><div class="label">${mastery.summary || ''}</div></div>`;
+  document.getElementById('weakPointsList').innerHTML = (rep.weak_points || []).map(wp => `<li>${wp}</li>`).join('');
+  document.getElementById('nextStepsList').innerHTML = (rep.next_steps || []).map(ns => `<li>${ns}</li>`).join('');
+  document.getElementById('reportSection').classList.add('active');
+  window.scrollTo({ top: document.getElementById('reportSection').offsetTop - 80, behavior: 'smooth' });
+}
+
 // 设置主题
 function setTopic(topic) {
   document.getElementById('topicInput').value = topic;
@@ -411,6 +607,9 @@ function setTopic(topic) {
 async function startLearning() {
   const topic = document.getElementById('topicInput').value.trim();
   if (!topic || isProcessing) return;
+  // 未登录时要求先登录
+  const me = await fetch('/api/me').then(r => r.json()).catch(() => ({ success: false }));
+  if (!me.success) { toast_('请先登录后再开始学习'); return; }
 
   isProcessing = true;
   document.getElementById('startBtn').disabled = true;
@@ -439,9 +638,14 @@ async function startLearning() {
     });
 
     const report = await response.json();
+    if (!response.ok || report.error) {
+      throw new Error(report.error || '生成失败');
+    }
 
     // 渲染报告
     renderReport(report);
+    // 刷新历史
+    loadHistory();
 
   } catch (err) {
     console.error('Error:', err);
@@ -452,6 +656,17 @@ async function startLearning() {
     document.getElementById('btnText').textContent = '开始学习';
     progressSection.classList.remove('active');
   }
+}
+
+function toast_(msg) {
+  const old = document.getElementById('toastBox');
+  if (old) old.remove();
+  const t = document.createElement('div');
+  t.id = 'toastBox';
+  t.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#f1f5f9;color:#475569;padding:10px 20px;border-radius:8px;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,0.1);z-index:999;';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
 }
 
 // 进度动画
@@ -527,6 +742,9 @@ function renderReport(report) {
   // 显示报告
   document.getElementById('reportSection').classList.add('active');
 }
+
+// 页面加载时检查登录状态
+checkLogin();
 </script>
 
 </body>
@@ -554,6 +772,8 @@ def get_local_ip():
 def index():
     """服务仪表盘首页"""
     local_ip = get_local_ip()
+    current_user = _get_current_user()
+    user_badge = f"👤 {current_user['name']} ({'教师' if current_user['role'] == 'teacher' else '学生'})" if current_user else "未登录"
 
     services = [
         ("🎓 GOAI 学习智能体", "/learn", "5000", "AI 教官问答 + 费曼教学法五步学习", "在线"),
@@ -636,6 +856,8 @@ def index():
         <h1>LumiLearn <span>服务仪表盘</span></h1>
         <div class="sub">全面配置 — 全部服务已开放</div>
         <div class="ip-badge">🌐 本机 IP: """ + local_ip + """</div>
+        <div class="user-badge" style="display:inline-block;background:#312e81;color:#c7d2fe;padding:4px 14px;border-radius:20px;font-size:13px;margin-top:8px;border:1px solid #4338ca;">""" + user_badge + """</div>
+        <a href="/learn" style="display:inline-block;margin-left:10px;background:#4338ca;color:white;padding:4px 14px;border-radius:20px;font-size:13px;text-decoration:none;margin-top:8px;">🚀 开始学习</a>
       </div>
       <div class="container">
         <div class="grid">
@@ -696,9 +918,82 @@ def learn_page():
     return render_template_string(HTML_TEMPLATE)
 
 
+# ---------- 用户认证 ----------
+
+@app.route('/api/login', methods=['POST'])
+def api_login():
+    """用户登录（使用 Framework 数据库账号）"""
+    data = request.get_json() or {}
+    username = data.get('username', '').strip()
+    password = data.get('password', '')
+    if not username or not password:
+        return jsonify({'success': False, 'error': '请输入用户名和密码'}), 400
+    user = db.verify_user_login(username, password)
+    if not user:
+        return jsonify({'success': False, 'error': '用户名或密码错误'}), 401
+    session['user_id'] = user['id']
+    return jsonify({
+        'success': True,
+        'user': {'id': user['id'], 'name': user['name'], 'role': user['role']},
+    })
+
+
+@app.route('/api/logout', methods=['POST'])
+def api_logout():
+    session.clear()
+    return jsonify({'success': True})
+
+
+@app.route('/api/me')
+def api_me():
+    """获取当前登录用户"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    user = db.get_user(user_id)
+    if not user:
+        session.clear()
+        return jsonify({'success': False, 'error': '用户不存在'}), 401
+    return jsonify({'success': True, 'user': {
+        'id': user['id'], 'name': user['name'], 'role': user['role'],
+        'username': user.get('username', ''),
+    }})
+
+
+def _get_current_user():
+    """获取当前登录用户，未登录返回 None"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    return db.get_user(user_id)
+
+
+@app.route('/api/history')
+def api_history():
+    """获取当前用户的学习历史"""
+    user = _get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    reports = db.get_learning_reports(user_id=user['id'], limit=30)
+    for r in reports:
+        rep = r.get('report', {})
+        r['summary'] = {
+            'core_topic': (rep.get('task_understanding') or {}).get('core_topic', r['topic']),
+            'subject': (rep.get('task_understanding') or {}).get('subject', ''),
+            'generated_at': rep.get('generated_at', ''),
+            'score': (rep.get('mastery_assessment') or {}).get('score', 0),
+        }
+        # 保留完整 report 供前端查看
+    return jsonify({'success': True, 'reports': reports})
+
+
 @app.route('/api/learn', methods=['POST'])
 def api_learn():
-    """提交学习目标，返回学习报告"""
+    """提交学习目标，返回学习报告（需登录，报告自动保存到数据库）"""
+    user = _get_current_user()
+    if not user:
+        return jsonify({'error': '未登录，请先登录'}), 401
+
     data = request.get_json()
     topic = data.get('topic', '').strip()
 
@@ -707,6 +1002,10 @@ def api_learn():
 
     try:
         report = agent.run(topic, interactive=False)
+        # 保存学习报告到共享数据库（Admin 面板可见）
+        score = (report.get('mastery_assessment') or {}).get('score', 0)
+        db.add_learning_report(user['id'], topic, report, score=score)
+        report['user'] = {'id': user['id'], 'name': user['name']}
         return jsonify(report)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -734,23 +1033,39 @@ def api_chat():
 # ============================================================
 # 启动
 # ============================================================
+def _get_goai_port() -> int:
+    """从 port_settings 读取 GOAI Web 端口（可被环境变量覆盖）"""
+    env_port = os.environ.get("GOAI_PORT", "")
+    if env_port.isdigit():
+        return int(env_port)
+    try:
+        from framework.services.provider_service import get_provider_service
+        cfg = get_provider_service().get_port_settings().get("goai_web", {})
+        if cfg.get("port"):
+            return int(cfg["port"])
+    except Exception:
+        pass
+    return 5000
+
+
 def main():
     local_ip = get_local_ip()
+    port = _get_goai_port()
     print("\n" + "=" * 60)
     print("  🎓 LumiLearn AI 教官 — 服务仪表盘")
     print("  GOAI 无界应用赛道参赛作品")
     print("=" * 60)
-    print(f"  📊 仪表盘首页:  http://localhost:5000")
-    print(f"  🎓 学习智能体:  http://localhost:5000/learn")
+    print(f"  📊 仪表盘首页:  http://localhost:{port}")
+    print(f"  🎓 学习智能体:  http://localhost:{port}/learn")
     print(f"  🖥️ 框架终端:    http://{local_ip}:18080")
     print(f"  🔌 REST API:    http://{local_ip}:18081")
     print(f"  🤖 模型管理:    http://{local_ip}:18082")
-    print(f"  📡 API地址:     http://localhost:5000/api/learn")
+    print(f"  📡 API地址:     http://localhost:{port}/api/learn")
     print(f"  🚀 Ollama状态:  {'可用' if agent.tool_caller.available else '不可用（兜底模式）'}")
     print("=" * 60)
     print("  按 Ctrl+C 停止服务\n")
 
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=False)
 
 
 if __name__ == '__main__':

@@ -10,9 +10,29 @@ server:
   models_port: 18082
   host: "0.0.0.0"
 
+# 端口服务选择性配置（Admin 面板「端口管理」可修改）
+# enabled: 是否启用该端口服务；port: 自定义端口号
+port_settings:
+  terminal:
+    enabled: true
+    port: 18080
+  api:
+    enabled: true
+    port: 18081
+  models:
+    enabled: true
+    port: 18082
+  goai_web:
+    enabled: true
+    port: 5000
+  teacher_portal:
+    enabled: true
+    port: 5001
+
 ollama:
+  # 默认连接本地 Ollama；也可通过环境变量 OLLAMA_BASE_URL 覆盖远程地址
   base_url: "http://localhost:11434"
-  default_model: "qwen2.5:7b"
+  default_model: "lumilearn-v2:latest"
   timeout: 300
 
 models:

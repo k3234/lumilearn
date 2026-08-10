@@ -29,16 +29,20 @@ if errorlevel 1 (
 echo   ✓ Python 就绪
 echo.
 
+:: 设置环境变量 — 指向 Ollama 服务（默认本地，可改为远程地址）
+set OLLAMA_BASE_URL=http://localhost:11434
+set OLLAMA_URL=http://localhost:11434
+
 :: 启动 GOAI Web (端口5000)
 echo [3/4] 启动 GOAI Web 服务 (端口 5000)...
-start "LumiLearn GOAI Web" /min cmd /c "python goai_web.py"
+start "LumiLearn GOAI Web" /min cmd /c "set OLLAMA_URL=http://localhost:11434 && python goai_web.py"
 timeout /t 3 /nobreak >nul
 echo   ✓ GOAI Web 已启动
 echo.
 
 :: 启动 Framework API (端口18080/18081/18082)
 echo [4/4] 启动 Framework API 服务 (端口 18080-18082)...
-start "LumiLearn Framework API" /min cmd /c "python -m framework.api.server --multi-port"
+start "LumiLearn Framework API" /min cmd /c "set OLLAMA_BASE_URL=http://localhost:11434 && python -m framework.api.server --multi-port"
 timeout /t 5 /nobreak >nul
 echo   ✓ Framework API 已启动
 echo.
@@ -56,9 +60,9 @@ echo   🔌 REST API          http://localhost:18081
 echo   🤖 模型管理          http://localhost:18082
 echo   ─────────────────────────────────────────
 echo.
-echo   🌐 局域网访问 (本机IP: 192.168.2.xx)
-echo      http://192.168.2.xx:5000
-echo      http://192.168.2.xx:18080
+echo   🌐 局域网访问（使用本机IP替换 localhost）
+echo      http://你的本机IP:5000
+echo      http://你的本机IP:18080
 echo.
 echo   📋 状态检查
 echo      curl http://localhost:5000/api/status

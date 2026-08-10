@@ -46,6 +46,39 @@
   .toast { position: fixed; top: 20px; right: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 20px; z-index: 999; display: none; }
   .toast.show { display: block; }
   pre.log-box { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; max-height: 500px; overflow-y: auto; font-size: 12px; line-height: 1.6; }
+  .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #30363d; padding-bottom: 0; }
+  .sub-tab { padding: 8px 16px; background: none; border: none; color: #8b949e; cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .sub-tab:hover { color: #58a6ff; }
+  .sub-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+  .sub-panel { display: none; }
+  .sub-panel.active { display: block; }
+  .provider-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .provider-card h4 { margin: 0 0 8px 0; font-size: 14px; color: #e6edf3; }
+  .provider-card .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .provider-card .row input { flex: 1; padding: 8px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; font-size: 13px; }
+  .provider-card .row input[type="password"] { font-family: monospace; letter-spacing: 2px; }
+  .provider-card .row label { font-size: 12px; color: #8b949e; min-width: 60px; }
+  .provider-card .models-list { font-size: 12px; color: #8b949e; margin-top: 4px; }
+  .provider-card .models-list span { display: inline-block; background: #21262d; padding: 2px 8px; border-radius: 4px; margin: 2px; }
+  .toggle { display: inline-block; width: 36px; height: 20px; background: #30363d; border-radius: 10px; cursor: pointer; position: relative; transition: 0.2s; }
+  .toggle.on { background: #238636; }
+  .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.2s; }
+  .toggle.on::after { left: 18px; }
+  .port-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; }
+  .port-card .port-name { font-size: 14px; font-weight: 500; min-width: 140px; color: #e6edf3; }
+  .port-card .port-current { font-size: 12px; color: #8b949e; min-width: 180px; }
+  .port-card select { padding: 6px 10px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; font-size: 12px; flex: 1; }
+  .port-collapse { margin-top: 0; margin-bottom: 12px; display: none; }
+  .port-collapse.open { display: block; }
+  .port-collapse .model-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid #21262d; font-size: 13px; }
+  .port-collapse .model-item:last-child { border-bottom: none; }
+  .port-collapse .model-item .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .port-collapse .model-item .tag.local { background: #1f6feb33; color: #58a6ff; }
+  .port-collapse .model-item .tag.cloud { background: #23863633; color: #3fb950; }
+  .toggle-btn { background: none; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; font-size: 12px; padding: 4px 10px; white-space: nowrap; }
+  .toggle-btn:hover { color: #58a6ff; border-color: #58a6ff; }
+  .toggle-btn .arrow { display: inline-block; transition: transform 0.2s; margin-right: 4px; }
+  .toggle-btn .arrow.open { transform: rotate(90deg); }
 </style>
 </head>
 <body>
@@ -68,7 +101,10 @@
     <button class="nav-item" data-panel="models" onclick="switchPanel('models')">🤖 模型管理</button>
     <button class="nav-item" data-panel="agents" onclick="switchPanel('agents')">🧠 Agent管理</button>
     <button class="nav-item" data-panel="logs" onclick="switchPanel('logs')">📜 系统日志</button>
+    <button class="nav-item" data-panel="reports" onclick="switchPanel('reports')">📚 学习记录</button>
     <button class="nav-item" data-panel="keys" onclick="switchPanel('keys')">🔑 API密钥</button>
+    <button class="nav-item" data-panel="ports" onclick="switchPanel('ports')">🔌 端口管理</button>
+    <button class="nav-item" data-panel="settings" onclick="switchPanel('settings')">⚙️ 设置</button>
     <div style="position:absolute; bottom:20px; left:20px; right:20px;">
       <button class="act" onclick="logout()" style="width:100%;">退出登录</button>
     </div>
@@ -132,7 +168,7 @@ function logout() {
 
 function switchPanel(name) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.panel === name));
-  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', keys: 'API密钥' };
+  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', keys: 'API密钥', ports: '端口管理', settings: '设置' };
   document.getElementById('panelTitle').textContent = titles[name];
   loaders[name]();
 }
@@ -144,6 +180,9 @@ const loaders = {
   agents: loadAgents,
   logs: loadLogs,
   keys: loadKeys,
+  reports: loadReports,
+  ports: loadPorts,
+  settings: loadSettings,
 };
 
 async function init() {
@@ -181,29 +220,47 @@ async function loadUsers() {
   const data = await api('/users');
   document.getElementById('content').innerHTML = `
     <div class="form-row">
-      <input id="newUserName" placeholder="新用户姓名">
+      <input id="newUserName" placeholder="姓名">
+      <input id="newUserUsername" placeholder="登录用户名(默认=姓名)" style="flex:0.8;">
+      <input id="newUserPassword" type="password" placeholder="初始密码(≥4位)" style="flex:0.8;">
       <select id="newUserRole">
         <option value="student">学生</option>
         <option value="teacher">教师</option>
       </select>
       <button class="act" onclick="createUser()">添加用户</button>
     </div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在 GOAI Web (端口5000) 登录学习。</div>
     <table>
-      <tr><th>ID</th><th>姓名</th><th>角色</th><th>创建时间</th><th>操作</th></tr>
+      <tr><th>ID</th><th>姓名</th><th>用户名</th><th>角色</th><th>密码</th><th>创建时间</th><th>操作</th></tr>
       ${data.users.map(u => `
         <tr>
-          <td>${u.id}</td><td>${u.name}</td><td>${u.role}</td><td>${u.created_at || '-'}</td>
-          <td><button class="act danger" onclick="deleteUser(${u.id})">删除</button></td>
+          <td>${u.id}</td><td>${u.name}</td><td>${u.username || u.name}</td><td>${u.role}</td>
+          <td>${u.has_password ? '<span class="badge ok">已设置</span>' : '<span class="badge off">未设置</span>'}</td>
+          <td>${u.created_at || '-'}</td>
+          <td><button class="act" onclick="resetUserPassword(${u.id}, '${u.name}')">重置密码</button>
+              <button class="act danger" onclick="deleteUser(${u.id})">删除</button></td>
         </tr>`).join('')}
     </table>`;
 }
 
 async function createUser() {
   const name = document.getElementById('newUserName').value;
+  const username = document.getElementById('newUserUsername').value;
+  const password = document.getElementById('newUserPassword').value;
   const role = document.getElementById('newUserRole').value;
   if (!name) return toast('请输入姓名');
-  await api('/users', { method: 'POST', body: JSON.stringify({ name, role }) });
+  if (!password || password.length < 4) return toast('请输入至少4位初始密码');
+  await api('/users', { method: 'POST', body: JSON.stringify({ name, role, username, password }) });
   toast('用户已创建');
+  loadUsers();
+}
+
+async function resetUserPassword(id, name) {
+  const newPwd = prompt(`为用户 ${name} 设置新密码（至少4位）`);
+  if (!newPwd) return;
+  if (newPwd.length < 4) return toast('密码至少4位');
+  await api(`/users/${id}/password`, { method: 'POST', body: JSON.stringify({ password: newPwd }) });
+  toast('密码已重置');
   loadUsers();
 }
 
@@ -215,9 +272,32 @@ async function deleteUser(id) {
 }
 
 // ---------- 模型管理 ----------
+let _currentModelSubTab = 'local';
+
 async function loadModels() {
-  const data = await api('/models');
   document.getElementById('content').innerHTML = `
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-sub="local" onclick="switchModelSubTab('local')">本地模型</button>
+      <button class="sub-tab" data-sub="providers" onclick="switchModelSubTab('providers')">云端提供者</button>
+      <button class="sub-tab" data-sub="ports" onclick="switchModelSubTab('ports')">端口模型配置</button>
+    </div>
+    <div id="modelSubContent"></div>`;
+  _currentModelSubTab = 'local';
+  renderLocalModels();
+}
+
+function switchModelSubTab(tab) {
+  document.querySelectorAll('.sub-tab').forEach(b => b.classList.toggle('active', b.dataset.sub === tab));
+  _currentModelSubTab = tab;
+  if (tab === 'local') renderLocalModels();
+  else if (tab === 'providers') renderProviders();
+  else if (tab === 'ports') renderPortModels();
+}
+
+// ---- 子标签页1: 本地模型管理 ----
+async function renderLocalModels() {
+  const data = await api('/models');
+  document.getElementById('modelSubContent').innerHTML = `
     <div class="form-row">
       <input id="pullModelName" placeholder="模型名称，如 qwen2.5:3b">
       <button class="act" onclick="pullModel()">拉取模型</button>
@@ -238,19 +318,312 @@ async function pullModel() {
   if (!model) return toast('请输入模型名称');
   const data = await api('/models/pull', { method: 'POST', body: JSON.stringify({ model }) });
   toast(data.message || data.error || '操作完成');
-  loadModels();
+  renderLocalModels();
 }
 
 async function deleteModel(name) {
   if (!confirm(`确认删除模型 ${name}？`)) return;
   const data = await api('/models/delete', { method: 'POST', body: JSON.stringify({ model: name }) });
   toast(data.message || data.error || '操作完成');
-  loadModels();
+  renderLocalModels();
 }
 
 async function setDefault(name) {
   await api('/models/default', { method: 'POST', body: JSON.stringify({ model: name }) });
   toast(`默认模型已设为 ${name}`);
+}
+
+// ---- 子标签页2: 云端提供者管理 ----
+async function renderProviders() {
+  try {
+    const data = await api('/providers');
+    const providers = data.providers || [];
+    const templates = data.templates || [];
+    const el = document.getElementById('modelSubContent');
+
+    // 构建提供者列表
+    let listHtml = '<h3 style="color:#58a6ff;margin-bottom:12px;font-size:15px;">已配置的提供者</h3>';
+    for (const p of providers) {
+      const modelsHtml = (p.models || []).map(m => `<span>${m.id || m.name || m}</span>`).join(' ');
+      listHtml += `
+        <div class="provider-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <h4>${p.name} <span style="color:#8b949e;font-size:12px;font-weight:normal;">(${p.key})</span></h4>
+              <div style="font-size:12px;color:#8b949e;">${p.base_url}</div>
+              <div class="models-list">${modelsHtml || '<span style="color:#8b949e;">无模型</span>'}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8b949e;">
+                <span>API Key: ${p.has_api_key ? '✅ 已配置' : '❌ 未配置'}</span>
+                <span>|</span>
+                <span>启用: <span class="toggle ${p.enabled ? 'on' : ''}" onclick="toggleProviderEnabled('${p.key}')" style="vertical-align:middle;"></span></span>
+              </div>
+              <button class="act" onclick="editProvider('${p.key}')">编辑</button>
+              <button class="act danger" onclick="deleteProvider('${p.key}')">删除</button>
+            </div>
+          </div>
+        </div>`;
+    }
+    if (!providers.length) listHtml += '<div style="color:#8b949e;font-size:13px;padding:12px 0;">暂无已配置的云端提供者</div>';
+
+    // 构建模板选择 + 添加区域
+    let templateOpts = templates.map(t => `<option value="${t.key}">${t.name}</option>`).join('');
+    listHtml += `
+      <h3 style="color:#58a6ff;margin:20px 0 12px;font-size:15px;">添加/编辑提供者</h3>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:20px;">
+        <div class="form-row">
+          <select id="providerTemplate" onchange="onProviderTemplateChange()" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;flex:1;">
+            <option value="">-- 选择模板或手动输入 --</option>
+            ${templateOpts}
+          </select>
+        </div>
+        <div class="form-row">
+          <input id="providerKey" placeholder="提供者标识 (如 deepseek)" style="flex:1;">
+          <input id="providerName" placeholder="名称 (如 DeepSeek)" style="flex:1;">
+        </div>
+        <div class="form-row">
+          <input id="providerBaseUrl" placeholder="API 地址 (如 https://api.deepseek.com/v1)" style="flex:2;">
+          <input id="providerApiKey" type="password" placeholder="API Key" style="flex:1;">
+        </div>
+        <div class="form-row">
+          <input id="providerModels" placeholder="模型列表 (逗号分隔, 如 deepseek-chat,deepseek-reasoner)" style="flex:2;">
+          <button class="act" onclick="saveProvider()" style="background:#238636;border-color:#238636;color:white;padding:10px 20px;font-weight:bold;">保存提供者</button>
+        </div>
+        <div style="font-size:12px;color:#8b949e;margin-top:4px;">提示: 选择模板自动填充标识/名称/地址/模型，API Key 需手动输入。编辑时不填 API Key 则保留原有值。</div>
+      </div>`;
+
+    el.innerHTML = listHtml;
+  } catch (e) {
+    document.getElementById('modelSubContent').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${e.message}</div>`;
+  }
+}
+
+function onProviderTemplateChange() {
+  const key = document.getElementById('providerTemplate').value;
+  if (!key) return;
+  // 从模板列表获取数据
+  api('/providers').then(data => {
+    const tmpl = (data.templates || []).find(t => t.key === key);
+    if (!tmpl) return;
+    document.getElementById('providerKey').value = tmpl.key;
+    document.getElementById('providerName').value = tmpl.name;
+    document.getElementById('providerBaseUrl').value = tmpl.base_url;
+    document.getElementById('providerModels').value = (tmpl.models || []).map(m => m.id).join(', ');
+  }).catch(() => {});
+}
+
+async function saveProvider() {
+  const key = document.getElementById('providerKey').value.trim();
+  const name = document.getElementById('providerName').value.trim();
+  const base_url = document.getElementById('providerBaseUrl').value.trim();
+  const api_key = document.getElementById('providerApiKey').value.trim();
+  const modelsStr = document.getElementById('providerModels').value.trim();
+
+  if (!key || !name) return toast('提供者标识和名称不能为空');
+
+  let models = null;
+  if (modelsStr) {
+    models = modelsStr.split(',').map(s => ({ id: s.trim(), name: s.trim() })).filter(m => m.id);
+  }
+
+  await api('/providers', {
+    method: 'POST',
+    body: JSON.stringify({ key, name, base_url, api_key, enabled: true, models })
+  });
+  toast('提供者已保存');
+  // 清空表单
+  document.getElementById('providerKey').value = '';
+  document.getElementById('providerName').value = '';
+  document.getElementById('providerBaseUrl').value = '';
+  document.getElementById('providerApiKey').value = '';
+  document.getElementById('providerModels').value = '';
+  document.getElementById('providerTemplate').value = '';
+  renderProviders();
+}
+
+async function editProvider(key) {
+  // 获取提供者详情并填充到表单
+  try {
+    const data = await api('/providers');
+    const provider = (data.providers || []).find(p => p.key === key);
+    if (!provider) return toast('提供者不存在');
+    document.getElementById('providerKey').value = provider.key;
+    document.getElementById('providerName').value = provider.name;
+    document.getElementById('providerBaseUrl').value = provider.base_url;
+    document.getElementById('providerApiKey').value = '';
+    document.getElementById('providerModels').value = (provider.models || []).map(m => m.id || m.name || m).join(', ');
+    document.getElementById('providerTemplate').value = '';
+    toast('已加载提供者信息到表单，修改后点击保存');
+  } catch (e) {
+    toast('加载失败: ' + e.message);
+  }
+}
+
+async function toggleProviderEnabled(key) {
+  try {
+    const data = await api('/providers');
+    const provider = (data.providers || []).find(p => p.key === key);
+    if (!provider) return;
+    await api('/providers', {
+      method: 'POST',
+      body: JSON.stringify({ key: provider.key, name: provider.name, base_url: provider.base_url, api_key: '', enabled: !provider.enabled, models: provider.models })
+    });
+    renderProviders();
+  } catch (e) {
+    toast('操作失败: ' + e.message);
+  }
+}
+
+async function deleteProvider(key) {
+  if (!confirm(`确认删除提供者 ${key}？`)) return;
+  await api(`/providers/${key}`, { method: 'DELETE' });
+  toast('提供者已删除');
+  renderProviders();
+}
+
+// ---- 子标签页3: 端口模型配置 ----
+async function renderPortModels() {
+  try {
+    const data = await api('/port-models');
+    const portMap = data.port_map || {};
+    const allModels = data.all_models || [];
+    const el = document.getElementById('modelSubContent');
+
+    // 按提供者分组
+    const grouped = {};
+    for (const m of allModels) {
+      const p = m.provider || 'ollama';
+      if (!grouped[p]) grouped[p] = [];
+      grouped[p].push(m);
+    }
+
+    // 显示说明
+    let html = `<div style="color:#8b949e;font-size:13px;margin-bottom:16px;padding:12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;">
+      为每个服务端口指定使用的模型提供者和模型。所有端口默认使用 Ollama 本地模型。
+    </div>`;
+
+    const portKeys = Object.keys(portMap);
+    // 全局折叠状态追踪
+    if (typeof window._portCollapseStates === 'undefined') window._portCollapseStates = {};
+    if (typeof window._portCollapseIcons === 'undefined') window._portCollapseIcons = {};
+
+    for (const pk of portKeys) {
+      const pm = portMap[pk];
+      const displayName = pm.display_name || pk;
+      const currentProvider = pm.provider || 'ollama';
+      const currentModel = pm.model || '';
+
+      // 构建提供者选择框
+      let providerOpts = '<option value="ollama">Ollama (本地)</option>';
+      for (const provKey of Object.keys(grouped)) {
+        if (provKey === 'ollama') continue;
+        const display = grouped[provKey][0]?.provider_display || provKey;
+        providerOpts += `<option value="${provKey}" ${provKey === currentProvider ? 'selected' : ''}>${display}</option>`;
+      }
+
+      // 当前选择提供者的模型列表
+      const currentModels = grouped[currentProvider] || grouped['ollama'] || [];
+      let modelOpts = '';
+      for (const m of currentModels) {
+        const modelName = m.name || m;
+        const selected = modelName === currentModel ? 'selected' : '';
+        modelOpts += `<option value="${modelName}" ${selected}>${modelName}</option>`;
+      }
+      if (currentModel && !currentModels.find(m => (m.name || m) === currentModel)) {
+        modelOpts = `<option value="${currentModel}" selected>${currentModel}</option>` + modelOpts;
+      }
+
+      // 构建所有可用模型列表（用于折叠菜单）
+      let allModelsHtml = '';
+      for (const m of allModels) {
+        const modelName = m.name || m;
+        const isLocal = (m.provider || 'ollama') === 'ollama';
+        const tagClass = isLocal ? 'local' : 'cloud';
+        const tagText = isLocal ? '本地模型' : '云端模型';
+        const providerLabel = m.provider_display || (isLocal ? 'Ollama' : m.provider || '');
+        allModelsHtml += `
+          <div class="model-item">
+            <span style="color:#e6edf3;">${modelName}</span>
+            <span><span class="tag ${tagClass}">${tagText}</span>${!isLocal ? ` <span style="color:#8b949e;font-size:11px;">· ${providerLabel}</span>` : ''}</span>
+          </div>`;
+      }
+      if (!allModelsHtml) allModelsHtml = '<div class="model-item" style="color:#8b949e;">暂无可用模型</div>';
+
+      const collapseId = `collapse_${pk}`;
+      const isOpen = window._portCollapseStates[pk] || false;
+
+      html += `
+        <div class="port-card" style="flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:16px;flex:1;min-width:0;flex-wrap:wrap;">
+            <div class="port-name">${displayName}</div>
+            <div class="port-current">当前: ${currentProvider}/${currentModel}</div>
+            <select id="portProvider_${pk}" onchange="onPortProviderChange('${pk}')" style="min-width:140px;">
+              ${providerOpts}
+            </select>
+            <select id="portModel_${pk}" style="min-width:160px;">
+              ${modelOpts}
+            </select>
+            <button class="act" onclick="savePortModel('${pk}')" style="background:#238636;border-color:#238636;color:white;font-weight:bold;">保存</button>
+          </div>
+          <button class="toggle-btn" onclick="togglePortCollapse('${pk}')" title="查看所有可用模型" style="margin-left:auto;">
+            <span class="arrow ${isOpen ? 'open' : ''}" id="arrow_${pk}">▶</span>
+            <span id="collapseLabel_${pk}">${isOpen ? '收起' : '展开'}可用模型</span>
+            <span style="color:#8b949e;font-size:11px;">(${allModels.length}个)</span>
+          </button>
+        </div>
+        <div class="port-collapse ${isOpen ? 'open' : ''}" id="${collapseId}">
+          <div style="background:#0d1117;border:1px solid #30363d;border-top:none;border-radius:0 0 8px 8px;padding:4px 0;">
+            ${allModelsHtml}
+          </div>
+        </div>`;
+    }
+
+    html += `<div style="font-size:12px;color:#8b949e;margin-top:8px;">提示: 修改后需重启对应服务端口才能生效。</div>`;
+    el.innerHTML = html;
+  } catch (e) {
+    document.getElementById('modelSubContent').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${e.message}</div>`;
+  }
+}
+
+function togglePortCollapse(portKey) {
+  const el = document.getElementById(`collapse_${portKey}`);
+  const arrow = document.getElementById(`arrow_${portKey}`);
+  const label = document.getElementById(`collapseLabel_${portKey}`);
+  if (!el) return;
+  const isOpen = el.classList.toggle('open');
+  if (arrow) arrow.classList.toggle('open', isOpen);
+  if (label) label.textContent = isOpen ? '收起' : '展开';
+  // 保存状态
+  if (!window._portCollapseStates) window._portCollapseStates = {};
+  window._portCollapseStates[portKey] = isOpen;
+}
+
+async function onPortProviderChange(portKey) {
+  const provider = document.getElementById(`portProvider_${portKey}`).value;
+  // 重新获取模型列表并更新模型选择框
+  try {
+    const data = await api('/port-models');
+    const allModels = data.all_models || [];
+    const filtered = allModels.filter(m => (m.provider || 'ollama') === provider);
+    const sel = document.getElementById(`portModel_${portKey}`);
+    sel.innerHTML = filtered.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+    if (!filtered.length) sel.innerHTML = '<option value="">-- 无可用模型 --</option>';
+  } catch (e) {
+    toast('加载模型列表失败: ' + e.message);
+  }
+}
+
+async function savePortModel(portKey) {
+  const provider = document.getElementById(`portProvider_${portKey}`).value;
+  const model = document.getElementById(`portModel_${portKey}`).value;
+  if (!model) return toast('请选择模型');
+  await api('/port-models', {
+    method: 'POST',
+    body: JSON.stringify({ port_key: portKey, provider, model })
+  });
+  toast('端口模型配置已保存');
+  renderPortModels();
 }
 
 // ---------- Agent 管理 ----------
@@ -373,6 +746,205 @@ async function deleteKey(key) {
   await api(`/api-keys/${key}`, { method: 'DELETE' });
   toast('密钥已删除');
   loadKeys();
+}
+
+// ---------- 学习记录 ----------
+async function loadReports() {
+  try {
+    const data = await api('/learning-reports?limit=100');
+    const reports = data.reports || [];
+    let html = `
+      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">所有学生在 GOAI Web (端口5000) 生成的学习报告。</div>
+      <table>
+        <tr><th>ID</th><th>学生</th><th>主题</th><th>学科</th><th>掌握度</th><th>等级</th><th>生成时间</th><th>操作</th></tr>`;
+    if (!reports.length) {
+      html += '<tr><td colspan="8" style="color:#8b949e;">暂无学习记录</td></tr>';
+    }
+    for (const r of reports) {
+      const s = r.summary || {};
+      html += `
+        <tr>
+          <td>${r.id}</td>
+          <td>${r.user_name}</td>
+          <td>${s.core_topic || r.topic}</td>
+          <td>${s.subject || '-'}</td>
+          <td>${s.score ?? '-'}</td>
+          <td>${s.level || '-'}</td>
+          <td>${s.generated_at || r.created_at || '-'}</td>
+          <td><button class="act" onclick="viewReport(${r.id})">查看</button></td>
+        </tr>`;
+    }
+    html += '</table>';
+    document.getElementById('content').innerHTML = html;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${e.message}</div>`;
+  }
+}
+
+async function viewReport(reportId) {
+  // 通过 learning-reports 接口直接获取该报告详情
+  try {
+    const data = await api(`/learning-reports/${reportId}`);
+    // 返回结构: {success, report: {id, user_id, topic, score, report: {...}, user_name}}
+    if (!data.report || !data.report.report) return toast('报告不存在');
+    const rep = data.report.report;
+    const task = rep.task_understanding || {};
+    const mastery = rep.mastery_assessment || {};
+    const steps = rep.teaching_flow?.steps_detail || [];
+    const stepNames = ['现象引入', '认知冲突', '思维模型', '自主推导', '费曼测试'];
+    document.getElementById('content').innerHTML = `
+      <button class="act" onclick="loadReports()" style="margin-bottom:12px;">← 返回列表</button>
+      <h3 style="color:#58a6ff;margin-bottom:8px;">${rep.title || '学习报告'}</h3>
+      <div style="color:#8b949e;font-size:12px;margin-bottom:16px;">生成时间: ${rep.generated_at || ''}</div>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">任务理解</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+          <div><span style="color:#8b949e;font-size:11px;">学科</span><br>${task.subject || '-'}</div>
+          <div><span style="color:#8b949e;font-size:11px;">类型</span><br>${task.topic_type || '-'}</div>
+          <div><span style="color:#8b949e;font-size:11px;">难度</span><br>${task.difficulty || '-'}</div>
+          <div><span style="color:#8b949e;font-size:11px;">核心主题</span><br>${task.core_topic || '-'}</div>
+        </div>
+      </div>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">掌握度: ${mastery.score ?? '-'} (${mastery.level || '-'})</div>
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">${mastery.summary || ''}</div>
+      </div>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">教学流程 (${steps.length}步)</div>
+        ${steps.map((s, i) => `
+          <div style="padding:8px;border-bottom:1px solid #21262d;font-size:13px;">
+            <b>${s.success ? '✅' : '⬜'} ${stepNames[i] || s.name || ('步骤' + (i + 1))}</b>
+            <div style="color:#8b949e;font-size:12px;margin-top:4px;white-space:pre-wrap;">${(s.content || '')}</div>
+          </div>`).join('') || '<div style="color:#8b949e;">无流程数据</div>'}
+      </div>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">薄弱点</div>
+        ${(rep.weak_points || []).map(w => `<div style="font-size:13px;padding:4px 0;">• ${w}</div>`).join('') || '<div style="color:#8b949e;">无</div>'}
+      </div>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;">
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">下一步建议</div>
+        ${(rep.next_steps || []).map(n => `<div style="font-size:13px;padding:4px 0;">• ${n}</div>`).join('') || '<div style="color:#8b949e;">无</div>'}
+      </div>`;
+  } catch (e) {
+    toast('加载失败: ' + e.message);
+  }
+}
+
+// ---------- 端口管理（选择性配置） ----------
+let portDirty = false;
+
+async function loadPorts() {
+  const data = await api('/port-settings');
+  const settings = data.port_settings || {};
+  const keys = Object.keys(settings);
+  const rows = keys.map(k => {
+    const s = settings[k];
+    const listening = s.listening;
+    return `
+      <div style="display:flex;align-items:center;gap:14px;padding:14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;margin-bottom:10px;">
+        <label style="display:flex;align-items:center;gap:8px;min-width:60px;cursor:pointer;">
+          <input type="checkbox" data-key="${k}" data-field="enabled" ${s.enabled ? 'checked' : ''} onchange="onPortChange()" style="width:16px;height:16px;accent-color:#58a6ff;">
+          <span style="color:${s.enabled ? '#58a6ff' : '#8b949e'};font-weight:600;">${s.enabled ? '启用' : '禁用'}</span>
+        </label>
+        <div style="flex:1;min-width:180px;">
+          <div style="color:#e6edf3;font-size:14px;font-weight:600;">${s.display_name}</div>
+          <div style="color:#8b949e;font-size:12px;">${s.desc || ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="color:#8b949e;font-size:13px;">端口</span>
+          <input type="number" data-key="${k}" data-field="port" value="${s.port}" min="1" max="65535"
+                 onchange="onPortChange()"
+                 style="width:80px;padding:8px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;text-align:center;">
+        </div>
+        <span class="badge" style="min-width:70px;text-align:center;${listening ? 'background:#0f5132;color:#6ee7b7;' : 'background:#3d1d1d;color:#fca5a5;'}">${listening ? '● 运行中' : '○ 未运行'}</span>
+      </div>`;
+  }).join('');
+  document.getElementById('content').innerHTML = `
+    <p style="color:#8b949e;font-size:13px;margin-bottom:16px;">选择启用哪些端口服务并自定义端口号，保存后重启对应服务生效。</p>
+    ${rows}
+    <div style="display:flex;align-items:center;gap:12px;margin-top:16px;">
+      <button class="act" onclick="savePorts()" style="background:#238636;">💾 保存端口配置</button>
+      <span id="portSaveMsg" style="color:#8b949e;font-size:13px;"></span>
+    </div>
+    <div style="margin-top:20px;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;">
+      <div style="color:#8b949e;font-size:13px;margin-bottom:8px;">💡 生效方式：保存后在服务器执行重启</div>
+      <code style="color:#a5b4fc;font-size:13px;">bash ~/lumilearn/tianhong_start_all.sh</code>
+      <div style="color:#6e7681;font-size:12px;margin-top:6px;">该脚本会按当前端口配置选择性启动服务。</div>
+    </div>`;
+  portDirty = false;
+}
+
+function onPortChange() { portDirty = true; }
+
+async function savePorts() {
+  const settings = {};
+  document.querySelectorAll('input[data-key]').forEach(inp => {
+    const key = inp.dataset.key;
+    if (!settings[key]) settings[key] = {};
+    settings[key][inp.dataset.field] = inp.dataset.field === 'enabled' ? inp.checked : parseInt(inp.value || 0);
+  });
+  try {
+    const data = await api('/port-settings', {
+      method: 'POST',
+      body: JSON.stringify({ port_settings: settings }),
+    });
+    document.getElementById('portSaveMsg').textContent = data.success ? '✅ ' + data.message : '❌ ' + (data.errors || []).join('；');
+    if (data.success) { portDirty = false; setTimeout(() => loadPorts(), 800); }
+  } catch (e) {
+    document.getElementById('portSaveMsg').textContent = '❌ ' + e.message;
+  }
+}
+
+// ---------- 设置（修改密码） ----------
+async function loadSettings() {
+  document.getElementById('content').innerHTML = `
+    <div style="max-width:500px;">
+      <h3 style="color:#58a6ff;margin-bottom:16px;">修改管理员密码</h3>
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:20px;">
+        <div style="margin-bottom:12px;">
+          <label style="color:#8b949e;font-size:13px;display:block;margin-bottom:4px;">旧密码</label>
+          <input type="password" id="oldPassword" placeholder="输入旧密码" style="width:100%;padding:10px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;">
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="color:#8b949e;font-size:13px;display:block;margin-bottom:4px;">新密码</label>
+          <input type="password" id="newPassword" placeholder="输入新密码（至少6位）" style="width:100%;padding:10px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <label style="color:#8b949e;font-size:13px;display:block;margin-bottom:4px;">确认新密码</label>
+          <input type="password" id="confirmPassword" placeholder="再次输入新密码" style="width:100%;padding:10px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;">
+        </div>
+        <button class="act" onclick="changePassword()" style="background:#238636;border-color:#238636;color:white;font-weight:bold;padding:10px 24px;font-size:14px;">修改密码</button>
+        <div id="passwordResult" style="margin-top:12px;font-size:13px;min-height:20px;"></div>
+      </div>
+    </div>`;
+}
+
+async function changePassword() {
+  const old = document.getElementById('oldPassword').value;
+  const newPwd = document.getElementById('newPassword').value;
+  const confirm = document.getElementById('confirmPassword').value;
+  const resultEl = document.getElementById('passwordResult');
+
+  if (!old || !newPwd) { resultEl.style.color = '#f85149'; resultEl.textContent = '请填写完整'; return; }
+  if (newPwd !== confirm) { resultEl.style.color = '#f85149'; resultEl.textContent = '两次新密码不一致'; return; }
+  if (newPwd.length < 6) { resultEl.style.color = '#f85149'; resultEl.textContent = '新密码长度至少6位'; return; }
+
+  try {
+    const data = await api('/password', { method: 'POST', body: JSON.stringify({ old_password: old, new_password: newPwd }) });
+    if (data.success) {
+      resultEl.style.color = '#3fb950';
+      resultEl.textContent = '✅ 密码修改成功！';
+      document.getElementById('oldPassword').value = '';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+    } else {
+      resultEl.style.color = '#f85149';
+      resultEl.textContent = '❌ ' + (data.error || '修改失败');
+    }
+  } catch (e) {
+    resultEl.style.color = '#f85149';
+    resultEl.textContent = '❌ 修改失败: ' + e.message;
+  }
 }
 
 // ---------- 初始化 ----------

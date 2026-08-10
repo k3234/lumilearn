@@ -14,7 +14,7 @@ GOAI"无界应用"赛道参赛Demo
 架构：
   用户输入 → [任务理解] → [流程编排] → [工具调用] → [结果交付] → 学习报告
 
-作者：LumiLearn (LumiLearn)
+作者：LumiLearn
 版本：1.0.0
 日期：2026-08-05
 """
@@ -292,16 +292,34 @@ class ToolCaller:
     def call(self, prompt: str, task_type: str = "teach") -> Dict:
         """
         调用工具执行任务
-        
+
         Args:
             prompt: 提示词
             task_type: 任务类型（teach/score/evaluate）
-        
+
         Returns:
             {"content": "...", "model": "...", "elapsed": 0.0, "success": True/False}
         """
         t0 = time.time()
-        
+
+        # 优先检查云端模型（端口模型配置 → 云端 API）
+        cloud = self._resolve_cloud_model()
+        if cloud:
+            result = self._call_cloud(cloud, prompt)
+            elapsed = time.time() - t0
+            self.call_log.append({
+                "task_type": task_type,
+                "model": cloud["model"],
+                "elapsed": elapsed,
+                "success": bool(result),
+            })
+            return {
+                "content": result or self._fallback_response(prompt, task_type),
+                "model": cloud["model"],
+                "elapsed": elapsed,
+                "success": bool(result),
+            }
+
         if self.available:
             result = self._call_ollama(prompt)
             elapsed = time.time() - t0
@@ -331,6 +349,64 @@ class ToolCaller:
                 "elapsed": elapsed,
                 "success": True,
             }
+
+    def _resolve_cloud_model(self) -> Optional[Dict]:
+        """
+        从 ProviderService 读取本端口配置的云端模型。
+        返回 {"provider": key, "model": id, "api_key": str, "base_url": str} 或 None。
+        """
+        try:
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from framework.services.provider_service import get_provider_service
+            ps = get_provider_service()
+            # 读取 goai_web 端口(5000)配置的模型
+            port_map = ps.get_port_model_map()
+            cfg = port_map.get("goai_web") or {}
+            provider = cfg.get("provider", "ollama")
+            model = cfg.get("model", "")
+            if provider == "ollama" or not model:
+                return None
+            provider_cfg = ps.get_provider(provider)
+            if not provider_cfg or not provider_cfg.get("enabled") or not provider_cfg.get("has_api_key"):
+                return None
+            # 检查模型是否在提供者列表
+            model_ids = [m.get("id") for m in provider_cfg.get("models", [])]
+            if model not in model_ids:
+                return None
+            return {
+                "provider": provider,
+                "model": model,
+                "api_key": ps.get_provider_api_key(provider),
+                "base_url": provider_cfg.get("base_url", ""),
+            }
+        except Exception:
+            return None
+
+    def _call_cloud(self, cloud: Dict, prompt: str) -> str:
+        """调用云端 OpenAI 兼容 API"""
+        try:
+            import requests
+            resp = requests.post(
+                f"{cloud['base_url']}/chat/completions",
+                json={
+                    "model": cloud["model"],
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": False,
+                    "temperature": 0.3,
+                },
+                headers={
+                    "Authorization": f"Bearer {cloud['api_key']}",
+                    "Content-Type": "application/json",
+                },
+                timeout=self.timeout,
+            )
+            if resp.status_code == 200:
+                choices = resp.json().get("choices", [])
+                if choices:
+                    return choices[0].get("message", {}).get("content", "")
+        except Exception:
+            pass
+        return ""
     
     def _call_ollama(self, prompt: str) -> str:
         """调用Ollama API"""

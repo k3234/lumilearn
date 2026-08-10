@@ -78,14 +78,15 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
         response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"
         response.headers["X-Framework"] = "LumiLearn"
         response.headers["X-Version"] = config.get("version", "1.0.0")
-        # CSP：API 端点返回的是 JSON/音频，设置为严格策略
+        # CSP：页面为单文件 HTML + 内联 JS + jsdelivr CDN，需放行内联脚本与 CDN 资源
         if "Content-Type" in response.headers and "text/html" in response.headers["Content-Type"]:
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
-                "script-src 'self'; "
-                "style-src 'self' 'unsafe-inline'; "
-                "img-src 'self' data:; "
-                "connect-src 'self'; "
+                "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "img-src 'self' data: blob:; "
+                "connect-src 'self' http://localhost:* http://127.0.0.1:*; "
+                "font-src 'self' data: https://cdn.jsdelivr.net; "
                 "frame-ancestors 'none'; "
                 "base-uri 'self'; "
                 "form-action 'self'; "
@@ -249,7 +250,7 @@ def create_app(debug: bool = None, template_dir: str = None) -> Flask:
 
 
 def get_server_ports() -> Dict[str, int]:
-    """从配置获取端口配置，默认三端口"""
+    """从配置获取端口配置，默认三端口；port_settings（Admin 端口管理）优先"""
     config = get_config()
     # config 为 dict：从 server 配置节读取端口，缺失时回退默认三端口
     server_conf = config.get("server", {})
@@ -264,6 +265,17 @@ def get_server_ports() -> Dict[str, int]:
             "api": 18081,
             "models": 18082
         }
+    # Admin 端口管理保存的 port_settings 优先（用户可自定义端口号）
+    try:
+        from framework.services.provider_service import get_provider_service
+        ps = get_provider_service().get_port_settings()
+        mapping = {"terminal": "terminal", "api": "api", "models": "models"}
+        for key, port_key in mapping.items():
+            cfg = ps.get(port_key, {})
+            if cfg.get("port"):
+                ports[key] = int(cfg["port"])
+    except Exception:
+        pass
     return ports
 
 

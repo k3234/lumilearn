@@ -35,7 +35,7 @@ class OllamaProvider(ModelProvider):
         if base_url is None:
             base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         if default_model is None:
-            default_model = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+            default_model = os.getenv("OLLAMA_MODEL", "lumilearn-v2:latest")
         
         super().__init__(name="ollama", base_url=base_url, default_model=default_model)
         self._timeout = int(os.getenv("OLLAMA_TIMEOUT", "300"))

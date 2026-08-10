@@ -188,7 +188,7 @@ class ManimService:
 
 ```bash
 # 在服务器上执行
-ssh kai@192.168.2.xx 'bash ~/lumilearn/scripts/install_manim.sh'
+ssh user@<server-ip> 'bash ~/lumilearn/scripts/install_manim.sh'
 ```
 
 ---

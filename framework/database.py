@@ -88,8 +88,23 @@ CREATE TABLE IF NOT EXISTS users (
     name        TEXT NOT NULL,
     role        TEXT DEFAULT 'student',     -- teacher / student
     avatar      TEXT DEFAULT '',
+    username    TEXT DEFAULT '',
+    password_hash TEXT DEFAULT '',
     created_at  TEXT DEFAULT (datetime('now','localtime'))
 );
+
+-- 学习报告（GOAI Web 生成）
+CREATE TABLE IF NOT EXISTS learning_reports (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL,
+    topic       TEXT NOT NULL,
+    report_json TEXT DEFAULT '{}',
+    score       REAL DEFAULT 0.0,
+    created_at  TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_learning_reports_user ON learning_reports(user_id);
 
 -- ============================================================
 -- B. 教学内容管理
@@ -587,6 +602,52 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 CREATE INDEX IF NOT EXISTS idx_api_keys_scope ON api_keys(scope);
+
+-- ============================================================
+-- L. 组织架构（学校库/年级库/班级库/学生绑定）
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS schools (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    name        TEXT UNIQUE NOT NULL,
+    description TEXT DEFAULT '',
+    created_at  TEXT DEFAULT (datetime('now','localtime'))
+);
+
+CREATE TABLE IF NOT EXISTS grades (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    school_id   INTEGER NOT NULL,
+    name        TEXT NOT NULL,
+    created_at  TEXT DEFAULT (datetime('now','localtime')),
+    UNIQUE(school_id, name),
+    FOREIGN KEY (school_id) REFERENCES schools(id)
+);
+
+CREATE TABLE IF NOT EXISTS classes (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    grade_id    INTEGER NOT NULL,
+    name        TEXT NOT NULL,
+    teacher_id  INTEGER DEFAULT 0,          -- 班主任 user_id
+    created_at  TEXT DEFAULT (datetime('now','localtime')),
+    UNIQUE(grade_id, name),
+    FOREIGN KEY (grade_id) REFERENCES grades(id)
+);
+
+CREATE TABLE IF NOT EXISTS class_students (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    class_id    INTEGER NOT NULL,
+    user_id     INTEGER NOT NULL,
+    created_at  TEXT DEFAULT (datetime('now','localtime')),
+    UNIQUE(class_id, user_id),
+    FOREIGN KEY (class_id) REFERENCES classes(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_grades_school ON grades(school_id);
+CREATE INDEX IF NOT EXISTS idx_classes_grade ON classes(grade_id);
+CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_class_students_class ON class_students(class_id);
+CREATE INDEX IF NOT EXISTS idx_class_students_user ON class_students(user_id);
 """
 
 
@@ -689,6 +750,8 @@ class DatabaseManager:
 
         # 执行建表
         self.conn.executescript(_SCHEMA)
+        # 迁移：为已存在的 users 表补充 username/password_hash 列
+        self._migrate_users_columns()
         self.conn.commit()
 
         # 填充默认数据（仅首次）
@@ -696,6 +759,19 @@ class DatabaseManager:
 
         self._initialized = True
         return self.db_path
+
+    def _migrate_users_columns(self):
+        """迁移：老库 users 表缺少 username/password_hash 列时补充"""
+        try:
+            cols = [r["name"] for r in self._query("PRAGMA table_info(users)")]
+            if "username" not in cols:
+                self.conn.execute("ALTER TABLE users ADD COLUMN username TEXT DEFAULT ''")
+            if "password_hash" not in cols:
+                self.conn.execute("ALTER TABLE users ADD COLUMN password_hash TEXT DEFAULT ''")
+            # 老库可能缺 learning_reports 表（CREATE TABLE IF NOT EXISTS 已兜底）
+        except Exception as e:
+            logger = __import__("logging").getLogger("lumilearn.database")
+            logger.warning(f"迁移 users 表列失败（可忽略）: {e}")
 
     def _seed_defaults(self):
         """填充默认数据（学科、知识图谱），仅首次执行"""
@@ -746,7 +822,8 @@ class DatabaseManager:
     # A. 用户管理
     # ============================================================
 
-    def add_user(self, name: str, role: str = "student", avatar: str = "") -> Dict:
+    def add_user(self, name: str, role: str = "student", avatar: str = "",
+                 username: str = "", password: str = "") -> Dict:
         """
         添加用户
 
@@ -754,15 +831,59 @@ class DatabaseManager:
             name:  用户名
             role:  角色（teacher / student）
             avatar: 头像标识
+            username: 登录用户名（GOAI Web 登录用）
+            password: 登录密码明文（自动哈希存储）
 
         返回：
             新用户信息字典
         """
+        from werkzeug.security import generate_password_hash
+        # 未指定 username 时默认使用 name
+        login_name = username or name
+        password_hash = generate_password_hash(password) if password else ""
         cur = self._execute(
-            "INSERT INTO users (name, role, avatar) VALUES (?, ?, ?)",
-            (name, role, avatar)
+            "INSERT INTO users (name, role, avatar, username, password_hash) VALUES (?, ?, ?, ?, ?)",
+            (name, role, avatar, login_name, password_hash)
         )
-        return {"id": cur.lastrowid, "name": name, "role": role}
+        return {"id": cur.lastrowid, "name": name, "role": role,
+                "username": login_name, "has_password": bool(password)}
+
+    def get_user_by_username(self, username: str) -> Optional[Dict]:
+        """按登录用户名查找用户（username 或 name 均可匹配）"""
+        return self._query_one(
+            "SELECT * FROM users WHERE username = ? OR name = ?",
+            (username, username)
+        )
+
+    def verify_user_login(self, username: str, password: str) -> Optional[Dict]:
+        """
+        校验用户登录
+
+        参数：
+            username: 用户名
+            password: 密码明文
+
+        返回：
+            用户信息字典；失败返回 None
+        """
+        from werkzeug.security import check_password_hash
+        user = self.get_user_by_username(username)
+        if not user:
+            return None
+        if not user.get("password_hash"):
+            return None
+        if check_password_hash(user["password_hash"], password):
+            return user
+        return None
+
+    def update_user_password(self, user_id: int, new_password: str) -> bool:
+        """重置用户密码"""
+        from werkzeug.security import generate_password_hash
+        cur = self._execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?",
+            (generate_password_hash(new_password), user_id)
+        )
+        return cur.rowcount > 0
 
     def get_user(self, user_id: int) -> Optional[Dict]:
         """获取用户信息"""
@@ -785,8 +906,55 @@ class DatabaseManager:
         self._execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
         self._execute("DELETE FROM daily_stats WHERE user_id = ?", (user_id,))
         self._execute("DELETE FROM progress WHERE user_id = ?", (user_id,))
+        self._execute("DELETE FROM learning_reports WHERE user_id = ?", (user_id,))
         cur = self._execute("DELETE FROM users WHERE id = ?", (user_id,))
         return cur.rowcount > 0
+
+    # ============================================================
+    # C0. 学习报告（GOAI Web 生成）
+    # ============================================================
+
+    def add_learning_report(self, user_id: int, topic: str,
+                            report: Dict, score: float = 0.0) -> Dict:
+        """保存一份 GOAI 学习报告"""
+        cur = self._execute(
+            "INSERT INTO learning_reports (user_id, topic, report_json, score) VALUES (?, ?, ?, ?)",
+            (user_id, topic, json.dumps(report, ensure_ascii=False), score)
+        )
+        return {"id": cur.lastrowid, "user_id": user_id, "topic": topic}
+
+    def get_learning_reports(self, user_id: int = None, limit: int = 50) -> List[Dict]:
+        """获取学习报告列表（可按用户筛选）"""
+        if user_id:
+            rows = self._query(
+                "SELECT * FROM learning_reports WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+                (user_id, limit)
+            )
+        else:
+            rows = self._query(
+                "SELECT * FROM learning_reports ORDER BY id DESC LIMIT ?",
+                (limit,)
+            )
+        for r in rows:
+            try:
+                r["report"] = json.loads(r.get("report_json", "{}"))
+            except Exception:
+                r["report"] = {}
+            r.pop("report_json", None)
+        return rows
+
+    def get_learning_report(self, report_id: int) -> Optional[Dict]:
+        """获取单份学习报告"""
+        r = self._query_one(
+            "SELECT * FROM learning_reports WHERE id = ?", (report_id,)
+        )
+        if r:
+            try:
+                r["report"] = json.loads(r.get("report_json", "{}"))
+            except Exception:
+                r["report"] = {}
+            r.pop("report_json", None)
+        return r
 
     # ============================================================
     # B1. 知识图谱管理
@@ -3212,6 +3380,317 @@ class DatabaseManager:
     def delete_api_key(self, api_key: str) -> bool:
         cur = self._execute("DELETE FROM api_keys WHERE api_key = ?", (api_key,))
         return cur.rowcount > 0
+
+    # ============================================================
+    # L. 组织架构管理（学校库/年级库/班级库）
+    # ============================================================
+
+    def add_school(self, name: str, description: str = "") -> Dict:
+        """创建学校"""
+        try:
+            cur = self._execute(
+                "INSERT INTO schools (name, description) VALUES (?, ?)",
+                (name, description)
+            )
+            return {"id": cur.lastrowid, "name": name}
+        except sqlite3.IntegrityError:
+            return {"error": f"学校 '{name}' 已存在"}
+
+    def get_schools(self) -> List[Dict]:
+        """获取学校列表（含年级/班级数）"""
+        rows = self._query("SELECT * FROM schools ORDER BY id")
+        for s in rows:
+            s["grade_count"] = self._query_one(
+                "SELECT COUNT(*) as n FROM grades WHERE school_id = ?", (s["id"],)
+            )["n"]
+            s["class_count"] = self._query_one(
+                """SELECT COUNT(*) as n FROM classes c
+                   JOIN grades g ON c.grade_id = g.id
+                   WHERE g.school_id = ?""", (s["id"],)
+            )["n"]
+        return rows
+
+    def get_school(self, school_id: int) -> Optional[Dict]:
+        return self._query_one("SELECT * FROM schools WHERE id = ?", (school_id,))
+
+    def delete_school(self, school_id: int) -> bool:
+        """删除学校（级联删除年级/班级/学生绑定）"""
+        self._execute(
+            "DELETE FROM class_students WHERE class_id IN "
+            "(SELECT c.id FROM classes c JOIN grades g ON c.grade_id = g.id WHERE g.school_id = ?)",
+            (school_id,)
+        )
+        self._execute(
+            "DELETE FROM classes WHERE grade_id IN (SELECT id FROM grades WHERE school_id = ?)",
+            (school_id,)
+        )
+        self._execute("DELETE FROM grades WHERE school_id = ?", (school_id,))
+        cur = self._execute("DELETE FROM schools WHERE id = ?", (school_id,))
+        return cur.rowcount > 0
+
+    def add_grade(self, school_id: int, name: str) -> Dict:
+        """创建年级"""
+        try:
+            cur = self._execute(
+                "INSERT INTO grades (school_id, name) VALUES (?, ?)",
+                (school_id, name)
+            )
+            return {"id": cur.lastrowid, "school_id": school_id, "name": name}
+        except sqlite3.IntegrityError:
+            return {"error": f"该校已存在年级 '{name}'"}
+
+    def get_grades(self, school_id: Optional[int] = None) -> List[Dict]:
+        """获取年级列表（含班级数）"""
+        if school_id:
+            rows = self._query(
+                "SELECT * FROM grades WHERE school_id = ? ORDER BY id", (school_id,)
+            )
+        else:
+            rows = self._query("SELECT * FROM grades ORDER BY school_id, id")
+        for g in rows:
+            g["class_count"] = self._query_one(
+                "SELECT COUNT(*) as n FROM classes WHERE grade_id = ?", (g["id"],)
+            )["n"]
+        return rows
+
+    def delete_grade(self, grade_id: int) -> bool:
+        """删除年级（级联删除班级/学生绑定）"""
+        self._execute(
+            "DELETE FROM class_students WHERE class_id IN (SELECT id FROM classes WHERE grade_id = ?)",
+            (grade_id,)
+        )
+        self._execute("DELETE FROM classes WHERE grade_id = ?", (grade_id,))
+        cur = self._execute("DELETE FROM grades WHERE id = ?", (grade_id,))
+        return cur.rowcount > 0
+
+    def add_class(self, grade_id: int, name: str, teacher_id: int = 0) -> Dict:
+        """创建班级（可指定班主任 teacher_id）"""
+        try:
+            cur = self._execute(
+                "INSERT INTO classes (grade_id, name, teacher_id) VALUES (?, ?, ?)",
+                (grade_id, name, teacher_id)
+            )
+            return {"id": cur.lastrowid, "grade_id": grade_id, "name": name}
+        except sqlite3.IntegrityError:
+            return {"error": f"该年级已存在班级 '{name}'"}
+
+    def get_class(self, class_id: int) -> Optional[Dict]:
+        return self._query_one("SELECT * FROM classes WHERE id = ?", (class_id,))
+
+    def get_classes(
+        self,
+        grade_id: Optional[int] = None,
+        teacher_id: Optional[int] = None,
+        school_id: Optional[int] = None,
+    ) -> List[Dict]:
+        """获取班级列表（含学生数/班主任姓名/学校年级名）"""
+        sql = """SELECT c.*,
+                 g.name AS grade_name, g.school_id,
+                 s.name AS school_name,
+                 u.name AS teacher_name
+                 FROM classes c
+                 JOIN grades g ON c.grade_id = g.id
+                 JOIN schools s ON g.school_id = s.id
+                 LEFT JOIN users u ON c.teacher_id = u.id
+                 WHERE 1=1"""
+        params = []
+        if grade_id:
+            sql += " AND c.grade_id = ?"
+            params.append(grade_id)
+        if teacher_id:
+            sql += " AND c.teacher_id = ?"
+            params.append(teacher_id)
+        if school_id:
+            sql += " AND g.school_id = ?"
+            params.append(school_id)
+        sql += " ORDER BY s.id, g.id, c.id"
+        rows = self._query(sql, tuple(params))
+        for c in rows:
+            c["student_count"] = self._query_one(
+                "SELECT COUNT(*) as n FROM class_students WHERE class_id = ?", (c["id"],)
+            )["n"]
+        return rows
+
+    def update_class(self, class_id: int, **fields) -> bool:
+        """更新班级（name/teacher_id）"""
+        allowed = {"name", "teacher_id"}
+        updates = []
+        params = []
+        for k, v in fields.items():
+            if k in allowed:
+                updates.append(f"{k} = ?")
+                params.append(v)
+        if not updates:
+            return False
+        params.append(class_id)
+        cur = self._execute(
+            f"UPDATE classes SET {', '.join(updates)} WHERE id = ?", tuple(params)
+        )
+        return cur.rowcount > 0
+
+    def delete_class(self, class_id: int) -> bool:
+        """删除班级（级联删除学生绑定）"""
+        self._execute("DELETE FROM class_students WHERE class_id = ?", (class_id,))
+        cur = self._execute("DELETE FROM classes WHERE id = ?", (class_id,))
+        return cur.rowcount > 0
+
+    # ---- 学生-班级绑定 ----
+
+    def add_student_to_class(self, class_id: int, user_id: int) -> Dict:
+        """把学生加入班级"""
+        user = self.get_user(user_id)
+        if not user:
+            return {"error": f"用户 #{user_id} 不存在"}
+        if user["role"] != "student":
+            return {"error": f"用户 {user['name']} 不是学生角色"}
+        try:
+            cur = self._execute(
+                "INSERT OR IGNORE INTO class_students (class_id, user_id) VALUES (?, ?)",
+                (class_id, user_id)
+            )
+            if cur.rowcount == 0:
+                return {"info": "该学生已在班级中"}
+            return {"class_id": class_id, "user_id": user_id, "added": True}
+        except sqlite3.IntegrityError as e:
+            return {"error": f"加入失败: {e}"}
+
+    def remove_student_from_class(self, class_id: int, user_id: int) -> bool:
+        """把学生移出班级"""
+        cur = self._execute(
+            "DELETE FROM class_students WHERE class_id = ? AND user_id = ?",
+            (class_id, user_id)
+        )
+        return cur.rowcount > 0
+
+    def get_class_students(self, class_id: int) -> List[Dict]:
+        """获取班级学生列表（含学习统计摘要）"""
+        rows = self._query(
+            """SELECT u.id, u.name, u.username, u.role, u.avatar, u.created_at,
+               cs.created_at AS joined_at
+               FROM class_students cs
+               JOIN users u ON cs.user_id = u.id
+               WHERE cs.class_id = ?
+               ORDER BY u.name""",
+            (class_id,)
+        )
+        for s in rows:
+            s["stats"] = self.get_stats(s["id"])
+            s["report_count"] = self._query_one(
+                "SELECT COUNT(*) as n FROM learning_reports WHERE user_id = ?", (s["id"],)
+            )["n"]
+        return rows
+
+    def get_student_classes(self, user_id: int) -> List[Dict]:
+        """获取学生所在班级"""
+        return self._query(
+            """SELECT c.id, c.name AS class_name, g.name AS grade_name, s.name AS school_name
+               FROM class_students cs
+               JOIN classes c ON cs.class_id = c.id
+               JOIN grades g ON c.grade_id = g.id
+               JOIN schools s ON g.school_id = s.id
+               WHERE cs.user_id = ?
+               ORDER BY s.id, g.id, c.id""",
+            (user_id,)
+        )
+
+    def get_students(self, teacher_id: Optional[int] = None) -> List[Dict]:
+        """获取学生列表（教师可只看到自己班级的学生）"""
+        sql = """SELECT DISTINCT u.id, u.name, u.username, u.role, u.avatar, u.created_at
+                 FROM users u"""
+        params = []
+        if teacher_id:
+            sql += """ JOIN class_students cs ON cs.user_id = u.id
+                       JOIN classes c ON c.id = cs.class_id
+                       WHERE u.role = 'student' AND c.teacher_id = ?"""
+            params.append(teacher_id)
+        else:
+            sql += " WHERE u.role = 'student'"
+        sql += " ORDER BY u.name"
+        rows = self._query(sql, tuple(params))
+        for s in rows:
+            s["classes"] = self.get_student_classes(s["id"])
+            s["stats"] = self.get_stats(s["id"])
+            s["report_count"] = self._query_one(
+                "SELECT COUNT(*) as n FROM learning_reports WHERE user_id = ?", (s["id"],)
+            )["n"]
+        return rows
+
+    # ---- 教师端总览 ----
+
+    def get_teacher_overview(self, teacher_id: int) -> Dict:
+        """教师端总览统计（我的班级/学生/任务/报告）"""
+        classes = self.get_classes(teacher_id=teacher_id)
+        class_ids = [c["id"] for c in classes]
+        student_count = 0
+        if class_ids:
+            placeholders = ",".join("?" * len(class_ids))
+            student_count = self._query_one(
+                f"SELECT COUNT(DISTINCT user_id) as n FROM class_students WHERE class_id IN ({placeholders})",
+                tuple(class_ids)
+            )["n"]
+
+        task_stats = self._query_one(
+            "SELECT COUNT(*) as total, "
+            "SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active, "
+            "SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed "
+            "FROM teaching_tasks WHERE created_by = ?",
+            (teacher_id,)
+        ) or {}
+
+        report_count = 0
+        if class_ids:
+            report_count = self._query_one(
+                f"""SELECT COUNT(*) as n FROM learning_reports
+                    WHERE user_id IN (SELECT DISTINCT user_id FROM class_students WHERE class_id IN ({placeholders}))""",
+                tuple(class_ids)
+            )["n"]
+
+        return {
+            "teacher_id": teacher_id,
+            "class_count": len(classes),
+            "student_count": student_count,
+            "task_total": task_stats.get("total", 0),
+            "task_active": task_stats.get("active", 0),
+            "task_completed": task_stats.get("completed", 0),
+            "report_count": report_count,
+            "classes": classes,
+        }
+
+    # ---- 任务批量分配（按班级） ----
+
+    def assign_task_to_class(self, task_id: int, class_id: int) -> Dict:
+        """把任务分配给班级内所有学生"""
+        students = self.get_class_students(class_id)
+        assigned, skipped = [], []
+        for s in students:
+            # 已分配过的学生跳过
+            if self.get_task_assignments(task_id=task_id, user_id=s["id"]):
+                skipped.append(s["name"])
+                continue
+            result = self.assign_task(task_id, s["id"])
+            if result.get("assignment_id"):
+                assigned.append({"user_id": s["id"], "name": s["name"]})
+            else:
+                skipped.append(s["name"])
+        return {
+            "task_id": task_id,
+            "class_id": class_id,
+            "assigned": assigned,
+            "assigned_count": len(assigned),
+            "skipped": skipped,
+        }
+
+    def get_task_assignments_with_names(self, task_id: int) -> List[Dict]:
+        """获取任务分配列表（含学生姓名/班级）"""
+        rows = self._query(
+            """SELECT a.*, u.name AS user_name, u.username
+               FROM task_assignments a
+               JOIN users u ON a.user_id = u.id
+               WHERE a.task_id = ?
+               ORDER BY a.created_at""",
+            (task_id,)
+        )
+        return rows
 
 
 # ============================================================

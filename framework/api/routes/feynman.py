@@ -71,7 +71,7 @@ def feynman_explain():
             "error": f"不支持的学生水平: {level}，支持: {', '.join(sorted(VALID_LEVELS))}"
         }), 400
 
-    model = data.get("model", "qwen2.5:7b")
+    model = data.get("model", "lumilearn-v2:latest")
 
     try:
         engine = FeynmanEngine(model_name=model)
@@ -148,7 +148,7 @@ def feynman_test():
     if not explanation or not explanation.strip():
         return jsonify({"error": "缺少 explanation 字段或内容为空"}), 400
 
-    model = data.get("model", "qwen2.5:7b")
+    model = data.get("model", "lumilearn-v2:latest")
 
     try:
         engine = FeynmanEngine(model_name=model)

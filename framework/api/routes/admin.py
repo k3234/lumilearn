@@ -120,6 +120,10 @@ def admin_overview():
 def admin_list_users():
     role = request.args.get("role")
     users = db.get_users(role=role)
+    # 隐藏密码哈希
+    for u in users:
+        u["has_password"] = bool(u.get("password_hash", ""))
+        u.pop("password_hash", None)
     return jsonify({"success": True, "users": users})
 
 
@@ -129,11 +133,34 @@ def admin_create_user():
     data = request.get_json(force=True) or {}
     name = data.get("name", "")
     role = data.get("role", "student")
+    username = data.get("username", "")
+    password = data.get("password", "")
     if not name:
         return jsonify({"error": "缺少 name 字段"}), 400
-    user = db.add_user(name, role=role)
+    if not password or len(password) < 4:
+        return jsonify({"error": "密码不能为空且至少4位"}), 400
+    # 检查用户名是否已存在
+    if db.get_user_by_username(username or name):
+        return jsonify({"error": f"用户名 '{username or name}' 已存在"}), 400
+    user = db.add_user(name, role=role, username=username, password=password)
     db.add_system_log("info", "admin", f"管理员创建用户: {name} ({role})")
     return jsonify({"success": True, "user": user})
+
+
+@admin_bp.route("/api/admin/users/<int:user_id>/password", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_reset_user_password(user_id):
+    """重置学生/教师用户密码"""
+    data = request.get_json(force=True) or {}
+    new_password = data.get("password", "")
+    if not new_password or len(new_password) < 4:
+        return jsonify({"error": "密码不能为空且至少4位"}), 400
+    user = db.get_user(user_id)
+    if not user:
+        return jsonify({"error": "用户不存在"}), 404
+    db.update_user_password(user_id, new_password)
+    db.add_system_log("info", "admin", f"重置用户 #{user_id} 密码")
+    return jsonify({"success": True, "message": f"用户 {user['name']} 密码已重置"})
 
 
 @admin_bp.route("/api/admin/users/<int:user_id>", methods=["DELETE", "OPTIONS"])
@@ -144,6 +171,47 @@ def admin_delete_user(user_id):
         return jsonify({"error": "用户不存在"}), 404
     db.add_system_log("info", "admin", f"管理员删除用户 id={user_id}")
     return jsonify({"success": True, "message": "用户已删除"})
+
+
+@admin_bp.route("/api/admin/learning-reports", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_learning_reports():
+    """获取所有学生的学习报告（可筛选用户）"""
+    user_id = request.args.get("user_id", type=int)
+    limit = min(int(request.args.get("limit", 50)), 200)
+    reports = db.get_learning_reports(user_id=user_id, limit=limit)
+    # 关联用户姓名
+    user_cache = {}
+    for r in reports:
+        uid = r["user_id"]
+        if uid not in user_cache:
+            u = db.get_user(uid)
+            user_cache[uid] = u["name"] if u else f"#{uid}"
+        r["user_name"] = user_cache[uid]
+        # 精简 report 字段（只返回摘要，避免过大）
+        rep = r.get("report", {})
+        r["summary"] = {
+            "title": rep.get("title", ""),
+            "generated_at": rep.get("generated_at", ""),
+            "subject": (rep.get("task_understanding") or {}).get("subject", ""),
+            "core_topic": (rep.get("task_understanding") or {}).get("core_topic", ""),
+            "score": (rep.get("mastery_assessment") or {}).get("score", 0),
+            "level": (rep.get("mastery_assessment") or {}).get("level", ""),
+        }
+        r.pop("report", None)
+    return jsonify({"success": True, "reports": reports})
+
+
+@admin_bp.route("/api/admin/learning-reports/<int:report_id>", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_get_learning_report(report_id):
+    """获取单份学习报告详情"""
+    r = db.get_learning_report(report_id)
+    if not r:
+        return jsonify({"error": "报告不存在"}), 404
+    u = db.get_user(r["user_id"])
+    r["user_name"] = u["name"] if u else f"#{r['user_id']}"
+    return jsonify({"success": True, "report": r})
 
 
 # ---------------------------------------------------------------------------
@@ -315,3 +383,120 @@ def admin_delete_api_key(api_key):
     if not ok:
         return jsonify({"error": "密钥不存在"}), 404
     return jsonify({"success": True, "message": "密钥已删除"})
+
+
+# ---------------------------------------------------------------------------
+# 模型提供者管理（API Key 配置）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/providers", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_providers():
+    """获取所有已配置的模型提供者列表"""
+    from framework.services.provider_service import get_provider_service
+    ps = get_provider_service()
+    providers = ps.list_providers()
+    templates = ps.get_available_templates()
+    return jsonify({"success": True, "providers": providers, "templates": templates})
+
+
+@admin_bp.route("/api/admin/providers", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_add_provider():
+    """添加或更新模型提供者"""
+    from framework.services.provider_service import get_provider_service
+    data = request.get_json(force=True) or {}
+    key = data.get("key", "")
+    name = data.get("name", "")
+    base_url = data.get("base_url", "")
+    api_key = data.get("api_key", "")
+    enabled = data.get("enabled", True)
+    models = data.get("models")
+
+    # 更新时如果 api_key 为空字符串，保留原有 Key（前端传空表示不修改）
+    if not api_key:
+        existing = get_provider_service().get_provider(key)
+        if existing and existing.get("has_api_key"):
+            api_key = get_provider_service().get_provider_api_key(key)
+
+    result = get_provider_service().add_or_update_provider(
+        key, name, base_url, api_key, enabled=enabled, models=models
+    )
+    if not result["success"]:
+        return jsonify(result), 400
+    db.add_system_log("info", "providers", f"保存提供者: {name} ({key})")
+    return jsonify(result)
+
+
+@admin_bp.route("/api/admin/providers/<provider_key>", methods=["DELETE", "OPTIONS"])
+@require_admin
+def admin_delete_provider(provider_key):
+    """删除模型提供者"""
+    from framework.services.provider_service import get_provider_service
+    result = get_provider_service().delete_provider(provider_key)
+    if not result["success"]:
+        return jsonify(result), 404
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# 端口-模型映射管理
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/port-models", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_get_port_models():
+    """获取各端口使用的模型配置"""
+    from framework.services.provider_service import get_provider_service
+    ps = get_provider_service()
+    port_map = ps.get_port_model_map()
+    all_models = ps.get_all_available_models()
+    return jsonify({"success": True, "port_map": port_map, "all_models": all_models})
+
+
+@admin_bp.route("/api/admin/port-models", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_set_port_model():
+    """设置某个端口使用的模型"""
+    from framework.services.provider_service import get_provider_service
+    data = request.get_json(force=True) or {}
+    port_key = data.get("port_key", "")
+    provider = data.get("provider", "ollama")
+    model = data.get("model", "")
+    if not port_key or not model:
+        return jsonify({"error": "缺少 port_key 或 model 字段"}), 400
+    result = get_provider_service().set_port_model(port_key, provider, model)
+    if not result["success"]:
+        return jsonify(result), 400
+    db.add_system_log("info", "port_models", f"端口 {port_key} 模型设置为 {provider}/{model}")
+    return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# 端口服务选择性配置管理
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/port-settings", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_get_port_settings():
+    """获取所有端口服务的启用/端口配置与监听状态"""
+    from framework.services.provider_service import get_provider_service
+    ps = get_provider_service()
+    settings = ps.get_port_settings()
+    return jsonify({"success": True, "port_settings": settings})
+
+
+@admin_bp.route("/api/admin/port-settings", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_set_port_settings():
+    """保存端口服务配置（启用开关 + 端口号）"""
+    from framework.services.provider_service import get_provider_service
+    data = request.get_json(force=True) or {}
+    settings = data.get("port_settings") or {}
+    if not settings:
+        return jsonify({"error": "缺少 port_settings 字段"}), 400
+    result = get_provider_service().set_port_settings(settings)
+    if not result["success"]:
+        return jsonify(result), 400
+    db.add_system_log("info", "ports", "更新端口服务配置", str(settings))
+    return jsonify(result)

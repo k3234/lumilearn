@@ -31,7 +31,7 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
         },
         "ollama": {
             "base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-            "default_model": os.getenv("OLLAMA_MODEL", "qwen2.5:7b"),
+            "default_model": os.getenv("OLLAMA_MODEL", "lumilearn-v2:latest"),
             "timeout": 300
         },
         "models": {"providers": {}},
