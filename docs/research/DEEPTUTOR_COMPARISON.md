@@ -2,7 +2,7 @@
 
 > 分析日期：2026-08-07  
 > 分析对象：HKUDS DeepTutor（https://github.com/HKUDS/DeepTutor）  
-> 对比对象：LumiLearn AI 教官（https://github.com/your-username/lumilearn）  
+> 对比对象：LumiLearn AI 教官（https://github.com/k3234/lumilearn）  
 > 分析背景：抖音视频"港大开源的终身学习系统"引发关注
 
 ---
@@ -12,7 +12,7 @@
 | 维度 | DeepTutor (港大HKUDS) | LumiLearn (本项目) |
 |:---|:---|:---|
 | **定位** | 终身个性化辅导系统（Lifelong Personalized Tutoring） | 教育智能体（AI 教官） |
-| **开发方** | 香港大学数据智能实验室（HKUDS） | 高一学生 LumiLearn（个人） |
+| **开发方** | 香港大学数据智能实验室（HKUDS） | 高中生开发者（个人） |
 | **GitHub Stars** | ~8K | — |
 | **开源协议** | AGPL v3.0 | MIT |
 | **代码量** | 完整系统（Next.js + FastAPI + Agent Runtime） | 轻量单文件（核心 ~400行） |

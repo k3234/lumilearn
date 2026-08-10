@@ -287,4 +287,4 @@ OpenMAIC/
 - Live Demo：https://open.maic.chat/
 - OpenClaw：https://github.com/openclaw/openclaw
 - VoxCPM2 TTS：https://github.com/OpenBMB/VoxCPM
-- LumiLearn：e:\学习LLM\lumilearn
+- LumiLearn：<project-root>\lumilearn

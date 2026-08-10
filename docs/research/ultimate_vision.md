@@ -584,4 +584,4 @@ LumiLearn Ultimate 独特优势
 - Claude: https://claude.ai/
 - rasbt/LLMs-from-scratch: https://github.com/rasbt/LLMs-from-scratch
 - llama.cpp: https://github.com/ggerganov/llama.cpp
-- LumiLearn: e:\学习LLM\lumilearn
+- LumiLearn: <project-root>\lumilearn

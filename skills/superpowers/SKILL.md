@@ -311,7 +311,7 @@ cp /tmp/superpowers/skills/debugging.md ./skills/
 
 ### 建议的 LumiLearn Superpowers 配置
 
-创建 `e:\学习LLM\lumilearn\.superpowers` 目录：
+创建 `<project-root>\lumilearn\.superpowers` 目录：
 
 ```
 lumilearn/.superpowers/

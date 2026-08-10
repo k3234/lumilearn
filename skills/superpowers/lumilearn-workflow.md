@@ -214,9 +214,7 @@ tdd → code-review → pre-flight → 提交
 | 文档 | 路径 | 说明 |
 |------|------|------|
 | Superpowers | [../superpowers/SKILL.md](SKILL.md) | 6 个核心 Skills |
-| AGESMD | [../../PRODUCT.md](../../PRODUCT.md) | 产品目标 |
-| AGESMD | [../../DESIGN.md](../../DESIGN.md) | 设计规范 |
-| AGESMD | [../../AGENTS.md](../../AGENTS.md) | 开发流程 |
+| AGESMD | [../../PROJECT_PRINCIPLES.md](../../PROJECT_PRINCIPLES.md) | 开发原则 |
 | AI Tools | [../ai-coding-tools/SKILL.md](../ai-coding-tools/SKILL.md) | AI 编程工具 |
 
 ---

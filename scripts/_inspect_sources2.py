@@ -5,7 +5,7 @@ from collections import Counter
 sys.stdout.reconfigure(encoding='utf-8')
 
 rows = []
-with open(r"e:\学习LLM\lumilearn_clone\lumilearn_master.csv", encoding='utf-8', errors='replace') as f:
+with open(r"<project-root>\lumilearn_clone\lumilearn_master.csv", encoding='utf-8', errors='replace') as f:
     reader = csv.DictReader(f)
     for r in reader:
         rows.append(r)

@@ -27,3 +27,5 @@ markdown>=3.4.0
 openai-whisper>=20231117
 paddlepaddle>=3.0.0
 paddleocr>=2.9.0
+paramiko>=3.0.0
+peft>=0.7.0

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """本地验证合并后的 LumiLearn 1.5B 模型"""
 import sys, os, time
-sys.path.insert(0, "e:/学习LLM/lumilearn")
+sys.path.insert(0, "<project-root>")
 
-MODEL_DIR = "e:/学习LLM/lumilearn/models/distil/merged_model_15b_v2"
+MODEL_DIR = "<project-root>/models/distil/merged_model_15b_v2"
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer

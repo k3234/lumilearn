@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """用真实模型输出测试宽松解析器"""
 import sys, os
-sys.path.insert(0, r"e:\学习LLM\lumilearn")
+sys.path.insert(0, r"<project-root>")
 
 from framework.api.routes.slides import _parse_slides
 

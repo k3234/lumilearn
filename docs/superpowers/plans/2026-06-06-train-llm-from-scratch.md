@@ -55,9 +55,9 @@
 ```
 
 **关键文件：**
-- [data/collection/web_crawler.py](file:///e:/学习LLM/lumilearn/data/collection/web_crawler.py)
-- [data/collection/book_scraper.py](file:///e:/学习LLM/lumilearn/data/collection/book_scraper.py)
-- [data/collection/code_scraper.py](file:///e:/学习LLM/lumilearn/data/collection/code_scraper.py)
+- [data/collection/web_crawler.py](file:///<project-root>/lumilearn/data/collection/web_crawler.py)
+- [data/collection/book_scraper.py](file:///<project-root>/lumilearn/data/collection/book_scraper.py)
+- [data/collection/code_scraper.py](file:///<project-root>/lumilearn/data/collection/code_scraper.py)
 
 - [ ] **Step 1: 配置数据下载源与爬取器**
   ```python
@@ -102,8 +102,8 @@
 ```
 
 **关键文件：**
-- [tokenizer/train_tokenizer.py](file:///e:/学习LLM/lumilearn/tokenizer/train_tokenizer.py)
-- [tokenizer/tokenizer.json](file:///e:/学习LLM/lumilearn/tokenizer/tokenizer.json)
+- [tokenizer/train_tokenizer.py](file:///<project-root>/lumilearn/tokenizer/train_tokenizer.py)
+- [tokenizer/tokenizer.json](file:///<project-root>/lumilearn/tokenizer/tokenizer.json)
 
 - [ ] **Step 1: 准备分词器训练语料（1-10GB 混合文本）**
 - [ ] **Step 2: 训练 SentencePiece 分词器**
@@ -133,7 +133,7 @@
 ```
 
 **关键文件：**
-- [data/processing/prepare_pretrain_data.py](file:///e:/学习LLM/lumilearn/data/processing/prepare_pretrain_data.py)
+- [data/processing/prepare_pretrain_data.py](file:///<project-root>/lumilearn/data/processing/prepare_pretrain_data.py)
 
 - [ ] **Step 1: 切分文本为滑动窗口块**
   ```python
@@ -164,8 +164,8 @@
 ```
 
 **关键文件：**
-- [models/configs/model_config.py](file:///e:/学习LLM/lumilearn/models/configs/model_config.py)
-- [models/modeling_lumilearn.py](file:///e:/学习LLM/lumilearn/models/modeling_lumilearn.py)
+- [models/configs/model_config.py](file:///<project-root>/lumilearn/models/configs/model_config.py)
+- [models/modeling_lumilearn.py](file:///<project-root>/lumilearn/models/modeling_lumilearn.py)
 
 - [ ] **Step 1: 配置模型超参数**
   ```python
@@ -224,8 +224,8 @@
 ```
 
 **关键文件：**
-- [training/train_pretrain.py](file:///e:/学习LLM/lumilearn/training/train_pretrain.py)
-- [training/deepspeed_config.json](file:///e:/学习LLM/lumilearn/training/deepspeed_config.json)
+- [training/train_pretrain.py](file:///<project-root>/lumilearn/training/train_pretrain.py)
+- [training/deepspeed_config.json](file:///<project-root>/lumilearn/training/deepspeed_config.json)
 
 - [ ] **Step 1: 配置分布式训练（DeepSpeed 或 Megatron）**
 - [ ] **Step 2: 配置训练参数**
@@ -284,8 +284,8 @@
 ```
 
 **关键文件：**
-- [data/sft/prepare_sft_data.py](file:///e:/学习LLM/lumilearn/data/sft/prepare_sft_data.py)
-- [training/train_sft.py](file:///e:/学习LLM/lumilearn/training/train_sft.py)
+- [data/sft/prepare_sft_data.py](file:///<project-root>/lumilearn/data/sft/prepare_sft_data.py)
+- [training/train_sft.py](file:///<project-root>/lumilearn/training/train_sft.py)
 
 - [ ] **Step 1: 准备 SFT 数据（使用 `<|im_start|>user/assistant` 格式）**
   ```json
@@ -319,7 +319,7 @@
 ```
 
 **关键文件：**
-- [evaluation/run_evals.py](file:///e:/学习LLM/lumilearn/evaluation/run_evals.py)
+- [evaluation/run_evals.py](file:///<project-root>/lumilearn/evaluation/run_evals.py)
 
 - [ ] **Step 1: 集成 LM Evaluation Harness**
 - [ ] **Step 2: 基准评估与对比**
@@ -336,8 +336,8 @@
 ```
 
 **关键文件：**
-- [deployment/export_model.py](file:///e:/学习LLM/lumilearn/deployment/export_model.py)
-- [deployment/server.py](file:///e:/学习LLM/lumilearn/deployment/server.py)
+- [deployment/export_model.py](file:///<project-root>/lumilearn/deployment/export_model.py)
+- [deployment/server.py](file:///<project-root>/lumilearn/deployment/server.py)
 
 - [ ] **Step 1: 模型保存与转换为 GGUF 格式**
   ```python
@@ -398,5 +398,5 @@
 
 ---
 
-**计划文档保存位置：** [docs/superpowers/plans/2026-06-06-train-llm-from-scratch.md](file:///e:/学习LLM/lumilearn/docs/superpowers/plans/2026-06-06-train-llm-from-scratch.md)
+**计划文档保存位置：** [docs/superpowers/plans/2026-06-06-train-llm-from-scratch.md](file:///<project-root>/lumilearn/docs/superpowers/plans/2026-06-06-train-llm-from-scratch.md)
 

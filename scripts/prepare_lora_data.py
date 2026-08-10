@@ -7,7 +7,7 @@ import json
 import random
 from pathlib import Path
 
-DATA_DIR = Path("e:/学习LLM/lumilearn/data")
+DATA_DIR = Path("<project-root>/data")
 SRC = DATA_DIR / "merged_corpus.jsonl"
 OUT = DATA_DIR / "distil" / "train_data_merged.jsonl"
 

@@ -4,7 +4,7 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import importlib.util
-spec = importlib.util.spec_from_file_location("lumilearn_db", "e:/学习LLM/lumilearn/framework/database.py")
+spec = importlib.util.spec_from_file_location("lumilearn_db", "<project-root>/framework/database.py")
 lumilearn_db = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(lumilearn_db)
 db = lumilearn_db.db

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """本地验证 slides/mindmap 解析逻辑"""
 import sys, os
-sys.path.insert(0, r"e:\学习LLM\lumilearn")
+sys.path.insert(0, r"<project-root>")
 os.environ["OLLAMA_BASE_URL"] = "http://192.168.2.xx:11434"
 
 from framework.api.routes.slides import _parse_slides, _fallback_slides

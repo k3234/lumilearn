@@ -7,7 +7,7 @@ import paramiko
 
 REMOTE_BASE = "~/lumilearn"
 host = os.environ.get("REMOTE_HOST", "192.168.2.xx")
-user = os.environ.get("REMOTE_USER", "kai")
+user = os.environ.get("REMOTE_USER", "your_username")
 password = os.environ.get("REMOTE_PASSWORD", "")
 
 if not password:

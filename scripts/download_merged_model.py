@@ -11,7 +11,7 @@ HOST = os.environ.get("REMOTE_HOST", "")
 USER = os.environ.get("REMOTE_USER", "")
 cfg = get_config(host=HOST, user=USER)
 REMOTE_BASE = "~/lumilearn"
-LOCAL_BASE = r"e:\学习LLM\lumilearn"
+LOCAL_BASE = r"<project-root>"
 
 REMOTE_EXP = "outputs/cpu_small/LumiLearn-CPU-Small_20260807_135643"
 LOCAL_EXP = os.path.join(LOCAL_BASE, "outputs", "cpu_small", "merged_gpu_train")

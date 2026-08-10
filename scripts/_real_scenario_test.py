@@ -2,8 +2,8 @@
 """真实学习场景模拟测试 - 修正路径"""
 import json, time, sys, os
 # 切换到 lumilearn 目录
-os.chdir(r"e:\学习LLM\lumilearn")
-sys.path.insert(0, r"e:\学习LLM\lumilearn")
+os.chdir(r"<project-root>")
+sys.path.insert(0, r"<project-root>")
 
 from goai_agent import LumiLearnAgent
 

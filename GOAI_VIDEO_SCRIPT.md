@@ -146,7 +146,7 @@
 | **画面** | 项目Logo + GitHub地址 + Slogan |
 | **文字** | 🎓 **LumiLearn AI 教官** |
 | | 让每个学习者都被看见 |
-| | github.com/your-username/lumilearn |
+| | github.com/k3234/lumilearn |
 | **配音** | "教育智能体的时代已经开始。LumiLearn不是终点——是起点。" |
 | **结束** | Logo放大 + 淡出 |
 

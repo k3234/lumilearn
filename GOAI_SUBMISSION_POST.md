@@ -2,7 +2,7 @@
 
 > **赛道**：无界应用赛道（教育场景）  
 > **项目名称**：LumiLearn AI 教官 — 教育智能体  
-> **项目地址**：https://github.com/your-username/lumilearn  
+> **项目地址**：https://github.com/k3234/lumilearn  
 > **Demo地址**：本地运行（见下方说明）  
 > **团队**：LumiLearn（一名高中生）
 
@@ -188,7 +188,7 @@ $ python goai_agent.py "我想理解函数的单调性"
 | 项目 | 信息 |
 |:---|:---|
 | 项目名 | LumiLearn AI 教官 |
-| 仓库 | https://github.com/your-username/lumilearn |
+| 仓库 | https://github.com/k3234/lumilearn |
 | 语言 | Python 3.10+ |
 | 依赖 | flask, requests |
 | 模型 | 自研Transformer（8M参数）+ Ollama多模型 |

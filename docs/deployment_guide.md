@@ -113,7 +113,7 @@ python -c "import sys; print(sys.version)"
 ### 3.1 克隆项目
 
 ```bash
-git clone https://github.com/your-username/lumilearn.git
+git clone https://github.com/k3234/lumilearn.git
 cd lumilearn
 ```
 
@@ -376,7 +376,7 @@ ollama list
 **解决**:
 ```bash
 # 确保在项目的根目录下运行
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 
 # 检查 PYTHONPATH
 python -c "import sys; print('\n'.join(sys.path))"

@@ -2,7 +2,7 @@
 
 > **项目名称**：LumiLearn AI 教官  
 > **参赛赛道**：GOAI 无界应用赛道  
-> **团队**：LumiLearn (LumiLearn)  
+> **团队**：LumiLearn 团队  
 > **版本**：1.0.0 | 2026-08-05
 
 ---
@@ -291,7 +291,7 @@ pip install flask requests
 
 LumiLearn 是一个由高中生独立开发的教育AI项目，始于2025年。项目愿景是让每个学习者都拥有自己的"AI教官"——不是简单的知识搬运工，而是能够真正理解学生、引导学生、陪伴成长的智能体。
 
-**项目仓库**：[https://github.com/k3234/LumiLearn](https://github.com/k3234/LumiLearn)
+**项目仓库**：[https://github.com/k3234/lumilearn](https://github.com/k3234/lumilearn)
 
 ---
 

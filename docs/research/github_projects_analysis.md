@@ -311,4 +311,4 @@ build-your-own-x/
 - CodeGraph: 抖音技术分享 + GitHub trending
 - build-your-own-x: github.com/codecrafters-io/build-your-own-x
 - Understand-Anything: github.com/...
-- LumiLearn 现有架构: `e:\学习LLM\lumilearn\`
+- LumiLearn 现有架构: `<project-root>\lumilearn\`

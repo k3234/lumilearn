@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """本地验证综合训练后的模型"""
 import sys, os
-sys.path.insert(0, "e:/学习LLM/lumilearn")
+sys.path.insert(0, "<project-root>")
 import torch
 from framework.model import LumiLearnModel
 from framework.tokenizer import LumiLearnTokenizer
 
-model_dir = "e:/学习LLM/lumilearn/outputs/cpu_small/merged_gpu_train/model"
-tok_path = "e:/学习LLM/lumilearn/outputs/cpu_small/merged_gpu_train/tokenizer.json"
+model_dir = "<project-root>/outputs/cpu_small/merged_gpu_train/model"
+tok_path = "<project-root>/outputs/cpu_small/merged_gpu_train/tokenizer.json"
 
 model = LumiLearnModel.from_pretrained(model_dir, map_location="cpu")
 tokenizer = LumiLearnTokenizer.load(tok_path)

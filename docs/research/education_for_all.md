@@ -498,4 +498,4 @@ LumiLearn_Edu.apk
 - llamafile: https://github.com/Mozilla-Ocho/llamafile
 - Phi 模型: https://huggingface.co/microsoft/phi-1_5
 - Qwen 模型: https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF
-- LumiLearn: e:\学习LLM\lumilearn
+- LumiLearn: <project-root>\lumilearn

@@ -21,8 +21,8 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-ROOT = Path(r"e:\学习LLM")
-OUT_DIR = Path(r"e:\学习LLM\lumilearn\data\distil")
+ROOT = Path(r"<your-data-root>")
+OUT_DIR = Path(r"<project-root>\data\distil")
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # 学科映射（统一到 LumiLearn 学科体系）

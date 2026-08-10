@@ -13,7 +13,7 @@ from datetime import datetime
 
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 MODEL = "qwen2.5:7b"
-LUMILEARN_DIR = r"e:\学习LLM\lumilearn"
+LUMILEARN_DIR = r"<project-root>"
 MASTER_CSV = os.path.join(LUMILEARN_DIR, "lumilearn_master.csv")
 TODAY = datetime.now().strftime("%Y-%m-%d")
 

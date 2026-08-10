@@ -465,9 +465,6 @@ https://example.com        # 自动链接
 **A**: 推荐两种方式：
 
 ```markdown
-# 方式 1：引用本地图片
-![描述文字](./images/架构图.png)
-
 # 方式 2：引用在线图片
 ![描述文字](https://example.com/图片.png)
 ```

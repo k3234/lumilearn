@@ -32,7 +32,7 @@
 | GOAI Web 学习平台（学生端） | 5000 | `python goai_web.py` | http://localhost:5000 | ✅ 启用 |
 | 教师门户 Teacher Portal | 5001 | `python teacher_portal.py` | http://localhost:5001 | ✅ 启用 |
 
-- **Windows 一键启动**：`start_services.bat`（清理旧进程 → 检查 Python → 设置 OLLAMA_BASE_URL → 启动 GOAI Web(5000) → 启动 Framework API(18080-18082) → 自动打开浏览器）
+- **Windows 一键启动**：`start_services.bat`（检查 Python → 委托 `deploy/start.py` 按 `config/framework.yaml` 的 `port_settings` 与 `.env` 启动启用的服务 → 自动打开浏览器）
 - **停止服务**：`stop_services.bat`（按进程名查杀 goai_web / framework.api.server）
 - **远程服务器一键启动**：`bash scripts/remote_start_all.sh`（初始化数据库 → 确认/启动 Ollama → 按 framework.yaml 的 port_settings 选择性启动各端口服务，带幂等检查与状态汇总）
 - **端口配置**：`config/framework.yaml` 的 `port_settings` 节（terminal/api/models/goai_web/teacher_portal 各含 enabled + port），Admin 面板「端口管理」可在线修改；Ollama 地址通过环境变量 `OLLAMA_URL` / `OLLAMA_BASE_URL` 覆盖（默认 localhost:11434），避免硬编码内网地址

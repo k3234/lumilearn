@@ -11,7 +11,7 @@ HOST = os.environ.get("REMOTE_HOST", "")
 USER = os.environ.get("REMOTE_USER", "")
 cfg = get_config(host=HOST, user=USER)
 REMOTE_BASE = "~/lumilearn/models/distil/merged_model_15b_v2"
-LOCAL_BASE = r"e:\学习LLM\lumilearn\models\distil\merged_model_15b_v2"
+LOCAL_BASE = r"<project-root>\models\distil\merged_model_15b_v2"
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())

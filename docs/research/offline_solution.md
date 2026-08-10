@@ -73,7 +73,7 @@ Ollama 本身就是本地的，只需要：
 
 ```bash
 # 创建本地模型存储目录
-mkdir -p e:\学习LLM\models
+mkdir -p <project-root>\models
 
 # 下载模型（一次性，之后无需网络）
 ollama pull qwen2.5:7b
@@ -85,7 +85,7 @@ ollama list
 
 #### 步骤2：修改代码绕过外部 API
 
-修改 [langgraph_engine.py](file:///e:/学习LLM/lumilearn/langgraph_engine.py)，强制使用本地 Ollama：
+修改 [langgraph_engine.py](file:///<project-root>/lumilearn/langgraph_engine.py)，强制使用本地 Ollama：
 
 ```python
 # langgraph_engine.py
@@ -117,7 +117,7 @@ curl http://192.168.2.xx:11434/api/generate \
   -d '{"model": "qwen2.5:7b", "prompt": "你好"}'
 
 # 3. 启动 LumiLearn
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python lumiterm_local_server.py
 ```
 
@@ -144,7 +144,7 @@ python lumiterm_local_server.py
 # 下载地址：https://github.com/ggerganov/llama.cpp/releases
 
 # 选择 llama-cli-windows-bin.zip
-# 下载后解压到 e:\学习LLM\llama.cpp
+# 下载后解压到 <project-root>\llama.cpp
 ```
 
 #### 步骤2：下载模型（GGUF 格式）
@@ -154,7 +154,7 @@ python lumiterm_local_server.py
 # 推荐从 HuggingFace 下载
 
 # 方法1：使用 huggingface-cli
-huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF qwen2.5-7b-instruct-q4_k_m.gguf --local-dir e:\学习LLM\models
+huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF qwen2.5-7b-instruct-q4_k_m.gguf --local-dir <project-root>\models
 
 # 方法2：直接下载
 # https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF/tree/main
@@ -163,11 +163,11 @@ huggingface-cli download Qwen/Qwen2.5-7B-Instruct-GGUF qwen2.5-7b-instruct-q4_k_
 #### 步骤3：运行本地推理
 
 ```bash
-cd e:\学习LLM\llama.cpp
+cd <project-root>\llama.cpp
 
 # CPU 推理（7B 模型约 4GB 内存）
 .\llama-cli.exe ^
-  -m e:\学习LLM\models\qwen2.5-7b-instruct-q4_k_m.gguf ^
+  -m <project-root>\models\qwen2.5-7b-instruct-q4_k_m.gguf ^
   -n 512 ^
   --temp 0.7 ^
   -p "你是小澍，一个专业的AI学习助手。请用简洁的语言回答。\n\n用户：%s\n小澍：" ^
@@ -175,7 +175,7 @@ cd e:\学习LLM\llama.cpp
 
 # GPU 推理（使用 780M）
 .\llama-cli.exe ^
-  -m e:\学习LLM\models\qwen2.5-7b-instruct-q4_k_m.gguf ^
+  -m <project-root>\models\qwen2.5-7b-instruct-q4_k_m.gguf ^
   -ngl 99 ^
   -n 512 ^
   --temp 0.7 ^
@@ -187,7 +187,7 @@ cd e:\学习LLM\llama.cpp
 ```bash
 # 启动 llama.cpp HTTP 服务器（兼容 OpenAI API）
 .\llama-server.exe ^
-  -m e:\学习LLM\models\qwen2.5-7b-instruct-q4_k_m.gguf ^
+  -m <project-root>\models\qwen2.5-7b-instruct-q4_k_m.gguf ^
   -ngl 99 ^
   -c 2048 ^
   --host 192.168.2.xx ^
@@ -198,7 +198,7 @@ cd e:\学习LLM\llama.cpp
 
 #### 步骤5：修改 LumiLearn 对接
 
-修改 [langgraph_engine.py](file:///e:/学习LLM/lumilearn/langgraph_engine.py)：
+修改 [langgraph_engine.py](file:///<project-root>/lumilearn/langgraph_engine.py)：
 
 ```python
 # langgraph_engine.py
@@ -251,7 +251,7 @@ def call_model(prompt, model=None):
 
 # 或者下载空壳 llamafile + 自己的模型
 # 下载 llamafile.exe
-Invoke-WebRequest -Uri "https://github.com/Mozilla-Ocho/llamafile/releases/download/0.1.8/llamafile.exe" -OutFile e:\学习LLM\llamafile.exe
+Invoke-WebRequest -Uri "https://github.com/Mozilla-Ocho/llamafile/releases/download/0.1.8/llamafile.exe" -OutFile <project-root>\llamafile.exe
 ```
 
 #### 步骤2：下载模型
@@ -267,7 +267,7 @@ Invoke-WebRequest -Uri "https://github.com/Mozilla-Ocho/llamafile/releases/downl
 
 ```powershell
 # 将模型文件和 llamafile.exe 放在同一目录
-cd e:\学习LLM
+cd <project-root>
 .\llamafile.exe -m qwen2.5-7b-instruct-q4_k_m.gguf --host 192.168.2.xx --port 8080
 
 # 搞定！现在可以访问 http://192.168.2.xx:8080
@@ -328,7 +328,7 @@ cd e:\学习LLM
 ### 6.2 文件清单
 
 ```
-e:\学习LLM\lumilearn_offline\
+<project-root>\lumilearn_offline\
 ├── lumiterm_local_server.py    # LumiLearn HTTP 服务
 ├── langgraph_engine.py         # 修改后：只用 llama.cpp
 ├── smart_reply_engine.py        # 智能回复引擎
@@ -431,7 +431,7 @@ Day 3: 集成测试
 
 ```bash
 # 1. 下载 llamafile
-Invoke-WebRequest -Uri "https://github.com/Mozilla-Ocho/llamafile/releases/download/0.1.8/llamafile.exe" -OutFile e:\学习LLM\llamafile.exe
+Invoke-WebRequest -Uri "https://github.com/Mozilla-Ocho/llamafile/releases/download/0.1.8/llamafile.exe" -OutFile <project-root>\llamafile.exe
 
 # 2. 下载模型（Qwen2.5-7B-Q4）
 # 访问 https://huggingface.co/Qwen/Qwen2.5-7B-Instruct-GGUF

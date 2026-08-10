@@ -10,7 +10,7 @@ import json
 import subprocess
 from datetime import datetime, timedelta
 
-LUMILEARN_DIR = r"e:\学习LLM\lumilearn"
+LUMILEARN_DIR = r"<project-root>"
 SCRIPTS_DIR = os.path.join(LUMILEARN_DIR, "scripts")
 MASTER_CSV = os.path.join(LUMILEARN_DIR, "lumilearn_master.csv")
 TODAY = datetime.now().strftime("%Y-%m-%d")

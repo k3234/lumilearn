@@ -146,7 +146,7 @@ ai_skills = reg.search(tag='ai-coding')  # 2 个
 
 ## 上传到 GitHub 状态
 
-⚠️ **当前状态**: 所有技能在本地 `e:\学习LLM\lumilearn\skills\` 下完成并通过测试
+⚠️ **当前状态**: 所有技能在本地 `<project-root>\lumilearn\skills\` 下完成并通过测试
 
 📋 **上传计划**: 按照用户规则，**需用户同意后才能 git push 到远程**
 

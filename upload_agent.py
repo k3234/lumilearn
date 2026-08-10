@@ -12,7 +12,7 @@ USER = os.environ.get("REMOTE_USER", "")
 PORT = 22
 cfg = get_config(host=HOST, user=USER)
 
-LOCAL_FILE = r"E:\学习LLM\air-agent\agent_core.py"
+LOCAL_FILE = r"<your-data-root>\air-agent\agent_core.py"
 REMOTE_DIR = "~/lumilearn"
 REMOTE_FILE = f"{REMOTE_DIR}/agent_core.py"
 

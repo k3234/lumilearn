@@ -1,5 +1,5 @@
 # LumiLearn 项目 - Cursor AI 规则集
-# 将此文件命名为 .cursorrules 放在项目根目录（e:\学习LLM\lumilearn\）
+# 将此文件命名为 .cursorrules 放在项目根目录（<project-root>\lumilearn\）
 # Cursor IDE 会自动读取这个文件，让 AI 更好地理解和协作开发
 
 ---

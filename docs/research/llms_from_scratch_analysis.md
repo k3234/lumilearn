@@ -52,10 +52,10 @@ LLMs-from-scratch/
 | 章节 | 主题 | 对应 LumiLearn 代码 |
 |------|------|----------------------|
 | **ch01** | 大模型背景介绍 | 不直接相关 |
-| **ch02** | **Tokenizer 实现** | [tokenizer.py](file:///e:/学习LLM/lumilearn/tokenizer.py) |
-| **ch03** | **Self-Attention** | [model.py](file:///e:/学习LLM/lumilearn/model.py) |
-| **ch04** | **GPT 架构** | [model.py](file:///e:/学习LLM/lumilearn/model.py) |
-| **ch05** | **预训练流程** | [train.py](file:///e:/学习LLM/lumilearn/train.py) |
+| **ch02** | **Tokenizer 实现** | [tokenizer.py](file:///<project-root>/lumilearn/tokenizer.py) |
+| **ch03** | **Self-Attention** | [model.py](file:///<project-root>/lumilearn/model.py) |
+| **ch04** | **GPT 架构** | [model.py](file:///<project-root>/lumilearn/model.py) |
+| **ch05** | **预训练流程** | [train.py](file:///<project-root>/lumilearn/train.py) |
 | **ch06** | 指令微调与对齐 | 当前 LumiLearn 未覆盖 |
 | **ch07** | RLHF | 当前 LumiLearn 未覆盖 |
 
@@ -111,7 +111,7 @@ LLMs-from-scratch/
 LLMs-from-scratch 的代码注释方式、逐步迭代方法，可以直接迁移到 LumiLearn 的教学文档中。
 
 #### 4.1.2 ch04 — GPT 架构完整实现
-LumiLearn 现有 [model.py](file:///e:/学习LLM/lumilearn/model.py) 可以参考：
+LumiLearn 现有 [model.py](file:///<project-root>/lumilearn/model.py) 可以参考：
 - 更规范的层定义
 - 更清晰的代码结构
 - 可复用的模块设计
@@ -123,7 +123,7 @@ LumiLearn 现有 [model.py](file:///e:/学习LLM/lumilearn/model.py) 可以参�
 - 与之前的 "引导模式"（guided mode）深度结合
 
 #### 4.1.4 ch05 — 预训练流程优化
-LumiLearn 的 [train.py](file:///e:/学习LLM/lumilearn/train.py) 可以参考：
+LumiLearn 的 [train.py](file:///<project-root>/lumilearn/train.py) 可以参考：
 - 更高效的数据加载
 - 更合理的学习率调度
 - 更鲁棒的训练循环
@@ -173,8 +173,8 @@ LumiLearn 的 [train.py](file:///e:/学习LLM/lumilearn/train.py) 可以参考�
 为 LumiLearn 创建像 LLMs-from-scratch 一样清晰的教学文档
 
 #### 5.2.2 实施内容
-- 为 [model.py](file:///e:/学习LLM/lumilearn/model.py) 添加逐行注释
-- 为 [tokenizer.py](file:///e:/学习LLM/lumilearn/tokenizer.py) 添加图文解释
+- 为 [model.py](file:///<project-root>/lumilearn/model.py) 添加逐行注释
+- 为 [tokenizer.py](file:///<project-root>/lumilearn/tokenizer.py) 添加图文解释
 - 创建一系列 Jupyter Notebook 教程
 - 收录到 docs/tutorials/ 目录
 
@@ -231,4 +231,4 @@ LumiLearn 的 [train.py](file:///e:/学习LLM/lumilearn/train.py) 可以参考�
 - 仓库地址：https://github.com/rasbt/LLMs-from-scratch
 - 作者 X（Twitter）：@rasbt
 - 配套书籍：《Build a Large Language Model from Scratch》
-- LumiLearn 现有代码：`e:\学习LLM\lumilearn\`
+- LumiLearn 现有代码：`<project-root>\lumilearn\`

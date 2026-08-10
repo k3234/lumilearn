@@ -1,7 +1,7 @@
 # LumiLearn 本地项目与 GitHub 仓库兼容性修复报告
 
 **修复时间**: 2026-08-07
-**仓库**: `https://github.com/your-username/lumilearn` (origin/master)
+**仓库**: `https://github.com/k3234/lumilearn` (origin/master)
 
 ---
 

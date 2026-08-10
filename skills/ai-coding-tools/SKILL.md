@@ -299,7 +299,7 @@ aider --model ollama/qwen2.5-coder:7b # 本地模型
 ### Aider + LumiLearn 使用示例
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 
 # 启动 Aider，加入核心文件
 aider
@@ -445,7 +445,7 @@ def calculate_student_progress
 ### 在 LumiLearn 项目中使用
 
 #### 1. Cursor 规则集
-创建 `e:\学习LLM\lumilearn\.cursorrules`:
+创建 `<project-root>\lumilearn\.cursorrules`:
 ```yaml
 project_context: |
   这是 LumiLearn AI 教育平台项目。
@@ -472,7 +472,7 @@ review_criteria:
 ```
 
 #### 2. Aider 项目配置
-在 `e:\学习LLM\lumilearn\.aider.conf.yml` 中:
+在 `<project-root>\lumilearn\.aider.conf.yml` 中:
 ```yaml
 model: ollama/qwen2.5-coder:7b
 auto-commits: true

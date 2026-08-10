@@ -251,6 +251,6 @@ rasbt/LLMs-from-scratch
 
 - DeepSeek V4-Pro: 1.6T 总参数，49B 激活参数
 - rasbt/LLMs-from-scratch: https://github.com/rasbt/LLMs-from-scratch
-- LumiLearn: e:\学习LLM\lumilearn
+- LumiLearn: <project-root>\lumilearn
 - 用户硬件：R7-7840HS（8核16线程，集成 GPU 780M）
 - 开发时间：每周六

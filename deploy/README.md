@@ -64,13 +64,17 @@ chmod +x deploy/setup.sh
 配置完成后启动服务：
 
 ```bash
-# 启动框架三端口（终端 18080 / REST API 18081 / 模型管理 18082）与 GOAI Web（5000）
+# 启动框架三端口（终端 18080 / REST API 18081 / 模型管理 18082）
 ./start.sh
 ```
 
-> 根目录 `start.sh` / `start_services.bat` 中硬编码了 `localhost` 的 Ollama 地址；
-> 若配置了**远程 Ollama**，请直接运行 `python -m framework.api.server --multi-port`（框架侧读取 `.env` 中的 `OLLAMA_BASE_URL`），
-> GOAI Web 由 `goai_web.py` 读取 `.env` 中的 `OLLAMA_URL`。
+> 根目录 `start.sh` **仅**启动框架三端口；需要同时启动 GOAI Web（5000）/ 教师门户（5001）时，
+> Windows 请运行 `start_services.bat`，Linux / macOS 请运行 `deploy/start.sh`。
+
+> 根目录 `start.sh` 会探测本机 Ollama（`localhost:11434`）；若配置了**远程 Ollama**，
+> `start_services.bat` / `deploy/start.sh` 内部委托 `deploy/start.py`，由它从 `.env` 读取
+> `OLLAMA_URL` / `OLLAMA_BASE_URL` 并注入各服务进程（无硬编码地址），
+> 框架侧（`python -m framework.api.server --multi-port`）同样读取 `.env` 中的 `OLLAMA_BASE_URL`。
 
 ---
 
@@ -88,6 +92,9 @@ chmod +x deploy/setup.sh
 
 每个服务可独立设置 `enabled`（是否启用）与 `port`（端口号，1-65535 整数）。
 设置后需重启对应服务生效。也可在 Admin 面板「端口管理」中修改。
+
+> **已知限制**：框架三端口（terminal/api/models）由 `framework.api.server --multi-port` 统一拉起，
+> `enabled` 开关对框架三端口暂不生效（仅对 `goai_web` / `teacher_portal` 生效），后续版本改进。
 
 ---
 
@@ -137,7 +144,7 @@ API Key 仅写入本仓库 `.env`（已被 `.gitignore` 忽略），不会硬编
 重启对应服务；框架三端口优先读取 `config/framework.yaml` 的 `port_settings`，确认 `enabled: true` 且端口未被占用。
 
 **Q4：goai_web.py 连不上远程 Ollama？**
-`goai_web.py` 读取环境变量 `OLLAMA_URL`（部署脚本会与 `OLLAMA_BASE_URL` 同步写入 `.env`）。若通过 `start_services.bat` 启动，其中硬编码的 `localhost` 会覆盖 `.env`，请改为直接运行 `python goai_web.py`。
+`goai_web.py` 读取环境变量 `OLLAMA_URL`（部署脚本会与 `OLLAMA_BASE_URL` 同步写入 `.env`）。通过 `start_services.bat` 启动时，其内部委托 `deploy/start.py`，会从 `.env` 读取 `OLLAMA_URL` / `OLLAMA_BASE_URL` 并注入子进程环境，无硬编码地址；确认 `.env` 中两个变量已同步更新后重启服务即可。
 
 **Q5：--quick 模式会做什么？**
 端口全部沿用当前配置；Ollama 地址用 `localhost` 并探测（探测失败则保留默认模型名）；云端 API 全部跳过。适合无人值守自动化部署。

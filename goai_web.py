@@ -471,7 +471,7 @@ HTML_TEMPLATE = """
 
 <!-- 页脚 -->
 <div class="footer">
-  LumiLearn AI 教官 · 教育智能体 · 由高一学生 LumiLearn 开发 · GOAI 无界应用赛道参赛作品
+  LumiLearn AI 教官 · 教育智能体 · 由一名高中生开发者开发 · GOAI 无界应用赛道参赛作品
 </div>
 
 <script>
@@ -891,7 +891,7 @@ def index():
           <code>curl -X POST http://localhost:18080/api/feynman/explain -H "Content-Type: application/json" -d '{"topic":"勾股定理"}'</code>
         </div>
         <div class="footer">
-          LumiLearn · <a href="https://github.com/your-username/lumilearn" target="_blank">GitHub</a>
+          LumiLearn · <a href="https://github.com/k3234/lumilearn" target="_blank">GitHub</a>
         </div>
       </div>
     </body>

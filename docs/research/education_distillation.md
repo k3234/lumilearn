@@ -519,12 +519,12 @@ rasbt/LLMs-from-scratch
 
 ```bash
 # 1. 阅读仓库代码
-cd e:\学习LLM\learning_llms_from_scratch
+cd <project-root>\learning_llms_from_scratch
 notebook ch02/01_main-chapter-code/ch02.ipynb
 notebook ch03/01_main-chapter-code/ch03.ipynb
 
 # 2. 对比 LumiLearn 代码
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 # 对比 tokenizer.py 和 ch02
 # 对比 model.py 和 ch03
 
@@ -584,4 +584,4 @@ rasbt 学习
 - rasbt/LLMs-from-scratch: https://github.com/rasbt/LLMs-from-scratch
 - 知识蒸馏: DistilBERT, TinyBERT
 - 教育 AI: Koji, Khanmigo
-- LumiLearn: e:\学习LLM\lumilearn
+- LumiLearn: <project-root>\lumilearn

@@ -273,5 +273,5 @@ function clearChat() {
 - [MDN: CSS max-height](https://developer.mozilla.org/zh-CN/docs/Web/CSS/max-height)
 - [MDN: CSS transition](https://developer.mozilla.org/zh-CN/docs/Web/CSS/transition)
 - [MDN: KeyboardEvent.key](https://developer.mozilla.org/zh-CN/docs/Web/API/KeyboardEvent/key)
-- 项目文件: [lumiterm.html](file:///e:/学习LLM/lumilearn/remote/templates/lumiterm.html)
-- 项目文件: [resources.py](file:///e:/学习LLM/lumilearn/framework/api/routes/resources.py)
+- 项目文件: [lumiterm.html](file:///<project-root>/lumilearn/remote/templates/lumiterm.html)
+- 项目文件: [resources.py](file:///<project-root>/lumilearn/framework/api/routes/resources.py)

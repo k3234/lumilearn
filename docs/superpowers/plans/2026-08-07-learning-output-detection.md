@@ -309,7 +309,7 @@ CREATE INDEX IF NOT EXISTS idx_output_user ON output_detection(user_id);
 - [ ] **Step 5: 验证语法**
 
 ```bash
-python -m py_compile e:\学习LLM\lumilearn\framework\database.py
+python -m py_compile <project-root>\lumilearn\framework\database.py
 ```
 
 ---
@@ -567,7 +567,7 @@ def run_guided_reinforcement(user_id: int, detection_id: int, topic: str, max_ro
 - [ ] **Step 4: 验证语法**
 
 ```bash
-python -m py_compile e:\学习LLM\lumilearn\framework\output_detector.py
+python -m py_compile <project-root>\lumilearn\framework\output_detector.py
 ```
 
 ---
@@ -810,7 +810,7 @@ def run_learning_workflow(
 - [ ] **Step 4: 验证语法**
 
 ```bash
-python -m py_compile e:\学习LLM\lumilearn\framework\workflow_engine.py
+python -m py_compile <project-root>\lumilearn\framework\workflow_engine.py
 ```
 
 ---

@@ -2,7 +2,7 @@
 
 **更新时间**: 2026-06-09
 **总 Skills 数**: 11 个
-**存放位置**: `e:\学习LLM\lumilearn\skills\`
+**存放位置**: `<project-root>\lumilearn\skills\`
 
 ---
 
@@ -20,7 +20,7 @@
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\ai-collab\
+<project-root>\lumilearn\skills\ai-collab\
 ├── SKILL.md
 ├── config.json
 └── orchestrator.py
@@ -40,7 +40,7 @@ e:\学习LLM\lumilearn\skills\ai-collab\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\codegraph\
+<project-root>\lumilearn\skills\codegraph\
 ├── SKILL.md
 ├── README.md
 ├── config.json
@@ -61,7 +61,7 @@ e:\学习LLM\lumilearn\skills\codegraph\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\build-your-own-x\
+<project-root>\lumilearn\skills\build-your-own-x\
 ├── SKILL.md
 ├── README.md
 ├── config.json
@@ -82,7 +82,7 @@ e:\学习LLM\lumilearn\skills\build-your-own-x\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\hyperframes\
+<project-root>\lumilearn\skills\hyperframes\
 └── SKILL.md
 ```
 
@@ -100,7 +100,7 @@ e:\学习LLM\lumilearn\skills\hyperframes\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\free-domain\
+<project-root>\lumilearn\skills\free-domain\
 ├── SKILL.md
 ├── README.md
 ├── config.json
@@ -121,7 +121,7 @@ e:\学习LLM\lumilearn\skills\free-domain\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\rtk\
+<project-root>\lumilearn\skills\rtk\
 └── SKILL.md
 ```
 
@@ -139,7 +139,7 @@ e:\学习LLM\lumilearn\skills\rtk\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\understand-anything\
+<project-root>\lumilearn\skills\understand-anything\
 ├── SKILL.md
 ├── README.md
 ├── config.json
@@ -160,7 +160,7 @@ e:\学习LLM\lumilearn\skills\understand-anything\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\taste-skill\
+<project-root>\lumilearn\skills\taste-skill\
 ├── SKILL.md
 ├── README.md
 ├── config.json
@@ -182,7 +182,7 @@ e:\学习LLM\lumilearn\skills\taste-skill\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\impeccable\
+<project-root>\lumilearn\skills\impeccable\
 ├── SKILL.md
 ├── README.md
 ├── config.json
@@ -203,7 +203,7 @@ e:\学习LLM\lumilearn\skills\impeccable\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\ai-coding-tools\
+<project-root>\lumilearn\skills\ai-coding-tools\
 ├── SKILL.md
 ├── README.md
 ├── config.json
@@ -226,7 +226,7 @@ e:\学习LLM\lumilearn\skills\ai-coding-tools\
 ## 🗂️ 目录结构总览
 
 ```
-e:\学习LLM\lumilearn\skills\
+<project-root>\lumilearn\skills\
 ├── SKILLS.md                    ← Skills注册表 (总览文档)
 ├── SKILLS_UPDATED.md           ← 更新日志
 ├── __init__.py                 ← 技能注册模块
@@ -298,7 +298,7 @@ e:\学习LLM\lumilearn\skills\
 
 **文件路径**:
 ```
-e:\学习LLM\lumilearn\skills\superpowers\
+<project-root>\lumilearn\skills\superpowers\
 ├── SKILL.md
 ├── README.md
 ├── config.json
@@ -387,15 +387,15 @@ e:\学习LLM\lumilearn\skills\superpowers\
 
 ```bash
 # 查看文件列表
-ls e:\学习LLM\lumilearn\skills\<skill-name>
+ls <project-root>\lumilearn\skills\<skill-name>
 
 # 查看技能说明
-cat e:\学习LLM\lumilearn\skills\<skill-name>\SKILL.md
+cat <project-root>\lumilearn\skills\<skill-name>\SKILL.md
 ```
 
 ### 如何注册新Skill
 
-1. 在 `e:\学习LLM\lumilearn\skills\` 下创建目录
+1. 在 `<project-root>\lumilearn\skills\` 下创建目录
 2. 编写 `SKILL.md` (YAML frontmatter + Markdown详情)
 3. 编写 `config.json` (可选)
 4. 编写 `<skill>.py` (可选，提供Python API)

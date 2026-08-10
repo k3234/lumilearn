@@ -26,6 +26,19 @@
 | 看 Jupyter 教程 | [notebooks/](notebooks/) |
 | 看研究规划 | [docs/research/](docs/research/) |
 
+## 文档索引
+
+| 文档 | 说明 |
+|:---|:---|
+| [docs/PROGRESS.md](docs/PROGRESS.md) | 项目进度总览（模块状态 / 部署信息 / 模型资产清单） |
+| [docs/admin_guide.md](docs/admin_guide.md) | 管理员系统使用指南 |
+| [docs/deployment_guide.md](docs/deployment_guide.md) | 本地与服务器部署指南 |
+| [docs/MODEL_COMPARISON.md](docs/MODEL_COMPARISON.md) | 模型资产对照表（脱敏版） |
+| [docs/REMOTE_DEPLOYMENT.md](docs/REMOTE_DEPLOYMENT.md) | 远程部署说明 |
+| [docs/learning_journey/INDEX.md](docs/learning_journey/INDEX.md) | 学习旅程笔记索引 |
+| [notebooks/INDEX.md](notebooks/INDEX.md) | Jupyter 教程索引 |
+| [deploy/README.md](deploy/README.md) | 一键部署工具说明 |
+
 ## 核心模块
 
 | 模块 | 说明 | 状态 |
@@ -153,7 +166,7 @@ python deploy/setup.py --skip-deps    # 跳过依赖安装
 
 ```bash
 # 克隆
-git clone https://github.com/your-username/lumilearn.git
+git clone https://github.com/k3234/lumilearn.git
 cd lumilearn
 
 # 安装依赖
@@ -172,22 +185,22 @@ python framework/api/server.py --multi-port
 
 ```bash
 # 健康检查
-curl http://localhost:18080/api/health
+curl http://localhost:18080/health
 
-# 发送聊天请求
+# 发送聊天请求（messages 为 OpenAI 兼容格式）
 curl -X POST http://localhost:18080/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "讲解牛顿第二定律", "session_id": "optional"}'
+  -d '{"messages": [{"role": "user", "content": "讲解牛顿第二定律"}]}'
 
 # 生成幻灯片内容
-curl -X POST http://localhost:18080/api/slides \
+curl -X POST http://localhost:18080/api/slides/generate \
   -H "Content-Type: application/json" \
-  -d '{"topic": "数学", "chapter": "函数"}'
+  -d '{"topic": "数学：函数"}'
 
-# 获取思维导图
-curl -X POST http://localhost:18080/api/mindmap \
+# 生成思维导图
+curl -X POST http://localhost:18080/api/mindmap/generate \
   -H "Content-Type: application/json" \
-  -d '{"topic": "化学", "chapter": "有机化学"}'
+  -d '{"topic": "化学：有机化学"}'
 ```
 
 ## 模型训练与部署（完整 Demo 流程）
@@ -229,43 +242,57 @@ curl -X POST http://localhost:18080/v1/chat/completions \
 ## 项目结构
 ```
 lumilearn/
-├── framework/              # 微型 Transformer 框架
+├── framework/              # 核心框架
 │   ├── model.py            #   GPT-2 风格模型架构
 │   ├── config.py           #   训练配置中心
 │   ├── tokenizer.py        #   BPE 分词器
 │   ├── data.py             #   数据加载器
-│   └── trainer.py          #   训练循环
-├── framework/api/          # REST API 服务
-│   ├── server.py           #   Flask 服务器
-│   └── routes/             #   路由（chat/slides/mindmap/...）
-├── framework/engines/      # 智能引擎
-│   └── feynman_engine.py   #   费曼五步学习法引擎
-├── framework/core/         # 核心模块
-│   ├── config.py           #   配置管理
-│   └── router.py           #   模型路由
-├── framework/models/       # 模型提供者
-│   ├── base.py             #   抽象基类
-│   ├── ollama_provider.py  #   Ollama API实现
-│   └── registry.py         #   模型注册表
-├── framework/services/     # 服务层
-│   ├── chat_service.py     #   聊天服务
-│   └── provider_service.py #   云端提供商管理
-├── framework/airllm/       # AirLLM优化模块
-│   ├── attention.py        #   GQA注意力
-│   └── rope.py             #   RoPE位置编码
-├── remote/templates/     # 前端页面
+│   ├── trainer.py          #   训练循环
+│   ├── database.py         #   数据库访问层
+│   ├── workflow_engine.py  #   学习工作流引擎（五步法编排）
+│   ├── admin/              #   管理员模块（认证 / Agent 管理）
+│   ├── security/           #   安全模块（防火墙 / 网关 / 沙箱）
+│   ├── api/                #   REST API 服务
+│   │   ├── server.py       #   Flask 服务器（三端口）
+│   │   └── routes/         #   路由（chat/slides/mindmap/...）
+│   ├── engines/            # 智能引擎
+│   │   └── feynman_engine.py   #   费曼五步学习法引擎
+│   ├── core/               # 核心模块
+│   │   ├── config.py       #   配置管理
+│   │   └── router.py       #   模型路由
+│   ├── models/             # 模型提供者
+│   │   ├── base.py         #   抽象基类
+│   │   ├── ollama_provider.py  #   Ollama API实现
+│   │   └── registry.py     #   模型注册表
+│   ├── services/           # 服务层
+│   │   ├── chat_service.py #   聊天服务
+│   │   └── provider_service.py # 云端提供商管理
+│   └── airllm/             # AirLLM优化模块
+│       ├── attention.py    #   GQA注意力
+│       └── rope.py         #   RoPE位置编码
+├── remote/templates/       # 前端页面
 │   ├── classroom.html      #   课堂模式
-│   └── lumiterm.html       #   对话终端
+│   ├── lumiterm.html       #   对话终端
+│   ├── admin.html          #   管理面板
+│   └── teacher.html        #   教师门户
+├── deploy/                 # 一键部署工具
+│   ├── setup.py            #   配置引导脚本
+│   ├── start.py            #   统一启动脚本
+│   ├── stop.py             #   停止脚本
+│   └── README.md           #   部署说明
 ├── data_management/        # 数据管线
 ├── scripts/                # 训练/部署脚本
 │   ├── train_real.py       #   真实数据 LoRA 训练（CPU）
 │   └── merge_and_test.py   #   LoRA 合并 + 推理测试
-├── docs/                   # 学习笔记 & 研究文档
+├── docs/                   # 学习笔记 & 研究文档（含 PROGRESS.md 进度）
 ├── notebooks/              # Jupyter 教程
 ├── skills/                 # 技能模块
 ├── config/                 # 配置文件
 │   ├── framework.yaml      #   框架配置
 │   └── providers.yaml      #   云端提供商配置
+├── goai_web.py             # GOAI 学习 Web（端口 5000）
+├── teacher_portal.py       # 教师门户（端口 5001）
+├── goai_agent.py           # GOAI 教育智能体（CLI）
 ├── train_lumilearn.sh      # 训练脚本
 ├── lesson_engine.py        # 智能讲解引擎
 ├── smart_reply_engine.py   # 智能回复引擎
@@ -323,6 +350,12 @@ LumiLearn 的核心愿景是让**老旧设备也能运行 AI 教学演示**：
 - [x] 添加 LICENSE
 - [ ] 写技术博客
 - [ ] 录制演示视频
+
+## 合规与隐私说明
+
+- 本仓库**不含任何真实凭据**：不含真实 IP、服务器地址、密码、API Key 等敏感信息；文档与示例中的地址（如 `localhost`、`192.168.x.x`）均为占位符。
+- 运行期配置（Ollama 地址、云端 API Key 等）统一通过根目录 `.env` 完成，`.env` 已被 [.gitignore](.gitignore) 忽略、不会随仓库提交；初始模板见 `.env.example`，云端提供商的占位配置见 `config/providers.yaml`。
+- 请勿将真实密钥、内网 IP、服务器登录凭证提交到 GitHub 等公开平台；如需对外展示，请先以脱敏占位符替换并复查后再提交。
 
 ## 许可证
 

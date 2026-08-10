@@ -84,7 +84,7 @@ if config.tie_weights:
 - [ ] **Step 2: 运行现有测试验证未破坏**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python -m pytest tests/test_model.py -v --tb=short
 ```
 
@@ -139,7 +139,7 @@ git commit -m "fix: 确认 tie_weights 浅拷贝为预期行为，添加注释�
 - [ ] **Step 2: 验证配置文件**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python -c "
 from framework.config import get_preset_configs
 configs = get_preset_configs()
@@ -376,7 +376,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: 运行数据生成**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python scripts/generate_training_data.py
 ```
 
@@ -385,7 +385,7 @@ Expected: 生成约 300-500 条训练数据，约 100-200KB
 - [ ] **Step 3: 验证数据格式**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python -c "
 import json
 with open('data/training_corpus.jsonl', 'r', encoding='utf-8') as f:
@@ -511,7 +511,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: 验证脚本可导入**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python -c "
 import sys
 sys.path.insert(0, '.')
@@ -542,7 +542,7 @@ git commit -m "feat: 添加 CPU 训练入口脚本 train_cpu.py"
 - [ ] **Step 1: 执行训练**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python scripts/train_cpu.py
 ```
 
@@ -554,7 +554,7 @@ Expected:
 - [ ] **Step 2: 验证输出文件**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python -c "
 import os
 output_dir = 'outputs/cpu_small/LumiLearn-CPU-Small-v1.0.0'
@@ -750,7 +750,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: 运行验证**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python scripts/verify_model.py
 ```
 
@@ -774,7 +774,7 @@ git commit -m "feat: 添加训练后模型验证脚本"
 - [ ] **Step 1: 注册模型到框架**
 
 ```bash
-cd e:\学习LLM\lumilearn
+cd <project-root>\lumilearn
 python -c "
 import sys
 sys.path.insert(0, '.')

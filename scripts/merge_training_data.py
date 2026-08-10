@@ -11,7 +11,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent.parent
 DATA_DIR = SCRIPT_DIR / "data"
-SFT_DIR = Path("E:/学习LLM/LMM-Edu-Training-01/data/sft")
+SFT_DIR = Path("<your-data-root>/LMM-Edu-Training-01/data/sft")
 
 # 学科映射：SFT subject -> LumiLearn subject
 SUBJECT_MAP = {

@@ -759,5 +759,5 @@ print(f"旁白: {result['narration']}")
 
 ---
 
-**计划文档保存位置：** [docs/superpowers/plans/2026-06-06-animation-teaching.md](file:///e:/学习LLM/lumilearn/docs/superpowers/plans/2026-06-06-animation-teaching.md)
+**计划文档保存位置：** [docs/superpowers/plans/2026-06-06-animation-teaching.md](file:///<project-root>/lumilearn/docs/superpowers/plans/2026-06-06-animation-teaching.md)
 

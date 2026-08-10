@@ -12,7 +12,7 @@ HOST = os.environ.get("REMOTE_HOST", "")
 USER = os.environ.get("REMOTE_USER", "")
 cfg = get_config(host=HOST, user=USER)
 REMOTE_DIR = "~/lumilearn/models/distil"
-LOCAL_DIR = r"e:\学习LLM\lumilearn\models\distil"
+LOCAL_DIR = r"<project-root>\models\distil"
 
 files = [
     "lumilearn-v2-q8_0.gguf",

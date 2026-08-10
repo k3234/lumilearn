@@ -3,7 +3,7 @@
 import sys, json
 sys.stdout.reconfigure(encoding='utf-8')
 
-path = r"e:\学习LLM\开发者学习\06-题库与考试\teaching_data_final.json"
+path = r"<your-data-root>\开发者学习\06-题库与考试\teaching_data_final.json"
 with open(path, 'rb') as f:
     raw = f.read()
 

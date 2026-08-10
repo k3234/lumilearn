@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from difflib import SequenceMatcher
 
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-LL_DIR = r"e:\学习LLM\lumilearn"
+LL_DIR = r"<project-root>"
 MASTER_CSV = os.path.join(LL_DIR, "lumilearn_master.csv")
 REPORTS_DIR = os.path.join(LL_DIR, "reports")
 TODAY = datetime.now().strftime("%Y-%m-%d")
