@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn · 学习历史</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body data-page="history">
+<div class="shell">
+  <aside class="app-nav">
+    <a class="brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true">L</span>
+      <span class="brand-text"><b>LumiLearn</b><em>学生端 · AI 教官</em></span>
+    </a>
+    <nav class="nav-list" aria-label="主导航">
+      <a class="nav-item" data-nav="index" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>发起学习</span>
+      </a>
+      <a class="nav-item" data-nav="learn" href="learn.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        <span>学习过程</span>
+      </a>
+      <a class="nav-item" data-nav="report" href="report.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+        <span>学习报告</span>
+      </a>
+      <a class="nav-item" data-nav="history" href="history.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        <span>学习历史</span>
+      </a>
+    </nav>
+    <div class="nav-foot">
+      <span class="dev-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+        CPU 本地推理 · 无云依赖
+      </span>
+      <span class="model-status"><span class="dot"></span><code>lumilearn-v2</code> 在线</span>
+    </div>
+  </aside>
+  <main class="app-content" id="app">
+
+    <section class="page-head reveal r1">
+      <div>
+        <p class="page-kicker">LEARNING HISTORY</p>
+        <h1>学习历史</h1>
+      </div>
+      <div class="meta">
+        <span class="tag tag-mint" id="totalTag">共 0 次学习</span>
+        <span class="tag tag-faint">报告均在本地生成</span>
+      </div>
+    </section>
+
+    <div class="filter-row reveal r2">
+      <div class="chip-row" id="filterRow">
+        <button type="button" class="chip selected" data-filter="全部">全部</button>
+        <button type="button" class="chip" data-filter="数学">数学</button>
+        <button type="button" class="chip" data-filter="物理">物理</button>
+        <button type="button" class="chip" data-filter="化学">化学</button>
+        <button type="button" class="chip" data-filter="生物">生物</button>
+      </div>
+      <span class="spacer"></span>
+      <a class="btn btn-primary btn-sm" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        发起新学习
+      </a>
+    </div>
+
+    <div class="card history-card reveal r3" id="historyCard">
+      <div style="overflow-x:auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>主题</th>
+              <th>学科</th>
+              <th>难度</th>
+              <th>时间</th>
+              <th>掌握度</th>
+              <th style="text-align:right">操作</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        <p>该学科还没有学习记录</p>
+        <a class="btn btn-ghost btn-sm" href="index.html">去发起第一次学习</a>
+      </div>
+    </div>
+
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="nav.js"></script>
+<script src="mock.js"></script>
+<script src="api.js"></script>
+<script>
+(function () {
+  var toastEl = document.getElementById("toast");
+  function toast(msg) { toastEl.textContent = msg; toastEl.classList.add("show"); setTimeout(function () { toastEl.classList.remove("show"); }, 2200); }
+
+  var filter = "全部";
+  var body = document.getElementById("historyBody");
+
+  function render(list) {
+    body.innerHTML = "";
+    document.getElementById("totalTag").textContent = "共 " + list.length + " 次学习";
+    document.getElementById("emptyState").style.display = list.length ? "none" : "flex";
+    document.getElementById("historyCard").style.display = list.length ? "" : "none";
+    list.forEach(function (s) {
+      var tr = document.createElement("tr");
+      tr.innerHTML =
+        '<td><b>' + s.topic + '</b></td>' +
+        '<td><span class="tag tag-sky">' + s.subject + '</span></td>' +
+        '<td><span class="tag tag-amber">' + s.difficulty + '</span></td>' +
+        '<td class="faint">' + s.date + '</td>' +
+        '<td><span class="tag ' + (s.mastery >= 80 ? "tag-mint" : "tag-danger") + '">' + s.mastery + '%</span></td>' +
+        '<td style="text-align:right"><span class="btn btn-ghost btn-sm" data-open="' + s.id + '">查看报告</span></td>';
+      tr.addEventListener("click", function (e) {
+        if (e.target.closest("[data-open]")) {
+          SessionStore.save({ mode: "report", reportId: s.id });
+          location.href = "report.html";
+        }
+      });
+      body.appendChild(tr);
+    });
+  }
+
+  document.getElementById("filterRow").addEventListener("click", function (e) {
+    var c = e.target.closest(".chip"); if (!c) return;
+    document.querySelectorAll("#filterRow .chip").forEach(function (x) { x.classList.remove("selected"); });
+    c.classList.add("selected");
+    filter = c.dataset.filter;
+    api.getHistory({ subject: filter }).then(function (res) { render(res.data); });
+  });
+
+  api.getHistory({ subject: filter }).then(function (res) { render(res.data); });
+})();
+</script>
+</body>
+</html>

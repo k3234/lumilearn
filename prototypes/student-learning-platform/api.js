@@ -1,0 +1,201 @@
+/* ============================================================
+ * api.js — API 桩层（stub only，不连真实模型/后端）
+ * 函数签名即未来真实 API 的契约；集成时按 // TODO 注释替换实现即可。
+ * 每个桩都模拟网络延迟，让 loading 状态可见。
+ * ============================================================ */
+
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
+
+const _uid = (() => { let n = 1007; return () => "s-" + (n++); })();
+
+/* 本地会话草稿（learn → report 传参），无后端时用 localStorage */
+const SessionStore = {
+  KEY: "ll_session",
+  get draft() { try { return JSON.parse(localStorage.getItem(this.KEY) || "null"); } catch { return null; } },
+  save(session) { localStorage.setItem(this.KEY, JSON.stringify(session)); },
+  clear() { localStorage.removeItem(this.KEY); },
+};
+
+/* 主题归一化：剥离常见意图前缀，命中文案库键 */
+function normalizeTopic(topic) {
+  var t = (topic || "").trim();
+  ["我想理解", "我想学", "我想学习", "我要学", "帮我学习", "帮我理解", "帮我掌握",
+   "帮我", "学习", "理解", "掌握", "复习", "什么是", "怎么学", "如何理解", "请讲解", "讲解"].forEach(function (p) {
+    if (t.indexOf(p) === 0) t = t.slice(p.length);
+  });
+  return t.trim() || (topic || "").trim();
+}
+
+/* 从 mock 文案库取某主题的 5 步教学文案；不存在则用通用生成器 */
+function buildSteps(topic, subject, difficulty) {
+  var key = normalizeTopic(topic);
+  var hit = DB.stepLibrary[key] || DB.stepLibrary[Object.keys(DB.stepLibrary).find(function (k) {
+    return DB.stepLibrary[k].subject === subject && key.indexOf(k) !== -1;
+  })];
+  if (hit && hit.subject === subject) return hit.steps;
+  return DB.fallbackSteps(topic, subject, difficulty);
+}
+
+const api = {
+  /**
+   * POST /api/learn/start  { topic, subject, difficulty }
+   * 发起学习：编排调度 Agent 理解任务 → 生成费曼五步流程
+   * TODO: replace with fetch('/api/learn/start', { method:'POST', ... })
+   */
+  async startLearning({ topic, subject, difficulty }) {
+    await delay(900);
+    const id = _uid();
+    const flow = buildSteps(topic, subject, difficulty).map((s, i) => ({
+      step: i + 1, name: DB.STEP_NAMES[i], purpose: DB.STEP_PURPOSES[i], status: "pending",
+    }));
+    return {
+      code: 0,
+      data: {
+        id, topic, subject, difficulty,
+        createdAt: new Date().toLocaleString("zh-CN", { hour12: false }),
+        status: "learning", model: "qwen2.5:7b",
+        flow,
+        agents: DB.agentDefs.map((a) => ({ ...a, status: "idle", calls: 0 })),
+      },
+    };
+  },
+
+  /**
+   * POST /api/learn/step  { sessionId, step }
+   * 执行某一教学步骤：费曼教学 Agent 生成内容 + 知识检索 Agent 注入上下文
+   * TODO: replace with fetch('/api/learn/step', { method:'POST', ... })
+   */
+  async runStep({ sessionId, step }) {
+    await delay(650);
+    const topic = SessionStore.draft?.topic || "函数的单调性";
+    const subject = SessionStore.draft?.subject || "数学";
+    const key = normalizeTopic(topic);
+    const steps = buildSteps(topic, subject, SessionStore.draft?.difficulty || "高中");
+    const def = steps[step - 1] || steps[0];
+    // 知识检索 Agent 注入的相关知识点（演示用）
+    const knowledgeHints = {
+      "函数的单调性": ["定义域与区间", "图像上升/下降", "最值与极值"],
+      "牛顿第二定律": ["力的合成与分解", "加速度与速度方向", "质量与惯性"],
+      "化学平衡移动": ["勒夏特列原理", "平衡常数 K", "压强与浓度"],
+      "光合作用": ["叶绿体结构", "光反应与暗反应", "ATP 与 NADPH"],
+    };
+    const hints = knowledgeHints[key] || ["核心概念", "典型例题", "易错点"];
+    return {
+      code: 0,
+      data: {
+        step,
+        content: def.content,
+        knowledge: hints,
+        agents: [
+          { id: "orchestrator", action: `分发步骤 ${step}「${DB.STEP_NAMES[step - 1]}」` },
+          { id: "knowledge",    action: `检索「${key}」相关知识点 ${hints.length} 条` },
+          { id: "feynman",      action: `生成「${DB.STEP_NAMES[step - 1]}」教学内容` },
+        ],
+      },
+    };
+  },
+
+  /**
+   * POST /api/learn/feynman-test  { sessionId, text }
+   * 费曼测试：评测 Agent 对学生的 30 秒讲解打分（五维）
+   * TODO: replace with fetch('/api/learn/feynman-test', { method:'POST', ... })
+   */
+  async submitFeynmanTest({ sessionId, text }) {
+    await delay(1200);
+    const len = (text || "").trim().length;
+    // 演示用启发式打分：讲得越长、越像在解释，得分越高
+    const score = len < 20 ? 62 : len < 60 ? 78 : 88;
+    return {
+      code: 0,
+      data: {
+        score,
+        verdict: score >= 80 ? "讲解清晰，能用自己的话讲明白" : (score >= 70 ? "基本合格，再具体一些会更好" : "建议补充一个具体例子再讲一遍"),
+        feedback: {
+          simplicity: { score: score - 2, comment: "整体用语口语化" },
+          accuracy: { score: score + 3, comment: "核心概念方向正确" },
+          analogy: { score: score - 4, comment: "可再增加一个生活比喻" },
+          completeness: { score: score - 1, comment: "关键点已覆盖" },
+          jargon_free: { score: score - 3, comment: "术语使用需再克制" },
+        },
+        agents: [{ id: "coach", action: `对费曼测试讲解进行五维评分` }],
+      },
+    };
+  },
+
+  /**
+   * POST /api/learn/report  { sessionId, feynmanScore }
+   * 生成完整学习报告：掌握度 + 薄弱点 + 下一步建议
+   * TODO: replace with fetch('/api/learn/report', { method:'POST', ... })
+   */
+  async generateReport({ sessionId, feynmanScore }) {
+    await delay(1100);
+    const draft = SessionStore.draft || {};
+    const topic = draft.topic || "函数的单调性";
+    const subject = draft.subject || "数学";
+    const difficulty = draft.difficulty || "高中";
+    const key = normalizeTopic(topic);
+    const date = new Date().toLocaleString("zh-CN", { hour12: false });
+    // 掌握度 = 步骤完成度(80) 与费曼测试分(20) 加权
+    const mastery = Math.min(96, Math.round(80 * 0.82 + (feynmanScore || 80) * 0.18));
+
+    const weakLib = {
+      "函数的单调性": [{ text: "区间端点的开闭判断不够严谨", severity: "中" }, { text: "复合函数单调性判断需多练", severity: "低" }],
+      "牛顿第二定律": [{ text: "受力分析时易漏力", severity: "中" }, { text: "连接体问题需加强", severity: "低" }],
+      "化学平衡移动": [{ text: "压强改变对平衡影响的推理不熟练", severity: "中" }],
+      "光合作用": [{ text: "光反应与暗反应的场所容易记混", severity: "低" }],
+    };
+    const weakPoints = weakLib[key] || [
+      { text: "概念理解到位，但应用场景判断可再熟练", severity: "低" },
+    ];
+
+    const report = {
+      id: sessionId, topic, subject, difficulty,
+      generatedAt: date, status: "done", mastery,
+      model: draft.model || "qwen2.5:7b",
+      duration: "3分45秒", toolCalls: 15,
+      weakPoints,
+      nextSteps: [
+        `完成「${topic}」相关练习（${difficulty}难度）`,
+        "尝试用 30 秒向同学讲解核心概念",
+        "复习周期：1 天后 → 3 天后 → 7 天后 → 14 天后",
+      ],
+      agents: DB.agentDefs.map((a) => ({
+        id: a.id, name: a.name, model: a.model, status: "done",
+        calls: a.id === "orchestrator" ? 6 : a.id === "feynman" ? 5 : 2,
+      })),
+      feynmanScore: feynmanScore || 80,
+    };
+
+    // 同步到历史库（内存 mock 顶部插入，供 history 页展示）
+    DB.sessions.unshift({
+      id: sessionId, topic, subject, difficulty, date,
+      status: "done", mastery, model: report.model, duration: report.duration,
+      toolCalls: report.toolCalls, weakPoints, nextSteps, agents: report.agents,
+    });
+    return { code: 0, data: report };
+  },
+
+  /**
+   * GET /api/learn/report/:id
+   * 按 id 取报告（演示：从历史库查找）
+   * TODO: replace with fetch(`/api/learn/report/${id}`)
+   */
+  async getReport({ id }) {
+    await delay(300);
+    const hit = DB.sessions.find((s) => s.id === id);
+    if (!hit) return { code: 404, message: "报告不存在" };
+    return { code: 0, data: hit };
+  },
+
+  /**
+   * GET /api/learn/history?subject=math
+   * 学习历史列表（可按学科筛选；空数组=空态）
+   * TODO: replace with fetch('/api/learn/history')
+   */
+  async getHistory({ subject } = {}) {
+    await delay(400);
+    let list = DB.sessions.slice();
+    if (subject && subject !== "全部") list = list.filter((s) => s.subject === subject);
+    return { code: 0, data: list, total: list.length };
+  },
+};

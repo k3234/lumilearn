@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn · 发起学习</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body data-page="index">
+<div class="shell">
+  <aside class="app-nav">
+    <a class="brand" href="index.html">
+      <span class="brand-mark" aria-hidden="true">L</span>
+      <span class="brand-text"><b>LumiLearn</b><em>学生端 · AI 教官</em></span>
+    </a>
+    <nav class="nav-list" aria-label="主导航">
+      <a class="nav-item" data-nav="index" href="index.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>发起学习</span>
+      </a>
+      <a class="nav-item" data-nav="learn" href="learn.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+        <span>学习过程</span>
+      </a>
+      <a class="nav-item" data-nav="report" href="report.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+        <span>学习报告</span>
+      </a>
+      <a class="nav-item" data-nav="history" href="history.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+        <span>学习历史</span>
+      </a>
+    </nav>
+    <div class="nav-foot">
+      <span class="dev-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
+        CPU 本地推理 · 无云依赖
+      </span>
+      <span class="model-status"><span class="dot"></span><code>lumilearn-v2</code> 在线</span>
+    </div>
+  </aside>
+  <main class="app-content" id="app">
+
+    <section class="hero reveal r1">
+      <p class="page-kicker">FEYNMAN TEACHING · MULTI-AGENT · LOCAL-FIRST</p>
+      <h1>把复杂的概念，<br>讲成你<span class="hl">听得懂</span>的话。</h1>
+      <p class="sub">输入一个学习目标，LumiLearn 的多位 AI 教官会按费曼五步法，一步步带你从「见过」到「讲得清」。全部在本地 CPU 上推理，你的学习数据不出设备。</p>
+    </section>
+
+    <div class="start-grid">
+      <form class="card form-card reveal r2" id="learnForm" novalidate>
+        <div>
+          <label class="field" for="topicInput">
+            <span class="field-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+              学习目标
+            </span>
+            <textarea id="topicInput" class="input-lg" placeholder="例如：我想理解函数的单调性" maxlength="80"></textarea>
+          </label>
+        </div>
+        <div>
+          <span class="field-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            学科
+          </span>
+          <div class="chip-row" id="subjectRow">
+            <button type="button" class="chip selected" data-subject="数学">数学</button>
+            <button type="button" class="chip" data-subject="物理">物理</button>
+            <button type="button" class="chip" data-subject="化学">化学</button>
+            <button type="button" class="chip" data-subject="生物">生物</button>
+          </div>
+        </div>
+        <div>
+          <span class="field-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>
+            难度
+          </span>
+          <div class="chip-row" id="levelRow">
+            <button type="button" class="chip" data-level="初中">初中</button>
+            <button type="button" class="chip selected" data-level="高中">高中</button>
+            <button type="button" class="chip" data-level="大学">大学</button>
+          </div>
+        </div>
+        <div>
+          <span class="field-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            想不出学什么？点一个试试
+          </span>
+          <div class="quick-row" id="quickRow"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-submit" id="submitBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          开始学习
+        </button>
+      </form>
+
+      <div class="info-col">
+        <div class="card feynman-strip reveal r3">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+            费曼五步法
+          </h3>
+          <div class="step-pill"><span class="num">1</span>现象引入<span class="purpose">· 生活场景切入</span></div>
+          <div class="step-pill"><span class="num">2</span>认知冲突<span class="purpose">· 打破原有理解</span></div>
+          <div class="step-pill"><span class="num">3</span>思维模型<span class="purpose">· 比喻让抽象可摸</span></div>
+          <div class="step-pill"><span class="num">4</span>自主推导<span class="purpose">· 苏格拉底式追问</span></div>
+          <div class="step-pill"><span class="num">5</span>费曼测试<span class="purpose">· 30 秒讲给外行</span></div>
+        </div>
+
+        <div class="card recent-mini reveal r4">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+            近期学习
+          </h3>
+          <div id="recentList"></div>
+          <a class="btn btn-ghost btn-sm" href="history.html" style="align-self:flex-start">
+            查看全部历史
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="nav.js"></script>
+<script src="mock.js"></script>
+<script src="api.js"></script>
+<script>
+(function () {
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  }
+
+  /* 学科/难度单选 */
+  var subject = "数学", level = "高中";
+  document.getElementById("subjectRow").addEventListener("click", function (e) {
+    var c = e.target.closest(".chip"); if (!c) return;
+    document.querySelectorAll("#subjectRow .chip").forEach(function (x) { x.classList.remove("selected"); });
+    c.classList.add("selected"); subject = c.dataset.subject;
+  });
+  document.getElementById("levelRow").addEventListener("click", function (e) {
+    var c = e.target.closest(".chip"); if (!c) return;
+    document.querySelectorAll("#levelRow .chip").forEach(function (x) { x.classList.remove("selected"); });
+    c.classList.add("selected"); level = c.dataset.level;
+  });
+
+  /* 快捷示例 chips */
+  var quickRow = document.getElementById("quickRow");
+  DB.quickExamples.forEach(function (t) {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = t;
+    b.addEventListener("click", function () {
+      var input = document.getElementById("topicInput");
+      input.value = "我想理解" + t;
+      input.focus();
+      var hit = DB.stepLibrary[t];
+      if (hit) {
+        subject = hit.subject;
+        document.querySelectorAll("#subjectRow .chip").forEach(function (x) {
+          x.classList.toggle("selected", x.dataset.subject === subject);
+        });
+      }
+    });
+    quickRow.appendChild(b);
+  });
+
+  /* 近期学习（前 3 条，点击进报告） */
+  var recentList = document.getElementById("recentList");
+  DB.sessions.slice(0, 3).forEach(function (s) {
+    var item = document.createElement("div");
+    item.className = "recent-item";
+    item.innerHTML =
+      '<div class="ri-topic"><b></b><span></span></div>' +
+      '<div class="mastery-bar"><i style="width:' + s.mastery + '%"></i></div>' +
+      '<span class="ri-score">' + s.mastery + '</span>';
+    item.querySelector("b").textContent = s.topic;
+    item.querySelector("span").textContent = s.subject + " · " + s.date;
+    item.addEventListener("click", function () {
+      SessionStore.save({ mode: "report", reportId: s.id });
+      location.href = "report.html";
+    });
+    recentList.appendChild(item);
+  });
+
+  /* 提交 */
+  var btn = document.getElementById("submitBtn");
+  document.getElementById("learnForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (btn.disabled) return;
+    var topic = document.getElementById("topicInput").value.trim();
+    if (!topic) { toast("先告诉我你想学什么"); document.getElementById("topicInput").focus(); return; }
+    btn.disabled = true;
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>编排调度 Agent 理解任务…';
+    api.startLearning({ topic: topic, subject: subject, difficulty: level })
+      .then(function (res) {
+        SessionStore.save({ mode: "learning", session: res.data });
+        location.href = "learn.html";
+      })
+      .catch(function () {
+        toast("启动失败，请重试");
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      });
+  });
+})();
+</script>
+</body>
+</html>
