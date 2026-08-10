@@ -130,7 +130,6 @@ multi_difficulty_training_data.py
 
 # Stale/refactored code
 lumilearn_model.py
-lumilearn_config.py
 client_config.py
 lumilearn_api_server.py
 lumilearn_api_quantized.py
