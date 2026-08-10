@@ -1153,6 +1153,7 @@ CHAT · Terminal Logic
 ═══════════════════════════════════════ */
 let currentModel = 'lumilearn-v5:real';
 let explainMode = 'direct'; // 'direct' | 'feynman'
+let feynmanHistory = []; // 费曼模式的师生对话历史
 const chatArea = document.getElementById('chatArea');
 const inputBox = document.getElementById('inputBox');
 const btnSend = document.getElementById('btnSend');
@@ -1209,11 +1210,13 @@ var sw = document.getElementById('feynmanSwitch');
 var toggle = document.getElementById('feynmanToggle');
 if (explainMode === 'direct') {
 explainMode = 'feynman';
+feynmanHistory = []; // 开启新费曼会话
 sw.classList.add('on');
 toggle.classList.add('active');
-inputBox.placeholder = '> 费曼引导中...输入你的问题';
+inputBox.placeholder = '> 费曼引导中...输入你的学习主题';
 } else {
 explainMode = 'direct';
+feynmanHistory = [];
 sw.classList.remove('on');
 toggle.classList.remove('active');
 inputBox.placeholder = '> 输入你的问题...';
@@ -1392,6 +1395,15 @@ btnSend.disabled = true;
 
 addMessage('user', simpleMarkdown(text));
 
+// 费曼模式：把用户输入加入历史，并携带完整历史给后端
+let sendMessages;
+if (explainMode === 'feynman') {
+  feynmanHistory.push({ role: 'user', content: text });
+  sendMessages = feynmanHistory;
+} else {
+  sendMessages = [{ role: 'user', content: text }];
+}
+
 // 移除上一轮残留的旧 streaming 消息（防止 id 冲突和 DOM 残留）
 let oldStream = document.getElementById('streamingMsg');
 if (oldStream) oldStream.remove();
@@ -1417,7 +1429,7 @@ method: 'POST',
 headers: { 'Content-Type': 'application/json' },
 body: JSON.stringify({
 model: currentModel,
-messages: [{ role: 'user', content: text }],
+messages: sendMessages,
 stream: true,
 mode: explainMode
 }),
@@ -1450,9 +1462,18 @@ if (chunk.mode === 'feynman' && chunk.step) {
 var stepLabel = chunk.step_name || ('Step ' + chunk.step);
 var stepContent = chunk.content || '';
 var separator = fullText ? '\n\n' : '';
-fullText += separator + '【' + stepLabel + '】\n' + stepContent;
+var progress = '【' + stepLabel + ' · 第 ' + chunk.step + '/5 步】';
+fullText += separator + progress + '\n' + stepContent;
 streamingText.innerHTML = simpleMarkdown(fullText) + cursorSpan;
 chatArea.scrollTop = chatArea.scrollHeight;
+// 记录 AI 引导到费曼历史，供下一步上下文
+feynmanHistory.push({ role: 'assistant', content: stepContent });
+// 第五步（费曼测试）结束后恢复正常输入
+if (chunk.is_last) {
+  inputBox.placeholder = '> 费曼测试：用最简单的话讲解这个概念吧！';
+} else {
+  inputBox.placeholder = '> 回答引导问题，继续费曼引导...';
+}
 continue;
 }
 

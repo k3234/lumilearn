@@ -147,8 +147,9 @@ class TaskUnderstanding:
         return "高中"
     
     def _extract_core_topic(self, text: str) -> str:
+        # 注意顺序：长的停用词（"什么是"）必须排在短词（"什么"）之前，避免残留碎片
         stop_words = ["我想", "我要", "帮我", "请", "学习", "理解", "掌握", "复习",
-                      "一下", "什么", "怎么", "如何", "什么是", "解释", "教"]
+                      "一下", "什么是", "什么", "怎么", "如何", "解释", "教"]
         cleaned = text
         for sw in stop_words:
             cleaned = cleaned.replace(sw, "")

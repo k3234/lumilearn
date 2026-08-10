@@ -263,7 +263,7 @@ def chat():
     chat_service = get_chat_service()
 
     if not stream:
-        result = chat_service.chat_sync(messages, mode=mode,
+        result = chat_service.chat_sync(messages, mode=mode, model=model,
                                         temperature=temperature,
                                         max_tokens=max_tokens)
         return jsonify(result)
@@ -271,7 +271,7 @@ def chat():
     def generate():
         try:
             for chunk in chat_service.chat(
-                messages, mode=mode,
+                messages, mode=mode, model=model,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 stream=True

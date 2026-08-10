@@ -46,21 +46,25 @@ class ChatService:
              mode: str = "chat",
              temperature: float = 0.7,
              max_tokens: int = 2048,
-             stream: bool = True) -> Generator:
+             stream: bool = True,
+             model: str = None) -> Generator:
         """流式对话"""
         if mode == "feynman":
             yield from self._feynman_chat(messages, stream)
             return
 
-        # 路由选择模型
-        last_msg = messages[-1]["content"] if messages else ""
-        route_request = RouteRequest(
-            topic=last_msg[:50],
-            mode=mode,
-            messages=messages
-        )
-        route_result = self._router.route(route_request)
-        model = route_result.model_name
+        # 显式指定模型时直接使用，否则路由选择模型
+        if model:
+            pass  # 直接使用调用方传入的 model
+        else:
+            last_msg = messages[-1]["content"] if messages else ""
+            route_request = RouteRequest(
+                topic=last_msg[:50],
+                mode=mode,
+                messages=messages
+            )
+            route_result = self._router.route(route_request)
+            model = route_result.model_name
 
         if stream:
             yield json.dumps({"model_version": self.get_model_version(model)}, ensure_ascii=False)
@@ -120,22 +124,24 @@ class ChatService:
 
     def _feynman_chat(self, messages: List[Dict[str, str]],
                       stream: bool = True) -> Generator:
-        """费曼教学模式对话"""
+        """费曼教学模式对话（方案B：交互式单步引导）"""
         feynman = self._get_feynman()
 
+        # 提取主题：第一条 user 消息
         topic = ""
-        for msg in reversed(messages):
+        for msg in messages:
             if msg.get("role") == "user":
                 topic = msg.get("content", "")
                 break
 
         if not topic:
             yield json.dumps({
-                "content": "请提供一个学习主题，我来用费曼教学法为你讲解。",
+                "content": "请提供一个学习主题，我来用费曼教学法引导你思考。",
                 "done": True
             }, ensure_ascii=False)
             return
 
+        # 判断学生水平
         level = "junior"
         for msg in reversed(messages):
             content = msg.get("content", "").lower()
@@ -146,20 +152,23 @@ class ChatService:
                 level = "senior"
                 break
 
-        for step_data in feynman.explain_stream(topic, level):
-            yield json.dumps({
-                "step": step_data["step"],
-                "step_name": step_data["step_name"],
-                "content": step_data["content"],
-                "is_last": step_data["is_last"],
-                "mode": "feynman"
-            }, ensure_ascii=False)
-            time.sleep(0.1)
+        # 交互式引导：把完整对话历史交给引擎，只生成下一步
+        step_data = feynman.explain_step(topic, level, dialogue=messages)
+
+        yield json.dumps({
+            "step": step_data["step"],
+            "step_name": step_data["step_name"],
+            "content": step_data["content"],
+            "is_last": step_data["is_last"],
+            "mode": "feynman",
+            "model_used": step_data["model_used"],
+        }, ensure_ascii=False)
 
     def chat_sync(self, messages: List[Dict[str, str]],
                   mode: str = "chat",
                   temperature: float = 0.7,
-                  max_tokens: int = 2048) -> Dict[str, Any]:
+                  max_tokens: int = 2048,
+                  model: str = None) -> Dict[str, Any]:
         """同步对话"""
         if mode == "feynman":
             feynman = self._get_feynman()
@@ -170,13 +179,17 @@ class ChatService:
                     break
             return feynman.explain(topic, "junior")
 
-        route_request = RouteRequest(
-            topic=messages[-1]["content"][:50] if messages else "",
-            mode=mode,
-            messages=messages
-        )
-        route_result = self._router.route(route_request)
-        model = route_result.model_name
+        # 显式指定模型时直接使用，否则路由选择模型
+        if model:
+            pass  # 直接使用调用方传入的 model
+        else:
+            route_request = RouteRequest(
+                topic=messages[-1]["content"][:50] if messages else "",
+                mode=mode,
+                messages=messages
+            )
+            route_result = self._router.route(route_request)
+            model = route_result.model_name
 
         result = self._ollama.chat_sync(
             messages,

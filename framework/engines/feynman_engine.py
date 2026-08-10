@@ -320,6 +320,8 @@ class FeynmanEngine:
 3. 不要堆砌术语，非用不可的要先解释
 4. 语气要有趣、亲切，像朋友在教你
 5. 控制在300字以内，精炼！
+6. 【重要】直接对学生本人说话，使用第二人称"你"；禁止输出"老师：""学生："等角色对话剧本格式，禁止自导自演完整课堂过程
+7. 【重要】每一步结束时，必须以一个具体的引导性问题结尾，把思考主动权交还给学生，等待学生回答
 
 请直接写出教学内容："""
         
@@ -434,6 +436,124 @@ class FeynmanEngine:
 
     # ==================== 主教学方法 ====================
     
+    def explain_step(self, topic: str, level: str = "junior",
+                     dialogue: list = None) -> Dict:
+        """
+        交互式费曼引导 - 单步生成（方案B：真正的引导对话）
+
+        每次调用只生成当前一步的教学引导，等待学生回答后再进入下一步。
+        通过 dialogue（前序师生对话）保持上下文连贯。
+
+        参数：
+            topic: 教学主题
+            level: 学生水平 (junior/senior/college/general)
+            dialogue: 前序对话历史 [{"role": "assistant"/"user", "content": ...}]
+
+        返回：
+            {
+                "step": 当前步骤序号(1-5),
+                "step_name": 步骤名,
+                "content": 本步引导内容（以提问结尾）,
+                "is_last": 是否最后一步,
+                "model_used": 模型名称
+            }
+        """
+        dialogue = dialogue or []
+        # 根据对话历史推断当前步骤：assistant 已输出过几步，下一步就是 step+1
+        assistant_count = sum(1 for m in dialogue if m.get("role") == "assistant")
+        step_order = min(assistant_count + 1, 5)
+
+        steps_config = [
+            ("phenomenon", "现象引入"),
+            ("conflict", "认知冲突"),
+            ("model", "思维模型"),
+            ("derive", "自主推导"),
+            ("test", "费曼测试"),
+        ]
+        step_key, step_name = steps_config[step_order - 1]
+
+        # 构建对话上下文（师生轮流记录，供模型参考学生已说过什么）
+        dialogue_str = ""
+        if dialogue:
+            parts = []
+            for m in dialogue:
+                if m.get("role") == "assistant":
+                    parts.append(f"引导者（你）：{m.get('content', '')[:300]}")
+                else:
+                    parts.append(f"学生：{m.get('content', '')[:300]}")
+            dialogue_str = "此前对话：\n" + "\n\n".join(parts) + "\n\n"
+
+        subject, topic_type = self._detect_subject_and_type(topic)
+        template = get_template(subject, topic_type, step_key, topic)
+
+        level_descriptions = {
+            "junior": "初中生水平，用最简单的生活例子，不要用专业术语",
+            "senior": "高中生水平，可以适当使用学科术语，但需要解释清楚",
+            "college": "大学生水平，可以使用专业术语，但核心概念仍需要讲透",
+            "general": "通用水平，像给12岁孩子讲解一样清晰易懂",
+        }
+        level_desc = level_descriptions.get(level, level_descriptions["general"])
+
+        step_descriptions = {
+            "phenomenon": "用生活中的具体场景引入概念，让学生觉得'哦，原来这就是...'，不要直接说出答案或概念名称",
+            "conflict": "抛出一个看似简单但让学生愣住的问题，制造认知冲突。让学生意识到自己原来理解得不对或不完整",
+            "model": "给学生一个脑中能操作的画面或比喻。比如'就像...一样'。让抽象概念变得可触摸",
+            "derive": "引导学生自主分析推导。先指出分析方向，再给出一个关键提示或线索，用追问方式让学生自己迈出下一步。不直接给答案，要像教练一样给方向、给线索、给鼓励",
+            "test": "让学生用30秒讲给一个完全不懂的人听。要求：必须用最简单的话，最少的术语",
+        }
+        step_desc = step_descriptions.get(step_key, "")
+
+        if step_order == 1:
+            # 第一步没有前序对话，直接引导
+            prompt = f"""【费曼教学法 - {step_name}】（第{step_order}/5步）
+
+学生水平：{level_desc}
+教学主题：{topic}
+
+任务：{step_desc}
+
+参考引导语：{template}
+
+要求：
+1. 直接对"你"（学生）本人说话，像面对面聊天
+2. 语言极度简单口语化，用具体生活例子
+3. 【禁止】输出"老师：""学生："等角色对话剧本，禁止自导自演完整课堂
+4. 【禁止】一次性讲完所有内容——本步只做引入，不解答概念本身
+5. 结束时必须用一句话提出一个引导性问题，把思考权交给学生，等待学生回答
+6. 控制在200字以内
+
+请直接输出引导内容："""
+        else:
+            prompt = f"""【费曼教学法 - {step_name}】（第{step_order}/5步）
+
+学生水平：{level_desc}
+教学主题：{topic}
+{step_desc}
+
+{dialogue_str}
+请基于学生刚刚的回答继续引导。
+
+要求：
+1. 先简短回应学生刚才的回答（一两句，肯定正确的部分或指出需修正的），再推进本步教学
+2. 直接对"你"（学生）本人说话
+3. 【禁止】输出"老师：""学生："等角色对话剧本，禁止自导自演完整课堂
+4. 【禁止】重复前几步已讲过的内容，不要从头重新讲解
+5. 结束时必须用一句话提出一个引导性问题，把思考权交给学生，等待学生回答
+6. 控制在200字以内
+
+请直接输出引导内容："""
+        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        if not response:
+            response = template
+
+        return {
+            "step": step_order,
+            "step_name": step_name,
+            "content": response.strip(),
+            "is_last": (step_order == 5),
+            "model_used": self.model_name,
+        }
+
     def explain(self, topic: str, level: str = "junior") -> Dict:
         """
         五步费曼讲解流程 - 主入口
