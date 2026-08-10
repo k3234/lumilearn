@@ -6,17 +6,17 @@
 
 | 模型名称 | 架构 | 参数量 | 量化 | 大小 | 存储位置 | 部署状态 | 质量 |
 |---------|------|-------|------|------|---------|---------|------|
-| **lumilearn-v2:latest** | Qwen2 | 1.5B | Q8_0 | 1.65 GB | 天虹 Ollama + 本地 GGUF | ✅ 生产运行 | ★★★★★ |
+| **lumilearn-v2:latest** | Qwen2 | 1.5B | Q8_0 | 1.65 GB | 远程服务器 Ollama + 本地 GGUF | ✅ 生产运行 | ★★★★★ |
 | **lumilearn-v2-f16** | Qwen2 | 1.5B | F16 | 3.09 GB | 本地 GGUF | ⏸ 未使用 | ★★★★★ |
 | **merged_model_15b_v2** | Qwen2 | 1.5B | bf16 | 2.87 GB | 本地 HuggingFace | ⏸ 未使用 | ★★★★★ |
 | **merged_model_15b** | Qwen2 | 1.5B | bf16 | 2.87 GB | 本地 HuggingFace | ⏸ 未使用 | ★★☆☆☆ |
-| **lumilearn-merged** | Qwen2 | 3.1B | F16 | 6.18 GB | 天虹 Ollama | ⏸ 未使用 | ★★★☆☆ |
-| **qwen2.5:7b** | Qwen2 | 7.6B | Q4_K_M | 4.68 GB | 天虹 Ollama | ✅ 备用 | ★★★★☆ |
-| **lumilearn-v5:real** | Llama | 33.27M | — | 133 MB | 天虹 Ollama | ⏸ 保留 | ★☆☆☆☆ |
-| **lumilearn-v5:latest** | GPT-2 | 27.32M | — | 110 MB | 天虹 Ollama | ⏸ 保留 | ★☆☆☆☆ |
-| **lumilearn-v5:test** | GPT-2 | 21.01M | — | 84 MB | 天虹 Ollama | ⏸ 保留 | ★☆☆☆☆ |
-| **lumilearn-v4-tianhong** | Llama | 23.38M | — | 94 MB | 天虹 Ollama | ⏸ 保留 | ★☆☆☆☆ |
-| **lumilearn-v3** | Llama | 23.38M | — | 94 MB | 天虹 Ollama | ⏸ 保留 | ★☆☆☆☆ |
+| **lumilearn-merged** | Qwen2 | 3.1B | F16 | 6.18 GB | 远程服务器 Ollama | ⏸ 未使用 | ★★★☆☆ |
+| **qwen2.5:7b** | Qwen2 | 7.6B | Q4_K_M | 4.68 GB | 远程服务器 Ollama | ✅ 备用 | ★★★★☆ |
+| **lumilearn-v5:real** | Llama | 33.27M | — | 133 MB | 远程服务器 Ollama | ⏸ 保留 | ★☆☆☆☆ |
+| **lumilearn-v5:latest** | GPT-2 | 27.32M | — | 110 MB | 远程服务器 Ollama | ⏸ 保留 | ★☆☆☆☆ |
+| **lumilearn-v5:test** | GPT-2 | 21.01M | — | 84 MB | 远程服务器 Ollama | ⏸ 保留 | ★☆☆☆☆ |
+| **lumilearn-v4** | Llama | 23.38M | — | 94 MB | 远程服务器 Ollama | ⏸ 保留 | ★☆☆☆☆ |
+| **lumilearn-v3** | Llama | 23.38M | — | 94 MB | 远程服务器 Ollama | ⏸ 保留 | ★☆☆☆☆ |
 
 ## 二、模型大小对比
 
@@ -44,10 +44,10 @@ lumilearn-v5:real     (33M)        ██░░░░░░░░░░░░░
 
 | 模型 | 推理速度 (tok/s) | 硬件 | 延迟 |
 |------|-----------------|------|------|
-| **lumilearn-v2:latest** (Q8_0) | **26.4 tok/s** | 天虹 CPU (R7-7840HS) | ~38ms/tok |
-| lumilearn-v2-f16 (F16) | ~9.7 tok/s | 天虹 CPU | ~103ms/tok |
-| qwen2.5:7b (Q4_K_M) | ~8-12 tok/s | 天虹 CPU | ~80-125ms/tok |
-| merged_model_15b_v2 (bf16) | ~8 tok/s | 天虹 CPU | ~125ms/tok |
+| **lumilearn-v2:latest** (Q8_0) | **26.4 tok/s** | 远程服务器 CPU (R7-7840HS) | ~38ms/tok |
+| lumilearn-v2-f16 (F16) | ~9.7 tok/s | 远程服务器 CPU | ~103ms/tok |
+| qwen2.5:7b (Q4_K_M) | ~8-12 tok/s | 远程服务器 CPU | ~80-125ms/tok |
+| merged_model_15b_v2 (bf16) | ~8 tok/s | 远程服务器 CPU | ~125ms/tok |
 | merged_model_15b_v2 (bf16) | 1-3 tok/s | 本地 CPU | ~300-1000ms/tok |
 
 ## 五、推荐使用场景
@@ -85,7 +85,7 @@ models/distil/
     └── ...
 ```
 
-### 天虹服务器 Ollama
+### 远程服务器服务器 Ollama
 
 ```
 ollama list
@@ -95,6 +95,6 @@ ollama list
 ├── lumilearn-v5:real            # 保留 (133 MB, Llama-33M)
 ├── lumilearn-v5:latest          # 保留 (110 MB, GPT2-27M)
 ├── lumilearn-v5:test            # 保留 (84 MB, GPT2-21M)
-├── lumilearn-v4-tianhong:latest # 保留 (94 MB, Llama-23M)
+├── lumilearn-v4:latest # 保留 (94 MB, Llama-23M)
 └── lumilearn-v3:latest          # 保留 (94 MB, Llama-23M)
 ```
