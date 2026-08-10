@@ -288,3 +288,7 @@ scripts/record_screen.py
 # 临时调试/修复脚本
 _fix_*.py
 _patch_*.py
+# 隐私清理工具（不提交）
+_msg_cleanup.py
+_mailmap.txt
+_replace_rules.txt
