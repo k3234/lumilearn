@@ -109,6 +109,156 @@
 
 ---
 
-**待提交**：goai_multi_agent.py、goai_web.py（重构）、两个模板、部署/验证脚本、本文档。
+## 五、学习分析仪表盘前端分离重构（analytics_dashboard.py）⭐ 任务二
 
-**遗留**：其他端口（teacher_portal / student_portal / framework 三端口）的前端分离重构，待后续积累经验后进行。
+**目标**：延续 GOAI Web 前端分离经验，消除最后一个内嵌前端的端口服务（18090）。
+
+### 改动
+
+| 项 | 改动前 | 改动后 |
+|---|---|---|
+| 仪表盘页面 | `DASHBOARD_HTML` 常量（166 行内嵌在 .py） | 独立模板 `remote/templates/analytics_dashboard.html` |
+| 渲染方式 | `render_template_string(DASHBOARD_HTML)` | `render_template("analytics_dashboard.html")` |
+| 模板目录 | 无 | `remote/templates`（本地）→ `tianhong/templates`（远程）双目录兼容 |
+| 文件体积 | analytics_dashboard.py 387 行 | 202 行（减 48%） |
+
+### 验证结果（本地 15 项全通过）
+- 模块无 `render_template_string` / 无 `DASHBOARD_HTML` 内嵌 ✅
+- 首页 200，含 6 个数据区块（stats/trend/subjects/weak/concepts/recent）与全部 JS 加载逻辑 ✅
+- 6 个 API 端点（overview/trend/subjects/weakpoints/concepts/recent）全部正常 ✅
+- 与 git HEAD 旧版内容一致性 ✅
+
+---
+
+## 六、任务一 + 任务二 合并完整检测（本地）
+
+### 本地全产品冒烟测试（114 项全通过）
+覆盖 Admin（18080）25 项、Student@5010 36 项、Student@5000（含多 Agent 三阶段协作）15 项、Teacher@5001 18 项、前端页面可访问性 12 项、跨端口一致性 3 项、多轮对话 5 项、五步学习详细验证 10 项。
+
+### Day2 多 Agent 专项（26 项全通过）
+- Agent 单元：FeynmanTeacher 五步/交互/缺参、ScoreAgent 评分/缺解释、CoachAgent 建议+推荐
+- 编排器：完整流程、5 步教学、评分、建议、状态追踪、耗时
+- goai_web：仪表盘/学习页 200、multi-agent 401/200/评分跳过/报告落库
+
+---
+
+## 七、数据可视化 + 权限管理 + 数据合规导出（任务三）
+
+**目标**：实现「数据可图形化完全查看管理（管理员/教师）」+「账号权限完全管理」+「数据在管理员管理下合规传输」。
+
+### 7.1 数据可视化（纯 SVG，零 CDN）
+
+| 端口 | 新增面板 | 图表内容 |
+|---|---|---|
+| **Admin 18080** | 📈 数据可视化 | 总量卡片、掌握度趋势折线图、学科对比条形图、薄弱点排行、知识点掌握度热力、模型推理统计、学生掌握度排行 |
+| **Teacher 5001** | 📈 学习分析 | 同上（仅本班学生数据范围，`_visible_student_ids` 权限隔离） |
+
+数据源 API（`framework/database.py` 新增 Z1.6 系列）：`get_analytics_overview/trend/subjects/weakpoints/concepts/reasoning/users`，支持按 `user_ids` 限定范围（教师本班）。
+
+### 7.2 账号权限完全管理
+
+| 能力 | 说明 |
+|---|---|
+| **管理员分级** | `super_admin`（创建/启停/改角色/删除管理员）+ `operator`（查看）双角色；`admins` 表管理 API：`GET/POST /api/admin/admins`、`POST .../toggle`、`POST .../role`、`DELETE .../<id>` |
+| **用户权限** | `users` 表新增 `is_active`（登录拦截），`verify_user_login` 拒绝禁用账号；API：`POST /api/admin/users/<id>/active`（启停）、`POST .../role`（改角色） |
+| **数据范围隔离** | 教师 analytics/导出仅限本班学生；非本班学生数据（报告/推理日志）自动隔离 |
+| **防锁死保护** | 不能禁用/删除自己；超管账号不可删除（防止系统锁死） |
+
+### 7.3 数据合规导出（管理员审批）
+
+- 新表 `data_exports`：申请人/类型/格式/范围/状态(pending→approved/rejected)/审批人/文件路径/申请时间/审批时间
+- **Admin**：直接导出（即时生成文件）+ 审批教师申请 + 下载（JSON/CSV），全部记录审计日志
+- **Teacher**：发起导出申请（本班范围）→ 管理员审批 → 批准后可下载；仅本人可下载
+- 导出类型：`reports / reasoning / answers / users / concepts`，格式 `json / csv`
+- 导出文件写入 `export_data/` 目录
+
+### 7.4 验证结果
+
+| 测试套件 | 结果 |
+|---|---|
+| 任务三专项（analytics/权限/导出/前端） | **56/56 ✅** |
+| 全产品回归（含既有 124 项） | **124/124 ✅** |
+| pytest 核心（admin/auth/agent/管道） | **59/59 ✅** |
+
+---
+
+## 八、Day3：RAG 知识库原型 ⭐
+
+**目标**：教学内容"有据可查"，从纯模型生成升级为"知识库检索增强 + 模型生成"。遵循行动规划约束：不引入向量数据库。
+
+### 8.1 关键词倒排索引检索服务（新增）
+
+`framework/services/knowledge_retrieval.py`
+
+- 数据源：`training_data(status=published)` + `knowledge_nodes`
+- 轻量中文分词：领域词典（180+ 学科术语）+ 字母数字段 + 中文 2-gram + 停用词过滤
+- 简化 BM25 打分（tf + idf + 对数平滑），支持学科过滤，索引惰性构建 + 内存缓存 + `refresh()`
+- 检索失败静默降级为空，绝不阻塞教学主流程
+
+### 8.2 集成点
+
+| 位置 | 改动 |
+|---|---|
+| `goai_multi_agent.py` | FeynmanTeacher.run() 生成前 `retriever.search(topic, top_k=3)` → 聚合报告 `teaching.rag_sources` |
+| `feynman_engine.py` | `_build_feynman_prompt` / `explain` / `explain_step` 新增 `extra_context` 注入（默认空，向后兼容） |
+| `goai_web.py` | 新增 `GET/POST /api/knowledge/search`、`GET /api/knowledge/status`（需登录） |
+| `goai_learn.html` | 报告新增「知识库参考来源（RAG）」+「多 Agent 协作状态」区块 |
+
+### 8.3 验证
+
+- 本地 Day3 专项 18/18 ✅（索引/检索/上下文格式化/FeynmanEngine 注入/编排器/API）
+- 天虹真实数据（1166 条 published）：勾股定理/牛顿/光合/共价键/单调性 5/5 命中 ✅
+
+---
+
+## 九、天虹服务器完整部署 + 测评（Day2/3 + 任务三 全量）
+
+### 9.1 部署
+
+- 14 个文件（代码 9 + 模板 5）上传至 `/home/kai/lumilearn`，覆盖前自动备份 `*.bak_时间戳`
+- 合并 `port_settings`（补齐 terminal/teacher_portal/student_portal，保留远程其他配置）
+- 重启全部服务：`lumilearn-api`(18080/81/82) + `lumilearn-goai`(5000)（systemd）+ `teacher_portal`(5001) + `analytics_dashboard`(18090) + `student_portal`(5010)（nohup）
+- 7 端口全部 HTTP 200/302 ✅
+
+### 9.2 在线测评结果
+
+| 模块 | 结果 |
+|---|---|
+| RAG 知识库（1166 文档） | 5/5 检索命中 ✅ |
+| 多 Agent 真实调用（牛顿第二定律 + 学生解释） | 56.9s，教学 5 步 + RAG 来源 2 + 评分 100 + 建议 + 三 Agent 全 ok ✅ |
+| Admin 数据可视化（7 API） | 全过 ✅ |
+| Admin 权限管理（admins/users/is_active） | 全过 ✅ |
+| Admin 直接导出 + 下载 | 全过 ✅ |
+| 教师本班数据隔离（analytics 5 项） | 全过 ✅ |
+| 教师导出申请 → 管理员审批 → 下载 | 全过 ✅ |
+| 前端新面板（多 Agent/数据可视化/学习分析） | 全过 ✅ |
+| **合计** | **37/37 ✅** |
+
+### 9.3 修复记录（测评发现并修复）
+
+| 问题 | 根因 | 修复 |
+|---|---|---|
+| 多 Agent 180s 超时 | 模型发散输出无上限，单步 120s 超时 | `call_ollama` 支持 `num_predict`；费曼引擎调用默认限制 300 token（评分 400）→ 总耗时 284s → **56s** |
+| ScoreAgent `'int' object has no attribute 'get'` | 模型返回的维度值是 int 而非 dict | `output_detector._ai_score` 维度归一化为 dict；`thirty_second_test` 校验 JSON 顶层为对象 |
+| 「共价键」检索 0 条 | 知识库无共价键数据（非代码问题） | 天虹补充 1 条 published 教学资源 |
+
+### 9.4 真实用户体验场景测试（天虹 CPU）
+
+| 场景 | 结果 |
+|---|---|
+| 数学-勾股定理 | 5/5 步教学，评分 100，59.2s ✅ |
+| 化学-共价键 | 5/5 步教学，评分 100，49.1s ✅ |
+
+---
+
+## 十、AI 使用声明 + 安全审查
+
+- 新增仓库根目录 `AI-DECLARATION.md`：角色、AI 工具（Trae CN / Trae Work CN）、审核方式、责任声明、使用的技能/插件
+- 已追踪脚本脱敏：`_remote_e2e_test.py` / `_check_remote_users.py` 中真实内网 IP 改为环境变量读取 + 占位符
+- 文档：新增 `docs/rag_design.md`、`docs/privacy_compliance.md`、`docs/open_source_plan.md`；README 补充多 Agent/RAG/数据可视化章节
+
+---
+
+**待提交**：goai_multi_agent.py、goai_web.py、analytics_dashboard.py、admin.py、teacher_portal.py、database.py、feynman_engine.py、output_detector.py、lumilearn_shared.py、knowledge_retrieval.py（新增）、5 个前端模板、README、AI-DECLARATION.md、3 篇 docs、验证/部署/测评脚本、本文档。
+
+**遗留**：演示视频与 PPT（用户指定另行完成）；`qwen2.5:7b` 已从费曼默认路径中规避（端口模型配置 lumilearn-v2，CPU 推理 6s/次）。

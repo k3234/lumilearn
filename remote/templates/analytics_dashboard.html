@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn · 学习分析</title>
+<style>
+  :root {
+    --bg:#0C1015; --surface:#151B24; --surface2:#1C2431; --border:#26303F;
+    --text:#EDF1F6; --sub:#9AA6B7; --faint:#66717F;
+    --accent:#E8A33D; --mint:#46C08A; --sky:#5BA8E8; --danger:#EF6C6C;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif; min-height:100vh; }
+  body::before { content:""; position:fixed; inset:0; z-index:-1; background:radial-gradient(720px 420px at 88% -4%, rgba(232,163,61,.10), transparent 62%), var(--bg); }
+  .wrap { max-width:1180px; margin:0 auto; padding:32px 28px 64px; }
+  .kicker { font-family:"SF Mono",Consolas,monospace; font-size:12px; color:var(--accent); letter-spacing:.12em; margin-bottom:6px; }
+  h1 { font-size:32px; font-weight:600; font-family:"Noto Serif SC","Songti SC",serif; }
+  .sub { color:var(--sub); margin-top:8px; font-size:14px; }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:26px; }
+  .stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+  .stat b { display:block; font-size:28px; color:var(--accent); font-family:"SF Mono",Consolas,monospace; }
+  .stat span { font-size:12px; color:var(--faint); }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+  .card h2 { font-size:16px; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  .card h2 .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .faint { color:var(--faint); }
+  .empty { padding:32px; text-align:center; color:var(--faint); }
+  svg text { fill:var(--sub); font-size:11px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:var(--faint); font-weight:500; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px; }
+  td { padding:9px 10px; border-bottom:1px solid rgba(38,48,63,.6); }
+  tr:hover td { background:var(--surface2); }
+  .tag { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; }
+  .tag.good { background:rgba(70,192,138,.12); color:var(--mint); }
+  .tag.mid { background:rgba(232,163,61,.13); color:var(--accent); }
+  .tag.bad { background:rgba(239,108,108,.12); color:var(--danger); }
+  .weak { display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid rgba(38,48,63,.6); font-size:13px; color:var(--sub); }
+  .weak:last-child { border-bottom:none; }
+  .weak .c { margin-left:auto; font-family:"SF Mono",Consolas,monospace; color:var(--accent); }
+  .heat { display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:10px; }
+  .cell { border-radius:10px; padding:12px 10px; text-align:center; border:1px solid var(--border); }
+  .cell b { font-size:18px; font-family:"SF Mono",Consolas,monospace; }
+  .cell span { display:block; font-size:11px; color:var(--sub); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (max-width:900px){ .grid{grid-template-columns:1fr;} .stats{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:480px){ .stats{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="kicker">LEARNING ANALYTICS · LOCAL-FIRST</p>
+  <h1>学习分析仪表盘</h1>
+  <p class="sub">基于共享数据库实时统计：掌握度趋势、学科对比、薄弱点与知识点掌握情况。</p>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="grid">
+    <div class="card"><h2><span class="dot"></span>掌握度趋势</h2><div id="trend"></div></div>
+    <div class="card"><h2><span class="dot"></span>学科掌握度</h2><div id="subjects"></div></div>
+    <div class="card"><h2><span class="dot"></span>薄弱点排行</h2><div id="weak"></div></div>
+    <div class="card"><h2><span class="dot"></span>知识点掌握度</h2><div id="concepts"></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2><span class="dot"></span>最近学习报告</h2>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>主题</th><th>学生</th><th>时间</th><th>掌握度</th></tr></thead>
+      <tbody id="recent"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<script>
+function $(id){return document.getElementById(id);}
+async function get(p){const r=await fetch(p);const j=await r.json();return j.data||[];}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+async function loadStats(){
+  const d=await get('/api/dashboard/overview');
+  const acc=d.answers?Math.round((d.answers-d.wrongAnswers)/d.answers*100):0;
+  $('stats').innerHTML=[
+    ['学生数',d.students],['学习报告',d.reports],['平均掌握度',d.avgMastery+'%'],['答题正确率',acc+'%']
+  ].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>';}).join('');
+}
+
+async function loadTrend(){
+  const d=await get('/api/dashboard/trend?limit=14');
+  const box=$('trend');
+  if(!d.length){box.innerHTML='<div class="empty">暂无报告数据</div>';return;}
+  const W=520,H=170,pad=30;
+  const max=Math.max.apply(null,d.map(function(x){return x.avg;}))||100;
+  const min=Math.min.apply(null,d.map(function(x){return x.avg;}))||0;
+  const span=(max-min)||1;
+  const x=function(i){return pad+(W-pad*2)*i/(d.length-1);};
+  const y=function(v){return H-pad-((v-min)/span)*(H-pad*2);};
+  const pts=d.map(function(p,i){return x(i)+','+y(p.avg);}).join(' ');
+  let poly='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:520px">';
+  poly+='<polyline fill="none" stroke="#E8A33D" stroke-width="2.5" points="'+pts+'"/>';
+  d.forEach(function(p,i){
+    if(i%Math.ceil(d.length/7)===0||i===d.length-1){
+      poly+='<circle cx="'+x(i)+'" cy="'+y(p.avg)+'" r="3.5" fill="#E8A33D"/>';
+      poly+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(String(p.date).slice(5))+'</text>';
+    }
+  });
+  poly+='<text x="8" y="'+y(d[d.length-1].avg)+'" fill="#46C08A">'+d[d.length-1].avg+'%</text>';
+  poly+='</svg>';
+  box.innerHTML=poly;
+}
+
+async function loadSubjects(){
+  const d=await get('/api/dashboard/subjects');
+  const box=$('subjects');
+  if(!d.length){box.innerHTML='<div class="empty">暂无数据</div>';return;}
+  const max=Math.max.apply(null,d.map(function(x){return x.avg;}))||100;
+  let html='<svg viewBox="0 0 520 180" width="100%" style="max-width:520px">';
+  const bw=Math.min(64,(520-60)/d.length);
+  d.forEach(function(s,i){
+    const h=Math.max(4,(s.avg/max)*110);
+    const x=40+i*(bw+18), y=150-h;
+    html+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="6" fill="#E8A33D" opacity="'+(0.55+0.45*i/d.length)+'"/>';
+    html+='<text x="'+(x+bw/2)+'" y="'+(y-6)+'" text-anchor="middle" fill="#46C08A">'+s.avg+'%</text>';
+    html+='<text x="'+(x+bw/2)+'" y="172" text-anchor="middle">'+esc(s.subject)+'</text>';
+    html+='<text x="'+(x+bw/2)+'" y="166" text-anchor="middle" font-size="9" fill="#66717F">'+s.count+'次</text>';
+  });
+  html+='</svg>';
+  box.innerHTML=html;
+}
+
+async function loadWeak(){
+  const d=await get('/api/dashboard/weakpoints?limit=8');
+  const box=$('weak');
+  if(!d.length){box.innerHTML='<div class="empty">暂无薄弱点数据</div>';return;}
+  box.innerHTML=d.map(function(w){
+    const cls=w.severity==='高'?'bad':w.severity==='中'?'mid':'good';
+    return '<div class="weak"><span class="tag '+cls+'">'+esc(w.severity)+'</span><span>'+esc(w.text)+'</span><span class="c">×'+w.count+'</span></div>';
+  }).join('');
+}
+
+async function loadConcepts(){
+  const d=await get('/api/dashboard/concepts');
+  const box=$('concepts');
+  if(!d.length){box.innerHTML='<div class="empty">暂无知识点数据（学习后生成）</div>';return;}
+  box.innerHTML='<div class="heat">'+d.map(function(c){
+    const col=c.value>=70?'rgba(70,192,138,.16)':c.value>=45?'rgba(232,163,61,.15)':'rgba(239,108,108,.14)';
+    const tx=c.value>=70?'#46C08A':c.value>=45?'#E8A33D':'#EF6C6C';
+    return '<div class="cell" style="background:'+col+'"><b style="color:'+tx+'">'+c.value+'%</b><span>'+esc(c.name)+'</span></div>';
+  }).join('')+'</div>';
+}
+
+async function loadRecent(){
+  const d=await get('/api/dashboard/recent?limit=10');
+  const box=$('recent');
+  if(!d.length){box.innerHTML='<tr><td colspan="4" class="empty">暂无学习报告</td></tr>';return;}
+  box.innerHTML=d.map(function(r){
+    const cls=r.score>=80?'good':r.score>=60?'mid':'bad';
+    return '<tr><td>'+esc(r.topic)+'</td><td>'+esc(r.user)+'</td><td class="faint">'+esc(r.date)+'</td>'+
+           '<td><span class="tag '+cls+'">'+r.score+'%</span></td></tr>';
+  }).join('');
+}
+
+loadStats(); loadTrend(); loadSubjects(); loadWeak(); loadConcepts(); loadRecent();
+setInterval(function(){loadStats();loadTrend();},30000);
+</script>
+</body>
+</html>

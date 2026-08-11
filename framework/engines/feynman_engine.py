@@ -19,8 +19,14 @@ from dataclasses import dataclass, field
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
-from lumilearn_shared import call_ollama
+from lumilearn_shared import call_ollama as _ll_call_ollama
 from framework.engines.feynman_templates import get_template, FEYNMAN_TEMPLATES
+
+
+def call_ollama(model_name, prompt, timeout=60, **kw):
+    """费曼引擎专用调用：默认限制生成长度，防止模型发散导致超时"""
+    kw.setdefault("num_predict", 300)
+    return _ll_call_ollama(model_name, prompt, timeout=timeout, **kw)
 
 # ==================== 数据模型 ====================
 @dataclass
@@ -258,7 +264,8 @@ class FeynmanEngine:
         return hint
 
     def _build_feynman_prompt(self, step: str, topic: str, level: str, 
-                               context: list = None) -> str:
+                               context: list = None,
+                               extra_context: str = None) -> str:
         """
         构建费曼风格的Prompt
         
@@ -267,6 +274,8 @@ class FeynmanEngine:
             topic: 教学主题
             level: 学生水平 (junior/senior/college/general)
             context: 前几步的内容作为上下文
+            extra_context: RAG 检索到的参考资料（可选，为空时不注入；
+                          未显式传入时回退到 self._rag_context）
         
         返回：
             构建好的Prompt字符串
@@ -274,6 +283,10 @@ class FeynmanEngine:
         # 获取模板
         subject, topic_type = self._detect_subject_and_type(topic)
         template = get_template(subject, topic_type, step, topic)
+
+        # RAG 参考资料：显式参数优先，否则使用实例级上下文（explain 阶段注入）
+        if extra_context is None:
+            extra_context = getattr(self, "_rag_context", "") or ""
         
         # 水平描述
         level_descriptions = {
@@ -300,6 +313,14 @@ class FeynmanEngine:
             context_str = "前面已经讨论过的内容：\n"
             for i, ctx in enumerate(context):
                 context_str += f"第{i+1}步：{ctx[:200]}\n\n"
+
+        # RAG 参考资料注入（仅当存在且非空时）
+        rag_str = ""
+        if extra_context:
+            rag_str = f"""
+参考资料（来自知识库检索，仅作内容参考，不可直接照抄，需用自己的话讲解）：
+{extra_context[:800]}
+"""
         
         # 构建最终Prompt
         prompt = f"""【费曼教学法 - {step}阶段】
@@ -312,6 +333,7 @@ class FeynmanEngine:
 参考引导语：{template}
 
 {context_str}
+{rag_str}
 请按照费曼教学法的要求，为 "{topic}" 这个主题写出{step}阶段的教学内容。
 
 要求：
@@ -437,7 +459,8 @@ class FeynmanEngine:
     # ==================== 主教学方法 ====================
     
     def explain_step(self, topic: str, level: str = "junior",
-                     dialogue: list = None) -> Dict:
+                     dialogue: list = None,
+                     extra_context: str = "") -> Dict:
         """
         交互式费曼引导 - 单步生成（方案B：真正的引导对话）
 
@@ -448,6 +471,7 @@ class FeynmanEngine:
             topic: 教学主题
             level: 学生水平 (junior/senior/college/general)
             dialogue: 前序对话历史 [{"role": "assistant"/"user", "content": ...}]
+            extra_context: RAG 检索到的参考资料（可选，注入 prompt）
 
         返回：
             {
@@ -459,6 +483,8 @@ class FeynmanEngine:
             }
         """
         dialogue = dialogue or []
+        # 注入 RAG 参考资料（prompt 构造处读取 self._rag_context）
+        self._rag_context = extra_context or ""
         # 根据对话历史推断当前步骤：assistant 已输出过几步，下一步就是 step+1
         assistant_count = sum(1 for m in dialogue if m.get("role") == "assistant")
         step_order = min(assistant_count + 1, 5)
@@ -518,6 +544,13 @@ class FeynmanEngine:
             "test": "【禁止】重复第2步认知冲突中已讲过的内容（如变化率、速度是路程除以时间等通用说法），本步聚焦新任务：让学生用最简单的话讲给完全不懂的人听",
         }
 
+        # RAG 参考资料注入（存在时追加到 prompt，仅作参考不可照抄）
+        rag_str = ""
+        if self._rag_context:
+            rag_str = (
+                f"\n参考资料（来自知识库检索，仅作内容参考，不可直接照抄，需用自己的话讲解）：\n"
+                f"{self._rag_context[:500]}\n")
+
         if step_order == 1:
             # 第一步没有前序对话，直接引导
             prompt = f"""【费曼教学法 - {step_name}】（第{step_order}/5步）
@@ -528,7 +561,7 @@ class FeynmanEngine:
 任务：{step_desc}
 
 参考引导语：{template}
-
+{rag_str}
 要求：
 1. 直接对"你"（学生）本人说话，像面对面聊天
 2. 语言极度简单口语化，用具体生活例子
@@ -561,7 +594,7 @@ class FeynmanEngine:
 任务：{step_desc}
 
 参考引导语：{template}
-
+{rag_str}
 {dialogue_str}
 {answer_hint}
 {forbidden_hint}
@@ -595,13 +628,15 @@ class FeynmanEngine:
             "model_used": self.model_name,
         }
 
-    def explain(self, topic: str, level: str = "junior") -> Dict:
+    def explain(self, topic: str, level: str = "junior",
+                extra_context: str = "") -> Dict:
         """
         五步费曼讲解流程 - 主入口
         
         参数：
             topic: 教学主题，如 "勾股定理"、"英语过去式"、"化学反应"
             level: 学生水平 (junior/senior/college/general)
+            extra_context: RAG 检索到的参考资料（可选，注入每步 prompt）
         
         返回：
             {
@@ -624,6 +659,9 @@ class FeynmanEngine:
         
         # 识别学科和主题类型
         subject, topic_type = self._detect_subject_and_type(topic)
+        
+        # 注入 RAG 参考资料（每步 _build_feynman_prompt 读取 self._rag_context）
+        self._rag_context = extra_context or ""
         
         # 执行五步教学
         context = []
@@ -788,14 +826,15 @@ class FeynmanEngine:
 
 只输出JSON，不要其他内容："""
         
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
-        
-        # 解析JSON响应
+        response = call_ollama(self.model_name, prompt, timeout=self.timeout,
+                               num_predict=400)
         try:
             # 尝试从响应中提取JSON
             json_match = re.search(r'\{[\s\S]*\}', response)
             if json_match:
                 data = json.loads(json_match.group())
+                if not isinstance(data, dict):
+                    raise ValueError("JSON 顶层不是对象")
                 return {
                     "score": data.get("total_score", 0),
                     "dimensions": {

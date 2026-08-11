@@ -89,6 +89,8 @@
 
   /* 统计卡 */
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
   .stat-card {
     background: white; border-radius: 14px; padding: 18px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
@@ -190,6 +192,17 @@
     background: #f8fafc; border-radius: 10px; padding: 16px; margin-top: 10px;
   }
   .tag { display: inline-block; margin-right: 6px; margin-bottom: 6px; padding: 2px 10px; border-radius: 16px; font-size: 11px; background: #f1f5f9; color: #64748b; }
+  .tag-green { background: rgba(22,163,74,.12); color: #16a34a; }
+  .tag-red { background: rgba(239,68,68,.12); color: #ef4444; }
+  .tag-amber { background: rgba(245,158,11,.13); color: #d97706; }
+
+  /* 学习分析图表容器 */
+  .weak-row { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  .weak-row:last-child { border-bottom: none; }
+  .heat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+  .heat-cell { border-radius: 10px; padding: 12px 10px; text-align: center; border: 1px solid #e2e8f0; }
+  .heat-cell b { font-size: 18px; font-family: monospace; }
+  .heat-cell span { display: block; font-size: 11px; color: #64748b; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* 推理记录详情 */
   .reasoning-block {
@@ -239,8 +252,10 @@
     <button class="nav-item" data-page="classes" onclick="switchPage('classes')">🏫 班级管理</button>
     <button class="nav-item" data-page="students" onclick="switchPage('students')">👩‍🎓 学生管理</button>
     <button class="nav-item" data-page="reasoning" onclick="switchPage('reasoning')">🧠 推理记录</button>
+    <button class="nav-item" data-page="analytics" onclick="switchPage('analytics')">📈 学习分析</button>
     <button class="nav-item" data-page="tasks" onclick="switchPage('tasks')">📋 任务管理</button>
     <button class="nav-item" data-page="resources" onclick="switchPage('resources')">📚 教学资源</button>
+    <button class="nav-item" data-page="exports" onclick="switchPage('exports')">📦 数据导出</button>
     <div class="user-card">
       <div class="avatar" id="userAvatar">师</div>
       <div>
@@ -325,6 +340,49 @@
       </div>
     </div>
 
+    <!-- 学习分析 -->
+    <div class="page" id="page-analytics">
+      <div class="between">
+        <div>
+          <div class="page-title">📈 学习分析</div>
+          <div class="page-sub">本班学生数据可视化（纯 SVG 图表，仅限我班级内的学生）</div>
+        </div>
+        <div class="flex">
+          <select id="analyticsClassSelect" onchange="loadAnalytics()" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+            <option value="">全部班级</option>
+          </select>
+        </div>
+      </div>
+      <div class="stat-grid" id="analyticsStats"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">📈 掌握度趋势（近14天）</div>
+          <div id="analyticsTrend"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 学科掌握度对比</div>
+          <div id="analyticsSubjects"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔴 薄弱点排行</div>
+          <div id="analyticsWeak"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">🧩 知识点掌握度</div>
+          <div id="analyticsConcepts"></div>
+        </div>
+      </div>
+      <div class="card mt-3">
+        <div class="card-title">🏆 学生掌握度排行</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>排名</th><th>学生</th><th>报告数</th><th>平均掌握度</th></tr></thead>
+            <tbody id="analyticsUsers"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- 任务管理 -->
     <div class="page" id="page-tasks">
       <div class="between">
@@ -368,6 +426,55 @@
       <div class="card mt-3">
         <div class="card-title">🧩 知识点（可生成任务）</div>
         <div id="knowledgeNodes"></div>
+      </div>
+    </div>
+
+    <!-- 数据导出 -->
+    <div class="page" id="page-exports">
+      <div class="between">
+        <div>
+          <div class="page-title">📦 数据导出</div>
+          <div class="page-sub">申请导出本班学生数据（需管理员审批后方可下载）</div>
+        </div>
+      </div>
+      <div class="card mt-3">
+        <div class="card-title">➕ 发起导出申请</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>数据类型</label>
+            <select id="expType" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+              <option value="reports">学习报告</option>
+              <option value="reasoning">推理日志</option>
+              <option value="answers">答题记录</option>
+              <option value="concepts">知识点掌握</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>格式</label>
+            <select id="expFmt" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+              <option value="json">JSON</option>
+              <option value="csv">CSV</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:2;">
+            <label>用途说明</label>
+            <input id="expReason" placeholder="说明导出用途（管理员审批参考）" style="width:100%;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="requestExport()">提交申请</button>
+          </div>
+        </div>
+        <div style="font-size:12px;color:#8b949e;margin-top:8px;">导出数据范围仅限你名下班级的学生；申请提交后由管理员审批，批准后可下载。</div>
+      </div>
+      <div class="card mt-3">
+        <div class="card-title">📋 我的导出申请</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>ID</th><th>类型</th><th>格式</th><th>状态</th><th>审批人</th><th>申请时间</th><th>操作</th></tr></thead>
+            <tbody id="exportTable"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
@@ -529,7 +636,7 @@ function switchPage(page) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   $('page-' + page).classList.add('active');
   document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
-  ({ overview: loadOverview, classes: renderOrg, students: loadStudents, tasks: loadTasks, resources: loadResources })[page]();
+  ({ overview: loadOverview, classes: renderOrg, students: loadStudents, reasoning: loadReasoning, analytics: loadAnalytics, tasks: loadTasks, resources: loadResources, exports: loadExports })[page]();
 }
 function closeModal(id) { $(id).classList.remove('active'); }
 
@@ -1122,6 +1229,153 @@ async function generateTaskFromNode(nodeId, name) {
   }
 }
 
+// ═══════════ 学习分析（本班学生 SVG 图表） ═══════════
+let ALL_CLASSES = [];
+
+async function loadAnalytics() {
+  try {
+    if (!ALL_CLASSES.length) ALL_CLASSES = (await api('/api/classes')).classes || [];
+    const sel = $('analyticsClassSelect');
+    const current = sel.value;
+    sel.innerHTML = `<option value="">全部班级</option>` + ALL_CLASSES.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+    sel.value = current;
+
+    const [ov, trend, subjects, weak, concepts, users] = await Promise.all([
+      api('/api/analytics/overview'),
+      api('/api/analytics/trend?limit=14'),
+      api('/api/analytics/subjects'),
+      api('/api/analytics/weakpoints?limit=8'),
+      api('/api/analytics/concepts?limit=24'),
+      api('/api/analytics/users'),
+    ]);
+    const ovd = ov.data || {};
+    const trendD = trend.data || [];
+    const subjD = subjects.data || [];
+    const weakD = weak.data || [];
+    const concD = concepts.data || [];
+    const userD = users.data || [];
+
+    $('analyticsStats').innerHTML = `
+      <div class="stat-card"><div class="num">${ovd.students}</div><div class="label">本班学生</div></div>
+      <div class="stat-card"><div class="num">${ovd.reports}</div><div class="label">学习报告</div></div>
+      <div class="stat-card"><div class="num">${ovd.avg_mastery}%</div><div class="label">平均掌握度</div></div>
+      <div class="stat-card"><div class="num">${ovd.correct_rate}%</div><div class="label">答题正确率</div></div>`;
+
+    // 趋势折线
+    if (trendD.length) {
+      const W = 560, H = 190, pad = 32;
+      const max = Math.max(...trendD.map(d => d.avg), 10);
+      const min = Math.min(...trendD.map(d => d.avg), 0);
+      const span = (max - min) || 1;
+      const x = i => pad + (W - pad * 2) * i / (trendD.length - 1);
+      const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
+      const pts = trendD.map((d, i) => x(i) + ',' + y(d.avg)).join(' ');
+      let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:560px">`;
+      svg += `<line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="#e2e8f0" stroke-width="1"/>`;
+      svg += `<polyline fill="none" stroke="#4f46e5" stroke-width="2.5" points="${pts}"/>`;
+      trendD.forEach((d, i) => {
+        if (i % Math.ceil(trendD.length / 7) === 0 || i === trendD.length - 1) {
+          svg += `<circle cx="${x(i)}" cy="${y(d.avg)}" r="3.5" fill="#4f46e5"/>`;
+          svg += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" fill="#94a3b8" font-size="10">${esc(String(d.date).slice(5))}</text>`;
+        }
+      });
+      svg += `<text x="6" y="${y(trendD[trendD.length - 1].avg) - 6}" fill="#16a34a" font-size="11">${trendD[trendD.length - 1].avg}%</text>`;
+      svg += '</svg>';
+      $('analyticsTrend').innerHTML = svg;
+    } else {
+      $('analyticsTrend').innerHTML = '<div class="empty">暂无报告数据</div>';
+    }
+
+    // 学科条形
+    if (subjD.length) {
+      const max = Math.max(...subjD.map(s => s.avg), 10);
+      const bw = Math.min(60, (560 - 60) / subjD.length);
+      let svg = '<svg viewBox="0 0 560 200" width="100%" style="max-width:560px">';
+      subjD.forEach((s, i) => {
+        const h = Math.max(4, (s.avg / max) * 120);
+        const bx = 40 + i * (bw + 22), by = 170 - h;
+        svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${h}" rx="6" fill="#4f46e5" opacity="${0.5 + 0.5 * i / subjD.length}"/>`;
+        svg += `<text x="${bx + bw / 2}" y="${by - 6}" text-anchor="middle" fill="#16a34a" font-size="11">${s.avg}%</text>`;
+        svg += `<text x="${bx + bw / 2}" y="192" text-anchor="middle" fill="#64748b" font-size="10">${esc(s.subject)}</text>`;
+        svg += `<text x="${bx + bw / 2}" y="182" text-anchor="middle" fill="#94a3b8" font-size="9">${s.count}次</text>`;
+      });
+      svg += '</svg>';
+      $('analyticsSubjects').innerHTML = svg;
+    } else {
+      $('analyticsSubjects').innerHTML = '<div class="empty">暂无数据</div>';
+    }
+
+    // 薄弱点
+    $('analyticsWeak').innerHTML = weakD.length ? weakD.map(w => `
+      <div class="weak-row">
+        <span class="tag ${w.severity === '高' ? 'tag-red' : w.severity === '中' ? 'tag-amber' : 'tag-green'}">${esc(w.severity)}</span>
+        <span style="flex:1;color:#475569;font-size:13px;">${esc(w.text)}</span>
+        <span style="font-family:monospace;color:#4f46e5;">×${w.count}</span>
+      </div>`).join('') : '<div class="empty">暂无薄弱点数据</div>';
+
+    // 知识点热力
+    $('analyticsConcepts').innerHTML = concD.length ? `<div class="heat-grid">
+      ${concD.map(c => {
+        const col = c.value >= 70 ? 'rgba(22,163,74,.13)' : c.value >= 45 ? 'rgba(245,158,11,.12)' : 'rgba(239,68,68,.11)';
+        const tx = c.value >= 70 ? '#16a34a' : c.value >= 45 ? '#f59e0b' : '#ef4444';
+        return `<div class="heat-cell" style="background:${col}">
+          <b style="color:${tx}">${c.value}%</b><span>${esc(c.name)}</span></div>`;
+      }).join('')}</div>` : '<div class="empty">暂无知识点数据</div>';
+
+    // 学生排行
+    $('analyticsUsers').innerHTML = userD.length ? userD.map((u, i) => `
+      <tr>
+        <td>${i + 1}${i < 3 ? ' 🏆' : ''}</td>
+        <td><b>${esc(u.name)}</b></td>
+        <td>${u.report_count}</td>
+        <td><span class="tag ${u.avg_score >= 80 ? 'tag-green' : u.avg_score >= 60 ? 'tag-amber' : 'tag-red'}">${u.avg_score}%</span></td>
+      </tr>`).join('') : '<tr><td colspan="4" class="empty">暂无学习记录</td></tr>';
+  } catch (e) {
+    $('analyticsTrend').innerHTML = `<div class="empty">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+// ═══════════ 数据导出（申请 → 审批 → 下载） ═══════════
+const EXPORT_TYPE_NAMES = { reports: '学习报告', reasoning: '推理日志', answers: '答题记录', users: '用户数据', concepts: '知识点掌握' };
+
+async function loadExports() {
+  try {
+    const d = await api('/api/exports');
+    const exports = d.exports || [];
+    $('exportTable').innerHTML = exports.map(e => {
+      const st = e.status === 'approved' ? '<span class="tag tag-green">已批准</span>'
+        : e.status === 'rejected' ? '<span class="tag tag-red">已拒绝</span>' : '<span class="tag tag-amber">待审批</span>';
+      let op = '-';
+      if (e.status === 'approved' && e.can_download) {
+        op = `<a class="btn btn-ghost btn-sm" href="/api/exports/${e.id}/download" target="_blank">⬇ 下载</a>`;
+      }
+      return `<tr>
+        <td>${e.id}</td>
+        <td>${EXPORT_TYPE_NAMES[e.export_type] || e.export_type}</td>
+        <td>${e.format.toUpperCase()}</td>
+        <td>${st}</td>
+        <td>${esc(e.approver_name || '-')}</td>
+        <td>${esc(e.created_at || '-')}</td>
+        <td>${op}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="7" class="empty">暂无导出申请</td></tr>';
+  } catch (e) {
+    $('exportTable').innerHTML = `<tr><td colspan="7" class="empty">加载失败: ${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function requestExport() {
+  const exportType = $('expType').value;
+  const format = $('expFmt').value;
+  const reason = $('expReason').value;
+  try {
+    const d = await api('/api/exports', 'POST', { export_type: exportType, format, reason });
+    toast(d.message || '✅ 申请已提交');
+    $('expReason').value = '';
+    loadExports();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
 // ═══════════ 初始化 ═══════════
 async function refreshAll() {
   ALL_DATA.grades = (await api('/api/grades')).grades || [];
@@ -1131,7 +1385,7 @@ async function refreshAll() {
   await loadResources();
   const active = document.querySelector('.nav-item.active');
   const page = active ? active.dataset.page : 'overview';
-  ({ overview: loadOverview, classes: renderOrg, students: loadStudents, tasks: loadTasks, resources: loadResources, reasoning: loadReasoningPage })[page]();
+  ({ overview: loadOverview, classes: renderOrg, students: loadStudents, reasoning: loadReasoning, analytics: loadAnalytics, tasks: loadTasks, resources: loadResources, exports: loadExports })[page]();
 }
 
 checkLogin();

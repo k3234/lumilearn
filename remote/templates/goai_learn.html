@@ -406,10 +406,22 @@
       <div class="teach-steps" id="teachSteps"></div>
     </div>
 
+    <!-- 知识库参考来源（RAG） -->
+    <div class="report-section-full">
+      <div class="section-title"><span class="icon">📚</span> 知识库参考来源（RAG 检索增强）</div>
+      <ul class="suggestion-list" id="ragSourcesList"></ul>
+    </div>
+
     <!-- 掌握度评估 -->
     <div class="report-section-full">
       <div class="section-title"><span class="icon">📈</span> 掌握度评估</div>
       <div class="assessment-box" id="assessmentBox"></div>
+    </div>
+
+    <!-- 多 Agent 协作状态 -->
+    <div class="report-section-full">
+      <div class="section-title"><span class="icon">🤖</span> 多 Agent 协作状态</div>
+      <div style="display:flex;gap:10px;margin-top:10px;" id="agentTrace"></div>
     </div>
 
     <!-- 薄弱点分析 -->
@@ -588,20 +600,20 @@ async function startLearning() {
     // 模拟进度动画
     await animateProgress();
 
-    // 调用API
-    const response = await fetch('/api/learn', {
+    // 调用多 Agent 协作 API（FeynmanTeacher → ScoreAgent → CoachAgent + RAG 检索）
+    const response = await fetch('/api/multi-agent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ topic: topic }),
     });
 
-    const report = await response.json();
-    if (!response.ok || report.error) {
-      throw new Error(report.error || '生成失败');
+    const resp = await response.json();
+    if (!response.ok || resp.error) {
+      throw new Error(resp.error || '生成失败');
     }
 
-    // 渲染报告
-    renderReport(report);
+    // 渲染多 Agent 报告（含 RAG 知识库来源）
+    renderMultiAgentReport(resp.data);
     // 刷新历史
     loadHistory();
 
@@ -696,6 +708,93 @@ function renderReport(report) {
   // 下一步建议
   document.getElementById('nextStepsList').innerHTML =
     (report.next_steps || []).map(ns => `<li>${ns}</li>`).join('');
+
+  // 显示报告
+  document.getElementById('reportSection').classList.add('active');
+}
+
+// 渲染多 Agent 协作报告（FeynmanTeacher → ScoreAgent → CoachAgent + RAG）
+function renderMultiAgentReport(data) {
+  if (!data) return;
+  document.getElementById('reportTitle').textContent =
+    (data.topic || '学习报告') + '（多 Agent 协作）';
+  document.getElementById('reportMeta').textContent =
+    (data.timestamp || '') + ' · 耗时 ' + (data.total_time || 0) + 's';
+
+  // 任务理解
+  const task = data.teaching || {};
+  document.getElementById('taskCard').innerHTML = `
+    <div class="task-item"><div class="label">学科</div><div class="value">${data.subject || '自动识别'}</div></div>
+    <div class="task-item"><div class="label">难度</div><div class="value">${data.difficulty || '高中'}</div></div>
+    <div class="task-item"><div class="label">教学模式</div><div class="value">费曼五步</div></div>
+    <div class="task-item"><div class="label">知识库来源</div><div class="value">${(task.rag_sources || []).length} 条</div></div>
+  `;
+
+  // 教学步骤
+  const steps = (task.steps || []);
+  const stepNames = ['现象引入', '认知冲突', '思维模型', '自主推导', '费曼测试'];
+  document.getElementById('teachSteps').innerHTML = steps.map((s, i) => `
+    <div class="teach-step done">
+      <div class="step-num">${i + 1}</div>
+      <div class="step-content">
+        <div class="step-name">${s.step_name || stepNames[i] || ('步骤' + (i + 1))}</div>
+        <div class="step-detail">${(s.content || '').substring(0, 160)}...</div>
+      </div>
+    </div>
+  `).join('') || '<div style="color:#94a3b8;font-size:13px;">教学步骤生成中或不可用</div>';
+
+  // 知识库参考来源（RAG）
+  const ragSources = task.rag_sources || [];
+  const ragHtml = ragSources.length ? ragSources.map((rs, i) => `
+    <li><strong>${rs.title || ('来源' + (i + 1))}</strong>
+      <span style="color:#94a3b8;font-size:12px;"> · ${rs.subject || ''} · 相关度 ${(rs.score || 0).toFixed(2)}</span>
+    </li>`).join('') : '<li style="color:#94a3b8;">本次未检索到知识库资料（索引为空或主题无匹配）</li>';
+  const ragEl = document.getElementById('ragSourcesList');
+  if (ragEl) ragEl.innerHTML = ragHtml;
+
+  // 掌握度评估
+  const assessment = data.assessment || {};
+  const score = assessment.score || 0;
+  const emoji = score >= 85 ? '🌟' : (score >= 70 ? '👍' : (score >= 50 ? '📖' : '💪'));
+  document.getElementById('assessmentBox').innerHTML = `
+    <div class="assessment-item">
+      <div class="score">${score}</div>
+      <div class="label">综合评分</div>
+    </div>
+    <div class="assessment-item">
+      <div class="score" style="font-size:16px">${(data.coaching && data.coaching.mastery_level) || '未评分'}</div>
+      <div class="label">掌握等级</div>
+    </div>
+    <div class="assessment-item">
+      <div class="score" style="font-size:14px">${emoji}</div>
+      <div class="label">${assessment.feedback ? '五维评估' : '未提交解释'}</div>
+    </div>
+  `;
+
+  // 薄弱点 / 建议
+  const coaching = data.coaching || {};
+  const suggestions = coaching.suggestions || [];
+  const nextTopics = coaching.next_topics || [];
+  document.getElementById('weakPointsList').innerHTML =
+    suggestions.map(s => `<li>${s}</li>`).join('') ||
+    '<li style="color:#94a3b8;">暂无建议（教学已完成，可补充你的理解以获得个性化建议）</li>';
+
+  document.getElementById('nextStepsList').innerHTML =
+    nextTopics.map(nt => `<li>${nt.name || nt.title || nt}</li>`).join('') ||
+    '<li style="color:#94a3b8;">暂无推荐，继续学习新主题即可</li>';
+
+  // Agent 协作状态
+  const trace = data.agent_trace || {};
+  const traceNames = { feynman: '🤖 教学 Agent', score: '📊 评分 Agent', coach: '💡 建议 Agent' };
+  const traceHtml = Object.entries(traceNames).map(([k, label]) => {
+    const st = trace[k] || {};
+    const badge = st.status === 'ok' ? '✅' : (st.status === 'skipped' ? '⏭️' : '⚠️');
+    return `<div style="flex:1;text-align:center;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;color:#64748b;">
+      ${badge} ${label}<br><span style="color:#94a3b8;">${st.status || '-'}</span>
+    </div>`;
+  }).join('');
+  const traceEl = document.getElementById('agentTrace');
+  if (traceEl) traceEl.innerHTML = traceHtml;
 
   // 显示报告
   document.getElementById('reportSection').classList.add('active');

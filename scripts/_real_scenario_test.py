@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """真实学习场景模拟测试 - 修正路径"""
 import json, time, sys, os
-# 切换到 lumilearn 目录
-os.chdir(r"<project-root>")
-sys.path.insert(0, r"<project-root>")
+# 切换到 lumilearn 目录（环境变量 LUMILEARN_DIR 可覆盖，默认自动探测）
+_PROJECT_ROOT = os.environ.get("LUMILEARN_DIR") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+os.chdir(_PROJECT_ROOT)
+sys.path.insert(0, _PROJECT_ROOT)
 
 from goai_agent import LumiLearnAgent
 

@@ -102,8 +102,11 @@
     <button class="nav-item" data-panel="agents" onclick="switchPanel('agents')">🧠 Agent管理</button>
     <button class="nav-item" data-panel="logs" onclick="switchPanel('logs')">📜 系统日志</button>
     <button class="nav-item" data-panel="reports" onclick="switchPanel('reports')">📚 学习记录</button>
+    <button class="nav-item" data-panel="analytics" onclick="switchPanel('analytics')">📈 数据可视化</button>
     <button class="nav-item" data-panel="keys" onclick="switchPanel('keys')">🔑 API密钥</button>
     <button class="nav-item" data-panel="ports" onclick="switchPanel('ports')">🔌 端口管理</button>
+    <button class="nav-item" data-panel="admins" onclick="switchPanel('admins')">👑 管理员管理</button>
+    <button class="nav-item" data-panel="exports" onclick="switchPanel('exports')">📦 数据导出</button>
     <button class="nav-item" data-panel="settings" onclick="switchPanel('settings')">⚙️ 设置</button>
     <div style="position:absolute; bottom:20px; left:20px; right:20px;">
       <button class="act" onclick="logout()" style="width:100%;">退出登录</button>
@@ -168,7 +171,7 @@ function logout() {
 
 function switchPanel(name) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.panel === name));
-  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', reasoning: '推理记录', keys: 'API密钥', ports: '端口管理', settings: '设置' };
+  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', reasoning: '推理记录', analytics: '数据可视化', keys: 'API密钥', ports: '端口管理', admins: '管理员管理', exports: '数据导出', settings: '设置' };
   document.getElementById('panelTitle').textContent = titles[name];
   loaders[name]();
 }
@@ -182,7 +185,10 @@ const loaders = {
   keys: loadKeys,
   reports: loadReports,
   reasoning: loadReasoning,
+  analytics: loadAnalytics,
   ports: loadPorts,
+  admins: loadAdmins,
+  exports: loadExports,
   settings: loadSettings,
 };
 
@@ -232,12 +238,13 @@ async function loadUsers() {
       </select>
       <button class="act" onclick="createUser()">添加用户</button>
     </div>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在 GOAI Web (端口5000)、教师端(端口5001)、学生端(端口5010) 登录；管理员可在此为账号绑定班级。</div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在 GOAI Web (端口5000)、教师端(端口5001)、学生端(端口5010) 登录；管理员可在此为账号绑定班级、启停用账号、变更角色。</div>
     <table>
-      <tr><th>ID</th><th>姓名</th><th>用户名</th><th>角色</th><th>班级</th><th>密码</th><th>创建时间</th><th>操作</th></tr>
+      <tr><th>ID</th><th>姓名</th><th>用户名</th><th>角色</th><th>状态</th><th>班级</th><th>密码</th><th>创建时间</th><th>操作</th></tr>
       ${data.users.map(u => `
         <tr>
           <td>${u.id}</td><td>${u.name}</td><td>${u.username || u.name}</td><td>${u.role}</td>
+          <td>${u.is_active === 0 ? '<span class="badge err">已禁用</span>' : '<span class="badge ok">启用</span>'}</td>
           <td>${(u.classes || []).map(c => `<span class="badge">${c.school_name} / ${c.grade_name} / ${c.class_name}
                 <a href="javascript:void(0)" onclick="unbindClass(${u.id}, ${c.id}, ${u.name.replace(/'/g, "\\'")})" style="color:#f85149;">✕</a></span>`).join(' ') || '-'}
               ${u.role === 'student' && allClasses.length ? `<select id="cls_${u.id}" style="width:auto;max-width:140px;font-size:12px;padding:2px 4px;">
@@ -246,6 +253,8 @@ async function loadUsers() {
           <td>${u.has_password ? '<span class="badge ok">已设置</span>' : '<span class="badge off">未设置</span>'}</td>
           <td>${u.created_at || '-'}</td>
           <td><button class="act" onclick="resetUserPassword(${u.id}, '${u.name.replace(/'/g, "\\'")}')">重置密码</button>
+              <button class="act" onclick="toggleUserActive(${u.id}, ${u.is_active === 0 ? 1 : 0}, '${u.name.replace(/'/g, "\\'")}')">${u.is_active === 0 ? '启用' : '禁用'}</button>
+              <button class="act" onclick="changeUserRole(${u.id}, '${u.role === 'teacher' ? 'student' : 'teacher'}', '${u.name.replace(/'/g, "\\'")}')">设为${u.role === 'teacher' ? '学生' : '教师'}</button>
               <button class="act danger" onclick="deleteUser(${u.id})">删除</button></td>
         </tr>`).join('')}
     </table>`;
@@ -285,6 +294,24 @@ async function resetUserPassword(id, name) {
   await api(`/users/${id}/password`, { method: 'POST', body: JSON.stringify({ password: newPwd }) });
   toast('密码已重置');
   loadUsers();
+}
+
+async function toggleUserActive(id, isActive, name) {
+  if (!confirm(`确认${isActive ? '启用' : '禁用'}账号 ${name}？禁用后该账号将无法登录。`)) return;
+  try {
+    const d = await api(`/users/${id}/active`, { method: 'POST', body: JSON.stringify({ is_active: isActive }) });
+    toast(d.message || '✅ 已更新');
+    loadUsers();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function changeUserRole(id, role, name) {
+  if (!confirm(`确认将 ${name} 的角色变更为"${role === 'teacher' ? '教师' : '学生'}"？`)) return;
+  try {
+    const d = await api(`/users/${id}/role`, { method: 'POST', body: JSON.stringify({ role }) });
+    toast(`✅ ${name} 角色已更新`);
+    loadUsers();
+  } catch (e) { toast('❌ ' + e.message); }
 }
 
 async function deleteUser(id) {
@@ -1135,6 +1162,331 @@ async function changePassword() {
     resultEl.style.color = '#f85149';
     resultEl.textContent = '❌ 修改失败: ' + e.message;
   }
+}
+
+// ---------- 数据可视化（纯 SVG 图表） ----------
+async function loadAnalytics() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const [ov, trend, subjects, weak, concepts, reasoning, users] = await Promise.all([
+      api('/analytics/overview'),
+      api('/analytics/trend?limit=14'),
+      api('/analytics/subjects'),
+      api('/analytics/weakpoints?limit=8'),
+      api('/analytics/concepts?limit=24'),
+      api('/analytics/reasoning?days=7'),
+      api('/analytics/users'),
+    ]);
+    const ovd = ov.data || {};
+    const trendD = trend.data || [];
+    const subjD = subjects.data || [];
+    const weakD = weak.data || [];
+    const concD = concepts.data || [];
+    const reasD = reasoning.data || {};
+    const userD = users.data || [];
+    const acc = ovd.correct_rate;
+
+    // ── 折线图：掌握度趋势 ──
+    let trendSvg = '<div style="color:#8b949e;font-size:13px;">暂无报告数据</div>';
+    if (trendD.length) {
+      const W = 560, H = 190, pad = 32;
+      const max = Math.max(...trendD.map(d => d.avg), 10);
+      const min = Math.min(...trendD.map(d => d.avg), 0);
+      const span = (max - min) || 1;
+      const x = i => pad + (W - pad * 2) * i / (trendD.length - 1);
+      const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
+      const pts = trendD.map((d, i) => x(i) + ',' + y(d.avg)).join(' ');
+      let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:560px">`;
+      svg += `<line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="#30363d" stroke-width="1"/>`;
+      svg += `<polyline fill="none" stroke="#58a6ff" stroke-width="2.5" points="${pts}"/>`;
+      trendD.forEach((d, i) => {
+        if (i % Math.ceil(trendD.length / 7) === 0 || i === trendD.length - 1) {
+          svg += `<circle cx="${x(i)}" cy="${y(d.avg)}" r="3.5" fill="#58a6ff"/>`;
+          svg += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" fill="#8b949e" font-size="10">${esc(String(d.date).slice(5))}</text>`;
+        }
+      });
+      svg += `<text x="6" y="${y(trendD[trendD.length - 1].avg) - 6}" fill="#3fb950" font-size="11">${trendD[trendD.length - 1].avg}%</text>`;
+      svg += '</svg>';
+      trendSvg = svg;
+    }
+
+    // ── 条形图：学科对比 ──
+    let subjSvg = '<div style="color:#8b949e;font-size:13px;">暂无数据</div>';
+    if (subjD.length) {
+      const max = Math.max(...subjD.map(s => s.avg), 10);
+      const bw = Math.min(60, (560 - 60) / subjD.length);
+      let svg = '<svg viewBox="0 0 560 200" width="100%" style="max-width:560px">';
+      subjD.forEach((s, i) => {
+        const h = Math.max(4, (s.avg / max) * 120);
+        const bx = 40 + i * (bw + 22), by = 170 - h;
+        svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${h}" rx="6" fill="#58a6ff" opacity="${0.5 + 0.5 * i / subjD.length}"/>`;
+        svg += `<text x="${bx + bw / 2}" y="${by - 6}" text-anchor="middle" fill="#3fb950" font-size="11">${s.avg}%</text>`;
+        svg += `<text x="${bx + bw / 2}" y="192" text-anchor="middle" fill="#8b949e" font-size="10">${esc(s.subject)}</text>`;
+        svg += `<text x="${bx + bw / 2}" y="182" text-anchor="middle" fill="#66717f" font-size="9">${s.count}次</text>`;
+      });
+      svg += '</svg>';
+      subjSvg = svg;
+    }
+
+    // ── 推理统计卡片 ──
+    const modeChips = Object.entries(reasD.by_mode || {})
+      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('') || '<span style="color:#8b949e;font-size:12px;">无</span>';
+    const modelChips = Object.entries(reasD.by_model || {})
+      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('') || '<span style="color:#8b949e;font-size:12px;">无</span>';
+
+    // ── 知识点热力 ──
+    const concCells = concD.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
+      ${concD.map(c => {
+        const col = c.value >= 70 ? 'rgba(63,185,80,.15)' : c.value >= 45 ? 'rgba(232,163,61,.14)' : 'rgba(248,81,73,.13)';
+        const tx = c.value >= 70 ? '#3fb950' : c.value >= 45 ? '#e8a33d' : '#f85149';
+        return `<div style="border-radius:10px;padding:12px 10px;text-align:center;border:1px solid #30363d;background:${col}">
+          <div style="font-size:18px;font-family:monospace;color:${tx}">${c.value}%</div>
+          <div style="font-size:11px;color:#8b949e;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</div>
+        </div>`;
+      }).join('')}</div>` : '<div style="color:#8b949e;font-size:13px;">暂无知识点数据（学习后生成）</div>';
+
+    // ── 薄弱点排行 ──
+    const weakRows = weakD.length ? weakD.map(w => `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #21262d;font-size:13px;color:#8b949e;">
+        <span class="badge ${w.severity === '高' ? 'err' : w.severity === '中' ? 'warn' : 'ok'}" style="flex-shrink:0;">${esc(w.severity)}</span>
+        <span style="flex:1;">${esc(w.text)}</span>
+        <span style="font-family:monospace;color:#58a6ff;">×${w.count}</span>
+      </div>`).join('') : '<div style="color:#8b949e;font-size:13px;">暂无薄弱点数据</div>';
+
+    // ── 学生排行表 ──
+    const userRows = userD.length ? userD.map((u, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${esc(u.name)}${i < 3 ? ' 🏆' : ''}</td>
+        <td>${u.report_count}</td>
+        <td><span class="badge ${u.avg_score >= 80 ? 'ok' : u.avg_score >= 60 ? 'warn' : 'err'}">${u.avg_score}%</span></td>
+      </tr>`).join('') : '<tr><td colspan="4" style="color:#8b949e;">暂无学习记录</td></tr>';
+
+    document.getElementById('content').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;">
+        <div class="card"><div class="num">${ovd.students}</div><div class="label">学生数</div></div>
+        <div class="card"><div class="num">${ovd.reports}</div><div class="label">学习报告</div></div>
+        <div class="card"><div class="num">${ovd.avg_mastery}%</div><div class="label">平均掌握度</div></div>
+        <div class="card"><div class="num">${ovd.answers}</div><div class="label">答题总数</div></div>
+        <div class="card"><div class="num">${acc}%</div><div class="label">答题正确率</div></div>
+        <div class="card"><div class="num">${ovd.concepts}</div><div class="label">知识点掌握</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📈 掌握度趋势（近14天）</h3>
+          ${trendSvg}
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📊 学科掌握度对比</h3>
+          ${subjSvg}
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🔴 薄弱点排行</h3>
+          ${weakRows}
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🧩 知识点掌握度</h3>
+          ${concCells}
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🤖 模型推理统计（近7天）</h3>
+          <div style="font-size:13px;color:#8b949e;margin-bottom:6px;">总数: <b style="color:#e6edf3;">${reasD.total}</b> · 失败: <b style="color:#f85149;">${reasD.error_count}</b> · 平均延迟: <b style="color:#e6edf3;">${reasD.avg_latency_ms}ms</b></div>
+          <div style="margin-bottom:6px;"><span style="color:#8b949e;font-size:12px;">按模式:</span> ${modeChips}</div>
+          <div><span style="color:#8b949e;font-size:12px;">按模型:</span> ${modelChips}</div>
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🏆 学生掌握度排行</h3>
+          <table style="width:100%;font-size:13px;">
+            <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">排名</th><th style="text-align:left;">学生</th><th>报告数</th><th>平均分</th></tr>
+            ${userRows}
+          </table>
+        </div>
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+// ---------- 管理员管理 ----------
+async function loadAdmins() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const data = await api('/admins');
+    const admins = data.admins || [];
+    const me = await api('/me');
+    const myRole = me.admin.role;
+    const isSuper = myRole === 'super_admin';
+    const rows = admins.map(a => `
+      <tr>
+        <td>${a.id}</td>
+        <td><b>${esc(a.display_name || a.username)}</b></td>
+        <td>${esc(a.username)}</td>
+        <td><span class="badge ${a.role === 'super_admin' ? 'ok' : 'warn'}">${a.role === 'super_admin' ? '超级管理员' : '操作员'}</span></td>
+        <td>${a.is_active ? '<span class="badge ok">启用</span>' : '<span class="badge err">禁用</span>'}</td>
+        <td>${esc(a.last_login_at || '-')}</td>
+        <td>${a.id === me.admin.id ? '<span style="color:#8b949e;font-size:12px;">（当前账号）</span>' : (isSuper ? `
+          <button class="act" onclick="toggleAdmin(${a.id}, ${a.is_active ? 0 : 1})">${a.is_active ? '禁用' : '启用'}</button>
+          <button class="act" onclick="changeAdminRole(${a.id}, '${a.role === 'super_admin' ? 'operator' : 'super_admin'}')">设为${a.role === 'super_admin' ? '操作员' : '超管'}</button>
+          <button class="act" style="color:#f85149;" onclick="deleteAdmin(${a.id})">删除</button>` : '<span style="color:#8b949e;font-size:12px;">-</span>')}</td>
+      </tr>`).join('');
+
+    const createForm = isSuper ? `
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:12px;">➕ 创建管理员账号</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <input id="newAdminName" placeholder="显示名称" style="flex:1;min-width:110px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <input id="newAdminUser" placeholder="用户名（必填）" style="flex:1;min-width:110px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <input id="newAdminPass" type="password" placeholder="密码（至少6位）" style="flex:1;min-width:110px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <select id="newAdminRole" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+            <option value="operator">操作员</option>
+            <option value="super_admin">超级管理员</option>
+          </select>
+          <button class="act" onclick="createAdmin()" style="background:#238636;color:#fff;border-color:#238636;">创建</button>
+        </div>
+      </div>` : '';
+
+    document.getElementById('content').innerHTML = `
+      ${createForm}
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">👑 管理员账号（${admins.length}）</h3>
+        <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">超级管理员可创建/启停/改角色/删除管理员账号；操作员仅可查看。</div>
+        <table style="width:100%;font-size:13px;">
+          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">ID</th><th>名称</th><th>用户名</th><th>角色</th><th>状态</th><th>最后登录</th><th>操作</th></tr>
+          ${rows || '<tr><td colspan="7" style="color:#8b949e;">暂无管理员</td></tr>'}
+        </table>
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+async function createAdmin() {
+  const name = document.getElementById('newAdminName').value.trim();
+  const username = document.getElementById('newAdminUser').value.trim();
+  const password = document.getElementById('newAdminPass').value;
+  const role = document.getElementById('newAdminRole').value;
+  if (!username || !password) return toast('用户名和密码不能为空');
+  try {
+    const d = await api('/admins', { method: 'POST', body: JSON.stringify({ username, password, display_name: name, role }) });
+    toast('✅ 管理员创建成功');
+    loadAdmins();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function toggleAdmin(id, isActive) {
+  try {
+    const d = await api(`/admins/${id}/toggle`, { method: 'POST' });
+    toast(d.is_active ? '✅ 已启用' : '⛔ 已禁用');
+    loadAdmins();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function changeAdminRole(id, role) {
+  try {
+    const d = await api(`/admins/${id}/role`, { method: 'POST', body: JSON.stringify({ role }) });
+    toast('✅ 角色已更新');
+    loadAdmins();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function deleteAdmin(id) {
+  if (!confirm('确定删除该管理员账号？')) return;
+  try {
+    const d = await api(`/admins/${id}`, { method: 'DELETE' });
+    toast('✅ 已删除');
+    loadAdmins();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ---------- 数据导出（管理员审批管理） ----------
+const EXPORT_TYPES = { reports: '学习报告', reasoning: '推理日志', answers: '答题记录', users: '用户数据', concepts: '知识点掌握' };
+
+async function loadExports() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const [list, me] = await Promise.all([api('/exports?limit=100'), api('/me')]);
+    const exports = list.exports || [];
+    const rows = exports.map(e => {
+      const typeName = EXPORT_TYPES[e.export_type] || e.export_type;
+      const statusBadge = e.status === 'approved' ? '<span class="badge ok">已批准</span>'
+        : e.status === 'rejected' ? '<span class="badge err">已拒绝</span>' : '<span class="badge warn">待审批</span>';
+      let action = '-';
+      if (e.status === 'pending') {
+        action = `<button class="act" onclick="approveExport(${e.id}, 'approve')" style="background:#238636;color:#fff;border-color:#238636;">批准</button>
+                  <button class="act" onclick="approveExport(${e.id}, 'reject')" style="color:#f85149;">拒绝</button>`;
+      } else if (e.status === 'approved' && e.can_download) {
+        action = `<button class="act" onclick="downloadExport(${e.id})">⬇ 下载</button>`;
+      }
+      return `<tr>
+        <td>${e.id}</td>
+        <td>${esc(e.requester_name)} <span style="color:#8b949e;font-size:11px;">(${e.requester_type === 'teacher' ? '教师' : '管理员'})</span></td>
+        <td>${typeName}</td>
+        <td>${e.format.toUpperCase()}</td>
+        <td>${e.scope === 'class' ? '班级' : '全部'}</td>
+        <td>${statusBadge}</td>
+        <td>${esc(e.approver_name || '-')}</td>
+        <td style="white-space:nowrap;">${esc(e.created_at || '-')}</td>
+        <td>${action}</td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="9" style="color:#8b949e;">暂无导出申请</td></tr>';
+
+    document.getElementById('content').innerHTML = `
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:12px;">➕ 发起导出（管理员直接导出，即时生成）</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <select id="expType" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+            ${Object.entries(EXPORT_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
+          </select>
+          <select id="expFmt" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+            <option value="json">JSON</option>
+            <option value="csv">CSV</option>
+          </select>
+          <input id="expReason" placeholder="导出用途说明（可选）" style="flex:1;min-width:180px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <button class="act" onclick="createExport()" style="background:#238636;color:#fff;border-color:#238636;">导出</button>
+        </div>
+        <div style="font-size:12px;color:#8b949e;margin-top:8px;">教师端发起的导出申请需管理员在此审批；所有导出/下载操作均记录审计日志。</div>
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📦 导出申请记录（${exports.length}）</h3>
+        <table style="width:100%;font-size:13px;">
+          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">ID</th><th>申请人</th><th>类型</th><th>格式</th><th>范围</th><th>状态</th><th>审批人</th><th>申请时间</th><th>操作</th></tr>
+          ${rows}
+        </table>
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+async function createExport() {
+  const exportType = document.getElementById('expType').value;
+  const format = document.getElementById('expFmt').value;
+  const reason = document.getElementById('expReason').value;
+  try {
+    const d = await api('/exports', { method: 'POST', body: JSON.stringify({ export_type: exportType, format, reason }) });
+    toast(`✅ 已导出 ${d.rows} 行数据`);
+    loadExports();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function approveExport(id, action) {
+  try {
+    const d = await api(`/exports/${id}/approve`, { method: 'POST', body: JSON.stringify({ action }) });
+    toast(d.message || '✅ 已处理');
+    loadExports();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+function downloadExport(id) {
+  const a = document.createElement('a');
+  a.href = `/api/admin/exports/${id}/download`;
+  a.setAttribute('download', '');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => toast('⬇ 下载已开始'), 300);
 }
 
 // ---------- 初始化 ----------

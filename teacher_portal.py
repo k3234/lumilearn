@@ -633,6 +633,157 @@ def api_knowledge_nodes():
 
 
 # ============================================================
+# 学习数据分析（仅本班学生范围，纯 SVG 图表数据源）
+# ============================================================
+
+def _visible_student_ids_safe(teacher_id):
+    """获取教师可见学生 id 列表（仅本班），失败返回空"""
+    try:
+        return _visible_student_ids(teacher_id)
+    except Exception:
+        return []
+
+
+@app.route("/api/analytics/overview")
+def api_analytics_overview():
+    """本班学生总量概览"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids_safe(teacher["id"])
+    return jsonify({"success": True, "data": db.get_analytics_overview(user_ids or None)})
+
+
+@app.route("/api/analytics/trend")
+def api_analytics_trend():
+    """本班学生掌握度趋势"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids_safe(teacher["id"])
+    limit = min(int(request.args.get("limit", 14)), 90)
+    return jsonify({"success": True, "data": db.get_analytics_trend(user_ids or None, limit=limit)})
+
+
+@app.route("/api/analytics/subjects")
+def api_analytics_subjects():
+    """本班学生学科掌握度"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids_safe(teacher["id"])
+    return jsonify({"success": True, "data": db.get_analytics_subjects(user_ids or None)})
+
+
+@app.route("/api/analytics/weakpoints")
+def api_analytics_weakpoints():
+    """本班学生薄弱点排行"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids_safe(teacher["id"])
+    limit = min(int(request.args.get("limit", 8)), 30)
+    return jsonify({"success": True, "data": db.get_analytics_weakpoints(user_ids or None, limit=limit)})
+
+
+@app.route("/api/analytics/concepts")
+def api_analytics_concepts():
+    """本班学生知识点掌握度"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids_safe(teacher["id"])
+    limit = min(int(request.args.get("limit", 24)), 60)
+    return jsonify({"success": True, "data": db.get_analytics_concepts(user_ids or None, limit=limit)})
+
+
+@app.route("/api/analytics/users")
+def api_analytics_users():
+    """本班学生个体排行"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids_safe(teacher["id"])
+    return jsonify({"success": True, "data": db.get_analytics_users(user_ids or None)})
+
+
+@app.route("/api/analytics/reasoning")
+def api_analytics_reasoning():
+    """本班学生模型推理统计"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    user_ids = _visible_student_ids_safe(teacher["id"])
+    days = int(request.args.get("days", 7))
+    return jsonify({"success": True, "data": db.get_analytics_reasoning(user_ids or None, days=days)})
+
+
+# ============================================================
+# 数据合规导出（教师申请 → 管理员审批 → 下载）
+# ============================================================
+
+@app.route("/api/exports", methods=["GET"])
+def api_my_exports():
+    """我的导出申请列表"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    exports = db.list_data_exports(requester_id=teacher["id"], requester_type="teacher", limit=50)
+    for e in exports:
+        e["can_download"] = bool(e["status"] == "approved" and e.get("file_path"))
+    return jsonify({"success": True, "exports": exports})
+
+
+@app.route("/api/exports", methods=["POST"])
+def api_request_export():
+    """教师发起导出申请（数据范围=本班，需管理员审批）"""
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    data = request.get_json(force=True) or {}
+    export_type = data.get("export_type", "")
+    fmt = data.get("format", "json")
+    class_id = int(data.get("class_id") or 0)
+    if export_type not in ("reports", "reasoning", "answers", "users", "concepts"):
+        return jsonify({"success": False, "error": "不支持的导出类型"}), 400
+    if fmt not in ("json", "csv"):
+        return jsonify({"success": False, "error": "格式只能是 json 或 csv"}), 400
+    if class_id and not _class_belongs_to_teacher(class_id, teacher["id"]):
+        return jsonify({"success": False, "error": "无权导出该班级数据"}), 403
+    rec = db.add_data_export(
+        requester_id=teacher["id"], requester_type="teacher",
+        requester_name=teacher["name"],
+        export_type=export_type, format=fmt,
+        scope="class" if class_id else "all", class_id=class_id,
+        reason=data.get("reason", ""))
+    return jsonify({"success": True, "export_id": rec["id"],
+                    "message": "导出申请已提交，等待管理员审批"})
+
+
+@app.route("/api/exports/<int:export_id>/download")
+def api_download_export(export_id):
+    """下载已批准的导出文件（仅限本人申请）"""
+    from flask import send_from_directory
+    teacher, err = _require_teacher()
+    if err:
+        return err
+    exp = db.get_data_export(export_id)
+    if not exp:
+        return jsonify({"success": False, "error": "导出申请不存在"}), 404
+    # 权限校验：仅本人可下载
+    if exp["requester_id"] != teacher["id"] or exp["requester_type"] != "teacher":
+        return jsonify({"success": False, "error": "无权下载该导出文件"}), 403
+    if exp["status"] != "approved" or not exp.get("file_path"):
+        return jsonify({"success": False, "error": "该导出尚未批准或文件不存在"}), 400
+    export_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "export_data")
+    fpath = os.path.join(export_dir, exp["file_path"])
+    if not os.path.isfile(fpath):
+        return jsonify({"success": False, "error": "导出文件已不存在"}), 404
+    db.add_system_log("info", "export", f"教师下载导出文件 #{export_id} ({exp['file_path']})")
+    return send_from_directory(export_dir, exp["file_path"], as_attachment=True)
+
+
+# ============================================================
 # 启动
 # ============================================================
 

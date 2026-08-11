@@ -311,13 +311,23 @@ class ExperienceManager:
 
 
 # ==================== 模型调用工具 ====================
-def call_ollama(model_name, prompt, timeout=60):
-    """调用Ollama本地模型"""
+def call_ollama(model_name, prompt, timeout=60, num_predict=None):
+    """调用Ollama本地模型
+
+    参数:
+        model_name:   模型名称
+        prompt:       输入提示
+        timeout:      请求超时(秒)
+        num_predict:  生成 token 数上限（防模型发散导致超时，None 表示不限）
+    """
     try:
+        payload = {"model": model_name, "prompt": prompt, "stream": False,
+                   "options": {"temperature": 0.3}}
+        if num_predict:
+            payload["options"]["num_predict"] = int(num_predict)
         response = requests.post(
             f"{OLLAMA_BASE_URL}/api/generate",
-            json={"model": model_name, "prompt": prompt, "stream": False,
-                  "options": {"temperature": 0.3}},
+            json=payload,
             timeout=timeout
         )
         return response.json().get("response", "")

@@ -40,6 +40,42 @@ LumiLearn 内置一套可独立启停、统一生命周期的 Agent 框架（`fr
 
 所有 Agent 支持 `start / stop / status / run` 统一生命周期，Agent 运行状态持久化到数据库；推理过程（费曼每步、GOAI 学习）自动写入 `reasoning_logs` 推理记录库，可通过 Admin「推理记录」、教师端「推理记录」、API `/api/reasoning-logs` 三方查看。
 
+## 🤖 多 Agent 协作系统（GOAI 评审亮点）
+
+从"单 Agent 四模块串行"升级为"三 Agent 协作编排"（`goai_multi_agent.py`），GOAI 学习 Web（5000 端口）学习页默认调用：
+
+```
+学生输入 ─→ FeynmanTeacher（教学）─→ ScoreAgent（评分）─→ CoachAgent（建议）─→ 聚合报告
+                │  RAG 检索注入            │  五维评估             │  学习路径推荐
+                ▼                          ▼                      ▼
+        费曼五步（现象→冲突→模型→推导→测试）  掌握度评分          建议 + 推荐知识点
+```
+
+| 特性 | 说明 |
+|---|---|
+| 独立模型 | 每个 Agent 可配置不同模型（`MULTI_AGENT_*_MODEL` 环境变量，优先读端口配置） |
+| 失败降级 | 单 Agent 异常不阻塞后续，`agent_trace` 记录 ok/skipped/failed |
+| 交互模式 | 传 `dialogue` 历史时自动切交互式单步引导 |
+| 报告落库 | 有评分时写入 `learning_reports`，Admin/教师端可视化可见 |
+
+## 📚 RAG 知识库检索（Day 3）
+
+教学内容"有据可查"：从 `training_data`（已发布教学资源）与 `knowledge_nodes`（知识点）构建**关键词倒排索引**，纯 Python 实现、零外部依赖、不引入向量数据库。
+
+- 模块：`framework/services/knowledge_retrieval.py`（轻量中文分词 + 简化 BM25）
+- 集成：FeynmanTeacher 生成前自动检索相关知识点注入 prompt，报告带 `rag_sources` 展示来源
+- API：`GET/POST /api/knowledge/search?q=...`、`GET /api/knowledge/status`（需登录）
+- 设计文档：[docs/rag_design.md](docs/rag_design.md)
+
+## 📊 数据可视化 + 账号权限 + 数据合规导出（Day 2 任务三）
+
+| 能力 | 端口 | 说明 |
+|---|---|---|
+| 数据可视化 | Admin 18080 / 教师 5001 | 掌握度趋势、学科对比、薄弱点排行、知识点热力、模型推理统计、学生排行（教师仅本班） |
+| 管理员分级 | Admin | `super_admin`（管理）+ `operator`（查看），独立 `admins` 表 |
+| 用户启停/改角色 | Admin | 登录拦截、防锁死保护（不能禁用/删除自己） |
+| 数据合规导出 | Admin / 教师 | 教师申请 → 管理员审批 → 下载（JSON/CSV），全流程审计 |
+
 ## 🧠 模型与模型容器
 
 LumiLearn 支持**本地模型容器**与**云端 API** 两类推理来源，其中 **Ollama 为默认推荐容器**。全部接入模型可通过 Admin 面板「模型管理」集中配置，并按端口指定各服务使用的模型。
@@ -72,6 +108,9 @@ LumiLearn 支持**本地模型容器**与**云端 API** 两类推理来源，其
 | [docs/deployment_guide.md](docs/deployment_guide.md) | 本地与服务器部署指南 |
 | [docs/MODEL_COMPARISON.md](docs/MODEL_COMPARISON.md) | 模型资产对照表（脱敏版） |
 | [docs/REMOTE_DEPLOYMENT.md](docs/REMOTE_DEPLOYMENT.md) | 远程部署说明 |
+| [docs/rag_design.md](docs/rag_design.md) | RAG 知识库设计说明 |
+| [docs/privacy_compliance.md](docs/privacy_compliance.md) | 数据合规说明 |
+| [docs/open_source_plan.md](docs/open_source_plan.md) | 开源路线图 |
 | [docs/learning_journey/INDEX.md](docs/learning_journey/INDEX.md) | 学习旅程笔记索引 |
 | [notebooks/INDEX.md](notebooks/INDEX.md) | Jupyter 教程索引 |
 | [deploy/README.md](deploy/README.md) | 一键部署工具说明 |
@@ -328,7 +367,8 @@ lumilearn/
 │   │   └── registry.py     #   模型注册表
 │   ├── services/           # 服务层
 │   │   ├── chat_service.py #   聊天服务
-│   │   └── provider_service.py # 云端提供商管理
+│   │   ├── provider_service.py # 云端提供商管理
+│   │   └── knowledge_retrieval.py # RAG 关键词检索（Day 3）
 │   └── airllm/             # AirLLM优化模块
 │       ├── attention.py    #   GQA注意力
 │       └── rope.py         #   RoPE位置编码
@@ -353,6 +393,7 @@ lumilearn/
 │   ├── framework.yaml      #   框架配置
 │   └── providers.yaml      #   云端提供商配置
 ├── goai_web.py             # GOAI 学习 Web（端口 5000）
+├── goai_multi_agent.py     # 多 Agent 协作系统（教学→评分→建议）
 ├── teacher_portal.py       # 教师门户（端口 5001）
 ├── goai_agent.py           # GOAI 教育智能体（CLI）
 ├── train_lumilearn.sh      # 训练脚本

@@ -104,23 +104,44 @@ class FeynmanTeacher:
         level = _map_level(payload.get("difficulty", "高中"))
         dialogue = payload.get("dialogue")
 
+        # ---------- RAG 知识库检索（失败降级为空，绝不阻塞教学） ----------
+        rag_context = ""
+        rag_sources = []
+        try:
+            from framework.services.knowledge_retrieval import (
+                get_knowledge_retriever, format_rag_context)
+            _retriever = get_knowledge_retriever()
+            _results = _retriever.search(topic, top_k=3)
+            if _results:
+                rag_sources = [
+                    {"source": r.get("source"), "id": r.get("id"),
+                     "title": r.get("title"), "subject": r.get("subject"),
+                     "score": r.get("score")} for r in _results]
+                rag_context = format_rag_context(_results, max_chars=800)
+        except Exception:
+            rag_context, rag_sources = "", []
+
         engine = FeynmanEngine(model_name=self.model_name, timeout=self.timeout)
         t0 = time.time()
 
         try:
             if dialogue:
                 # 交互式单步引导（保持上下文连贯）
-                step = engine.explain_step(topic=topic, level=level, dialogue=dialogue)
+                step = engine.explain_step(topic=topic, level=level,
+                                           dialogue=dialogue,
+                                           extra_context=rag_context)
                 elapsed = round(time.time() - t0, 2)
                 return {
                     "success": True,
                     "mode": "interactive",
                     "step": step,
+                    "rag_sources": rag_sources,
                     "model_used": self.model_name,
                     "elapsed": elapsed,
                 }
             # 全流程五步讲解
-            result = engine.explain(topic=topic, level=level)
+            result = engine.explain(topic=topic, level=level,
+                                    extra_context=rag_context)
             elapsed = round(time.time() - t0, 2)
             return {
                 "success": True,
@@ -129,6 +150,7 @@ class FeynmanTeacher:
                 "level": level,
                 "steps": result.get("steps", []),
                 "full_content": result.get("full_content", ""),
+                "rag_sources": rag_sources,
                 "model_used": result.get("model_used", self.model_name),
                 "elapsed": elapsed,
             }
@@ -143,6 +165,7 @@ class FeynmanTeacher:
                         "topic": topic, "level": level,
                         "steps": fallback.get("steps", []),
                         "full_content": fallback.get("full_content", ""),
+                        "rag_sources": rag_sources,
                         "model_used": "template_fallback",
                         "elapsed": elapsed,
                         "warning": str(e),
@@ -373,6 +396,7 @@ class MultiAgentOrchestrator:
             if teach.get("success"):
                 payload["teaching_steps"] = teach.get("steps", [])
                 payload["teaching_content"] = teach.get("full_content", "")
+                payload["rag_sources"] = teach.get("rag_sources", [])
                 trace["feynman"] = {"status": "ok", "elapsed": teach.get("elapsed", 0),
                                     "mode": teach.get("mode", "full")}
             else:
@@ -427,6 +451,7 @@ class MultiAgentOrchestrator:
             "teaching": {
                 "steps": payload.get("teaching_steps", []),
                 "full_content": payload.get("teaching_content", ""),
+                "rag_sources": payload.get("rag_sources", []),
             },
             "assessment": {
                 "score": payload.get("score", 0),

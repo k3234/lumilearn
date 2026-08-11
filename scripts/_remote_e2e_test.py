@@ -11,10 +11,11 @@ import os
 import requests
 
 # ─── 配置 ──────────────────────────────────────────────────────────────────────
-BASE_URL    = os.environ.get("LUMILEARN_BASE_URL",    "http://192.168.2.68:18080")
-STUDENT_URL = os.environ.get("STUDENT_URL",           "http://192.168.2.68:5010")
-GOAI_URL    = os.environ.get("GOAI_URL",              "http://192.168.2.68:5000")
-TEACHER_URL = os.environ.get("TEACHER_URL",           "http://192.168.2.68:5001")
+# 通过环境变量配置远程地址（默认占位符，不包含真实内网 IP）
+BASE_URL    = os.environ.get("LUMILEARN_BASE_URL",    "http://192.168.2.xx:18080")
+STUDENT_URL = os.environ.get("STUDENT_URL",           "http://192.168.2.xx:5010")
+GOAI_URL    = os.environ.get("GOAI_URL",              "http://192.168.2.xx:5000")
+TEACHER_URL = os.environ.get("TEACHER_URL",           "http://192.168.2.xx:5001")
 
 # 远程服务器已知凭据
 ADMIN_CREDS  = {"username": "admin",  "password": "admin123"}

@@ -508,15 +508,16 @@ class OutputDetector:
         """调用费曼引擎的AI评分"""
         try:
             result = self.feynman.thirty_second_test(concept, student_output)
+            # 防御：模型返回的维度值可能是 int（非标准 JSON 结构），归一化为 dict
+            dimensions = {}
+            for k in ("simplicity", "accuracy", "analogy", "completeness", "jargon_free"):
+                d = result.get("dimensions", {}).get(k, {"score": 0, "comment": ""})
+                if not isinstance(d, dict):
+                    d = {"score": d if isinstance(d, (int, float)) else 0, "comment": ""}
+                dimensions[k] = d
             return {
                 "score": result.get("score", 0),
-                "dimensions": {
-                    "conciseness": result.get("dimensions", {}).get("simplicity", {"score": 0, "comment": ""}),
-                    "accuracy": result.get("dimensions", {}).get("accuracy", {"score": 0, "comment": ""}),
-                    "analogy": result.get("dimensions", {}).get("analogy", {"score": 0, "comment": ""}),
-                    "completeness": result.get("dimensions", {}).get("completeness", {"score": 0, "comment": ""}),
-                    "jargon_free": result.get("dimensions", {}).get("jargon_free", {"score": 0, "comment": ""}),
-                },
+                "dimensions": dimensions,
                 "feedback": result.get("feedback", ""),
                 "is_mastered": result.get("is_feynman_worthy", False),
             }

@@ -5,6 +5,8 @@ LumiLearn 管理员 API 路由
 """
 import json
 import logging
+import os
+import time
 from flask import Blueprint, request, jsonify
 
 from framework.database import db
@@ -627,3 +629,379 @@ def admin_set_port_settings():
         return jsonify(result), 400
     db.add_system_log("info", "ports", "更新端口服务配置", str(settings))
     return jsonify(result)
+
+
+# ---------------------------------------------------------------------------
+# 数据可视化（纯 SVG 图表数据源，Admin 全量范围）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/analytics/overview", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_analytics_overview():
+    """数据可视化：总量概览"""
+    return jsonify({"success": True, "data": db.get_analytics_overview()})
+
+
+@admin_bp.route("/api/admin/analytics/trend", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_analytics_trend():
+    """数据可视化：掌握度趋势（按日）"""
+    limit = min(int(request.args.get("limit", 14)), 90)
+    return jsonify({"success": True, "data": db.get_analytics_trend(limit=limit)})
+
+
+@admin_bp.route("/api/admin/analytics/subjects", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_analytics_subjects():
+    """数据可视化：学科掌握度对比"""
+    return jsonify({"success": True, "data": db.get_analytics_subjects()})
+
+
+@admin_bp.route("/api/admin/analytics/weakpoints", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_analytics_weakpoints():
+    """数据可视化：薄弱点排行"""
+    limit = min(int(request.args.get("limit", 8)), 30)
+    return jsonify({"success": True, "data": db.get_analytics_weakpoints(limit=limit)})
+
+
+@admin_bp.route("/api/admin/analytics/concepts", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_analytics_concepts():
+    """数据可视化：知识点掌握度热力"""
+    limit = min(int(request.args.get("limit", 24)), 60)
+    return jsonify({"success": True, "data": db.get_analytics_concepts(limit=limit)})
+
+
+@admin_bp.route("/api/admin/analytics/reasoning", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_analytics_reasoning():
+    """数据可视化：模型推理统计"""
+    days = int(request.args.get("days", 7))
+    return jsonify({"success": True, "data": db.get_analytics_reasoning(days=days)})
+
+
+@admin_bp.route("/api/admin/analytics/users", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_analytics_users():
+    """数据可视化：学生掌握度排行"""
+    return jsonify({"success": True, "data": db.get_analytics_users()})
+
+
+# ---------------------------------------------------------------------------
+# 管理员账号管理（super_admin / operator 分级）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/admins", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_admins():
+    """管理员账号列表（不含密码哈希）"""
+    admins = db.get_admins()
+    for a in admins:
+        a.pop("password_hash", None)
+        a["has_password"] = bool(a.get("password_hash", ""))
+    return jsonify({"success": True, "admins": admins})
+
+
+@admin_bp.route("/api/admin/admins", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_create_admin():
+    """创建管理员（super_admin 才能创建）"""
+    if request.admin.get("role") != "super_admin":
+        return jsonify({"error": "仅超级管理员可创建管理员账号"}), 403
+    from werkzeug.security import generate_password_hash
+    data = request.get_json(force=True) or {}
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+    display_name = data.get("display_name", "").strip()
+    role = data.get("role", "operator")
+    if not username or not password:
+        return jsonify({"error": "用户名和密码不能为空"}), 400
+    if len(password) < 6:
+        return jsonify({"error": "密码至少 6 位"}), 400
+    if role not in ("super_admin", "operator"):
+        return jsonify({"error": "角色只能是 super_admin 或 operator"}), 400
+    if db.get_admin_by_username(username):
+        return jsonify({"error": f"管理员 '{username}' 已存在"}), 400
+    admin = db.add_admin(username, generate_password_hash(password),
+                         display_name=display_name, role=role)
+    db.add_system_log("info", "admin", f"创建管理员账号: {username} ({role})")
+    return jsonify({"success": True, "admin": admin})
+
+
+@admin_bp.route("/api/admin/admins/<int:admin_id>/toggle", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_toggle_admin(admin_id):
+    """启用/禁用管理员账号"""
+    if request.admin.get("role") != "super_admin":
+        return jsonify({"error": "仅超级管理员可启停管理员账号"}), 403
+    target = db.get_admin(admin_id)
+    if not target:
+        return jsonify({"error": "管理员不存在"}), 404
+    if target["id"] == request.admin["id"]:
+        return jsonify({"error": "不能禁用自己"}), 400
+    new_state = 0 if target["is_active"] else 1
+    ok = db.set_admin_active(admin_id, new_state)
+    if not ok:
+        return jsonify({"error": "操作失败"}), 400
+    db.add_system_log("info", "admin",
+                      f"{'禁用' if new_state == 0 else '启用'}管理员 {target['username']}")
+    return jsonify({"success": True, "is_active": new_state})
+
+
+@admin_bp.route("/api/admin/admins/<int:admin_id>/role", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_set_admin_role(admin_id):
+    """修改管理员角色"""
+    if request.admin.get("role") != "super_admin":
+        return jsonify({"error": "仅超级管理员可修改角色"}), 403
+    data = request.get_json(force=True) or {}
+    role = data.get("role", "")
+    target = db.get_admin(admin_id)
+    if not target:
+        return jsonify({"error": "管理员不存在"}), 404
+    if target["id"] == request.admin["id"] and role != "super_admin":
+        return jsonify({"error": "不能降级自己"}), 400
+    ok = db.set_admin_role(admin_id, role)
+    if not ok:
+        return jsonify({"error": "角色只能是 super_admin 或 operator"}), 400
+    db.add_system_log("info", "admin", f"修改管理员 {target['username']} 角色为 {role}")
+    return jsonify({"success": True, "role": role})
+
+
+@admin_bp.route("/api/admin/admins/<int:admin_id>", methods=["DELETE", "OPTIONS"])
+@require_admin
+def admin_delete_admin(admin_id):
+    """删除管理员（super_admin 才能删除，且不能删自己/超管）"""
+    if request.admin.get("role") != "super_admin":
+        return jsonify({"error": "仅超级管理员可删除管理员账号"}), 403
+    target = db.get_admin(admin_id)
+    if not target:
+        return jsonify({"error": "管理员不存在"}), 404
+    if target["id"] == request.admin["id"]:
+        return jsonify({"error": "不能删除自己"}), 400
+    ok = db.delete_admin(admin_id)
+    if not ok:
+        return jsonify({"error": "超级管理员不可删除"}), 400
+    db.add_system_log("info", "admin", f"删除管理员账号: {target['username']}")
+    return jsonify({"success": True, "message": "已删除"})
+
+
+# ---------------------------------------------------------------------------
+# 用户账号权限管理（启停用 / 角色变更）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/users/<int:user_id>/active", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_set_user_active(user_id):
+    """启用/禁用用户账号"""
+    data = request.get_json(force=True) or {}
+    is_active = 1 if data.get("is_active") else 0
+    user = db.get_user(user_id)
+    if not user:
+        return jsonify({"error": "用户不存在"}), 404
+    db.set_user_active(user_id, is_active)
+    db.add_system_log("info", "admin",
+                      f"{'启用' if is_active else '禁用'}用户账号 #{user_id} ({user['name']})")
+    return jsonify({"success": True, "is_active": is_active,
+                    "message": f"{'已启用' if is_active else '已禁用'} {user['name']}"})
+
+
+@admin_bp.route("/api/admin/users/<int:user_id>/role", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_set_user_role(user_id):
+    """修改用户角色（teacher / student）"""
+    data = request.get_json(force=True) or {}
+    role = data.get("role", "")
+    user = db.get_user(user_id)
+    if not user:
+        return jsonify({"error": "用户不存在"}), 404
+    if role not in ("teacher", "student"):
+        return jsonify({"error": "角色只能是 teacher 或 student"}), 400
+    db.set_user_role(user_id, role)
+    db.add_system_log("info", "admin",
+                      f"修改用户 #{user_id} ({user['name']}) 角色为 {role}")
+    return jsonify({"success": True, "role": role})
+
+
+# ---------------------------------------------------------------------------
+# 数据合规导出（管理员审批：pending → approved / rejected）
+# ---------------------------------------------------------------------------
+
+_EXPORT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.abspath(__file__))))), "export_data")
+
+
+def _collect_export_payload(export_type: str, user_ids=None, class_id: int = 0):
+    """按类型收集导出数据（reports/reasoning/answers/users/concepts）"""
+    user_cond, user_params = "", ()
+    if user_ids:
+        ph = ",".join("?" * len(user_ids))
+        user_cond = f" WHERE user_id IN ({ph})"
+        user_params = tuple(user_ids)
+
+    if export_type == "reports":
+        rows = db._query(
+            f"SELECT * FROM learning_reports{user_cond} ORDER BY id DESC LIMIT 1000",
+            user_params)
+        data = []
+        for r in rows:
+            try:
+                rep = json.loads(r.get("report_json") or "{}")
+            except Exception:
+                rep = {}
+            data.append({
+                "id": r["id"], "user_id": r["user_id"], "topic": r["topic"],
+                "score": r.get("score", 0), "created_at": r.get("created_at", ""),
+                "subject": (rep.get("task_understanding") or {}).get("subject", ""),
+                "core_topic": (rep.get("task_understanding") or {}).get("core_topic", ""),
+                "mastery_level": (rep.get("mastery_assessment") or {}).get("level", ""),
+            })
+        return data
+    if export_type == "reasoning":
+        rows = db._query(
+            f"SELECT * FROM reasoning_logs{user_cond} ORDER BY id DESC LIMIT 1000",
+            user_params)
+        return [{k: r.get(k) for k in ("id", "user_id", "mode", "topic", "step_name",
+                                       "model_used", "latency_ms", "status", "created_at")}
+                for r in rows]
+    if export_type == "answers":
+        rows = db._query(
+            f"SELECT * FROM answers{user_cond} ORDER BY id DESC LIMIT 1000",
+            user_params)
+        return [{k: r.get(k) for k in ("id", "user_id", "question", "user_answer",
+                                       "correct_answer", "is_correct", "topic",
+                                       "subject", "time_spent", "timestamp")}
+                for r in rows]
+    if export_type == "users":
+        rows = db.get_users()
+        return [{k: u.get(k) for k in ("id", "name", "role", "username", "is_active", "created_at")}
+                for u in rows]
+    if export_type == "concepts":
+        rows = db._query(
+            f"SELECT * FROM concept_understanding{user_cond} ORDER BY id DESC LIMIT 1000",
+            user_params)
+        return [{k: c.get(k) for k in ("id", "user_id", "node_id", "understanding",
+                                       "state", "attempts", "correct_attempts",
+                                       "wrong_attempts", "created_at")}
+                for c in rows]
+    return []
+
+
+def _dump_export_file(export_type: str, fmt: str, data: list, export_id: int) -> str:
+    """把数据写入 export_data/ 目录，返回相对路径"""
+    os.makedirs(_EXPORT_DIR, exist_ok=True)
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    fname = f"{export_type}_{export_id}_{ts}.{fmt}"
+    fpath = os.path.join(_EXPORT_DIR, fname)
+    if fmt == "csv":
+        import csv
+        keys = list(data[0].keys()) if data else ["id"]
+        with open(fpath, "w", newline="", encoding="utf-8-sig") as f:
+            w = csv.DictWriter(f, fieldnames=keys)
+            w.writeheader()
+            for row in data:
+                w.writerow({k: row.get(k, "") for k in keys})
+    else:
+        with open(fpath, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    return fname
+
+
+@admin_bp.route("/api/admin/exports", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_exports():
+    """导出申请列表（含教师发起的申请）"""
+    status = request.args.get("status")
+    limit = min(int(request.args.get("limit", 50)), 200)
+    exports = db.list_data_exports(status=status, limit=limit)
+    for e in exports:
+        e["can_download"] = bool(e["status"] == "approved" and e.get("file_path"))
+    return jsonify({"success": True, "exports": exports})
+
+
+@admin_bp.route("/api/admin/exports", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_create_export():
+    """管理员直接发起导出（立即生成文件，无需审批——管理员即审批人）"""
+    data = request.get_json(force=True) or {}
+    export_type = data.get("export_type", "")
+    fmt = data.get("format", "json")
+    if export_type not in ("reports", "reasoning", "answers", "users", "concepts"):
+        return jsonify({"error": "不支持的导出类型"}), 400
+    if fmt not in ("json", "csv"):
+        return jsonify({"error": "格式只能是 json 或 csv"}), 400
+    payload = _collect_export_payload(export_type)
+    rec = db.add_data_export(
+        requester_id=request.admin["id"], requester_type="admin",
+        requester_name=request.admin.get("display_name") or request.admin["username"],
+        export_type=export_type, format=fmt, scope="all",
+        reason=data.get("reason", ""))
+    fname = _dump_export_file(export_type, fmt, payload, rec["id"])
+    db.update_data_export_status(rec["id"], "approved",
+                                 approver_id=request.admin["id"],
+                                 approver_name=request.admin.get("display_name") or request.admin["username"],
+                                 file_path=fname)
+    return jsonify({"success": True, "export_id": rec["id"],
+                    "file_path": fname, "rows": len(payload)})
+
+
+@admin_bp.route("/api/admin/exports/<int:export_id>/approve", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_approve_export(export_id):
+    """审批导出申请：approve（生成文件）/ reject"""
+    data = request.get_json(force=True) or {}
+    action = data.get("action", "approve")
+    exp = db.get_data_export(export_id)
+    if not exp:
+        return jsonify({"error": "导出申请不存在"}), 404
+    if exp["status"] != "pending":
+        return jsonify({"error": "该申请已处理"}), 400
+    if action == "approve":
+        user_ids = None
+        # 教师发起的申请：数据范围=其本班学生（数据权限隔离）
+        if exp["requester_type"] == "teacher":
+            try:
+                students = db.get_students(teacher_id=exp["requester_id"])
+                user_ids = [s["id"] for s in students] or None
+            except Exception:
+                user_ids = None
+            if exp.get("class_id"):
+                try:
+                    class_students = db.get_class_students(exp["class_id"])
+                    user_ids = [s["id"] for s in class_students] or None
+                except Exception:
+                    pass
+        elif exp["scope"] == "class" and exp.get("class_id"):
+            students = db.get_class_students(exp["class_id"])
+            user_ids = [s["id"] for s in students] or None
+        payload = _collect_export_payload(exp["export_type"], user_ids=user_ids,
+                                          class_id=exp.get("class_id") or 0)
+        fname = _dump_export_file(exp["export_type"], exp["format"], payload, export_id)
+        db.update_data_export_status(export_id, "approved",
+                                     approver_id=request.admin["id"],
+                                     approver_name=request.admin.get("display_name") or request.admin["username"],
+                                     file_path=fname)
+        return jsonify({"success": True, "message": "已批准并生成导出文件",
+                        "file_path": fname, "rows": len(payload)})
+    db.update_data_export_status(export_id, "rejected",
+                                 approver_id=request.admin["id"],
+                                 approver_name=request.admin.get("display_name") or request.admin["username"])
+    return jsonify({"success": True, "message": "已拒绝"})
+
+
+@admin_bp.route("/api/admin/exports/<int:export_id>/download", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_download_export(export_id):
+    """下载已批准的导出文件"""
+    from flask import send_from_directory
+    exp = db.get_data_export(export_id)
+    if not exp:
+        return jsonify({"error": "导出申请不存在"}), 404
+    if exp["status"] != "approved" or not exp.get("file_path"):
+        return jsonify({"error": "该导出尚未批准或文件不存在"}), 400
+    fpath = os.path.join(_EXPORT_DIR, exp["file_path"])
+    if not os.path.isfile(fpath):
+        return jsonify({"error": "导出文件已不存在"}), 404
+    db.add_system_log("info", "export", f"下载导出文件 #{export_id} ({exp['file_path']})")
+    return send_from_directory(_EXPORT_DIR, exp["file_path"], as_attachment=True)

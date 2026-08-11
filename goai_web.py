@@ -156,6 +156,53 @@ def api_multi_agent():
         return jsonify({'error': str(e)}), 500
 
 
+# ---------- RAG 知识库检索 ----------
+
+@app.route('/api/knowledge/search', methods=['GET', 'POST'])
+def api_knowledge_search():
+    """关键词检索教学知识库（training_data + knowledge_nodes），需登录"""
+    user = _get_current_user()
+    if not user:
+        return jsonify({'error': '未登录，请先登录'}), 401
+
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        q = (data.get('q') or data.get('query') or '').strip()
+        top_k = int(data.get('top_k') or 5)
+        subject = data.get('subject') or ''
+    else:
+        q = (request.args.get('q') or request.args.get('query') or '').strip()
+        top_k = int(request.args.get('top_k') or 5)
+        subject = request.args.get('subject') or ''
+
+    if not q:
+        return jsonify({'success': False, 'error': '缺少查询关键词 q'}), 400
+    try:
+        from framework.services.knowledge_retrieval import get_knowledge_retriever
+        retriever = get_knowledge_retriever()
+        results = retriever.search(q, top_k=min(max(top_k, 1), 20),
+                                   subject=subject or None)
+        return jsonify({'success': True, 'query': q, 'count': len(results),
+                        'results': results})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/knowledge/status')
+def api_knowledge_status():
+    """知识库索引状态"""
+    user = _get_current_user()
+    if not user:
+        return jsonify({'error': '未登录，请先登录'}), 401
+    try:
+        from framework.services.knowledge_retrieval import get_knowledge_retriever
+        retriever = get_knowledge_retriever()
+        retriever.build_index()
+        return jsonify({'success': True, 'data': retriever.status()})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # ---------- 用户认证 ----------
 
 @app.route('/api/login', methods=['POST'])

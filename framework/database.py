@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS users (
     avatar      TEXT DEFAULT '',
     username    TEXT DEFAULT '',
     password_hash TEXT DEFAULT '',
+    is_active   INTEGER DEFAULT 1,          -- 1启用 0禁用（登录拦截）
     created_at  TEXT DEFAULT (datetime('now','localtime'))
 );
 
@@ -670,6 +671,30 @@ CREATE INDEX IF NOT EXISTS idx_classes_grade ON classes(grade_id);
 CREATE INDEX IF NOT EXISTS idx_classes_teacher ON classes(teacher_id);
 CREATE INDEX IF NOT EXISTS idx_class_students_class ON class_students(class_id);
 CREATE INDEX IF NOT EXISTS idx_class_students_user ON class_students(user_id);
+
+-- ============================================================
+-- M. 数据合规导出（管理员审批的导出/下载记录）
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS data_exports (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    requester_id   INTEGER DEFAULT 0,        -- 申请人 id（admin id / 教师 user id）
+    requester_type TEXT DEFAULT 'admin',     -- admin / teacher
+    requester_name TEXT DEFAULT '',          -- 申请人姓名（冗余，便于展示）
+    export_type    TEXT NOT NULL,            -- reports / reasoning / answers / users / concepts
+    format         TEXT DEFAULT 'json',      -- json / csv
+    scope          TEXT DEFAULT 'all',       -- all（管理员全量）/ class（教师本班）
+    class_id       INTEGER DEFAULT 0,        -- 教师申请时指定的班级（0=全部班级）
+    status         TEXT DEFAULT 'pending',   -- pending / approved / rejected
+    approver_id    INTEGER DEFAULT 0,        -- 审批管理员 id
+    approver_name  TEXT DEFAULT '',
+    reason         TEXT DEFAULT '',          -- 申请说明
+    file_path      TEXT DEFAULT '',          -- 生成的文件相对路径（approved 后填写）
+    created_at     TEXT DEFAULT (datetime('now','localtime')),
+    approved_at    TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_data_exports_status ON data_exports(status);
+CREATE INDEX IF NOT EXISTS idx_data_exports_requester ON data_exports(requester_id);
 """
 
 
@@ -783,13 +808,15 @@ class DatabaseManager:
         return self.db_path
 
     def _migrate_users_columns(self):
-        """迁移：老库 users 表缺少 username/password_hash 列时补充"""
+        """迁移：老库 users 表缺少 username/password_hash/is_active 列时补充"""
         try:
             cols = [r["name"] for r in self._query("PRAGMA table_info(users)")]
             if "username" not in cols:
                 self.conn.execute("ALTER TABLE users ADD COLUMN username TEXT DEFAULT ''")
             if "password_hash" not in cols:
                 self.conn.execute("ALTER TABLE users ADD COLUMN password_hash TEXT DEFAULT ''")
+            if "is_active" not in cols:
+                self.conn.execute("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1")
             # 老库可能缺 learning_reports 表（CREATE TABLE IF NOT EXISTS 已兜底）
         except Exception as e:
             logger = __import__("logging").getLogger("lumilearn.database")
@@ -886,11 +913,13 @@ class DatabaseManager:
             password: 密码明文
 
         返回：
-            用户信息字典；失败返回 None
+            用户信息字典；失败返回 None（含已禁用账号）
         """
         from werkzeug.security import check_password_hash
         user = self.get_user_by_username(username)
         if not user:
+            return None
+        if user.get("is_active") == 0:
             return None
         if not user.get("password_hash"):
             return None
@@ -904,6 +933,24 @@ class DatabaseManager:
         cur = self._execute(
             "UPDATE users SET password_hash = ? WHERE id = ?",
             (generate_password_hash(new_password), user_id)
+        )
+        return cur.rowcount > 0
+
+    def set_user_active(self, user_id: int, is_active: int) -> bool:
+        """启用(1)/禁用(0)用户账号（禁用后无法登录）"""
+        cur = self._execute(
+            "UPDATE users SET is_active = ? WHERE id = ?",
+            (1 if is_active else 0, user_id)
+        )
+        return cur.rowcount > 0
+
+    def set_user_role(self, user_id: int, role: str) -> bool:
+        """修改用户角色（teacher / student）"""
+        if role not in ("teacher", "student"):
+            return False
+        cur = self._execute(
+            "UPDATE users SET role = ? WHERE id = ?",
+            (role, user_id)
         )
         return cur.rowcount > 0
 
@@ -3309,9 +3356,275 @@ class DatabaseManager:
         cur = self._execute("UPDATE admins SET is_active = ? WHERE id = ?", (is_active, admin_id))
         return cur.rowcount > 0
 
+    def set_admin_role(self, admin_id: int, role: str) -> bool:
+        """修改管理员角色（super_admin / operator）"""
+        if role not in ("super_admin", "operator"):
+            return False
+        cur = self._execute("UPDATE admins SET role = ? WHERE id = ?", (role, admin_id))
+        return cur.rowcount > 0
+
+    def delete_admin(self, admin_id: int) -> bool:
+        """删除管理员（禁止删除超级管理员，防止锁死系统）"""
+        admin = self.get_admin(admin_id)
+        if not admin:
+            return False
+        if admin["role"] == "super_admin":
+            return False
+        cur = self._execute("DELETE FROM admins WHERE id = ?", (admin_id,))
+        return cur.rowcount > 0
+
     def update_admin_password(self, admin_id: int, password_hash: str) -> bool:
         cur = self._execute("UPDATE admins SET password_hash = ? WHERE id = ?", (password_hash, admin_id))
         return cur.rowcount > 0
+
+    # ============================================================
+    # Z1.5 数据合规导出（管理员审批）
+    # ============================================================
+
+    def add_data_export(self, requester_id: int, requester_type: str, requester_name: str,
+                        export_type: str, format: str = "json", scope: str = "all",
+                        class_id: int = 0, reason: str = "") -> Dict:
+        """创建数据导出申请（pending 待审批）"""
+        cur = self._execute(
+            "INSERT INTO data_exports (requester_id, requester_type, requester_name, "
+            "export_type, format, scope, class_id, status, reason) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)",
+            (requester_id, requester_type, requester_name, export_type, format,
+             scope, class_id, reason)
+        )
+        self.add_system_log("info", "export",
+                            f"数据导出申请 #{cur.lastrowid}: {requester_name} 申请 {export_type} ({format})")
+        return {"id": cur.lastrowid, "status": "pending", "export_type": export_type}
+
+    def get_data_export(self, export_id: int) -> Optional[Dict]:
+        return self._query_one("SELECT * FROM data_exports WHERE id = ?", (export_id,))
+
+    def list_data_exports(self, status: str = None, requester_id: int = None,
+                          requester_type: str = None, limit: int = 50) -> List[Dict]:
+        """导出申请列表（可按状态/申请人筛选）"""
+        conds, params = [], []
+        if status:
+            conds.append("status = ?")
+            params.append(status)
+        if requester_id is not None:
+            conds.append("requester_id = ?")
+            params.append(requester_id)
+        if requester_type:
+            conds.append("requester_type = ?")
+            params.append(requester_type)
+        where = ("WHERE " + " AND ".join(conds)) if conds else ""
+        return self._query(
+            f"SELECT * FROM data_exports {where} ORDER BY id DESC LIMIT ?",
+            tuple(params) + (int(limit),)
+        )
+
+    def update_data_export_status(self, export_id: int, status: str,
+                                  approver_id: int = 0, approver_name: str = "",
+                                  file_path: str = "") -> bool:
+        """更新导出状态（approve / reject），审批通过时记录文件路径"""
+        if status not in ("approved", "rejected"):
+            return False
+        if status == "approved":
+            cur = self._execute(
+                "UPDATE data_exports SET status=?, approver_id=?, approver_name=?, "
+                "file_path=?, approved_at=datetime('now','localtime') WHERE id=?",
+                (status, approver_id, approver_name, file_path, export_id)
+            )
+            self.add_system_log("info", "export", f"导出申请 #{export_id} 已审批通过")
+        else:
+            cur = self._execute(
+                "UPDATE data_exports SET status=?, approver_id=?, approver_name=?, "
+                "approved_at=datetime('now','localtime') WHERE id=?",
+                (status, approver_id, approver_name, export_id)
+            )
+            self.add_system_log("info", "export", f"导出申请 #{export_id} 已拒绝")
+        return cur.rowcount > 0
+
+    # ============================================================
+    # Z1.6 学习数据分析统计（Admin 全量 / Teacher 班级范围）
+    # ============================================================
+
+    def get_analytics_overview(self, user_ids=None) -> Dict:
+        """数据可视化：总量概览卡片（可限定学生范围）"""
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            users = self._query(f"SELECT COUNT(*) AS n FROM users WHERE id IN ({ph})", tuple(user_ids))[0]["n"]
+            reports = self._query_one(
+                f"SELECT COUNT(*) AS n, COALESCE(AVG(score),0) AS avg FROM learning_reports WHERE user_id IN ({ph})",
+                tuple(user_ids)) or {}
+            answers = self._query_one(
+                f"SELECT COUNT(*) AS n, COALESCE(SUM(is_correct),0) AS ok FROM answers WHERE user_id IN ({ph})",
+                tuple(user_ids)) or {}
+            concepts = self._query_one(
+                f"SELECT COUNT(*) AS n FROM concept_understanding WHERE user_id IN ({ph})",
+                tuple(user_ids)) or {}
+        else:
+            users = self._query_one("SELECT COUNT(*) AS n FROM users")["n"]
+            reports = self._query_one(
+                "SELECT COUNT(*) AS n, COALESCE(AVG(score),0) AS avg FROM learning_reports") or {}
+            answers = self._query_one(
+                "SELECT COUNT(*) AS n, COALESCE(SUM(is_correct),0) AS ok FROM answers") or {}
+            concepts = self._query_one("SELECT COUNT(*) AS n FROM concept_understanding") or {}
+        return {
+            "students": users,
+            "reports": reports.get("n", 0),
+            "avg_mastery": round(reports.get("avg", 0) or 0),
+            "answers": answers.get("n", 0),
+            "correct_rate": round((answers.get("ok", 0) or 0) / answers.get("n", 0) * 100) if answers.get("n", 0) else 0,
+            "concepts": concepts.get("n", 0),
+        }
+
+    def get_analytics_trend(self, user_ids=None, limit: int = 14) -> List[Dict]:
+        """数据可视化：掌握度趋势（按日，可限定学生范围）"""
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            rows = self._query(
+                f"SELECT date(created_at) AS d, COUNT(*) AS c, AVG(score) AS avg "
+                f"FROM learning_reports WHERE user_id IN ({ph}) "
+                f"GROUP BY d ORDER BY d DESC LIMIT ?",
+                tuple(user_ids) + (int(limit),))
+        else:
+            rows = self._query(
+                "SELECT date(created_at) AS d, COUNT(*) AS c, AVG(score) AS avg "
+                "FROM learning_reports GROUP BY d ORDER BY d DESC LIMIT ?",
+                (int(limit),))
+        rows.reverse()
+        return [{"date": r["d"] or "", "count": r["c"], "avg": round(r["avg"] or 0)} for r in rows]
+
+    def get_analytics_subjects(self, user_ids=None) -> List[Dict]:
+        """数据可视化：学科掌握度对比（可限定学生范围）"""
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            rows = self._query(
+                f"SELECT report_json, score FROM learning_reports WHERE user_id IN ({ph}) ORDER BY id DESC LIMIT 300",
+                tuple(user_ids))
+        else:
+            rows = self._query("SELECT report_json, score FROM learning_reports ORDER BY id DESC LIMIT 300")
+        agg = {}
+        for r in rows:
+            try:
+                rep = json.loads(r.get("report_json") or "{}")
+            except Exception:
+                rep = {}
+            # GOAI 报告结构：subject 在 task_understanding 下；兼容顶层直接字段
+            subj = rep.get("subject") or (rep.get("task_understanding") or {}).get("subject") or "综合"
+            item = agg.setdefault(subj, {"sum": 0, "n": 0})
+            item["sum"] += float(r.get("score") or 0)
+            item["n"] += 1
+        out = [{"subject": k, "avg": round(v["sum"] / v["n"]) if v["n"] else 0, "count": v["n"]}
+               for k, v in agg.items()]
+        out.sort(key=lambda x: -x["count"])
+        return out
+
+    def get_analytics_weakpoints(self, user_ids=None, limit: int = 8) -> List[Dict]:
+        """数据可视化：薄弱点排行（报告 weakPoints + 错题补充）"""
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            rows = self._query(
+                f"SELECT report_json FROM learning_reports WHERE user_id IN ({ph}) ORDER BY id DESC LIMIT 300",
+                tuple(user_ids))
+        else:
+            rows = self._query("SELECT report_json FROM learning_reports ORDER BY id DESC LIMIT 300")
+        agg = {}
+        for r in rows:
+            try:
+                rep = json.loads(r.get("report_json") or "{}")
+            except Exception:
+                rep = {}
+            for wp in rep.get("weakPoints") or []:
+                text = str(wp.get("text", "")).strip()
+                if not text:
+                    continue
+                item = agg.setdefault(text, {"severity": wp.get("severity", "低"), "count": 0})
+                item["count"] += 1
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            wrong = self._query(
+                f"SELECT topic, COUNT(*) AS c FROM answers WHERE is_correct=0 AND topic<>'' "
+                f"AND user_id IN ({ph}) GROUP BY topic ORDER BY c DESC LIMIT 5",
+                tuple(user_ids))
+        else:
+            wrong = self._query(
+                "SELECT topic, COUNT(*) AS c FROM answers WHERE is_correct=0 AND topic<>'' "
+                "GROUP BY topic ORDER BY c DESC LIMIT 5")
+        out = [{"text": k, "severity": v["severity"], "count": v["count"]} for k, v in agg.items()]
+        out.sort(key=lambda x: -x["count"])
+        for w in wrong:
+            out.append({"text": f"错题专题：「{w['topic']}」", "severity": "高", "count": w["c"]})
+        return out[:limit]
+
+    def get_analytics_concepts(self, user_ids=None, limit: int = 24) -> List[Dict]:
+        """数据可视化：知识点掌握度热力（可限定学生范围）"""
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            rows = self._query(
+                f"SELECT c.user_id, c.node_id, c.understanding, c.state, COALESCE(k.name, c.node_id) AS name "
+                f"FROM concept_understanding c LEFT JOIN knowledge_nodes k ON k.id=c.node_id "
+                f"WHERE c.user_id IN ({ph}) ORDER BY c.understanding DESC LIMIT ?",
+                tuple(user_ids) + (int(limit),))
+        else:
+            rows = self._query(
+                "SELECT c.user_id, c.node_id, c.understanding, c.state, COALESCE(k.name, c.node_id) AS name "
+                "FROM concept_understanding c LEFT JOIN knowledge_nodes k ON k.id=c.node_id "
+                "ORDER BY c.understanding DESC LIMIT ?",
+                (int(limit),))
+        return [{"name": r["name"], "node": r["node_id"], "value": round((r["understanding"] or 0) * 100),
+                 "state": r["state"], "user": r["user_id"]} for r in rows]
+
+    def get_analytics_reasoning(self, user_ids=None, days: int = 7) -> Dict:
+        """数据可视化：模型推理统计（可限定学生范围）"""
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            cond = f"WHERE user_id IN ({ph})"
+            params = tuple(user_ids)
+        else:
+            cond = ""
+            params = ()
+        if days > 0:
+            cond += f"{' AND ' if cond else 'WHERE '}created_at >= datetime('now', ?)"
+            params += (f"-{days} days",)
+        rows = self._query(f"SELECT mode, model_used, latency_ms, status FROM reasoning_logs {cond}", params)
+        total = len(rows)
+        by_mode = {}
+        by_model = {}
+        error_count = 0
+        latency_sum = 0
+        for row in rows:
+            mode = (row.get("mode") or "").strip() or "unknown"
+            by_mode[mode] = by_mode.get(mode, 0) + 1
+            model = (row.get("model_used") or "").strip()
+            if model:
+                by_model[model] = by_model.get(model, 0) + 1
+            if row.get("status") == "error":
+                error_count += 1
+            latency_sum += row.get("latency_ms") or 0
+        return {
+            "total": total,
+            "by_mode": by_mode,
+            "by_model": by_model,
+            "error_count": error_count,
+            "avg_latency_ms": round(latency_sum / total, 1) if total else 0,
+        }
+
+    def get_analytics_users(self, user_ids=None) -> List[Dict]:
+        """数据可视化：学生个体掌握度排行（可限定范围）"""
+        if user_ids:
+            ph = ",".join("?" * len(user_ids))
+            rows = self._query(
+                f"SELECT u.id, u.name, u.username, "
+                f"(SELECT COUNT(*) FROM learning_reports r WHERE r.user_id=u.id) AS report_n, "
+                f"(SELECT COALESCE(AVG(score),0) FROM learning_reports r WHERE r.user_id=u.id) AS avg_score "
+                f"FROM users u WHERE u.id IN ({ph}) ORDER BY avg_score DESC",
+                tuple(user_ids))
+        else:
+            rows = self._query(
+                "SELECT u.id, u.name, u.username, "
+                "(SELECT COUNT(*) FROM learning_reports r WHERE r.user_id=u.id) AS report_n, "
+                "(SELECT COALESCE(AVG(score),0) FROM learning_reports r WHERE r.user_id=u.id) AS avg_score "
+                "FROM users u ORDER BY avg_score DESC")
+        return [{"id": r["id"], "name": r["name"], "username": r.get("username", ""),
+                 "report_count": r.get("report_n", 0), "avg_score": round(r.get("avg_score") or 0)}
+                for r in rows if r.get("report_n", 0) > 0]
 
     # ============================================================
     # Z2. Agent 管理
