@@ -218,8 +218,12 @@ async function loadOverview() {
       <div class="card"><div class="num" style="font-size:18px;">${m.models ?? '-'}</div><div class="label">本地模型数</div></div>
       <div class="card"><div class="num" style="font-size:18px;">${m.latency_ms ?? '-'}ms</div><div class="label">响应延迟</div></div>
     </div>
-    <h3 style="margin:16px 0 10px;color:#8b949e;">最近日志</h3>
-    <pre class="log-box">${(data.recent_logs || []).map(l => `[${l.created_at}] [${l.level}] [${l.module}] ${l.message}`).join('\n') || '（无日志）'}</pre>`;
+    <h3 style="margin:16px 0 10px;color:#8b949e;">最近活动（系统 + 学生使用记录）</h3>
+    <pre class="log-box">${(data.recent_logs || []).map(l => {
+      const _tag = {system: '⚙️ 系统', reasoning: '🧠 推理', report: '📚 报告'}[l.source] || l.source;
+      const _c = {system: '#58a6ff', reasoning: '#3fb950', report: '#d29922'}[l.source] || '#8b949e';
+      return `[${l.created_at}] [<b style="color:${_c}">${_tag}</b>] [${l.module}] ${l.message}`;
+    }).join('\n') || '（暂无活动，快去课堂/GOAI 学习吧）'}</pre>`;
 }
 
 // ---------- 用户管理 ----------

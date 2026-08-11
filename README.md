@@ -4,6 +4,15 @@
 > **全部在 CPU 上训练和推理，无 GPU 也能跑。**  
 > 由一名高中学生开发维护。
 
+## 📋 GOAI 2026 参赛材料
+
+- [参赛技术方案](docs/GOAI_SUBMISSION.md) — 项目定位 / 架构 / 技术路线 / 创新点
+- [部署指南](docs/DEPLOYMENT_GUIDE.md) — 一键部署与手动部署（含健康检查）
+- [评测结果](docs/EVALUATION_RESULTS.md) — 全量测试与真实环境测评数据
+- [运行证据](docs/RUNNING_EVIDENCE.md) — 服务状态 / API 实测 / 数据落库证据
+- [模型下载](docs/MODEL_DOWNLOAD.md) — lumilearn-v2 获取与 Ollama 导入
+- [AI 使用声明](AI-DECLARATION.md) — AI 参与方式与责任声明
+
 ## 10 秒看懂
 
 | 问题 | 答案 |

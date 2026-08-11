@@ -77,10 +77,70 @@ def admin_change_password():
 # 系统概览
 # ---------------------------------------------------------------------------
 
+def _collect_activity_logs(source: str = "all", limit: int = 200) -> list:
+    """统一活动日志采集：系统操作 + 学生推理 + 学习报告，按时间倒序合并。
+
+    :param source: all / system / reasoning / report
+    :param limit: 返回条数上限（合并前各源各取 limit 条，合并后截断）
+    """
+    source = (source or "all").strip().lower()
+    limit = min(int(limit), 500)
+
+    entries = []
+    if source in ("all", "system"):
+        for l in db.get_system_logs(limit=limit):
+            entries.append({
+                "source": "system",
+                "id": l.get("id"),
+                "level": l.get("level", "info"),
+                "module": l.get("module", ""),
+                "message": l.get("message", ""),
+                "detail": (l.get("detail") or "")[:500],
+                "created_at": l.get("created_at", ""),
+                "user_name": None, "topic": None, "model_used": None,
+            })
+    if source in ("all", "reasoning"):
+        for r in db.get_reasoning_logs(limit=limit):
+            entries.append({
+                "source": "reasoning",
+                "id": r.get("id"),
+                "level": "error" if r.get("status") == "error" else "info",
+                "module": "推理-" + (r.get("mode") or ""),
+                "message": "{} · {}".format(
+                    r.get("student_name") or ("#" + str(r.get("user_id") or 0)),
+                    r.get("topic") or "(无主题)"
+                ) + ((" · " + r.get("step_name")) if r.get("step_name") else ""),
+                "detail": (r.get("output") or "")[:500],
+                "created_at": r.get("created_at", ""),
+                "user_name": r.get("student_name"),
+                "topic": r.get("topic"),
+                "model_used": r.get("model_used"),
+            })
+    if source in ("all", "report"):
+        for rep in db.get_learning_reports(limit=limit):
+            score = rep.get("score")
+            entries.append({
+                "source": "report",
+                "id": rep.get("id"),
+                "level": "info",
+                "module": "学习报告",
+                "message": "#{} · {}".format(rep.get("user_id") or 0, rep.get("topic") or "(无主题)"),
+                "detail": "",
+                "created_at": rep.get("created_at", ""),
+                "user_name": None,
+                "topic": rep.get("topic"),
+                "model_used": None,
+                "score": score,
+            })
+
+    entries.sort(key=lambda x: x["created_at"] or "", reverse=True)
+    return entries[:limit]
+
+
 @admin_bp.route("/api/admin/overview", methods=["GET", "OPTIONS"])
 @require_admin
 def admin_overview():
-    """系统总览：用户数、工作流数、检测数、模型状态、Agent 状态、日志数"""
+    """系统总览：用户数、工作流数、检测数、模型状态、Agent 状态、最近活动"""
     users = db.get_users()
 
     # 说明：get_user_workflows/get_user_detections 的 user_id 为必填参数，
@@ -92,7 +152,8 @@ def admin_overview():
     total_detections = detections_row["c"] if detections_row else 0
 
     agents = db.get_agents()
-    logs = db.get_system_logs(limit=5)
+    # 最近活动：合并系统操作 + 学生推理 + 学习报告（不再只有管理操作）
+    recent_logs = _collect_activity_logs("all", 6)
 
     ollama = get_ollama_provider()
     model_status = ollama.health_check()
@@ -109,7 +170,7 @@ def admin_overview():
             "running_agents": len([a for a in agents if a["status"] == "running"]),
         },
         "model_status": model_status,
-        "recent_logs": logs,
+        "recent_logs": recent_logs,
     })
 
 
@@ -484,58 +545,10 @@ def admin_activity_logs():
     让管理员在「系统日志」页也能直接看到学生实际使用产生的数据
     （课堂聊天 / 五步学习 / GOAI 学习报告），不再只有管理操作。
     """
-    source = (request.args.get("source") or "all").strip().lower()
-    limit = min(int(request.args.get("limit", 200)), 500)
-
-    entries = []
-    if source in ("all", "system"):
-        for l in db.get_system_logs(limit=limit):
-            entries.append({
-                "source": "system",
-                "id": l.get("id"),
-                "level": l.get("level", "info"),
-                "module": l.get("module", ""),
-                "message": l.get("message", ""),
-                "detail": (l.get("detail") or "")[:500],
-                "created_at": l.get("created_at", ""),
-                "user_name": None, "topic": None, "model_used": None,
-            })
-    if source in ("all", "reasoning"):
-        for r in db.get_reasoning_logs(limit=limit):
-            entries.append({
-                "source": "reasoning",
-                "id": r.get("id"),
-                "level": "error" if r.get("status") == "error" else "info",
-                "module": "推理-" + (r.get("mode") or ""),
-                "message": "{} · {}".format(
-                    r.get("student_name") or ("#" + str(r.get("user_id") or 0)),
-                    r.get("topic") or "(无主题)"
-                ) + ((" · " + r.get("step_name")) if r.get("step_name") else ""),
-                "detail": (r.get("output") or "")[:500],
-                "created_at": r.get("created_at", ""),
-                "user_name": r.get("student_name"),
-                "topic": r.get("topic"),
-                "model_used": r.get("model_used"),
-            })
-    if source in ("all", "report"):
-        for rep in db.get_learning_reports(limit=limit):
-            score = rep.get("score")
-            entries.append({
-                "source": "report",
-                "id": rep.get("id"),
-                "level": "info",
-                "module": "学习报告",
-                "message": "#{} · {}".format(rep.get("user_id") or 0, rep.get("topic") or "(无主题)"),
-                "detail": "",
-                "created_at": rep.get("created_at", ""),
-                "user_name": None,
-                "topic": rep.get("topic"),
-                "model_used": None,
-                "score": score,
-            })
-
-    entries.sort(key=lambda x: x["created_at"] or "", reverse=True)
-    return jsonify({"success": True, "logs": entries[:limit], "total": len(entries)})
+    source = request.args.get("source") or "all"
+    limit = int(request.args.get("limit", 200))
+    logs = _collect_activity_logs(source, limit)
+    return jsonify({"success": True, "logs": logs, "total": len(logs)})
 
 
 @admin_bp.route("/api/admin/logs/clear", methods=["POST", "OPTIONS"])
