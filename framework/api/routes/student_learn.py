@@ -188,6 +188,101 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
             ],
         }})
 
+    @bp.route("/api/learn/guide", methods=["POST"])
+    def api_learn_guide():
+        """引导式学习（苏格拉底式）：老师提问 → 学生自主回答 → 根据回答调整下一步引导。
+
+        请求：{ sessionId, answer?, level? }
+          - 首次调用（无 answer）：生成第 1 步引导提问
+          - 之后每次带 answer：先具体回应学生刚才的回答（肯定/修正），再生成下一步引导
+        响应：{ step, step_name, content, is_last, progress, model_used }
+        会话对话历史保存在 chat_history，保证上下文连贯；推理过程写 reasoning_logs。
+        """
+        user = _require_user()
+        if not user:
+            return jsonify({"code": 401, "message": "未登录"}), 401
+        data = request.get_json() or {}
+        sid = _sid(data.get("sessionId"))
+        answer = (data.get("answer") or "").strip()
+        level = (data.get("level") or "高中")
+
+        sess = conv_store.get_session(sid) if sid else None
+        if not sess:
+            return jsonify({"code": 404, "message": "会话不存在，请重新发起学习"}), 404
+        topic = sess["title"]
+
+        # 会话历史 → 费曼 dialogue（首条 user 是主题，不算学生回答；角色必须 user/assistant 交替）
+        msgs = conv_store.get_messages(sid) if sid else []
+        dialogue = []
+        for m in msgs:
+            if m.get("role") == "user" and (m.get("content") or "").strip() == topic.strip():
+                continue
+            if m.get("role") in ("user", "assistant"):
+                dialogue.append({"role": m["role"], "content": (m.get("content") or "")[:800]})
+
+        # 本次学生回答 → 先写入会话再让 AI 回应
+        if answer:
+            try:
+                conv_store.add_message(sid, "user", answer)
+            except Exception:
+                pass
+            dialogue.append({"role": "user", "content": answer[:800]})
+
+        # RAG 知识库检索（失败降级为空，绝不阻塞教学）
+        rag_context = ""
+        try:
+            from framework.services.knowledge_retrieval import (
+                get_knowledge_retriever, format_rag_context)
+            _results = get_knowledge_retriever().search(topic, top_k=3)
+            if _results:
+                rag_context = format_rag_context(_results, max_chars=800)
+        except Exception:
+            rag_context = ""
+
+        # 费曼交互式单步引导（每次只生成一步，等待学生回答后再推进）
+        from framework.engines.feynman_engine import FeynmanEngine
+        try:
+            from goai_multi_agent import _map_level
+        except Exception:
+            def _map_level(diff):
+                return {"初中": "junior", "高中": "senior",
+                        "大学": "college"}.get(diff or "", "general")
+        engine = FeynmanEngine(model_name=agent.tool_caller.preferred_model, timeout=120)
+        step = engine.explain_step(topic=topic, level=_map_level(level),
+                                   dialogue=dialogue, extra_context=rag_context)
+
+        # 写入 AI 引导（assistant 计数驱动下一步推断）
+        try:
+            conv_store.add_message(sid, "assistant", step["content"],
+                                   model=step.get("model_used") or "")
+        except Exception:
+            pass
+
+        # 推理过程写库（管理员/教师可见；失败不影响主流程）
+        try:
+            db.add_reasoning_log(
+                user_id=user["id"],
+                session_id=f"feynman:{topic[:50]}",
+                mode="feynman", topic=topic[:200],
+                step_order=step.get("step", 0),
+                step_name=step.get("step_name", ""),
+                model_used=step.get("model_used", ""),
+                input_context=(answer or "（开始学习）")[:500],
+                output=step.get("content", "")[:2000],
+                latency_ms=0, status="success",
+            )
+        except Exception:
+            pass
+
+        return jsonify({"code": 0, "data": {
+            "step": step.get("step", 1),
+            "step_name": step.get("step_name", ""),
+            "content": step.get("content", ""),
+            "is_last": step.get("is_last", False),
+            "model_used": step.get("model_used", ""),
+            "progress": {"current": step.get("step", 1), "total": 5},
+        }})
+
     @bp.route("/api/learn/feynman-test", methods=["POST"])
     def api_feynman_test():
         user = _require_user()

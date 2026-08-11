@@ -288,6 +288,37 @@
 
 ---
 
+## 十二、引导式学习（苏格拉底式交互）+ Admin 面板缓存修复（用户第二轮反馈）⭐
+
+**背景**：用户反馈 18082 Admin「系统日志」仍看不到正确数据（实为浏览器缓存旧模板）；5010/learn.html 等学习端口仍是"老师提问-AI 学生回答"的自动播放式模拟课堂，学生只是旁观者。
+
+### 12.1 Admin 面板缓存修复
+
+- 根因：部署了新模板，但浏览器缓存旧版 admin.html，前端仍调用旧逻辑
+- 修复：`server.py` 全局 `after_request` 对 `text/html` 响应加 `Cache-Control: no-store, no-cache, must-revalidate`，模板每次部署后刷新即生效
+- 验证：`curl -sI /admin` 返回 `Cache-Control: no-store...` ✅
+
+### 12.2 引导式学习（5010/learn.html）
+
+**根因**：前端 `runAll()` 自动连续生成 5 步内容并打字机播放，学生只旁观，仅第 5 步需输入；与"学生自主推导"背道而驰。
+
+**改造**（复用 FeynmanEngine.explain_step 交互引导能力）：
+- 后端 `student_learn.py` 新增 `POST /api/learn/guide`：
+  - 首次无 `answer` → 生成第 1 步引导提问
+  - 之后带 `answer` → AI 先具体回应学生回答（肯定/修正），再生成下一步引导
+  - 会话历史存 `chat_history`（user/assistant 交替）驱动步骤推进；RAG 检索注入；推理过程写 `reasoning_logs`
+- 前端 `learn.html`：改为苏格拉底式交互——每一步展示引导提问 → 学生输入回答（含"答不上来请提示"按钮）→ AI 回应并推进下一步；第 5 步保留费曼 30 秒测试
+- `api.js` 新增 `guideStep`；引导服务不可用时自动降级为原自动播放（`runLegacy`）
+
+### 12.3 验证
+
+- 本地（临时 DB + 模板兜底）**12/12 ✅**：登录/建会话/首次引导 step=1/回答推进 step=2→5/推理日志写库
+- 天虹真实服务（真实模型 lumilearn-v2）**9/9 ✅**：admin 创建学生 → 5010 登录 → start → guide 首次（4s 生成引导提问）→ 回答后推进「认知冲突」→ 推理日志入库（Admin 可见）
+- 部署：4 文件上传 + 重启 lumilearn-api、student_portal(5010)
+- **重启经验**：nohup 后台启动必须 `< /dev/null > log 2>&1` 且 exec_command 后不 read stdout，否则 paramiko 阻塞
+
+---
+
 **待提交**：goai_multi_agent.py、goai_web.py、analytics_dashboard.py、admin.py、teacher_portal.py、database.py、feynman_engine.py、output_detector.py、lumilearn_shared.py、knowledge_retrieval.py（新增）、5 个前端模板、README、AI-DECLARATION.md、3 篇 docs、验证/部署/测评脚本、本文档。
 
 **遗留**：演示视频与 PPT（用户指定另行完成）；`qwen2.5:7b` 已从费曼默认路径中规避（端口模型配置 lumilearn-v2，CPU 推理 6s/次）。

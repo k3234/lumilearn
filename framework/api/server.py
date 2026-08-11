@@ -99,6 +99,10 @@ def create_app(debug: bool = None, template_dir: str = None, homepage: str = "te
         response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"
         response.headers["X-Framework"] = "LumiLearn"
         response.headers["X-Version"] = config.get("version", "1.0.0")
+        # HTML 页面禁用缓存：前端模板每次部署后必须立即生效（否则浏览器缓存旧版面板）
+        if "Content-Type" in response.headers and "text/html" in response.headers["Content-Type"]:
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
         # CSP：页面为单文件 HTML + 内联 JS + jsdelivr CDN，需放行内联脚本与 CDN 资源
         if "Content-Type" in response.headers and "text/html" in response.headers["Content-Type"]:
             response.headers["Content-Security-Policy"] = (

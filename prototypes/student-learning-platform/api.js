@@ -131,6 +131,36 @@ const api = {
   },
 
   /**
+   * POST /api/learn/guide  { sessionId, answer?, level? }
+   * 引导式学习：老师提问 → 学生自主回答 → 根据回答生成下一步引导。
+   * 首次调用不带 answer（开始引导），之后每次带 answer（学生本轮回答）。
+   */
+  async guideStep({ sessionId, answer, level }) {
+    const body = { sessionId };
+    if (answer) body.answer = answer;
+    if (level) body.level = level;
+    if (REAL) return fetchJson("/api/learn/guide", "POST", body);
+    await delay(700);
+    const topic = SessionStore.draft?.topic || "函数的单调性";
+    const steps = buildSteps(topic, SessionStore.draft?.subject || "数学", level || "高中");
+    // mock 模式：按当前已引导的步骤数返回下一步（引导式单步）
+    const count = SessionStore.guideCount || 0;
+    const def = steps[count] || steps[0];
+    SessionStore.guideCount = count + 1;
+    return {
+      code: 0,
+      data: {
+        step: count + 1,
+        step_name: DB.STEP_NAMES[count] || "",
+        content: def.content.slice(0, 160) + "\n\n（想一想：你能用自己的话回答这个问题吗？）",
+        is_last: count + 1 >= 5,
+        model_used: "mock",
+        progress: { current: count + 1, total: 5 },
+      },
+    };
+  },
+
+  /**
    * POST /api/learn/feynman-test  { sessionId, text }
    * 费曼测试：评测 Agent 对学生的 30 秒讲解打分（五维）
    */

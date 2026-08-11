@@ -59,7 +59,7 @@
         <span class="tag tag-amber" id="headLevel">高中</span>
         <span class="tag tag-faint" id="headElapsed">00:00</span>
       </div>
-      <p class="hint">编排调度 Agent 正在把学习目标拆解为费曼五步，各位 AI 教官接力推进。右侧可实时观察每个 Agent 的工作。</p>
+      <p class="hint">苏格拉底式引导学习：老师逐步提问，你按自己的理解回答，老师根据你的回答调整接下来的引导。全程由你主导推导，右侧可实时观察每位 AI 教官的工作。</p>
     </section>
 
     <div class="progress-strip reveal r2" id="progressStrip"></div>
@@ -230,10 +230,10 @@
     });
   }
 
-  /* ---------- 主流程：逐步执行 ---------- */
+  /* ---------- 主流程：引导式交互学习（苏格拉底式：提问→学生自主回答→根据回答调整引导） ---------- */
   var feynmanScore = 80;
-  var currentStep = 0;
-  var running = false;
+  var currentGuideStep = 1;
+  var guideBusy = false;
 
   function setStepState(n, state) {
     var card = stepList.querySelector('[data-step="' + n + '"]');
@@ -252,114 +252,159 @@
     }
   }
 
-  async function runStep(n) {
-    if (running) return;
-    running = true;
-    currentStep = n;
+  /* ---------- 主流程：引导式交互学习（苏格拉底式：提问→学生自主回答→根据回答调整引导） ---------- */
+  var feynmanScore = 80;
+  var currentGuideStep = 1;
+  var guideBusy = false;
+
+  /* 第一次引导：老师提问，等待学生回答 */
+  async function startGuide() {
+    if (guideBusy) return;
+    guideBusy = true;
+    log('<span class="la">费曼教学</span> → 老师正在准备第一个引导问题…');
+    setAgent("feynman", "running");
+    try {
+      var res = await api.guideStep({ sessionId: session.id, level: session.difficulty });
+      if (!res || !res.data) throw new Error("empty");
+      setAgent("feynman", "done", 1);
+      log('第 1 步「' + (res.data.step_name || "现象引入") + '」引导提问', "ll-done");
+      await renderGuide(res.data);
+    } catch (e) {
+      /* 引导服务暂不可用：降级为自动讲解（保持学习可用） */
+      log('引导服务暂不可用，切换为自动讲解', "ll-done");
+      setAgent("feynman", "done", 1);
+      await runLegacy();
+    }
+    guideBusy = false;
+  }
+
+  /* 展示引导内容 + 回答输入框 */
+  async function renderGuide(d) {
+    var n = d.step;
+    for (var i = currentGuideStep; i < n; i++) setStepState(i, "done");
+    currentGuideStep = n;
     setStepState(n, "current");
     var card = stepList.querySelector('[data-step="' + n + '"]');
-
-    /* 编排调度分发 */
-    setAgent("orchestrator", "running");
-    log('<span class="la">编排调度</span> → 分发步骤 ' + n + '「' + session.flow[n - 1].name + '」');
-    await new Promise(function (r) { setTimeout(r, 500); });
-
-    /* 知识检索 */
-    setAgent("knowledge", "running");
-    log('<span class="la">知识检索</span> → 检索「' + session.topic + '」相关知识点');
-    var res = await api.runStep({ sessionId: session.id, step: n });
-    setAgent("knowledge", "done");
-    setAgent("orchestrator", "done");
-
-    /* 防挂护栏：后端不可用/出错时不阻塞流程 */
-    if (!res || !res.data) {
-      log('步骤 ' + n + ' 执行失败（模型暂不可用），已跳过', "ll-done");
-      setAgent("feynman", "done", n);
-      setStepState(n, "done");
-      if (n === 5) {
-        document.getElementById("learnActions").style.display = "flex";
-      } else {
-        await new Promise(function (r) { setTimeout(r, 420); });
-      }
-      running = false;
-      return;
-    }
-
-    /* 费曼教学生成 */
-    setAgent("feynman", "running");
-    log('<span class="la">费曼教学</span> → 生成「' + session.flow[n - 1].name + '」教学内容');
-
-    var data = res.data;
     var contentEl = card.querySelector("[data-content]");
-    await typewrite(contentEl, data.content);
-    setAgent("feynman", "done", n);
-    log('完成「' + session.flow[n - 1].name + '」', "ll-done");
-
-    /* 知识要点 chips */
-    var kw = card.querySelector("[data-knowledge]");
-    kw.style.display = "flex";
-    kw.innerHTML = '<span class="k-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>知识检索注入</span>' +
-      data.knowledge.map(function (k) { return '<span class="tag tag-faint">' + k + '</span>'; }).join("");
-
-    /* 第 5 步：费曼测试 */
-    if (n === 5) {
-      var testBox = card.querySelector("[data-test]");
-      testBox.style.display = "block";
-      testBox.innerHTML =
-        '<label class="field"><span class="field-label">你的 30 秒讲解</span>' +
-        '<textarea id="feynmanText" placeholder="用最简单的话，把刚才学到的讲给一个完全不懂的人听…"></textarea></label>' +
-        '<div style="display:flex;gap:10px;margin-top:12px">' +
-        '<button type="button" class="btn btn-primary" id="testSubmit">提交讲解</button>' +
-        '<button type="button" class="btn btn-ghost" id="testSkip">跳过测试</button></div>';
-      var resultBox = card.querySelector("[data-result]");
-
-      await new Promise(function (resolve) {
-        function submit() {
-          var text = (document.getElementById("feynmanText") || {}).value || "";
-          document.getElementById("testSubmit").disabled = true;
-          setAgent("coach", "running");
-          log('<span class="la">评测与路径</span> → 对费曼测试五维评分');
-          api.submitFeynmanTest({ sessionId: session.id, text: text })
-            .then(function (r) {
-              feynmanScore = r.data.score;
-              setAgent("coach", "done", 1);
-              log('费曼测试得分 ' + feynmanScore, "ll-done");
-              resultBox.style.display = "block";
-              resultBox.innerHTML = '<b>' + feynmanScore + ' 分</b> ' + r.data.verdict +
-                '<br><span class="faint">' + r.data.feedback.accuracy.comment + ' · ' + r.data.feedback.simplicity.comment + '</span>';
-              finish();
-            });
-        }
-        function skip() {
-          setAgent("coach", "done", 1);
-          feynmanScore = 80;
-          resultBox.style.display = "block";
-          resultBox.innerHTML = '<b>80 分</b> 已按默认成绩跳过测试';
-          finish();
-        }
-        function finish() {
-          testBox.style.display = "none";
-          setStepState(5, "done");
-          document.getElementById("learnActions").style.display = "flex";
-          document.getElementById("reportBtn").disabled = false;
-          resolve();
-        }
-        document.getElementById("testSubmit").addEventListener("click", submit);
-        document.getElementById("testSkip").addEventListener("click", skip);
-      });
+    contentEl.innerHTML = "";
+    await typewrite(contentEl, d.content);
+    if (d.is_last || n === 5) {
+      showFinalTest(card);
     } else {
-      setStepState(n, "done");
-      await new Promise(function (r) { setTimeout(r, 520); });
+      showAnswerInput(n, card);
     }
-    running = false;
   }
 
-  async function runAll() {
-    for (var i = 1; i <= 5; i++) {
-      await runStep(i);
+  /* 步骤卡片内的回答输入框（每步都需要学生先思考、先回答） */
+  function showAnswerInput(n, card) {
+    var box = card.querySelector("[data-test]");
+    box.style.display = "block";
+    box.innerHTML =
+      '<div class="guide-tip" style="font-size:12px;color:#8b949e;margin-bottom:10px;">💡 按你的理解说出想法，不必担心对错——老师会根据你的回答调整接下来的引导。</div>' +
+      '<label class="field"><span class="field-label">你的回答</span>' +
+      '<textarea id="guideAnswer' + n + '" placeholder="大胆说出你的理解…"></textarea></label>' +
+      '<div style="display:flex;gap:10px;margin-top:12px">' +
+      '<button type="button" class="btn btn-primary" id="guideSubmit' + n + '">提交回答</button>' +
+      '<button type="button" class="btn btn-ghost" id="guideSkip' + n + '">答不上来，请老师提示</button></div>';
+    document.getElementById("guideSubmit" + n).addEventListener("click", function () { submitAnswer(n, false); });
+    document.getElementById("guideSkip" + n).addEventListener("click", function () { submitAnswer(n, true); });
+    var ta = document.getElementById("guideAnswer" + n);
+    ta.focus();
+    ta.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submitAnswer(n, false);
+    });
+  }
+
+  /* 学生回答提交：AI 具体回应学生回答，并生成下一步引导 */
+  async function submitAnswer(n, skip) {
+    var card = stepList.querySelector('[data-step="' + n + '"]');
+    var box = card.querySelector("[data-test]");
+    var ta = document.getElementById("guideAnswer" + n);
+    var text = skip ? "（我暂时想不出来，请给我提示）" : ((ta && ta.value) || "").trim();
+    if (!skip && !text) { toast("先说出你的想法，老师才能帮你"); return; }
+    var btns = box.querySelectorAll("button");
+    btns.forEach(function (b) { b.disabled = true; });
+    setAgent("feynman", "running");
+    log('<span class="la">你</span> → ' + text.slice(0, 40), "ll-user");
+    try {
+      var res = await api.guideStep({ sessionId: session.id, answer: text, level: session.difficulty });
+      if (!res || !res.data) throw new Error("empty");
+      setAgent("feynman", "done", 1);
+      var d = res.data;
+      var nextN = d.step;
+      /* 若 AI 推进到下一步，标记前一步完成 */
+      if (nextN > currentGuideStep) {
+        for (var i = currentGuideStep; i < nextN; i++) setStepState(i, "done");
+        currentGuideStep = nextN;
+      }
+      log('费曼教学 → 第 ' + nextN + ' 步「' + (d.step_name || "") + '」', "ll-done");
+      await renderGuide(d);
+    } catch (e) {
+      toast("回答提交失败，请重试");
+      btns.forEach(function (b) { b.disabled = false; });
+      setAgent("feynman", "done", 1);
     }
   }
-  runAll();
+
+  /* 第 5 步：费曼 30 秒测试 */
+  function showFinalTest(card) {
+    var testBox = card.querySelector("[data-test]");
+    testBox.style.display = "block";
+    testBox.innerHTML =
+      '<label class="field"><span class="field-label">你的 30 秒讲解（费曼测试）</span>' +
+      '<textarea id="feynmanText" placeholder="用最简单的话，把刚才学到的讲给一个完全不懂的人听…"></textarea></label>' +
+      '<div style="display:flex;gap:10px;margin-top:12px">' +
+      '<button type="button" class="btn btn-primary" id="testSubmit">提交讲解</button>' +
+      '<button type="button" class="btn btn-ghost" id="testSkip">跳过测试</button></div>';
+    var resultBox = card.querySelector("[data-result]");
+    function finish() {
+      testBox.style.display = "none";
+      setStepState(5, "done");
+      document.getElementById("learnActions").style.display = "flex";
+      document.getElementById("reportBtn").disabled = false;
+    }
+    document.getElementById("testSubmit").addEventListener("click", function () {
+      var text = (document.getElementById("feynmanText") || {}).value || "";
+      document.getElementById("testSubmit").disabled = true;
+      setAgent("coach", "running");
+      log('<span class="la">评测与路径</span> → 对费曼测试五维评分');
+      api.submitFeynmanTest({ sessionId: session.id, text: text })
+        .then(function (r) {
+          feynmanScore = r.data.score;
+          setAgent("coach", "done", 1);
+          log('费曼测试得分 ' + feynmanScore, "ll-done");
+          resultBox.style.display = "block";
+          resultBox.innerHTML = '<b>' + feynmanScore + ' 分</b> ' + r.data.verdict +
+            '<br><span class="faint">' + (r.data.feedback && r.data.feedback.accuracy ? r.data.feedback.accuracy.comment : "") + ' · ' + (r.data.feedback && r.data.feedback.simplicity ? r.data.feedback.simplicity.comment : "") + '</span>';
+          finish();
+        });
+    });
+    document.getElementById("testSkip").addEventListener("click", function () {
+      setAgent("coach", "done", 1);
+      feynmanScore = 80;
+      resultBox.style.display = "block";
+      resultBox.innerHTML = '<b>80 分</b> 已按默认成绩跳过测试';
+      finish();
+    });
+  }
+
+  /* 降级：引导服务不可用时自动播放五步（原逻辑精简） */
+  async function runLegacy() {
+    for (var i = 1; i <= 5; i++) {
+      var res = await api.runStep({ sessionId: session.id, step: i });
+      if (res && res.data) {
+        setStepState(i, "current");
+        var card = stepList.querySelector('[data-step="' + i + '"]');
+        await typewrite(card.querySelector("[data-content]"), res.data.content);
+        if (i === 5) { showFinalTest(card); }
+      } else {
+        setStepState(i, "done");
+      }
+    }
+  }
+
+  /* 启动引导式学习 */
+  startGuide();
 
   /* 生成报告 */
   document.getElementById("reportBtn").addEventListener("click", function () {
