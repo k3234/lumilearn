@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flask import (Flask, request, jsonify, render_template_string, session,
                    redirect, url_for, send_from_directory, abort)
 from goai_agent import LumiLearnAgent, TaskUnderstanding, FlowOrchestrator
+from framework.api.routes.student_learn import create_student_learn_bp
 
 # 连接 Framework 数据库（与 18080 管理端共享 lumilearn.db）
 from framework.database import db
@@ -38,6 +39,9 @@ app.secret_key = os.environ.get("GOAI_SECRET_KEY", "lumilearn-goai-web-secret")
 
 # 全局Agent实例（Ollama 地址通过环境变量 OLLAMA_URL 配置，见 .env.example）
 agent = LumiLearnAgent()
+
+# 共享费曼学习 Blueprint（/proto/ 学生端原型走同一套真实 API：登录 + 五步 + 档案）
+app.register_blueprint(create_student_learn_bp(agent, session_key="user_id"))
 
 
 # ============================================================
@@ -1110,13 +1114,19 @@ def proto_file(filename):
 
 
 def _send_proto(filename):
-    """安全发送原型静态文件（防路径穿越）"""
+    """安全发送原型静态文件（防路径穿越）；HTML 注入真实后端标志，走共享费曼学习 API"""
     safe = os.path.normpath(filename).lstrip("/\\")
     if ".." in safe.split(os.sep):
         abort(404)
     full = os.path.join(PROTO_DIR, safe)
     if not os.path.isfile(full):
         abort(404)
+    if safe.endswith(".html"):
+        html = open(full, encoding="utf-8").read()
+        flag = "<script>window.__LUMILEARN_REAL__ = true;</script>"
+        html = html.replace("<head>", "<head>" + flag, 1)
+        from flask import Response
+        return Response(html, mimetype="text/html; charset=utf-8")
     return send_from_directory(PROTO_DIR, safe)
 
 

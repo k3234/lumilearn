@@ -71,12 +71,15 @@ PROVIDER_TEMPLATES = {
     },
 }
 
-# 默认端口-模型映射（各端口使用的模型配置）
+# 默认端口-模型映射（各端口使用的模型配置，与 PORT_SETTINGS_DEFAULTS 保持 7 端口同步）
 DEFAULT_PORT_MODEL_MAP = {
     "terminal": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 18080},
     "api": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 18081},
     "models": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 18082},
     "goai_web": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 5000},
+    "teacher_portal": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 5001},
+    "student_portal": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 5010},
+    "analytics_dashboard": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 18090},
 }
 
 PORT_DISPLAY_NAMES = {

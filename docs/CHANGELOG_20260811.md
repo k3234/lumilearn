@@ -275,3 +275,38 @@
 ---
 
 **未提交事项**：本节约改动（student_portal/auth 路由/Admin 班级绑定/终端登录门/学生档案/文档）待提交推送。
+
+---
+
+## 十一、费曼学习全流程接入 + Admin 端口同步
+
+**目标**：修复学生端学习过程卡住（step 500）；让各端口完整接入费曼五步学习全流程（不再只是展示学习过程）；修复 18082 Admin「端口管理」与「模型管理→端口模型配置」端口不同步。
+
+### 1. 学习过程卡住根因（step 500）
+
+- **根因**：前端 `/api/learn/start` 返回会话 id 为 `"s-7"` 字符串，后端 `api_learn_step` 直接 `int("s-7")` 抛 `ValueError` → 500 → 前端 await 永不返回 → 学习过程卡住。
+- **修复**：`api_learn_step` 改为 `_sid()` 容错解析（`str(value).replace("s-","")`）。此前只改了 feynman-test/report 两处，本次补齐 step 这一处。
+
+### 2. 共享费曼学习 Blueprint（完整全流程接入各端口）
+
+- **新增 `framework/api/routes/student_learn.py`**：把「登录 → 发起学习(start) → 费曼五步(step) → 30秒讲解评分(feynman-test) → 学习报告(report) → 历史(history) → 我的档案(profile)」抽成可复用 Blueprint（`create_student_learn_bp(agent, session_key)`），单 Agent 实例注入。
+- **student_portal.py（5010）**：删除全部重复路由（认证/学习/档案约 280 行），改为注册共享 Blueprint——只保留静态页服务与启动逻辑。
+- **goai_web.py（5000）**：同样注册共享 Blueprint，使 `/proto/` 学生端原型走真实 API；`_send_proto` 对 HTML 注入 `__LUMILEARN_REAL__ = true` 真实后端标志（此前未注入，页面只能展示 mock 学习过程——正是"其他端口内容只能展示学习过程"的根因）。
+- **效果**：5000 与 5010 共用同一套费曼五步学习 API 契约，任一端口登录后即可完整走完学习全流程，学习数据落同一 `lumilearn.db`。
+
+### 3. Admin 端口同步（端口管理 vs 模型管理）
+
+- **根因**：`DEFAULT_PORT_MODEL_MAP`（provider_service.py）只有 4 个端口（terminal/api/models/goai_web），而 `PORT_SETTINGS_DEFAULTS` 有 7 个端口（多了 teacher_portal/student_portal/analytics_dashboard）→ Admin「端口管理」显示 7 个、「模型管理→端口模型配置」只显示 4 个，不同步。
+- **修复**：`DEFAULT_PORT_MODEL_MAP` 补齐 3 个端口至 7 个，与 `PORT_SETTINGS_DEFAULTS` 完全对齐；`get_port_model_map` / `set_port_model` 自动覆盖新端口。
+
+### 4. 验证结果
+
+- 本地冒烟 17 项全通过：student_portal 登录/start/step(s-前缀)/feynman-test/report/history/profile/401、goai_web 登录/start/step/profile、/proto/ 真实标志注入、port_model_map 7 键。
+- 天虹真实服务：
+  - 5010 `POST /api/learn/step` 传 `s-7` 返回 200（不再 500），五步流程完整可用 ✅
+  - 5000 `/proto/` 注入 `__LUMILEARN_REAL__ = true`，登录 + start 走共享 API ✅
+  - 18082 `GET /api/admin/port-models` 返回 **7 个端口**（terminal/api/models/goai_web/teacher_portal/student_portal/analytics_dashboard）✅
+
+---
+
+**未提交事项**：本节约改动（共享费曼 Blueprint / 两端口注册 / Admin 端口同步 / 文档）待提交推送。
