@@ -429,7 +429,7 @@ class WeightedVoter:
                     parsed = json.loads(j)
                     parsed["source_model"] = mid
                     jsons.append(parsed)
-                except:
+                except Exception:
                     pass
         return json.dumps({
             "composite": True,

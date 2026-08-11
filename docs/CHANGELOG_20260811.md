@@ -104,3 +104,39 @@
 ---
 
 **未提交事项**：本日修复与增强已同步本地代码；远程已部署教师端与框架三端口修复。详见 git 提交记录。
+
+---
+
+## 七、Day 1 基础加固（GOAI 行动规划）
+
+**背景**：按 `docs/GOAI_ACTION_PLAN.md` Day 1 清单执行，全程遵守核心设备压力约束（无重型依赖、测试不触网不调模型、DB 惰性连接）。
+
+### 1. bare except 清理（代码质量，零行为变更）
+
+| 文件 | 行 | 修改 |
+|---|---|---|
+| `goai_agent.py` | _check_availability | `except:` → `except Exception:` |
+| `langgraph_engine.py` | _call_helper / _fmt_cards / 格式合并 | `except:` → `except Exception:`（3 处） |
+
+### 2. langgraph_engine 可导入验证
+
+- 已确认 `lumilearn_config.py`（环境变量驱动的脱敏配置）被 `langgraph_engine.py` 正常导入，`import langgraph_engine` 通过，无 ModuleNotFoundError。
+
+### 3. 测试骨架（轻量，mock 化）
+
+- **新增 `tests/test_goai_agent.py`**（13 用例）：任务理解（学科/难度/学习类型/核心主题）、费曼五步编排、ToolCaller（全部 mock `requests.get/post`，**零真实网络**）、ResultDelivery 报告结构、主引擎 run（mock 模型调用 + 落盘重定向 tmp + 写库 no-op）。
+- **新增 `tests/test_conversation_store.py`**（6 用例）：会话创建/隔离/删除、消息顺序/限长/清空、级联删除。
+- 全套 `tests/` 共 **150 通过**（原 131 + 新 19），耗时约 7 分钟（含 torch 导入）。
+
+### 4. 多轮对话持久化 chat_history
+
+- **新增 `framework/services/conversation_store.py`**：
+  - 独立轻量模块（纯标准库 sqlite3），**不修改** 150KB 的 `framework/database.py`，但共享同一库文件（`LUMILEARN_DB_PATH` 环境变量优先，默认项目根 lumilearn.db，解析逻辑与 database 同源）。
+  - **惰性连接**：首次调用方法才打开数据库，空闲零连接零内存占用（核心设备压力友好）。
+  - 表：`chat_sessions`（会话头）+ `chat_history`（消息，`session_id` 外键 **ON DELETE CASCADE**，并开启 `PRAGMA foreign_keys`）。
+  - 方法：create_session / list_sessions（含消息数与末条预览）/ get_session / delete_session（级联）/ add_message / get_messages（可限长取尾部）/ clear_session；全局单例 `conversation_store`。
+  - 用途：GOAI / 费曼 / 通用对话的多轮上下文持久化，后续接入对话接口。
+
+---
+
+**未提交事项**：Day 1 全部完成并已提交（见 git 记录）；ruff 未在本地安装，CI 将执行 `ruff check .`。

@@ -299,7 +299,7 @@ class ToolCaller:
                     if any(name in an for an in available_names):
                         self.preferred_model = name
                         return True
-        except:
+        except Exception:
             pass
         return False
     
