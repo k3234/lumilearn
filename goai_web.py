@@ -22,12 +22,16 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, request, jsonify, render_template_string, session, redirect, url_for
+from flask import (Flask, request, jsonify, render_template_string, session,
+                   redirect, url_for, send_from_directory, abort)
 from goai_agent import LumiLearnAgent, TaskUnderstanding, FlowOrchestrator
 
 # 连接 Framework 数据库（与 18080 管理端共享 lumilearn.db）
 from framework.database import db
 db.init()
+
+# 多轮对话持久化（chat_history，惰性连接，共享同一 lumilearn.db）
+from framework.services.conversation_store import conversation_store as conv_store
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("GOAI_SECRET_KEY", "lumilearn-goai-web-secret")
@@ -1006,6 +1010,19 @@ def api_learn():
         score = (report.get('mastery_assessment') or {}).get('score', 0)
         db.add_learning_report(user['id'], topic, report, score=score)
         report['user'] = {'id': user['id'], 'name': user['name']}
+        # 多轮对话持久化：学习目标 + 报告摘要写入 chat_history
+        try:
+            sid = conv_store.create_session(topic, user_id=user['id'])
+            conv_store.add_message(sid, "user", topic)
+            summary = json.dumps({
+                "mastery": score,
+                "weak_points": (report.get('weak_points') or [])[:3],
+            }, ensure_ascii=False)
+            conv_store.add_message(sid, "assistant",
+                                   f"学习报告已生成：{summary}",
+                                   model=agent.tool_caller.preferred_model)
+        except Exception:
+            pass  # 持久化失败不影响主流程
         return jsonify(report)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1019,7 +1036,8 @@ def api_status():
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
-    """对话式交互（预留扩展）"""
+    """对话式交互（多轮消息自动持久化到 chat_history）"""
+    user = _get_current_user()
     data = request.get_json()
     message = data.get('message', '').strip()
     if not message:
@@ -1027,7 +1045,79 @@ def api_chat():
 
     tu = TaskUnderstanding()
     task = tu.understand(message)
-    return jsonify({'reply': f"已识别你的学习目标：{task['core_topic']}（{task['subject']}/{task['difficulty']}）", 'task': task})
+    reply = f"已识别你的学习目标：{task['core_topic']}（{task['subject']}/{task['difficulty']}）"
+
+    # 多轮对话持久化：登录用户消息 + 回复写入"对话式问答"会话
+    try:
+        if user:
+            sid = _get_or_create_chat_session(user['id'])
+            conv_store.add_message(sid, "user", message)
+            conv_store.add_message(sid, "assistant", reply, model="task-understanding")
+    except Exception:
+        pass  # 持久化失败不影响主流程
+
+    return jsonify({'reply': reply, 'task': task})
+
+
+def _get_or_create_chat_session(user_id: int) -> int:
+    """找到该用户最近的"对话式问答"会话，无则新建（保持多轮上下文连贯）。"""
+    for s in conv_store.list_sessions(user_id=user_id, limit=20):
+        if s["title"] == "对话式问答":
+            return s["id"]
+    return conv_store.create_session("对话式问答", user_id=user_id)
+
+
+# ============================================================
+# 对话历史（chat_history 多轮持久化查看）
+# ============================================================
+@app.route('/api/conversations')
+def api_conversations():
+    """列出当前用户的对话会话（含消息数与末条预览）"""
+    user = _get_current_user()
+    if not user:
+        return jsonify({'error': '未登录，请先登录'}), 401
+    return jsonify({'success': True, 'sessions': conv_store.list_sessions(user_id=user['id'], limit=30)})
+
+
+@app.route('/api/conversations/<int:session_id>')
+def api_conversation_detail(session_id):
+    """获取某会话的完整多轮消息"""
+    user = _get_current_user()
+    if not user:
+        return jsonify({'error': '未登录，请先登录'}), 401
+    s = conv_store.get_session(session_id)
+    if not s or s["user_id"] != user["id"]:
+        return jsonify({'error': '会话不存在'}), 404
+    return jsonify({'success': True, 'session': s,
+                    'messages': conv_store.get_messages(session_id)})
+
+
+# ============================================================
+# 学生端原型（静态交付，GOAI Web 内嵌访问）
+# ============================================================
+PROTO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         "prototypes", "student-learning-platform")
+
+
+@app.route('/proto/')
+def proto_index():
+    return _send_proto("index.html")
+
+
+@app.route('/proto/<path:filename>')
+def proto_file(filename):
+    return _send_proto(filename)
+
+
+def _send_proto(filename):
+    """安全发送原型静态文件（防路径穿越）"""
+    safe = os.path.normpath(filename).lstrip("/\\")
+    if ".." in safe.split(os.sep):
+        abort(404)
+    full = os.path.join(PROTO_DIR, safe)
+    if not os.path.isfile(full):
+        abort(404)
+    return send_from_directory(PROTO_DIR, safe)
 
 
 # ============================================================
