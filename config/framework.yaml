@@ -28,6 +28,12 @@ port_settings:
   teacher_portal:
     enabled: true
     port: 5001
+  student_portal:
+    enabled: true
+    port: 5010
+  analytics_dashboard:
+    enabled: true
+    port: 18090
 
 ollama:
   # 默认连接本地 Ollama；也可通过环境变量 OLLAMA_BASE_URL 覆盖远程地址

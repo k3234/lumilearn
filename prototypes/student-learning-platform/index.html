@@ -124,6 +124,19 @@
 
   </main>
 </div>
+<div class="login-gate" id="loginGate">
+  <form class="login-box" id="loginForm" autocomplete="on">
+    <h3>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      登录 LumiLearn
+    </h3>
+    <p class="sub">使用你的学习账号登录（users 表账号，如 123）</p>
+    <input id="loginUser" placeholder="用户名" autocomplete="username">
+    <input id="loginPass" type="password" placeholder="密码" autocomplete="current-password">
+    <button class="btn btn-primary" id="loginBtn" type="submit">登 录</button>
+    <p class="sub" style="text-align:center">演示账号：123 / test123</p>
+  </form>
+</div>
 <div class="toast" id="toast"></div>
 <script src="nav.js"></script>
 <script src="mock.js"></script>
@@ -210,6 +223,40 @@
         btn.disabled = false;
         btn.innerHTML = orig;
       });
+  });
+
+  /* ---------- 真实后端模式：登录门 ---------- */
+  var loginGate = document.getElementById("loginGate");
+  function showLogin() { loginGate.classList.add("show"); }
+
+  if (window.__LUMILEARN_REAL__) {
+    api.me().then(function (j) {
+      if (j.code !== 0) showLogin();
+    }).catch(showLogin);
+  }
+
+  document.getElementById("loginForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var u = document.getElementById("loginUser").value.trim();
+    var p = document.getElementById("loginPass").value;
+    if (!u || !p) { toast("请输入用户名和密码"); return; }
+    var lb = document.getElementById("loginBtn");
+    lb.disabled = true; lb.textContent = "登录中…";
+    api.login(u, p).then(function (j) {
+      if (j.code === 0) {
+        loginGate.classList.remove("show");
+        if (location.search.indexOf("need=login") !== -1) {
+          history.replaceState(null, "", location.pathname);
+        }
+        toast("欢迎回来，" + (j.data.name || u));
+      } else {
+        toast(j.message || "登录失败");
+        lb.disabled = false; lb.textContent = "登 录";
+      }
+    }).catch(function () {
+      toast("网络异常，请重试");
+      lb.disabled = false; lb.textContent = "登 录";
+    });
   });
 })();
 </script>

@@ -31,6 +31,8 @@
 | 模型管理服务 | 18082 | 同上（随 --multi-port 一起启动） | http://localhost:18082 | ✅ 启用 |
 | GOAI Web 学习平台（学生端） | 5000 | `python goai_web.py` | http://localhost:5000 | ✅ 启用 |
 | 教师门户 Teacher Portal | 5001 | `python teacher_portal.py` | http://localhost:5001 | ✅ 启用 |
+| 学生端学习平台 Student Portal | 5010 | `python student_portal.py` | http://localhost:5010 | ✅ 启用 |
+| 学习分析仪表盘 Analytics | 18090 | `python analytics_dashboard.py` | http://localhost:18090 | ✅ 启用 |
 
 - **Windows 一键启动**：`start_services.bat`（检查 Python → 委托 `deploy/start.py` 按 `config/framework.yaml` 的 `port_settings` 与 `.env` 启动启用的服务 → 自动打开浏览器）
 - **停止服务**：`stop_services.bat`（按进程名查杀 goai_web / framework.api.server）

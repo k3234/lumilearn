@@ -1,20 +1,37 @@
 /* ============================================================
- * api.js — API 桩层（stub only，不连真实模型/后端）
- * 函数签名即未来真实 API 的契约；集成时按 // TODO 注释替换实现即可。
- * 每个桩都模拟网络延迟，让 loading 状态可见。
+ * api.js — 双模式 API 层
+ * 真实后端模式（window.__LUMILEARN_REAL__ = true，由 Student Portal 注入）：
+ *   直接 fetch 同源真实接口，函数签名/返回 {code,data} 契约与 mock 完全一致。
+ * 离线演示模式（无真实后端，如双击打开 / GOAI Web /proto/）：
+ *   使用下方 mock 桩，带模拟延迟，保留 loading 态。
+ * 集成点：真实后端实现见 student_portal.py，替换 mock 无需改动页面。
  * ============================================================ */
 
+const REAL = window.__LUMILEARN_REAL__ === true;
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-
 const _uid = (() => { let n = 1007; return () => "s-" + (n++); })();
 
-/* 本地会话草稿（learn → report 传参），无后端时用 localStorage */
+/* 本地会话草稿（learn → report 传参），mock 模式下用 localStorage */
 const SessionStore = {
   KEY: "ll_session",
   get draft() { try { return JSON.parse(localStorage.getItem(this.KEY) || "null"); } catch { return null; } },
   save(session) { localStorage.setItem(this.KEY, JSON.stringify(session)); },
   clear() { localStorage.removeItem(this.KEY); },
 };
+
+/* 真实后端请求封装：401 → 跳转登录 */
+async function fetchJson(path, method, body) {
+  const opt = { method, headers: { "Content-Type": "application/json" } };
+  if (body !== undefined) opt.body = JSON.stringify(body);
+  const resp = await fetch(path, opt);
+  let json = {};
+  try { json = await resp.json(); } catch (e) { json = {}; }
+  if (resp.status === 401 && path.indexOf("/api/auth/") !== 0 && !location.search.includes("need=login")) {
+    location.href = "index.html?need=login";
+    throw new Error("未登录");
+  }
+  return json;
+}
 
 /* 主题归一化：剥离常见意图前缀，命中文案库键 */
 function normalizeTopic(topic) {
@@ -37,12 +54,31 @@ function buildSteps(topic, subject, difficulty) {
 }
 
 const api = {
+  /* ---------- 认证（仅真实后端模式使用） ---------- */
+
+  /** POST /api/auth/login { username, password } */
+  async login(username, password) {
+    return fetchJson("/api/auth/login", "POST", { username, password });
+  },
+
+  /** GET /api/auth/me */
+  async me() {
+    return fetchJson("/api/auth/me", "GET");
+  },
+
+  /** POST /api/auth/logout */
+  async logout() {
+    return fetchJson("/api/auth/logout", "POST", {});
+  },
+
+  /* ---------- 学习流程 ---------- */
+
   /**
    * POST /api/learn/start  { topic, subject, difficulty }
    * 发起学习：编排调度 Agent 理解任务 → 生成费曼五步流程
-   * TODO: replace with fetch('/api/learn/start', { method:'POST', ... })
    */
   async startLearning({ topic, subject, difficulty }) {
+    if (REAL) return fetchJson("/api/learn/start", "POST", { topic, subject, difficulty });
     await delay(900);
     const id = _uid();
     const flow = buildSteps(topic, subject, difficulty).map((s, i) => ({
@@ -63,16 +99,15 @@ const api = {
   /**
    * POST /api/learn/step  { sessionId, step }
    * 执行某一教学步骤：费曼教学 Agent 生成内容 + 知识检索 Agent 注入上下文
-   * TODO: replace with fetch('/api/learn/step', { method:'POST', ... })
    */
   async runStep({ sessionId, step }) {
+    if (REAL) return fetchJson("/api/learn/step", "POST", { sessionId, step });
     await delay(650);
     const topic = SessionStore.draft?.topic || "函数的单调性";
     const subject = SessionStore.draft?.subject || "数学";
     const key = normalizeTopic(topic);
     const steps = buildSteps(topic, subject, SessionStore.draft?.difficulty || "高中");
     const def = steps[step - 1] || steps[0];
-    // 知识检索 Agent 注入的相关知识点（演示用）
     const knowledgeHints = {
       "函数的单调性": ["定义域与区间", "图像上升/下降", "最值与极值"],
       "牛顿第二定律": ["力的合成与分解", "加速度与速度方向", "质量与惯性"],
@@ -98,12 +133,11 @@ const api = {
   /**
    * POST /api/learn/feynman-test  { sessionId, text }
    * 费曼测试：评测 Agent 对学生的 30 秒讲解打分（五维）
-   * TODO: replace with fetch('/api/learn/feynman-test', { method:'POST', ... })
    */
   async submitFeynmanTest({ sessionId, text }) {
+    if (REAL) return fetchJson("/api/learn/feynman-test", "POST", { sessionId, text });
     await delay(1200);
     const len = (text || "").trim().length;
-    // 演示用启发式打分：讲得越长、越像在解释，得分越高
     const score = len < 20 ? 62 : len < 60 ? 78 : 88;
     return {
       code: 0,
@@ -125,9 +159,9 @@ const api = {
   /**
    * POST /api/learn/report  { sessionId, feynmanScore }
    * 生成完整学习报告：掌握度 + 薄弱点 + 下一步建议
-   * TODO: replace with fetch('/api/learn/report', { method:'POST', ... })
    */
   async generateReport({ sessionId, feynmanScore }) {
+    if (REAL) return fetchJson("/api/learn/report", "POST", { sessionId, feynmanScore });
     await delay(1100);
     const draft = SessionStore.draft || {};
     const topic = draft.topic || "函数的单调性";
@@ -135,7 +169,6 @@ const api = {
     const difficulty = draft.difficulty || "高中";
     const key = normalizeTopic(topic);
     const date = new Date().toLocaleString("zh-CN", { hour12: false });
-    // 掌握度 = 步骤完成度(80) 与费曼测试分(20) 加权
     const mastery = Math.min(96, Math.round(80 * 0.82 + (feynmanScore || 80) * 0.18));
 
     const weakLib = {
@@ -166,7 +199,6 @@ const api = {
       feynmanScore: feynmanScore || 80,
     };
 
-    // 同步到历史库（内存 mock 顶部插入，供 history 页展示）
     DB.sessions.unshift({
       id: sessionId, topic, subject, difficulty, date,
       status: "done", mastery, model: report.model, duration: report.duration,
@@ -177,10 +209,10 @@ const api = {
 
   /**
    * GET /api/learn/report/:id
-   * 按 id 取报告（演示：从历史库查找）
-   * TODO: replace with fetch(`/api/learn/report/${id}`)
+   * 按 id 取报告
    */
   async getReport({ id }) {
+    if (REAL) return fetchJson(`/api/learn/report/${id}`, "GET");
     await delay(300);
     const hit = DB.sessions.find((s) => s.id === id);
     if (!hit) return { code: 404, message: "报告不存在" };
@@ -190,9 +222,9 @@ const api = {
   /**
    * GET /api/learn/history?subject=math
    * 学习历史列表（可按学科筛选；空数组=空态）
-   * TODO: replace with fetch('/api/learn/history')
    */
   async getHistory({ subject } = {}) {
+    if (REAL) return fetchJson(`/api/learn/history?subject=${encodeURIComponent(subject || "全部")}`, "GET");
     await delay(400);
     let list = DB.sessions.slice();
     if (subject && subject !== "全部") list = list.filter((s) => s.subject === subject);

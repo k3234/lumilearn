@@ -173,3 +173,50 @@
 ---
 
 **未提交事项**：goai_web 接入已提交（9ad4c76）；部署脚本路径修正与本文档待提交；GitHub 推送因网络间歇性失败待重试。
+
+---
+
+## 九、新端口并入项目系统：学生端学习平台(5010) + 学习分析仪表盘(18090)
+
+**目标**：将学生端原型接入真实后端成为独立服务（5010），并新增学习分析仪表盘（18090），二者全部纳入 port_settings / Admin 端口管理 / 启动脚本（前、后端完整接入）。
+
+### 1. 学生端学习平台（student_portal.py，端口 5010）
+
+- 独立 Flask 应用，前端即学生端原型（`prototypes/student-learning-platform/`），服务时向 HTML 注入 `window.__LUMILEARN_REAL__` 标志切换为真实 API 模式。
+- **原型 api.js 升级为双模式**：真实后端（fetch 同构接口）+ 离线 mock 兜底（双击打开 / GOAI Web /proto/ 仍可演示）。
+- 真实后端接口（与原型契约一致）：
+  | 接口 | 说明 |
+  |---|---|
+  | `/api/auth/login|me|logout` | users 表登录（前端登录门，401 自动跳转） |
+  | `/api/learn/start` | 任务理解 + 费曼五步编排，chat_history 建会话 |
+  | `/api/learn/step` | 费曼教学 Agent 真实生成 + 知识检索注入，持久化 |
+  | `/api/learn/feynman-test` | 30 秒讲解评分 |
+  | `/api/learn/report` | 汇总报告，落 learning_reports + chat_history |
+  | `/api/learn/history` · `/api/learn/report/<id>` | 学习历史 / 报告详情（归属校验） |
+- 前端 index.html 新增登录门（真实模式时未登录显示登录浮层，支持 `?need=login`）。
+
+### 2. 学习分析仪表盘（analytics_dashboard.py，端口 18090）
+
+- 只读单页仪表盘，深色主题 + 手绘 SVG 图表（无 CDN，低端设备友好），30s 自动刷新。
+- 数据源：learning_reports / answers / concept_understanding / users。
+- API：`/api/dashboard/{overview,trend,subjects,weakpoints,concepts,recent}`。
+
+### 3. 系统集成（前后端全链路）
+
+| 文件 | 改动 |
+|---|---|
+| `framework/services/provider_service.py` | PORT_DISPLAY_NAMES / PORT_SETTINGS_DEFAULTS 新增 student_portal(5010) + analytics_dashboard(18090) |
+| `config/framework.yaml` | port_settings 新增两项（enabled + port） |
+| `deploy/start.py` | DEFAULT_PORTS + build_services 新增两个服务（STUDENT_PORT / ANALYTICS_PORT 环境变量覆盖） |
+| `scripts/remote_start_all.sh` | read_ports 默认端口 + 启动/停止块（第 5、6 段） |
+| Admin 面板 | 端口管理自动展示新端口（动态渲染，无需改 admin.html） |
+
+### 4. 验证结果（本地 17 项冒烟 + 天虹真实服务）
+
+- 本地：student_portal 11 项（含登录 401、5 步流程、报告落库、越权 404）+ 仪表盘 6 项，全通过。
+- 天虹：`/api/status`、页面、overview/trend 均 200；学生端真实模型 step 生成 164 字、报告掌握度 81、history 2 条；Admin 端口管理显示 7 个端口全部运行中。
+- **坑**：paramiko 启动后台服务时 `&` 会挂住通道（进程持有管道 fd），需 `(nohup ... </dev/null &)` 完全脱离；Admin 认证走 `X-Admin-Token` 头（非 cookie）。
+
+---
+
+**未提交事项**：两个新端口已部署至天虹（student_portal 5010 / analytics_dashboard 18090 运行中）；本文档与代码待提交推送。

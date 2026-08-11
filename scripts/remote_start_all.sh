@@ -20,6 +20,7 @@ ps = cfg.get('port_settings', {})
 defaults = {
     'terminal': (1, 18080), 'api': (1, 18081), 'models': (1, 18082),
     'goai_web': (1, 5000), 'teacher_portal': (1, 5001),
+    'student_portal': (1, 5010), 'analytics_dashboard': (1, 18090),
 }
 for k, (de, dp) in defaults.items():
     v = ps.get(k, {})
@@ -100,6 +101,40 @@ if is_enabled teacher_portal; then
 else
   echo "[跳过] 教师端（端口未启用）"
   pkill -f "teacher_portal.py" 2>/dev/null || true
+fi
+
+# 5. 学生端学习平台（Student Portal）
+if is_enabled student_portal; then
+  SPP=$(get_port student_portal)
+  [ -z "$SPP" ] && SPP=5010
+  if curl -s -o /dev/null http://localhost:$SPP/api/status 2>/dev/null; then
+    echo "[OK] 学生端已在 $SPP 运行"
+  else
+    echo "[启动] 学生端学习平台 ($SPP) ..."
+    STUDENT_PORT=$SPP nohup python3 student_portal.py > logs/student_portal.log 2>&1 &
+    echo $! > logs/student_portal.pid
+    sleep 3
+  fi
+else
+  echo "[跳过] 学生端学习平台（端口未启用）"
+  pkill -f "student_portal.py" 2>/dev/null || true
+fi
+
+# 6. 学习分析仪表盘（Analytics Dashboard）
+if is_enabled analytics_dashboard; then
+  ADP=$(get_port analytics_dashboard)
+  [ -z "$ADP" ] && ADP=18090
+  if curl -s -o /dev/null http://localhost:$ADP/api/dashboard/overview 2>/dev/null; then
+    echo "[OK] 分析仪表盘已在 $ADP 运行"
+  else
+    echo "[启动] 学习分析仪表盘 ($ADP) ..."
+    ANALYTICS_PORT=$ADP nohup python3 analytics_dashboard.py > logs/analytics_dashboard.log 2>&1 &
+    echo $! > logs/analytics_dashboard.pid
+    sleep 3
+  fi
+else
+  echo "[跳过] 学习分析仪表盘（端口未启用）"
+  pkill -f "analytics_dashboard.py" 2>/dev/null || true
 fi
 
 echo ""

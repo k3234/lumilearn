@@ -84,6 +84,9 @@ PORT_DISPLAY_NAMES = {
     "api": "REST API (18081)",
     "models": "模型管理 (18082)",
     "goai_web": "GOAI Web (5000)",
+    "teacher_portal": "教师端 (5001)",
+    "student_portal": "学生端学习平台 (5010)",
+    "analytics_dashboard": "学习分析仪表盘 (18090)",
 }
 
 # 端口服务默认配置（可选择性启用/自定义端口号）
@@ -93,6 +96,8 @@ PORT_SETTINGS_DEFAULTS = {
     "models": {"enabled": True, "port": 18082, "desc": "模型管理服务", "script": "framework/api/server.py"},
     "goai_web": {"enabled": True, "port": 5000, "desc": "GOAI Web 学习平台（学生端）", "script": "goai_web.py"},
     "teacher_portal": {"enabled": True, "port": 5001, "desc": "教师端 Teacher Portal", "script": "teacher_portal.py"},
+    "student_portal": {"enabled": True, "port": 5010, "desc": "学生端学习平台（原型+真实后端）", "script": "student_portal.py"},
+    "analytics_dashboard": {"enabled": True, "port": 18090, "desc": "学习分析仪表盘", "script": "analytics_dashboard.py"},
 }
 
 

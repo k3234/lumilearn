@@ -186,6 +186,24 @@ textarea.input-lg { min-height: 96px; resize: vertical; }
 
 /* 通用小工具 */
 .row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* 登录门（真实后端模式） */
+.login-gate {
+  position: fixed; inset: 0; z-index: 50;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(12, 16, 21, .82); backdrop-filter: blur(6px);
+  padding: 20px;
+}
+.login-gate.show { display: flex; }
+.login-box {
+  width: 100%; max-width: 360px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); box-shadow: var(--sh-lg);
+  padding: 28px; display: flex; flex-direction: column; gap: 14px;
+}
+.login-box h3 { font-size: var(--fs-20); display: flex; align-items: center; gap: 8px; }
+.login-box h3 svg { width: 18px; height: 18px; color: var(--accent); }
+.login-box .sub { font-size: var(--fs-12); color: var(--text-faint); margin-top: -6px; }
 @media (max-width: 1024px) {
   .start-grid, .learn-grid, .report-grid { grid-template-columns: 1fr; }
   .agent-panel { position: static; }

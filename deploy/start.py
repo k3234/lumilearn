@@ -52,6 +52,8 @@ except ImportError:
 DEFAULT_PORTS = {
     "goai_web": 5000,
     "teacher_portal": 5001,
+    "student_portal": 5010,
+    "analytics_dashboard": 18090,
     "terminal": 18080,
     "api": 18081,
     "models": 18082,
@@ -156,6 +158,32 @@ def build_services(config):
             "env": {"TEACHER_PORT": str(port)},
             "url": "http://localhost:{}".format(port),
             "desc": "班级 / 任务 / 学情管理",
+        })
+
+    # --- 学生端学习平台（student_portal.py 支持 STUDENT_PORT 环境变量覆盖端口）---
+    enabled, port = _enabled_port(settings, "student_portal")
+    if enabled:
+        services.append({
+            "key": "student_portal",
+            "name": "学生端学习平台",
+            "cmd": [sys.executable, "student_portal.py"],
+            "ports": [port],
+            "env": {"STUDENT_PORT": str(port)},
+            "url": "http://localhost:{}".format(port),
+            "desc": "费曼学习 + 真实后端 + 对话持久化",
+        })
+
+    # --- 学习分析仪表盘（analytics_dashboard.py 支持 ANALYTICS_PORT 环境变量覆盖端口）---
+    enabled, port = _enabled_port(settings, "analytics_dashboard")
+    if enabled:
+        services.append({
+            "key": "analytics_dashboard",
+            "name": "学习分析仪表盘",
+            "cmd": [sys.executable, "analytics_dashboard.py"],
+            "ports": [port],
+            "env": {"ANALYTICS_PORT": str(port)},
+            "url": "http://localhost:{}".format(port),
+            "desc": "掌握度趋势 / 学科对比 / 薄弱点",
         })
 
     # --- 框架三端口（框架自己从 framework.yaml 读取端口，--multi-port 一次启动）---
