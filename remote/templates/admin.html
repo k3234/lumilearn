@@ -219,6 +219,8 @@ async function loadOverview() {
 // ---------- 用户管理 ----------
 async function loadUsers() {
   const data = await api('/users');
+  let allClasses = [];
+  try { allClasses = (await api('/classes')).classes || []; } catch (e) {}
   document.getElementById('content').innerHTML = `
     <div class="form-row">
       <input id="newUserName" placeholder="姓名">
@@ -230,18 +232,38 @@ async function loadUsers() {
       </select>
       <button class="act" onclick="createUser()">添加用户</button>
     </div>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在 GOAI Web (端口5000) 登录学习。</div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在 GOAI Web (端口5000)、教师端(端口5001)、学生端(端口5010) 登录；管理员可在此为账号绑定班级。</div>
     <table>
-      <tr><th>ID</th><th>姓名</th><th>用户名</th><th>角色</th><th>密码</th><th>创建时间</th><th>操作</th></tr>
+      <tr><th>ID</th><th>姓名</th><th>用户名</th><th>角色</th><th>班级</th><th>密码</th><th>创建时间</th><th>操作</th></tr>
       ${data.users.map(u => `
         <tr>
           <td>${u.id}</td><td>${u.name}</td><td>${u.username || u.name}</td><td>${u.role}</td>
+          <td>${(u.classes || []).map(c => `<span class="badge">${c.school_name} / ${c.grade_name} / ${c.class_name}
+                <a href="javascript:void(0)" onclick="unbindClass(${u.id}, ${c.id}, ${u.name.replace(/'/g, "\\'")})" style="color:#f85149;">✕</a></span>`).join(' ') || '-'}
+              ${u.role === 'student' && allClasses.length ? `<select id="cls_${u.id}" style="width:auto;max-width:140px;font-size:12px;padding:2px 4px;">
+                <option value="">+绑定班级</option>${allClasses.map(c => `<option value="${c.id}">${c.school_name} / ${c.grade_name} / ${c.name}</option>`).join('')}</select>
+              <button class="act" style="padding:2px 8px;font-size:12px;" onclick="bindClass(${u.id}, '${u.name.replace(/'/g, "\\'")}')">绑定</button>` : ''}</td>
           <td>${u.has_password ? '<span class="badge ok">已设置</span>' : '<span class="badge off">未设置</span>'}</td>
           <td>${u.created_at || '-'}</td>
-          <td><button class="act" onclick="resetUserPassword(${u.id}, '${u.name}')">重置密码</button>
+          <td><button class="act" onclick="resetUserPassword(${u.id}, '${u.name.replace(/'/g, "\\'")}')">重置密码</button>
               <button class="act danger" onclick="deleteUser(${u.id})">删除</button></td>
         </tr>`).join('')}
     </table>`;
+}
+
+async function bindClass(userId, name) {
+  const sel = document.getElementById('cls_' + userId);
+  if (!sel || !sel.value) return toast('请先选择班级');
+  await api(`/users/${userId}/classes`, { method: 'POST', body: JSON.stringify({ class_id: parseInt(sel.value, 10) }) });
+  toast(`已将 ${name} 绑定到班级`);
+  loadUsers();
+}
+
+async function unbindClass(userId, classId, name) {
+  if (!confirm(`确认解除 ${name} 与班级 #${classId} 的绑定？`)) return;
+  await api(`/users/${userId}/classes/${classId}`, { method: 'DELETE' });
+  toast('已解除绑定');
+  loadUsers();
 }
 
 async function createUser() {

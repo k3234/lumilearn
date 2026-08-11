@@ -31,8 +31,17 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
         <span>学习历史</span>
       </a>
+      <a class="nav-item" data-nav="profile" href="profile.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span>我的档案</span>
+      </a>
     </nav>
     <div class="nav-foot">
+      <div class="user-box" id="userBox" style="display:none">
+        <span class="dot"></span>
+        <span class="uname" id="userName">—</span>
+        <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">退出</button>
+      </div>
       <span class="dev-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
         CPU 本地推理 · 无云依赖
@@ -96,6 +105,7 @@
 <script src="nav.js"></script>
 <script src="mock.js"></script>
 <script src="api.js"></script>
+<script src="auth.js"></script>
 <script>
 (function () {
   var toastEl = document.getElementById("toast");
@@ -260,6 +270,20 @@
     var res = await api.runStep({ sessionId: session.id, step: n });
     setAgent("knowledge", "done");
     setAgent("orchestrator", "done");
+
+    /* 防挂护栏：后端不可用/出错时不阻塞流程 */
+    if (!res || !res.data) {
+      log('步骤 ' + n + ' 执行失败（模型暂不可用），已跳过', "ll-done");
+      setAgent("feynman", "done", n);
+      setStepState(n, "done");
+      if (n === 5) {
+        document.getElementById("learnActions").style.display = "flex";
+      } else {
+        await new Promise(function (r) { setTimeout(r, 420); });
+      }
+      running = false;
+      return;
+    }
 
     /* 费曼教学生成 */
     setAgent("feynman", "running");

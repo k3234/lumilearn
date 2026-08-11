@@ -39,7 +39,7 @@ from framework.models.registry import get_registry
 from framework.models.ollama_provider import get_ollama_provider
 from framework.services.chat_service import get_chat_service
 
-from framework.api.routes import chat_bp, speech_bp, ocr_bp, review_bp, resources_bp, models_bp, feynman_bp, payment_bp, voicebox_bp, animation_bp, providers_bp, slides_bp, mindmap_bp, security_bp, admin_bp
+from framework.api.routes import chat_bp, speech_bp, ocr_bp, review_bp, resources_bp, models_bp, feynman_bp, payment_bp, voicebox_bp, animation_bp, providers_bp, slides_bp, mindmap_bp, security_bp, admin_bp, auth_bp
 
 
 def create_app(debug: bool = None, template_dir: str = None, homepage: str = "terminal") -> Flask:
@@ -121,6 +121,7 @@ def create_app(debug: bool = None, template_dir: str = None, homepage: str = "te
     app.register_blueprint(payment_bp)
     app.register_blueprint(security_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(auth_bp)
 
     # 挂载 output 静态目录（动画生成视频）
     @app.route('/output/<path:filename>')

@@ -81,6 +81,14 @@ def _normalize_topic(topic: str) -> str:
     return t.strip() or (topic or "").strip()
 
 
+def _sid(value) -> int:
+    """容错解析 sessionId：接受数字或 's-3' 前缀格式（前端可能传 's-3' 字符串）"""
+    try:
+        return int(str(value).replace("s-", ""))
+    except (TypeError, ValueError):
+        return 0
+
+
 # ============================================================
 # 用户认证（users 表）
 # ============================================================
@@ -203,7 +211,7 @@ def api_feynman_test():
     if not user:
         return jsonify({"code": 401, "message": "未登录"}), 401
     data = request.get_json() or {}
-    sid = int(data.get("sessionId") or 0)
+    sid = _sid(data.get("sessionId"))
     text = (data.get("text") or "").strip()
 
     # 启发式评分（真实环境可替换为输出检测 Agent 五维评分）
@@ -236,7 +244,7 @@ def api_learn_report():
     if not user:
         return jsonify({"code": 401, "message": "未登录"}), 401
     data = request.get_json() or {}
-    sid = int(data.get("sessionId") or 0)
+    sid = _sid(data.get("sessionId"))
     feynman_score = int(data.get("feynmanScore") or 80)
 
     sess = conv_store.get_session(sid) if sid else None
@@ -317,6 +325,50 @@ def api_learn_report_detail(rid):
 @app.route("/api/status")
 def api_status():
     return jsonify(agent.get_status())
+
+
+# ============================================================
+# 我的档案（学习档案：报告 / 趋势 / 薄弱点 / 对话）
+# ============================================================
+@app.route("/api/profile")
+def api_profile():
+    user = _require_user()
+    if not user:
+        return jsonify({"code": 401, "message": "未登录"}), 401
+    reports = db.get_learning_reports(user_id=user["id"], limit=50)
+
+    trend = []
+    weak_agg = {}
+    for r in reports:
+        rep = r.get("report") or {}
+        date = (r.get("created_at") or "")[:10] or "最近"
+        trend.append({"date": date, "score": int(r.get("score") or 0)})
+        for wp in rep.get("weakPoints") or []:
+            t = str(wp.get("text", "")).strip()
+            if not t:
+                continue
+            item = weak_agg.setdefault(t, {"severity": wp.get("severity", "低"), "count": 0})
+            item["count"] += 1
+
+    avg = round(sum((r.get("score") or 0) for r in reports) / len(reports)) if reports else 0
+    weak_points = sorted(weak_agg.items(), key=lambda kv: -kv[1]["count"])[:8]
+    conversations = conv_store.list_sessions(user_id=user["id"], limit=20)
+    recent = reports[-5:][::-1]
+
+    return jsonify({"code": 0, "data": {
+        "user": {"id": user["id"], "name": user["name"], "role": user["role"]},
+        "total_reports": len(reports),
+        "avg_mastery": avg,
+        "trend": trend[-14:],
+        "weak_points": [{"text": k, "severity": v["severity"], "count": v["count"]}
+                        for k, v in weak_points],
+        "conversations": [{"id": s["id"], "title": s["title"],
+                           "date": s.get("updated_at") or "", "msg_count": s.get("msg_count") or 0}
+                          for s in conversations],
+        "recent_reports": [{"id": r["id"], "topic": r["topic"],
+                            "score": int(r.get("score") or 0), "date": r.get("created_at") or ""}
+                           for r in recent],
+    }})
 
 
 # ============================================================

@@ -230,4 +230,29 @@ const api = {
     if (subject && subject !== "全部") list = list.filter((s) => s.subject === subject);
     return { code: 0, data: list, total: list.length };
   },
+
+  /**
+   * GET /api/profile — 我的学习档案（真实模式）
+   */
+  async profile() {
+    if (REAL) return fetchJson("/api/profile", "GET");
+    await delay(300);
+    const list = DB.sessions.slice();
+    const avg = Math.round(list.reduce(function (s, x) { return s + x.mastery; }, 0) / (list.length || 1));
+    const weak = {};
+    list.forEach(function (s) {
+      (s.weakPoints || []).forEach(function (w) { weak[w.text] = (weak[w.text] || 0) + 1; });
+    });
+    return {
+      code: 0,
+      data: {
+        user: { id: 0, name: "演示学生", role: "student" },
+        total_reports: list.length, avg_mastery: avg,
+        trend: list.slice(0, 10).reverse().map(function (s) { return { date: s.date.slice(5, 10), score: s.mastery }; }),
+        weak_points: Object.keys(weak).slice(0, 8).map(function (k) { return { text: k, severity: "中", count: weak[k] }; }),
+        conversations: [],
+        recent_reports: list.slice(0, 5).map(function (s) { return { id: s.id, topic: s.topic, score: s.mastery, date: s.date }; }),
+      },
+    };
+  },
 };

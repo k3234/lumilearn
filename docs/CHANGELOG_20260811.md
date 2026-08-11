@@ -220,3 +220,58 @@
 ---
 
 **未提交事项**：两个新端口已部署至天虹（student_portal 5010 / analytics_dashboard 18090 运行中）；本文档与代码待提交推送。
+
+---
+
+## 十、账号体系贯通：全端口登录 + 学生档案 + 管理员班级管理
+
+**目标**：学生端学习过程卡住修复；所有端口均可使用自己的账号登录；管理员管理账号与班级绑定；各账号查看自己的学习档案；教师查看本班级学生档案。
+
+### 1. 学习过程卡住修复（student_portal.py + learn.html）
+
+- **根因**：前端 `/api/learn/start` 返回的会话 id 为 `"s-3"` 字符串，后端 `/api/learn/step` / `feynman-test` 直接 `int("s-3")` 抛 500，前端 `await` 永不 resolve 导致页面卡死。
+- **修复**：
+  - 后端新增 `_sid()` 容错解析（接受数字或 `s-` 前缀），3 处调用点统一替换。
+  - 前端 learn.html 新增**防挂护栏**：步骤执行失败（后端不可用/报错）时不阻塞流程，标记跳过并继续，第 5 步后正常显示「生成学习报告」。
+
+### 2. 退出登录 / 切换账号（学生端全部页面）
+
+- 新增 `prototypes/student-learning-platform/auth.js`（真实模式专用）：导航底部用户盒显示当前账号（姓名+角色），提供**退出登录**按钮（logout → 跳登录门）。
+- 5 个页面（index/learn/report/history/profile）统一加入「我的档案」导航项 + 用户盒 + auth.js。
+
+### 3. 我的档案（学生自绑档案）
+
+- 后端新增 `GET /api/profile`（student_portal.py）：汇总 learning_reports → 掌握度趋势 / 薄弱点聚合 / 平均掌握度 / 最近学习 / 最近对话（chat_history）。
+- 前端新增 `profile.html`：学生统计卡 + 手绘 SVG 掌握度趋势折线 + 薄弱点排行 + 最近学习（点击跳报告页）+ 最近对话；api.js 新增 `profile()`（真实 + mock 双模式）。
+
+### 4. 全端口账号登录（框架 18080/18081/18082）
+
+- 新增 `framework/api/routes/auth.py`：users 表 token 登录 `POST /api/auth/login` / `GET /api/auth/me` / `POST /api/auth/logout`（内存 token，12h 有效，`X-Auth-Token` 或 `Authorization: Bearer`），注册到 server.py 与 `__init__.py`。
+- 18080 终端 lumiterm.html 新增登录门（头部登录按钮 + 弹窗，登录后显示账号徽章，点击可退出/切换）。
+- 至此**全部 7 个端口均支持账号登录**：5000 GOAI Web、5001 教师端、5010 学生端（users 表）、18080 终端 / 18081 REST API / 18082 模型管理（新增 auth 路由）。
+
+### 5. 管理员管理账号与班级绑定（Admin 面板）
+
+- 后端（admin.py）：`GET /api/admin/users` 每个用户附加 `classes` 字段；新增 4 个端点：
+  - `GET /api/admin/classes` 全部班级（含学校/年级/班主任/学生数）
+  - `GET /api/admin/users/<id>/classes` 查看账号已绑定班级
+  - `POST /api/admin/users/<id>/classes` 绑定班级（仅 student 角色，去重）
+  - `DELETE /api/admin/users/<id>/classes/<class_id>` 解绑
+- 前端（admin.html）：用户管理面板新增「班级」列——显示已绑定班级徽标（✕ 解绑）+ 学生行内下拉选择班级并「绑定」；创建账号提示语补充 5001/5010 登录入口。
+
+### 6. 教师查看本班级学生档案（已具备，验证确认）
+
+- teacher_portal（5001）已有：`/api/students`（仅自己班级学生 + 候选池）、`/api/students/<id>/reports`、`/api/students/<id>/progress`、`/api/students/<id>/stats`，权限隔离（教师只能看自己为班主任的班级学生）。本次未改动，验证正常。
+
+### 7. 验证结果
+
+- 本地冒烟 20 项全通过：`_sid()` 容错（int / "s-3" / None / 非法）、auth 登录/登出/token 失效、admin 用户 classes 字段 + 班级列表 + 绑定/查询/解绑、student_profile 401/登录/字段。
+- 天虹真实服务：
+  - 学习过程：`/api/learn/step` 传 `s-` 前缀 id 不再 500（防挂护栏生效）。
+  - 18080/18081/18082 三端口 `POST /api/auth/login` 均返回 token ✅；18082 `/api/admin/classes` 返回 4 个班级，绑定/解绑学生成功 ✅。
+  - 5010 学生端页面与 profile.html/auth.js/api.js 均 200，登录接口正常 ✅。
+- **部署坑**：远程模板目录为 `tianhong/templates`（非 `remote/templates`），首次上传 admin.html/lumiterm.html 需指向该路径；部署脚本首次遗漏 `framework/api/routes/admin.py`，导致 `/api/admin/classes` 404，补传后重启生效。
+
+---
+
+**未提交事项**：本节约改动（student_portal/auth 路由/Admin 班级绑定/终端登录门/学生档案/文档）待提交推送。

@@ -204,6 +204,29 @@ textarea.input-lg { min-height: 96px; resize: vertical; }
 .login-box h3 { font-size: var(--fs-20); display: flex; align-items: center; gap: 8px; }
 .login-box h3 svg { width: 18px; height: 18px; color: var(--accent); }
 .login-box .sub { font-size: var(--fs-12); color: var(--text-faint); margin-top: -6px; }
+
+/* 用户盒（真实后端模式导航底部：当前账号 + 退出） */
+.user-box {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-radius: var(--r-md);
+  background: var(--surface); border: 1px solid var(--border);
+}
+.user-box .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 0 3px var(--mint-dim); flex: none; }
+.user-box .uname { flex: 1; min-width: 0; font-size: var(--fs-12); color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-box .btn { padding: 3px 9px; font-size: var(--fs-11); }
+
+/* 我的档案页 */
+.profile-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.pf-card { padding: 22px; }
+.pf-trend svg { max-width: 100%; height: auto; }
+.pf-weak { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border-soft); font-size: var(--fs-13); color: var(--text-sub); }
+.pf-weak:last-child { border-bottom: none; }
+.pf-weak .cnt { margin-left: auto; font-family: var(--font-mono); color: var(--accent); }
+.pf-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: var(--fs-13); cursor: pointer; }
+.pf-row:last-child { border-bottom: none; }
+.pf-row .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-row:hover .t { color: var(--accent-hover); }
+.pf-row .meta { font-size: var(--fs-12); color: var(--text-faint); }
 @media (max-width: 1024px) {
   .start-grid, .learn-grid, .report-grid { grid-template-columns: 1fr; }
   .agent-panel { position: static; }

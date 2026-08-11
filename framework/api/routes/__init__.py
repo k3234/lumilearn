@@ -23,6 +23,7 @@ from .slides import slides_bp  # 幻灯片生成
 from .mindmap import mindmap_bp  # 思维导图生成
 from .security import security_bp  # 安全网关
 from .admin import admin_bp  # 管理员管理
+from .auth import auth_bp  # 账号登录（users 表）
 
 __all__ = [
     "chat_bp",
@@ -40,4 +41,5 @@ __all__ = [
     "mindmap_bp",
     "security_bp",
     "admin_bp",
+    "auth_bp",
 ]

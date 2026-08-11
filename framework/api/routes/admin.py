@@ -124,6 +124,10 @@ def admin_list_users():
     for u in users:
         u["has_password"] = bool(u.get("password_hash", ""))
         u.pop("password_hash", None)
+        try:
+            u["classes"] = db.get_student_classes(u["id"])
+        except Exception:
+            u["classes"] = []
     return jsonify({"success": True, "users": users})
 
 
@@ -171,6 +175,49 @@ def admin_delete_user(user_id):
         return jsonify({"error": "用户不存在"}), 404
     db.add_system_log("info", "admin", f"管理员删除用户 id={user_id}")
     return jsonify({"success": True, "message": "用户已删除"})
+
+
+# ---------- 账号与班级绑定管理 ----------
+@admin_bp.route("/api/admin/classes", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_all_classes():
+    """全部班级（含学校/年级/班主任/学生数），供管理员绑定账号"""
+    return jsonify({"success": True, "classes": db.get_classes()})
+
+
+@admin_bp.route("/api/admin/users/<int:user_id>/classes", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_user_classes(user_id):
+    """查看某账号已绑定的班级"""
+    return jsonify({"success": True, "classes": db.get_student_classes(user_id)})
+
+
+@admin_bp.route("/api/admin/users/<int:user_id>/classes", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_bind_user_class(user_id):
+    """管理员把账号绑定到班级"""
+    data = request.get_json(force=True) or {}
+    try:
+        class_id = int(data.get("class_id") or 0)
+    except (TypeError, ValueError):
+        class_id = 0
+    if class_id <= 0:
+        return jsonify({"error": "缺少 class_id"}), 400
+    user = db.get_user(user_id)
+    if not user:
+        return jsonify({"error": "用户不存在"}), 404
+    result = db.add_student_to_class(class_id, user_id)
+    db.add_system_log("info", "admin", f"管理员将用户 #{user_id}({user['name']}) 绑定到班级 #{class_id}")
+    return jsonify({"success": True, "message": f"已绑定 {user['name']}", "result": result})
+
+
+@admin_bp.route("/api/admin/users/<int:user_id>/classes/<int:class_id>", methods=["DELETE", "OPTIONS"])
+@require_admin
+def admin_unbind_user_class(user_id, class_id):
+    """管理员解除账号与班级的绑定"""
+    ok = db.remove_student_from_class(class_id, user_id)
+    db.add_system_log("info", "admin", f"管理员解除用户 #{user_id} 与班级 #{class_id} 绑定")
+    return jsonify({"success": ok, "message": "已解除绑定" if ok else "解除失败（可能未绑定）"})
 
 
 @admin_bp.route("/api/admin/learning-reports", methods=["GET", "OPTIONS"])

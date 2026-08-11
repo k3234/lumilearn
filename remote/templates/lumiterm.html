@@ -1123,9 +1123,26 @@ body.keyboard-open .chat {
 <div class="feynman-switch" id="feynmanSwitch"></div>
 <span>费曼引导</span>
 </div>
+<span id="termUserBadge" style="display:none;font-size:12px;color:#8aa0b8;border:1px solid #2a2a2a;border-radius:6px;padding:4px 10px;cursor:pointer;" onclick="openLogin()" title="当前账号"></span>
+<button id="termLoginBtn" onclick="openLogin()" style="background:none;border:1px solid #2a2a2a;color:#a6adc8;cursor:pointer;font-size:13px;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">登录</button>
 <a href="/admin" target="_blank" title="管理面板（模型配置、用户管理等）" style="background:none;border:none;color:#a6adc8;cursor:pointer;font-size:18px;padding:4px 8px;text-decoration:none;display:inline-flex;align-items:center;">⚙</a>
 <div class="status-dot" id="statusDot"></div>
 <span class="latency" id="latencyDisplay">--</span>
+</div>
+</div>
+
+<!-- 账号登录弹窗 -->
+<div class="login-mask" id="loginMask" style="position:fixed;inset:0;background:rgba(8,8,13,.72);z-index:999;display:none;align-items:center;justify-content:center;">
+<div style="background:#141413;border:1px solid #2a2a2a;border-radius:12px;padding:26px 28px;width:min(320px,88vw);">
+<h3 style="margin-bottom:6px;color:#faf9f5;font-size:17px;">账号登录</h3>
+<p style="font-size:12px;color:#6b6b6b;margin-bottom:16px;">使用管理员分配的账号（students/users 表）登录</p>
+<input id="loginUser" placeholder="用户名" style="width:100%;background:#0c0c11;border:1px solid #2a2a2a;border-radius:8px;color:#faf9f5;padding:10px 12px;margin-bottom:10px;font-size:14px;">
+<input id="loginPass" type="password" placeholder="密码" style="width:100%;background:#0c0c11;border:1px solid #2a2a2a;border-radius:8px;color:#faf9f5;padding:10px 12px;margin-bottom:6px;font-size:14px;" onkeydown="if(event.key==='Enter')doLogin()">
+<div id="loginErr" style="font-size:12px;color:#f85149;min-height:18px;margin-bottom:6px;"></div>
+<div style="display:flex;gap:10px;justify-content:flex-end;">
+<button onclick="closeLogin()" style="background:none;border:1px solid #2a2a2a;color:#b0aea5;padding:8px 16px;border-radius:8px;cursor:pointer;">取消</button>
+<button onclick="doLogin()" style="background:#d97757;border:none;color:#fff;padding:8px 18px;border-radius:8px;cursor:pointer;">登录</button>
+</div>
 </div>
 </div>
 
@@ -2804,6 +2821,70 @@ window.addEventListener('orientationchange', function() {
   setVh();
   window.addEventListener('resize', setVh);
   window.addEventListener('orientationchange', function() { setTimeout(setVh, 200); });
+})();
+
+// ── 账号登录（users 表） ──
+(function termAuth() {
+  var TOKEN_KEY = 'lumilearn_term_token';
+  var mask = document.getElementById('loginMask');
+  var badge = document.getElementById('termUserBadge');
+  var btn = document.getElementById('termLoginBtn');
+  var err = document.getElementById('loginErr');
+
+  window.openLogin = function() {
+    if (err) err.textContent = '';
+    if (mask) mask.style.display = 'flex';
+  };
+  window.closeLogin = function() {
+    if (mask) mask.style.display = 'none';
+  };
+  mask && mask.addEventListener('click', function(e) {
+    if (e.target === mask) closeLogin();
+  });
+
+  window.doLogin = function() {
+    var u = (document.getElementById('loginUser') || {}).value || '';
+    var p = (document.getElementById('loginPass') || {}).value || '';
+    if (!u || !p) { if (err) err.textContent = '请输入用户名和密码'; return; }
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    }).then(function(r) { return r.json(); }).then(function(j) {
+      if (!j.success) { if (err) err.textContent = j.error || '登录失败'; return; }
+      localStorage.setItem(TOKEN_KEY, j.token);
+      renderUser(j.user);
+      closeLogin();
+    }).catch(function() { if (err) err.textContent = '网络错误'; });
+  };
+
+  window.logoutTerm = function() {
+    var t = localStorage.getItem(TOKEN_KEY);
+    if (t) fetch('/api/auth/logout', { method: 'POST', headers: { 'X-Auth-Token': t } }).catch(function() {});
+    localStorage.removeItem(TOKEN_KEY);
+    if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+    if (btn) btn.style.display = 'inline-flex';
+  };
+
+  function renderUser(user) {
+    if (!badge || !btn) return;
+    badge.textContent = '👤 ' + user.name + (user.role && user.role !== 'user' ? '（' + user.role + '）' : '');
+    badge.title = '账号：' + (user.username || user.name) + '（点击切换账号）';
+    badge.style.display = 'inline-block';
+    btn.style.display = 'none';
+    badge.onclick = function() {
+      if (confirm('当前账号：' + user.name + '\n点击「确定」退出登录，\n「取消」保持登录。')) logoutTerm();
+    };
+  }
+
+  // 恢复登录态
+  var t = localStorage.getItem(TOKEN_KEY);
+  if (t) {
+    fetch('/api/auth/me', { headers: { 'X-Auth-Token': t } })
+      .then(function(r) { return r.json(); })
+      .then(function(j) { if (j.success) renderUser(j.user); else localStorage.removeItem(TOKEN_KEY); })
+      .catch(function() {});
+  }
 })();
 </script>
 <!-- PWA: Service Worker 注册 -->
