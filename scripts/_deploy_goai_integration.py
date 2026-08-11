@@ -14,7 +14,7 @@ import sys
 import time
 import paramiko
 
-REMOTE_BASE = "~/lumilearn"
+REMOTE_BASE = "/home/kai/lumilearn"  # paramiko SFTP 不展开 ~，必须绝对路径
 host = os.environ.get("REMOTE_HOST") or os.environ.get("TIANHONG_HOST", "")
 user = os.environ.get("REMOTE_USER") or os.environ.get("TIANHONG_USER", "")
 password = os.environ.get("REMOTE_PASSWORD") or os.environ.get("TIANHONG_PASSWORD", "")

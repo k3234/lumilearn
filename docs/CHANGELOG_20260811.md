@@ -140,3 +140,36 @@
 ---
 
 **未提交事项**：Day 1 全部完成并已提交（见 git 记录）；ruff 未在本地安装，CI 将执行 `ruff check .`。
+
+---
+
+## 八、GOAI Web 接入天虹服务（chat_history + 学生端原型）
+
+**目标**：将 Day 1 的 chat_history 多轮对话持久化能力 + 学生端原型完整接入天虹（内网服务器）运行的 GOAI Web 服务（5000 端口）。
+
+### 1. goai_web.py 新增（本地 12 项冒烟测试通过）
+
+| 接入点 | 说明 |
+|---|---|
+| `/api/learn` | 学习报告生成后自动创建会话：用户学习目标 + 报告摘要（掌握度/薄弱点）写入 chat_history |
+| `/api/chat` | 登录用户的多轮消息自动持久化到"对话式问答"会话（get-or-create，保持上下文连贯） |
+| `GET /api/conversations` | 当前用户的会话列表（含消息数与末条预览） |
+| `GET /api/conversations/<id>` | 某会话完整多轮消息（校验归属，越权 404） |
+| `/proto/` + `/proto/<file>` | 内嵌访问学生端静态原型（send_from_directory，防路径穿越） |
+
+### 2. 部署到天虹（scripts/_deploy_goai_integration.py）
+
+- 上传 5 个后端文件（goai_web/goai_agent/langgraph_engine/lumilearn_config/conversation_store）+ 9 个原型文件到 `/home/kai/lumilearn`。
+- 重启 `systemctl --user restart lumilearn-goai`（RC=0），无需重启 framework（18080 未改动）。
+- **坑**：paramiko SFTP 不展开 `~`，远程路径必须用绝对路径 `/home/kai/lumilearn`。
+
+### 3. 远程验证结果（真实服务）
+
+- `/api/status`：`{"model":"lumilearn-v2","ollama_available":true}` ✅
+- 登录（123/test123）→ 两次 `/api/chat` → `/api/conversations` 出现"对话式问答"会话（msg_count=4，消息有序）✅
+- `/api/learn` 真实推理：「函数的单调性」报告（掌握度 80）→ chat_history 自动落库（学习目标 + 报告摘要，msg_count=2）✅
+- `/proto/` HTTP 200，原型可直接在手机/浏览器演示 ✅
+
+---
+
+**未提交事项**：goai_web 接入已提交（9ad4c76）；部署脚本路径修正与本文档待提交；GitHub 推送因网络间歇性失败待重试。
