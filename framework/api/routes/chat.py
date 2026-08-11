@@ -10,6 +10,7 @@
 
 import json
 import logging
+import time
 import requests
 from flask import Blueprint, request, jsonify, Response, stream_with_context
 
@@ -268,9 +269,36 @@ def chat():
     chat_service = get_chat_service()
 
     if not stream:
+        t0 = time.time()
         result = chat_service.chat_sync(messages, mode=mode, model=model,
                                         temperature=temperature,
                                         max_tokens=max_tokens)
+        # 推理过程写库（终端/课堂聊天，供管理员查看用户真实使用记录；失败不影响主流程）
+        try:
+            db.init()
+            topic = ""
+            for m in messages:
+                if m.get("role") == "user":
+                    topic = str(m.get("content", ""))[:100]
+                    break
+            db.add_reasoning_log(
+                user_id=0,  # 终端/课堂匿名会话；关联用户由上层会话系统负责
+                session_id=f"chat:{role or 'anonymous'}:{topic[:40]}",
+                mode=mode if mode in ("feynman", "chat", "goai") else "chat",
+                topic=topic,
+                step_order=0,
+                step_name="",
+                model_used=model or "",
+                input_context="\n".join(
+                    f"{m.get('role')}: {str(m.get('content', ''))[:200]}" for m in messages
+                )[:2000],
+                output=(json.dumps(result, ensure_ascii=False)
+                        if isinstance(result, dict) else str(result))[:4000],
+                latency_ms=int((time.time() - t0) * 1000),
+                status="success",
+            )
+        except Exception as _e:
+            logger.warning(f"对话推理日志写库失败: {_e}")
         return jsonify(result)
 
     def generate():

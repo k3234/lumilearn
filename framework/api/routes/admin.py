@@ -476,6 +476,68 @@ def admin_logs():
     return jsonify({"success": True, "logs": logs})
 
 
+@admin_bp.route("/api/admin/activity-logs", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_activity_logs():
+    """统一活动日志：系统操作 + 学生推理 + 学习报告，按时间倒序合并。
+
+    让管理员在「系统日志」页也能直接看到学生实际使用产生的数据
+    （课堂聊天 / 五步学习 / GOAI 学习报告），不再只有管理操作。
+    """
+    source = (request.args.get("source") or "all").strip().lower()
+    limit = min(int(request.args.get("limit", 200)), 500)
+
+    entries = []
+    if source in ("all", "system"):
+        for l in db.get_system_logs(limit=limit):
+            entries.append({
+                "source": "system",
+                "id": l.get("id"),
+                "level": l.get("level", "info"),
+                "module": l.get("module", ""),
+                "message": l.get("message", ""),
+                "detail": (l.get("detail") or "")[:500],
+                "created_at": l.get("created_at", ""),
+                "user_name": None, "topic": None, "model_used": None,
+            })
+    if source in ("all", "reasoning"):
+        for r in db.get_reasoning_logs(limit=limit):
+            entries.append({
+                "source": "reasoning",
+                "id": r.get("id"),
+                "level": "error" if r.get("status") == "error" else "info",
+                "module": "推理-" + (r.get("mode") or ""),
+                "message": "{} · {}".format(
+                    r.get("student_name") or ("#" + str(r.get("user_id") or 0)),
+                    r.get("topic") or "(无主题)"
+                ) + ((" · " + r.get("step_name")) if r.get("step_name") else ""),
+                "detail": (r.get("output") or "")[:500],
+                "created_at": r.get("created_at", ""),
+                "user_name": r.get("student_name"),
+                "topic": r.get("topic"),
+                "model_used": r.get("model_used"),
+            })
+    if source in ("all", "report"):
+        for rep in db.get_learning_reports(limit=limit):
+            score = rep.get("score")
+            entries.append({
+                "source": "report",
+                "id": rep.get("id"),
+                "level": "info",
+                "module": "学习报告",
+                "message": "#{} · {}".format(rep.get("user_id") or 0, rep.get("topic") or "(无主题)"),
+                "detail": "",
+                "created_at": rep.get("created_at", ""),
+                "user_name": None,
+                "topic": rep.get("topic"),
+                "model_used": None,
+                "score": score,
+            })
+
+    entries.sort(key=lambda x: x["created_at"] or "", reverse=True)
+    return jsonify({"success": True, "logs": entries[:limit], "total": len(entries)})
+
+
 @admin_bp.route("/api/admin/logs/clear", methods=["POST", "OPTIONS"])
 @require_admin
 def admin_clear_logs():

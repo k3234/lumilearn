@@ -25,6 +25,14 @@ from flask import Flask, jsonify, redirect, send_from_directory
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
+# 静态资源目录（本地化 CDN 库：KaTeX/Chart.js/highlight.js/reveal.js）
+# 本地：项目根 static/；远程：tianhong/static/（与模板双目录保持一致）
+STATIC_DIR = BASE_DIR / "static"
+if not STATIC_DIR.exists():
+    STATIC_DIR = BASE_DIR / "tianhong" / "static"
+if not STATIC_DIR.exists():
+    STATIC_DIR = BASE_DIR / "remote" / "static"
+
 
 def _template_path(name: str):
     """兼容两种部署目录：本地 remote/templates 与远程 tianhong/templates"""
@@ -64,7 +72,8 @@ def create_app(debug: bool = None, template_dir: str = None, homepage: str = "te
         if not os.path.isdir(template_dir):
             template_dir = str(BASE_DIR / "tianhong" / "templates")
 
-    app = Flask(__name__, template_folder=template_dir)
+    app = Flask(__name__, template_folder=template_dir,
+                static_folder=str(STATIC_DIR), static_url_path="/static")
     app.debug = debug
 
     @app.before_request

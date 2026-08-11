@@ -66,6 +66,35 @@ def animation_status(animation_id):
     })
 
 
+@animation_bp.route("/api/animation/generate/async", methods=["POST", "OPTIONS"])
+def animation_generate_async():
+    """
+    classroom 五步学习动画（兼容端点）
+
+    本环境未部署 Manim 后端，立即返回降级任务；
+    前端轮询 /api/animation/progress/<task_id> 会收到 failed，
+    随即切换为画布占位动画，保证互动教学不中断。
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+    data = request.get_json(force=True) or {}
+    task_id = f"canvas-{abs(hash(str(data.get('topic', '')))) & 0xFFFFFF:06x}"
+    return jsonify({"status": "ok", "task_id": task_id, "degraded": True})
+
+
+@animation_bp.route("/api/animation/progress/<task_id>", methods=["GET", "OPTIONS"])
+def animation_progress(task_id):
+    """动画任务进度（Manim 未部署：返回 failed，前端降级为画布动画）"""
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+    return jsonify({
+        "task_status": "failed",
+        "task_id": task_id,
+        "result": None,
+        "message": "动画服务未部署（Manim），已降级为画布演示",
+    })
+
+
 @animation_bp.route("/api/animation/list", methods=["GET", "OPTIONS"])
 def list_animations():
     """

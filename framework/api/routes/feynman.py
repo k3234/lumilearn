@@ -13,6 +13,7 @@ from flask import Blueprint, request, jsonify
 
 from framework.engines.feynman_engine import FeynmanEngine, quick_explain, quick_test
 from framework.services.feynman_animation_bridge import get_animation_for_feynman
+from framework.database import db
 
 logger = logging.getLogger("lumilearn.routes.feynman")
 
@@ -98,6 +99,29 @@ def feynman_explain():
 
         if animation_info:
             response_data["animation"] = animation_info
+
+        # 推理过程写库（供管理员/教师查看用户真实使用记录；失败不影响主流程）
+        try:
+            db.init()
+            steps_summary = "\n".join(
+                f"{s.get('step_order', i+1)}.{s.get('step_name', '')}: {str(s.get('content', ''))[:150]}"
+                for i, s in enumerate(result.get("steps", []))
+            )[:4000]
+            db.add_reasoning_log(
+                user_id=data.get("user_id", 0) or 0,
+                session_id=f"feynman:{topic.strip()[:50]}",
+                mode="feynman",
+                topic=topic.strip()[:200],
+                step_order=0,
+                step_name=f"五步讲解（共{len(result.get('steps', []))}步）",
+                model_used=result.get("model_used", ""),
+                input_context=f"学生水平: {level}；主题: {topic.strip()}",
+                output=steps_summary,
+                latency_ms=int(float(result.get("total_time", 0)) * 1000),
+                status="success",
+            )
+        except Exception as _e:
+            logger.warning(f"费曼讲解推理日志写库失败: {_e}")
 
         return jsonify(response_data)
 

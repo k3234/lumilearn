@@ -259,6 +259,35 @@
 
 ---
 
+## 十一、classroom 互动教学修复 + 统一活动日志（用户测评反馈）⭐
+
+**背景**：用户测评发现 18080/classroom 等学习展示端口互动教学不可用（CDN 库内网加载失败致前端 JS 出错）；18082 Admin「系统日志」只显示管理操作测试数据，看不到学生真实使用数据。
+
+### 11.1 classroom 互动教学修复
+
+| 问题 | 根因 | 修复 |
+|---|---|---|
+| 页面可开但互动失效 | KaTeX/Chart.js/highlight.js/reveal.js 走 jsdelivr CDN，内网环境加载失败 | 8 个 vendor 库下载至 `static/vendor/`，页面改本地引用 `/static/vendor/...`，保留 CDN 兜底 |
+| 聊天慢 | 前端硬编码 `qwen2.5:7b`（CPU 极慢） | 移除 model 字段，后端按端口配置自动选 `lumilearn-v2` |
+| 五步学习动画报 404 | 前端调 `/api/animation/generate/async`、`/progress/<id>` 路由不存在 | `animation.py` 补兼容路由（Manim 未部署返回降级）；前端失败自动切换通用画布动画，互动不中断 |
+
+### 11.2 统一活动日志（解决「只显示测试数据」）
+
+**根因**：Admin「系统日志」只读 `system_logs`（管理操作），而学生真实使用数据在 `reasoning_logs` / `learning_reports`，且课堂/终端普通聊天、五步学习此前不写库。
+
+**修复**：
+- 补齐埋点：`/api/feynman/explain`（五步学习）、`/api/chat` 非流式对话 → 写 `reasoning_logs`（mode=feynman/chat）
+- 新增 `GET /api/admin/activity-logs`：合并 `system_logs` + `reasoning_logs` + `learning_reports` 按时间倒序，支持 `source=all/system/reasoning/report` 筛选
+- Admin「系统日志」面板升级：来源徽标（⚙️系统/🧠推理/📚报告）+ 来源筛选按钮
+
+### 11.3 验证
+
+- 本地（临时 DB + test_client）**19/19 ✅**：合并日志/筛选/动画降级/静态资源 200/classroom 页面/原 /logs 兼容
+- 天虹真实服务 **9/9 ✅**：admin 登录、activity-logs 展示真实数据（reasoning 75 + system 49 + report 20）、chat 埋点入库、feynman 5 步 + 埋点入库
+- 部署：7 代码/模板 + 8 vendor 文件上传，重启 lumilearn-api，18080/81/82 全端口监听
+
+---
+
 **待提交**：goai_multi_agent.py、goai_web.py、analytics_dashboard.py、admin.py、teacher_portal.py、database.py、feynman_engine.py、output_detector.py、lumilearn_shared.py、knowledge_retrieval.py（新增）、5 个前端模板、README、AI-DECLARATION.md、3 篇 docs、验证/部署/测评脚本、本文档。
 
 **遗留**：演示视频与 PPT（用户指定另行完成）；`qwen2.5:7b` 已从费曼默认路径中规避（端口模型配置 lumilearn-v2，CPU 推理 6s/次）。

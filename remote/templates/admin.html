@@ -741,19 +741,33 @@ async function testAgent(id) {
   } catch (e) { toast(e.message); }
 }
 
-// ---------- 日志 ----------
+// ---------- 日志（统一活动日志：系统操作 + 学生推理 + 学习报告） ----------
+let activitySource = 'all';
 async function loadLogs() {
-  const data = await api('/logs?limit=200');
+  const data = await api('/activity-logs?source=' + activitySource + '&limit=200');
+  const badge = { system: '⚙️ 系统', reasoning: '🧠 推理', report: '📚 报告' };
+  const colors = { system: '#58a6ff', reasoning: '#3fb950', report: '#d29922' };
+  const sources = [['all', '全部'], ['system', '系统操作'], ['reasoning', '学习推理'], ['report', '学习报告']];
   document.getElementById('content').innerHTML = `
-    <button class="act" onclick="clearLogs()" style="margin-bottom:12px;">清理 7 天前日志</button>
-    <pre class="log-box">${(data.logs || []).map(l =>
-      `<span style="color:${l.level === 'error' ? '#f85149' : l.level === 'warning' ? '#d29922' : '#8b949e'}">[${l.created_at}] [${l.level}] [${l.module}] ${l.message}</span>`
-    ).join('\n') || '（无日志）'}</pre>`;
+    <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      ${sources.map(([k, v]) => `<button class="act" onclick="setActivitySource('${k}')" style="${k === activitySource ? 'background:#1f6feb;color:#fff;' : ''}">${v}</button>`).join('')}
+      <span style="flex:1"></span>
+      <button class="act" onclick="clearLogs()" title="仅清理系统操作日志">清理系统日志</button>
+    </div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">统一活动日志：系统操作 + 学生推理（课堂聊天/五步学习）+ 学习报告（GOAI）。展示学生实际使用产生的数据。</div>
+    <pre class="log-box">${(data.logs || []).map(l => {
+      const tag = badge[l.source] || l.source;
+      const c = colors[l.source] || '#8b949e';
+      const err = l.level === 'error' ? '#f85149' : '#8b949e';
+      return `<span style="color:${err}">[${l.created_at}] [<b style="color:${c}">${tag}</b>] [${l.module}] ${l.message}</span>`;
+    }).join('\n') || '（暂无活动记录，快去使用课堂/GOAI 学习吧）'}</pre>`;
 }
+
+function setActivitySource(src) { activitySource = src; loadLogs(); }
 
 async function clearLogs() {
   await api('/logs/clear', { method: 'POST', body: JSON.stringify({ older_than_days: 7 }) });
-  toast('日志已清理');
+  toast('系统操作日志已清理');
   loadLogs();
 }
 

@@ -15,19 +15,40 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" onerror="this.onerror=null;this.href='';">
 <style>/* Fallback: Google Fonts will be skipped if blocked in China */</style>
-<!-- KaTeX 数学渲染 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
-<!-- Chart.js 图表 -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- highlight.js 代码高亮 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github.min.css">
-<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
-<!-- Reveal.js 幻灯片演示 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/white.min.css">
-<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.min.js"></script>
+<!-- KaTeX 数学渲染（本地化，兼容无外网环境；CDN 失败时回退） -->
+<link rel="stylesheet" href="/static/vendor/katex/katex.min.css">
+<script src="/static/vendor/katex/katex.min.js"></script>
+<script src="/static/vendor/katex/auto-render.min.js"></script>
+<!-- Chart.js 图表（本地化） -->
+<script src="/static/vendor/chart/chart.umd.min.js"></script>
+<!-- highlight.js 代码高亮（本地化） -->
+<link rel="stylesheet" href="/static/vendor/highlight/github.min.css">
+<script src="/static/vendor/highlight/highlight.min.js"></script>
+<!-- Reveal.js 幻灯片演示（本地化） -->
+<link rel="stylesheet" href="/static/vendor/reveal/reveal.min.css">
+<link rel="stylesheet" href="/static/vendor/reveal/white.min.css">
+<script src="/static/vendor/reveal/reveal.min.js"></script>
+<script>
+/* CDN 兜底：本地 vendor 加载失败时尝试 jsdelivr（兼容离线环境提示） */
+window.addEventListener('error', function (e) {
+  var tag = e.target;
+  if (tag && tag.tagName === 'SCRIPT' && tag.src.indexOf('/static/vendor/') === 0) {
+    var cdnMap = {
+      '/static/vendor/katex/katex.min.js': 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js',
+      '/static/vendor/katex/auto-render.min.js': 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js',
+      '/static/vendor/chart/chart.umd.min.js': 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
+      '/static/vendor/highlight/highlight.min.js': 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js',
+      '/static/vendor/reveal/reveal.min.js': 'https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.min.js'
+    };
+    var cdn = cdnMap[tag.src];
+    if (cdn) {
+      var s = document.createElement('script');
+      s.src = cdn; s.async = false;
+      document.head.appendChild(s);
+    }
+  }
+}, true);
+</script>
 <style>
 /* ── LumiLearn Classroom · Observatory Dark Theme ── */
 :root {
@@ -3030,7 +3051,7 @@ try {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            model: 'qwen2.5:7b',
+            // 不指定 model：后端自动使用当前端口配置的模型（默认 lumilearn-v2，CPU 快）
             messages: [{ role: 'user', content: message }],
             stream: false,
             temperature: 0.7
@@ -3777,15 +3798,15 @@ if (data.status === 'ok' || data.task_id) {
 feynmanStepAnimations[index].taskId = data.task_id;
 pollAnimationProgressForStep(data.task_id, index);
 } else {
-animContainer.innerHTML = '<div class="step-animation-error">动画生成失败</div>';
+renderCanvasFallback(animContainer);
 }
 }).catch(function(e) {
-animContainer.innerHTML = '<div class="step-animation-error">动画生成失败: ' + e.message + '</div>';
+renderCanvasFallback(animContainer);
 });
 }
 
 function pollAnimationProgressForStep(taskId, stepIndex) {
-var maxPolls = 90;
+var maxPolls = 6;  // 降级环境轮询次数少，快速切换画布动画
 var pollCount = 0;
 var animContainer = document.getElementById('stepAnim' + stepIndex);
 
@@ -3805,20 +3826,70 @@ animContainer.innerHTML = '<video controls src="' + videoUrl + '"></video>';
 } else if (data.task_status === 'failed') {
 clearInterval(feynmanPollTimers[stepIndex]);
 if (animContainer) {
-animContainer.innerHTML = '<div class="step-animation-error">动画生成失败</div>';
+renderCanvasFallback(animContainer);
 }
 } else if (pollCount >= maxPolls) {
 clearInterval(feynmanPollTimers[stepIndex]);
 if (animContainer) {
-animContainer.innerHTML = '<div class="step-animation-error">动画生成超时</div>';
+renderCanvasFallback(animContainer);
 }
 }
 }).catch(function() {
 if (pollCount >= maxPolls) {
 clearInterval(feynmanPollTimers[stepIndex]);
+if (animContainer) {
+renderCanvasFallback(animContainer);
+}
 }
 });
 }, 2000);
+}
+
+// 动画服务不可用时的通用画布演示（任意主题通用，保证互动教学不中断）
+function renderCanvasFallback(container) {
+if (!container) return;
+container.innerHTML = '<div style="padding:6px 0;font-size:12px;color:var(--text-muted);text-align:center;">动画服务未部署 · 已切换为画布演示</div>' +
+'<canvas id="animCanvasFallback" style="width:100%;height:180px;background:var(--bg-deep);border-radius:8px;display:block;"></canvas>';
+var canvas = container.querySelector('#animCanvasFallback');
+if (!canvas) return;
+var ctx = canvas.getContext('2d');
+canvas.width = canvas.clientWidth || 600;
+canvas.height = 180;
+var t = 0;
+function draw() {
+t += 0.02;
+ctx.clearRect(0, 0, canvas.width, canvas.height);
+// 背景网格
+ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+ctx.lineWidth = 1;
+for (var x = 0; x < canvas.width; x += 40) {
+ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+}
+for (var y = 0; y < canvas.height; y += 40) {
+ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+}
+// 流动光点（象征思维流动）
+for (var i = 0; i < 12; i++) {
+var px = ((i * 97 + t * 30) % (canvas.width + 40)) - 20;
+var py = canvas.height / 2 + Math.sin(t * 2 + i * 1.7) * (canvas.height / 2 - 20);
+var r = 2.5 + Math.sin(t * 3 + i) * 1.5;
+ctx.beginPath();
+ctx.arc(px, py, Math.abs(r), 0, Math.PI * 2);
+ctx.fillStyle = 'rgba(217,119,87,0.7)';
+ctx.fill();
+}
+// 中心光晕 + 标题
+ctx.fillStyle = 'rgba(106,155,204,0.12)';
+ctx.beginPath();
+ctx.arc(canvas.width / 2, canvas.height / 2, 40 + Math.sin(t) * 8, 0, Math.PI * 2);
+ctx.fill();
+ctx.fillStyle = 'rgba(250,249,245,0.85)';
+ctx.font = '15px Poppins, sans-serif';
+ctx.textAlign = 'center';
+ctx.fillText('费曼学习 · 思维演示', canvas.width / 2, canvas.height / 2 + 6);
+requestAnimationFrame(draw);
+}
+draw();
 }
 
 function updateFeynmanProgress() {
