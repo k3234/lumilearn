@@ -203,7 +203,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     os.environ["LUMILEARN_MODEL_DIR"] = args.model_dir
-    global DEVICE
     DEVICE = args.device
 
     print(f"[Server] LumiLearn Inference Server v1.0")
