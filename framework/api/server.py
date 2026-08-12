@@ -108,10 +108,10 @@ def create_app(debug: bool = None, template_dir: str = None, homepage: str = "te
             response.headers["Content-Security-Policy"] = (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
-                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+                "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
                 "img-src 'self' data: blob:; "
                 "connect-src 'self' http://localhost:* http://127.0.0.1:*; "
-                "font-src 'self' data: https://cdn.jsdelivr.net; "
+                "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; "
                 "frame-ancestors 'none'; "
                 "base-uri 'self'; "
                 "form-action 'self'; "

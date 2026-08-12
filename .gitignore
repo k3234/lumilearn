@@ -295,6 +295,10 @@ _scan_*.py
 # 临时文件（提交信息、配置快照等）
 *.tmp
 _commit_msg.tmp
+# 本地临时标识/会话文件
+_sid.txt
+# 参赛打包产物（由 scripts/_build_submission_zip.py 生成，不入库）
+lumilearn_goai_submission.zip
 # 隐私清理工具（不提交）
 _msg_cleanup.py
 _mailmap.txt

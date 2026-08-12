@@ -140,13 +140,24 @@ fi
 echo ""
 echo "========== 服务状态 =========="
 echo "Ollama: http://localhost:11434"
+health_path() {
+  case "$1" in
+    terminal|api|models) echo "/health";;
+    goai_web) echo "/api/status";;
+    teacher_portal) echo "/api/me";;
+    student_portal) echo "/api/status";;
+    analytics_dashboard) echo "/api/dashboard/overview";;
+    *) echo "/health";;
+  esac
+}
 for entry in $(read_ports); do
   key=$(echo $entry | cut -d'|' -f1)
   en=$(echo $entry | cut -d'|' -f2)
   p=$(echo $entry | cut -d'|' -f3)
   if [ "$en" = "1" ] && [ -n "$p" ]; then
-    code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:$p/health 2>/dev/null || echo "N/A")
-    echo "  $key: 端口 $p HTTP $code"
+    hp=$(health_path "$key")
+    code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:$p$hp" 2>/dev/null || echo "N/A")
+    echo "  $key: 端口 $p HTTP $code ($hp)"
   else
     echo "  $key: 已禁用"
   fi

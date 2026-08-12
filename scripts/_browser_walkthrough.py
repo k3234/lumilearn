@@ -177,7 +177,11 @@ except Exception as e:
 print("\n===== 4. 学生端 5010 引导式学习 =====")
 try:
     driver.get(BASE + ":5010/index.html")
-    wait_css("#loginGate", 15)
+    # 等待登录门真正显示（api.me() 异步返回后才 show）
+    WebDriverWait(driver, 25).until(
+        lambda d: d.execute_script(
+            "var g=document.getElementById('loginGate');"
+            "return g && g.classList.contains('show') && getComputedStyle(g).display==='flex'"))
     # 登录
     driver.find_element(By.ID, "loginUser").send_keys("guidestu")
     driver.find_element(By.ID, "loginPass").send_keys("stu123")

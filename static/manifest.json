@@ -1,0 +1,10 @@
+{
+  "name": "LumiLearn 学习终端",
+  "short_name": "LumiLearn",
+  "description": "LumiLearn 本地优先的 AI 费曼学习终端",
+  "start_url": "/chat",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": []
+}

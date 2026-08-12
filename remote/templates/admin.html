@@ -1497,14 +1497,26 @@ async function approveExport(id, action) {
   } catch (e) { toast('❌ ' + e.message); }
 }
 
-function downloadExport(id) {
-  const a = document.createElement('a');
-  a.href = `/api/admin/exports/${id}/download`;
-  a.setAttribute('download', '');
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => toast('⬇ 下载已开始'), 300);
+async function downloadExport(id) {
+  try {
+    const resp = await fetch(API + `/exports/${id}/download`, {
+      headers: { 'X-Admin-Token': TOKEN },
+    });
+    if (!resp.ok) return toast('❌ 下载失败: ' + resp.status);
+    const blob = await resp.blob();
+    const cd = resp.headers.get('Content-Disposition') || '';
+    const m = cd.match(/filename="?([^";]+)"?/);
+    const fname = m ? m[1] : ('export_' + id + '.csv');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setTimeout(() => toast('⬇ 下载已开始'), 300);
+  } catch (e) { toast('❌ 下载失败: ' + e.message); }
 }
 
 // ---------- 初始化 ----------

@@ -4141,9 +4141,9 @@ class DatabaseManager:
             "teacher_id": teacher_id,
             "class_count": len(classes),
             "student_count": student_count,
-            "task_total": task_stats.get("total", 0),
-            "task_active": task_stats.get("active", 0),
-            "task_completed": task_stats.get("completed", 0),
+            "task_total": task_stats.get("total") or 0,
+            "task_active": task_stats.get("active") or 0,
+            "task_completed": task_stats.get("completed") or 0,
             "report_count": report_count,
             "classes": classes,
         }

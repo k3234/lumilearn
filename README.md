@@ -6,7 +6,8 @@
 
 ## 📋 GOAI 2026 参赛材料
 
-- [参赛技术方案](docs/GOAI_SUBMISSION.md) — 项目定位 / 架构 / 技术路线 / 创新点
+- [作品简介](docs/GOAI_SUBMISSION.md) — 可直接复制到 GOAI 作品提交页面「作品简介」字段
+- [参赛技术方案](docs/GOAI_TECHNICAL.md) — 项目定位 / 架构 / 技术路线 / 创新点
 - [部署指南](docs/DEPLOYMENT_GUIDE.md) — 一键部署与手动部署（含健康检查）
 - [评测结果](docs/EVALUATION_RESULTS.md) — 全量测试与真实环境测评数据
 - [运行证据](docs/RUNNING_EVIDENCE.md) — 服务状态 / API 实测 / 数据落库证据

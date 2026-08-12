@@ -125,10 +125,13 @@ ${BOLD}选项:${NC}
     --docker            Docker容器部署
     -h, --help         显示帮助信息
 
-${BOLD}用户端:${NC}
-    学生端 (学生端)   - http://localhost:18080/
-    管理员端 (管理员端) - http://localhost:18081/admin
-    学习端 (学习端)   - http://localhost:18082/learn
+${BOLD}访问入口:${NC}
+    课堂/终端     - http://localhost:18080/classroom
+    管理面板      - http://localhost:18082/admin
+    GOAI 学习     - http://localhost:5000
+    学生端        - http://localhost:5010
+    教师端        - http://localhost:5001
+    分析仪表盘    - http://localhost:18090
 
 ${BOLD}示例:${NC}
     ./deploy.sh                           # 默认启动
@@ -402,36 +405,15 @@ start_server() {
 
     source "$VENV_DIR/bin/activate"
 
-    # 从配置文件读取端口
-    local config_ports=$(python3 -c "
-import yaml
-with open('$CONFIG_FILE', 'r') as f:
-    config = yaml.safe_load(f)
-server = config.get('server', {})
-multi_port = server.get('multi_port', {})
-if multi_port.get('enabled', True):
-    print(f'{multi_port.get(\"terminal\", 18080)} {multi_port.get(\"api\", 18081)} {multi_port.get(\"models\", 18082)}')
-else:
-    print(f'{server.get(\"single_port\", {}).get(\"port\", 18080)}')
-" 2>/dev/null || echo "18080 18081 18082")
-
-    local terminal_port=$(echo "$config_ports" | cut -d' ' -f1)
-    local api_port=$(echo "$config_ports" | cut -d' ' -f2)
-    local models_port=$(echo "$config_ports" | cut -d' ' -f3)
-
-    log_info "终端端口: ${BOLD}$terminal_port${NC}"
-    log_info "API端口: ${BOLD}$api_port${NC}"
-    log_info "模型端口: ${BOLD}$models_port${NC}"
-
+    log_info "端口由 config/framework.yaml 的 port_settings 配置控制（默认 18080/18081/18082）"
     log_info "日志文件: $LOG_FILE"
 
     cd "$PROJECT_DIR"
 
     # 启动服务（后台运行）
     nohup python -m framework.api.server \
-        --port "$terminal_port" \
-        --api-port "$api_port" \
-        --models-port "$models_port" \
+        --multi-port \
+        --host 0.0.0.0 \
         2>&1 | tee -a "$LOG_FILE" &
 
     SERVER_PID=$!
@@ -446,23 +428,23 @@ else:
 health_check() {
     log_step "🏥 服务健康检查"
 
-    local config_ports=$(python3 -c "
-import yaml
-with open('$CONFIG_FILE', 'r') as f:
+    local health_port=$(CONFIG_FILE="$CONFIG_FILE" python3 -c "
+import os, yaml
+with open(os.environ['CONFIG_FILE'], 'r') as f:
     config = yaml.safe_load(f)
 server = config.get('server', {})
 multi_port = server.get('multi_port', {})
 if multi_port.get('enabled', True):
-    echo "$multi_port.get(\"terminal\", 18080)"
+    print(multi_port.get('terminal', 18080))
 else:
-    echo "$server.get(\"single_port\", {}).get(\"port\", 18080)"
+    print(server.get('single_port', {}).get('port', 18080))
 " 2>/dev/null || echo "18080")
 
     local max_retries=10
     local retry=0
 
     while [[ $retry -lt $max_retries ]]; do
-        if curl -s "http://localhost:$config_ports/health" > /dev/null 2>&1; then
+        if curl -s "http://localhost:$health_port/health" > /dev/null 2>&1; then
             log_success "服务启动成功！"
 
             echo ""
@@ -470,12 +452,15 @@ else:
             echo -e "${PURPLE}  🎓 LumiLearn 已成功启动！${NC}"
             echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
             echo ""
-            echo -e "  ${BOLD}学生端:${NC}    http://localhost:$config_ports/"
-            echo -e "  ${BOLD}管理员端:${NC}  http://localhost:18081/admin"
-            echo -e "  ${BOLD}学习端:${NC}    http://localhost:18082/learn"
+            echo -e "  ${BOLD}课堂/终端:${NC}  http://localhost:$health_port/classroom"
+            echo -e "  ${BOLD}管理面板:${NC}   http://localhost:18082/admin"
+            echo -e "  ${BOLD}GOAI 学习:${NC}  http://localhost:5000"
+            echo -e "  ${BOLD}学生端:${NC}     http://localhost:5010"
+            echo -e "  ${BOLD}教师端:${NC}     http://localhost:5001"
+            echo -e "  ${BOLD}分析仪表盘:${NC} http://localhost:18090"
             echo ""
-            echo -e "  ${BOLD}API状态:${NC}   http://localhost:$config_ports/api/status"
-            echo -e "  ${BOLD}健康检查:${NC}  http://localhost:$config_ports/health"
+            echo -e "  ${BOLD}API状态:${NC}   http://localhost:$health_port/api/status"
+            echo -e "  ${BOLD}健康检查:${NC}  http://localhost:$health_port/health"
             echo ""
             echo -e "  ${BOLD}按 Ctrl+C 停止服务${NC}"
             echo ""
@@ -522,9 +507,8 @@ run_docker() {
     log_success "Docker容器已启动！"
     echo ""
     echo -e "  ${BOLD}访问地址:${NC}"
-    echo -e "  学生端:   http://localhost:18080/"
-    echo -e "  管理员端: http://localhost:18081/admin"
-    echo -e "  学习端:   http://localhost:18082/learn"
+    echo -e "  课堂/终端: http://localhost:18080/classroom"
+    echo -e "  管理面板:  http://localhost:18082/admin"
     echo ""
     echo -e "  ${BOLD}管理命令:${NC}"
     echo -e "  docker ps              # 查看容器状态"

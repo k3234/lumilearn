@@ -28,6 +28,49 @@ def call_ollama(model_name, prompt, timeout=60, **kw):
     kw.setdefault("num_predict", 300)
     return _ll_call_ollama(model_name, prompt, timeout=timeout, **kw)
 
+
+def clean_teacher_text(text: str) -> str:
+    """清理模型输出中泄漏的提示词指令、调试头与角色剧本，只保留对学生说的话。
+
+    处理：
+      1. 剥离以【禁止】/【重要】/【注意】/【结束语】/【费曼教学法】等开头的指令行
+      2. 剥离"学生：""老师：""引导者（你）："等角色对话剧本行
+      3. 剥离"请直接输出引导内容"等 prompt 尾语
+      4. 折叠多余空行、清理首尾空白
+    """
+    if not text:
+        return text
+    lines = []
+    for ln in (text or "").splitlines():
+        s = ln.strip()
+        if not s:
+            lines.append("")
+            continue
+        # 指令/调试行剥离
+        if re.match(r"^[【\[]?(禁止|重要|注意|结束语|总字数|请直接输出|费曼教学法|参考资料|此前对话|引导者（你）：|老师：|学生：)", s):
+            continue
+        if s.startswith("（请直接输出") or s.startswith("(请直接输出"):
+            continue
+        lines.append(s)
+    # 压缩连续空行
+    out = []
+    blank = False
+    for s in lines:
+        if not s:
+            if not blank:
+                out.append("")
+            blank = True
+        else:
+            out.append(s)
+            blank = False
+    return "\n".join(out).strip()
+
+
+def call_ollama_clean(model_name, prompt, timeout=60, **kw):
+    """调用模型并清理输出中的指令泄漏"""
+    raw = call_ollama(model_name, prompt, timeout=timeout, **kw)
+    return clean_teacher_text(raw) if raw else raw
+
 # ==================== 数据模型 ====================
 @dataclass
 class FeynmanStep:
@@ -358,7 +401,7 @@ class FeynmanEngine:
         """
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("phenomenon", topic, level)
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
         
         if not response:
             # 模型调用失败，使用模板兜底
@@ -380,7 +423,7 @@ class FeynmanEngine:
         """
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("conflict", topic, level, context)
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
         
         if not response:
             response = get_template(subject, topic_type, "conflict", topic)
@@ -401,7 +444,7 @@ class FeynmanEngine:
         """
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("model", topic, level, context)
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
         
         if not response:
             response = get_template(subject, topic_type, "model", topic)
@@ -422,7 +465,7 @@ class FeynmanEngine:
         """
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("derive", topic, level, context)
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
         
         if not response:
             response = get_template(subject, topic_type, "derive", topic)
@@ -443,7 +486,7 @@ class FeynmanEngine:
         """
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("test", topic, level, context)
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
         
         if not response:
             response = get_template(subject, topic_type, "test", topic)
@@ -607,7 +650,7 @@ class FeynmanEngine:
 6. 控制在200字以内
 {model_extra}
 请直接输出引导内容："""
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
         if not response:
             response = template
         # 轻量后处理：剥离模型偶尔泄漏的 prompt 尾部元文本（如"（请直接输出引导内容）"）
@@ -946,7 +989,7 @@ class FeynmanEngine:
 
 请直接回复："""
         
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
         
         if not response:
             # 兜底
@@ -1020,7 +1063,7 @@ class FeynmanEngine:
 
 请直接回复："""
         
-        response = call_ollama(self.model_name, prompt, timeout=self.timeout)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
         
         if not response:
             response = f"你的理解很有意思！关于{concept}，让我们换个角度想想...你能不能先用自己的话说说，{concept}最核心的东西是什么？"
