@@ -10,6 +10,7 @@
 - [参赛技术方案](docs/GOAI_TECHNICAL.md) — 项目定位 / 架构 / 技术路线 / 创新点
 - [部署指南](docs/DEPLOYMENT_GUIDE.md) — 一键部署与手动部署（含健康检查）
 - [评测结果](docs/EVALUATION_RESULTS.md) — 全量测试与真实环境测评数据
+- [CPU 低配测评](docs/CPU_LOWMEM_EVALUATION.md) — CPU/低内存运行能力实测（34 tok/s、峰值内存 1.77GB）
 - [运行证据](docs/RUNNING_EVIDENCE.md) — 服务状态 / API 实测 / 数据落库证据
 - [模型下载](docs/MODEL_DOWNLOAD.md) — lumilearn-v2 获取与 Ollama 导入
 - [AI 使用声明](AI-DECLARATION.md) — AI 参与方式与责任声明
