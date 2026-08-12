@@ -116,7 +116,7 @@ LumiLearn 支持**本地模型容器**与**云端 API** 两类推理来源，其
 |:---|:---|
 | [docs/PROGRESS.md](docs/PROGRESS.md) | 项目进度总览（模块状态 / 部署信息 / 模型资产清单） |
 | [docs/admin_guide.md](docs/admin_guide.md) | 管理员系统使用指南 |
-| [docs/deployment_guide.md](docs/deployment_guide.md) | 本地与服务器部署指南 |
+| [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) | 本地与服务器部署指南（一键部署 + 健康检查） |
 | [docs/MODEL_COMPARISON.md](docs/MODEL_COMPARISON.md) | 模型资产对照表（脱敏版） |
 | [docs/REMOTE_DEPLOYMENT.md](docs/REMOTE_DEPLOYMENT.md) | 远程部署说明 |
 | [docs/rag_design.md](docs/rag_design.md) | RAG 知识库设计说明 |
@@ -219,9 +219,11 @@ bash deploy/setup.sh
 |:---|:---|:---|
 | `goai_web` | 5000 | GOAI 学习 Web |
 | `teacher_portal` | 5001 | 教师门户 |
+| `student_portal` | 5010 | 学生端学习平台 |
 | `terminal` | 18080 | 框架终端（HTML 界面） |
 | `api` | 18081 | REST API |
 | `models` | 18082 | 模型管理 |
+| `analytics_dashboard` | 18090 | 学习分析仪表盘 |
 
 端口随时可改：再次运行 setup 引导，或在 Admin 面板「端口管理」中直接调整，改后重启对应服务生效。
 
@@ -260,9 +262,11 @@ python deploy/setup.py --skip-deps    # 跳过依赖安装
 |:---|:---|
 | GOAI 学习 Web | http://localhost:5000 |
 | 教师门户 | http://localhost:5001 |
+| 学生端学习平台 | http://localhost:5010 |
 | 框架终端 | http://localhost:18080 |
 | REST API | http://localhost:18081 |
 | 模型管理 | http://localhost:18082 |
+| 学习分析仪表盘 | http://localhost:18090 |
 
 ### 排障提示
 
@@ -406,6 +410,8 @@ lumilearn/
 ├── goai_web.py             # GOAI 学习 Web（端口 5000）
 ├── goai_multi_agent.py     # 多 Agent 协作系统（教学→评分→建议）
 ├── teacher_portal.py       # 教师门户（端口 5001）
+├── student_portal.py       # 学生端学习平台（端口 5010）
+├── analytics_dashboard.py  # 学习分析仪表盘（端口 18090）
 ├── goai_agent.py           # GOAI 教育智能体（CLI）
 ├── train_lumilearn.sh      # 训练脚本
 ├── lesson_engine.py        # 智能讲解引擎

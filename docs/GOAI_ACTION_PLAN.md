@@ -14,7 +14,7 @@
 | **本地优先架构** | `deploy/setup.py` + `config/providers.yaml` + `lumilearn_config.py` | ✅ 完整 | Ollama / vLLM / LM Studio / LocalAI / llama.cpp 全兼容，`local: true` 标记无需 API Key |
 | **费曼五步教学** | `framework/engines/feynman_engine.py` + `goai_agent.py` | ✅ 完整 | 现象引入→认知冲突→思维模型→自主推导→费曼测试，支持交互式单步引导 |
 | **Agent 框架** | `framework/admin/agents.py` | ✅ 完整 | BaseAgent 基类 + FeynmanAgent/OutputDetector/AdaptivePath/ChatAssistant，统一 start/stop/status/run 生命周期 |
-| **多模型编排引擎** | `framework/engines/langgraph_engine.py` | ✅ 完整（待联调） | 12 模型并行→结果格式化→加权投票，`lumilearn_config.py` 已补充（本次修复） |
+| **多模型编排引擎** | `langgraph_engine.py`（仓库根） | ✅ 完整（待联调） | 12 模型并行→结果格式化→加权投票，`lumilearn_config.py` 已补充（本次修复） |
 | **GOAI 教育智能体** | `goai_agent.py` | ✅ 完整 | TaskUnderstanding → FlowOrchestrator → ToolCaller → ResultDelivery 四模块，推理日志写库 |
 | **自研模型** | `framework/model.py` + `notebooks/` | ✅ 完整 | 8M 参数 Transformer 从零训练（CPU），Qwen2.5 LoRA 微调（lumilearn-v2，671 条真实教学问答） |
 | **多端口服务** | `framework/api/server.py` | ✅ 完整 | 18080 终端 / 18081 REST API / 18082 模型管理，端口独立配置 |
