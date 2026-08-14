@@ -233,6 +233,8 @@ lumilearn_prompt_image_version.md
 # ============================================
 archive/
 scripts/archive/
+# C-06: 一次性调试/诊断脚本归档目录（仅本地保留，不入库）
+scripts/_archive/
 
 # ============================================
 # LumiLearn: 运行时状态文件（PID 记录，不入库）
@@ -241,6 +243,7 @@ deploy/.pids.json
 # Runtime data directories
 # ============================================
 data/
+export_data/  # 学生数据导出（姓名/成绩/推理记录，严禁提交）
 orchestration_output/
 phases/
 snapshots/
@@ -271,6 +274,16 @@ scripts/record_screen.py
 # ============================================
 .github_token
 *.token
+*SSH_KEY*
+*.pem
+*.key
+cluster.py
+*.deploy*.py
+*.upload*.py
+*.ssh*.py
+*.verify*.py
+*.debug*.py
+*.test_server*.py
 
 # ============================================
 # LumiLearn: 运行数据库（本地数据，不入库）
