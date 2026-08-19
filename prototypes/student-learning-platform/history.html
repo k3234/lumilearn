@@ -112,6 +112,11 @@
   var toastEl = document.getElementById("toast");
   function toast(msg) { toastEl.textContent = msg; toastEl.classList.add("show"); setTimeout(function () { toastEl.classList.remove("show"); }, 2200); }
 
+  /* HTML 转义，防止用户/AI 输出中的特殊字符破坏页面结构 */
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
   var filter = "全部";
   var body = document.getElementById("historyBody");
 
@@ -123,12 +128,12 @@
     list.forEach(function (s) {
       var tr = document.createElement("tr");
       tr.innerHTML =
-        '<td><b>' + s.topic + '</b></td>' +
-        '<td><span class="tag tag-sky">' + s.subject + '</span></td>' +
-        '<td><span class="tag tag-amber">' + s.difficulty + '</span></td>' +
-        '<td class="faint">' + s.date + '</td>' +
+        '<td><b>' + esc(s.topic) + '</b></td>' +
+        '<td><span class="tag tag-sky">' + esc(s.subject) + '</span></td>' +
+        '<td><span class="tag tag-amber">' + esc(s.difficulty) + '</span></td>' +
+        '<td class="faint">' + esc(s.date) + '</td>' +
         '<td><span class="tag ' + (s.mastery >= 80 ? "tag-mint" : "tag-danger") + '">' + s.mastery + '%</span></td>' +
-        '<td style="text-align:right"><span class="btn btn-ghost btn-sm" data-open="' + s.id + '">查看报告</span></td>';
+        '<td style="text-align:right"><span class="btn btn-ghost btn-sm" data-open="' + esc(s.id) + '">查看报告</span></td>';
       tr.addEventListener("click", function (e) {
         if (e.target.closest("[data-open]")) {
           SessionStore.save({ mode: "report", reportId: s.id });

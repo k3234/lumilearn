@@ -17,6 +17,73 @@
 
 ---
 
+## 零文件单行部署（无需下载任何文件）
+
+**不需要下载、保存任何脚本文件**：把脚本从 GitHub 拉到内存直接执行（`curl | bash` / `irm | iex` 管道模式），自动完成「检测 git/python → 克隆/更新仓库 → 运行 `deploy/setup.py` 配置 → 启动服务」。
+
+### Linux / macOS（curl | bash）
+
+```bash
+# 全默认值，无人值守
+curl -fsSL https://raw.githubusercontent.com/k3234/lumilearn/master/deploy/install.sh | bash
+
+# 带参数（管道传参必须用 bash -s --）
+curl -fsSL https://raw.githubusercontent.com/k3234/lumilearn/master/deploy/install.sh | bash -s -- --quick --no-start
+```
+
+常用参数（`--dir` / `--branch` 支持 `=` 与空格两种写法）：
+
+| 参数 | 说明 |
+| --- | --- |
+| `--quick` | 全默认值，无人值守 |
+| `--skip-deps` | 跳过依赖安装 |
+| `--no-start` | 只克隆+配置，不启动服务 |
+| `--dir=<路径>` | 克隆到指定目录（默认 `$(pwd)/lumilearn`） |
+| `--branch=<名>` | 指定分支（默认 master） |
+
+### Windows PowerShell（irm | iex）
+
+```powershell
+irm https://raw.githubusercontent.com/k3234/lumilearn/master/deploy/install.ps1 | iex
+```
+
+管道方式无法直接传参，选项一律用环境变量（值 `"1"` 表示开启）：
+
+```powershell
+$env:LUMILEARN_QUICK     = "1"                # 全默认值，无人值守
+$env:LUMILEARN_SKIP_DEPS = "1"                # 跳过依赖安装
+$env:LUMILEARN_NO_START  = "1"                # 只克隆+配置，不启动服务
+$env:LUMILEARN_DIR       = "D:\lumilearn"     # 克隆到指定目录（默认 当前目录\lumilearn）
+$env:LUMILEARN_BRANCH    = "dev"              # 指定分支（默认 master）
+$env:LUMILEARN_REPO_URL  = "https://github.com/<你的fork>/lumilearn.git"  # 覆盖仓库地址
+irm https://raw.githubusercontent.com/k3234/lumilearn/master/deploy/install.ps1 | iex
+```
+
+### Node.js 可选路径（仓库内）
+
+```bash
+node deploy/install.mjs --quick        # 可加 --skip-deps / --no-start
+```
+
+`install.mjs` 是可选启动器（npx 风格），仅在已克隆的仓库内运行，委托 `deploy/setup.py` / `deploy/start.py`；未检测到 Node 或不在仓库内运行时，脚本会自动提示回退到上面的单行命令。
+
+### 行为与隐私说明
+
+- **管道模式自动 `--quick`**：`curl | bash` / `irm | iex` 时 stdin 非终端，脚本自动使用 `--quick` 全部默认值并隔离 stdin，防止子进程抢读管道残留字节。
+- **`--no-start` 只克隆+配置**：克隆/更新仓库并完成配置后不启动服务，稍后手动执行 `python deploy/start.py`。
+- **仓库与分支可覆盖**：环境变量 `LUMILEARN_REPO_URL` / `LUMILEARN_BRANCH`（Linux 分支也可用 `--branch`），方便 fork 用户。
+- **隐私约定**：脚本只访问上述公开仓库地址，不含任何真实 IP / 密码 / API Key；远程主机凭据请通过环境变量注入（`REMOTE_HOST` / `REMOTE_USER` / `REMOTE_PASSWORD` 或各厂商 API Key），不要把真实凭据写进命令或文档。
+
+### install.* 与 bootstrap.* 的区别
+
+| | `install.sh` / `install.ps1`（零文件） | `bootstrap.sh` / `bootstrap.bat` |
+| --- | --- | --- |
+| 适用场景 | **`curl \| bash` / `irm \| iex` 管道执行**，不下载、不保存脚本文件 | **先下载脚本文件再运行**（`./bootstrap.sh` / `bootstrap.bat`），也支持仓库内直接调用 |
+| 传参方式 | Linux 用 `bash -s -- --quick`；Windows 管道用 `LUMILEARN_*` 环境变量 | 直接跟参数（`--quick` / `--skip-deps` / `--no-start` / `--dir`） |
+| 共同点 | 均为「克隆/更新仓库 → 配置 → 启动」全流程入口，管道模式均自动 `--quick` | 同左 |
+
+---
+
 ## 0. 从零一键部署（含克隆仓库）
 
 **无需手动克隆**，把 `bootstrap.sh` / `bootstrap.bat` 下载到任意目录运行即可，脚本会自动完成全部流程：

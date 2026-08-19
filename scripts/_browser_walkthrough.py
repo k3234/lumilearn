@@ -16,7 +16,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-BASE = "http://192.168.2.68"
+# 真实主机地址仅通过环境变量注入，仓库不保存实际 IP
+BASE = os.environ.get("REMOTE_HOST_HTTP", "http://192.168.2.xx")
 EVIDENCE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "evidence")
 os.makedirs(EVIDENCE, exist_ok=True)
 

@@ -107,3 +107,68 @@ def ensure_config_dir():
     config_dir = Path(__file__).resolve().parent.parent.parent / "config"
     config_dir.mkdir(exist_ok=True)
     return config_dir
+
+
+# ---------- Web 安全辅助（H-1 / M-1 修复，见 docs/SECURITY_LOCAL_AUDIT_20260817.md） ----------
+
+def get_app_secret_key(env_var: str, app_name: str) -> str:
+    """
+    获取应用 SECRET_KEY（fail-closed）。
+
+    生产环境（LUMILEARN_ENV=production）必须通过环境变量提供，
+    缺失则拒绝启动；非生产环境自动随机生成，避免硬编码密钥。
+    """
+    import secrets
+    key = os.environ.get(env_var, "").strip()
+    if key:
+        return key
+    is_production = os.environ.get("LUMILEARN_ENV", "").lower() == "production"
+    if is_production:
+        raise RuntimeError(
+            f"[Security] 生产环境必须设置环境变量 {env_var}（{app_name} 的 SECRET_KEY）"
+        )
+    return secrets.token_hex(32)
+
+
+def register_csrf_guard(app):
+    """
+    注册 CSRF 防护（Origin/Referer 校验 + 会话 Token 生成）。
+
+    - 非安全方法（POST/PUT/DELETE 等）校验请求来源是否与 Host 一致
+    - 每个请求注入会话级 CSRF Token（secrets.token_hex(32)），模板可读取
+    """
+    import secrets
+    from urllib.parse import urlparse
+
+    SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
+
+    @app.before_request
+    def _csrf_guard():
+        from flask import request, session
+        # 每个请求确保会话存在 CSRF Token（模板用于生成隐藏字段）
+        if "_csrf_token" not in session:
+            session["_csrf_token"] = secrets.token_hex(32)
+
+        if request.method in SAFE_METHODS:
+            return None
+
+        # Origin/Referer 校验：存在则必须与请求 Host 匹配
+        origin = request.headers.get("Origin") or request.headers.get("Referer")
+        if not origin:
+            # 无来源头（如同源非浏览器客户端）放行
+            return None
+        host = request.headers.get("Host", "")
+        try:
+            o = urlparse(origin)
+            origin_netloc = o.netloc
+        except Exception:
+            origin_netloc = ""
+        if origin_netloc == host:
+            return None
+        # 允许 localhost 同源
+        if host.startswith("localhost") and (
+            origin_netloc.startswith("localhost") or origin_netloc.startswith("127.0.0.1")
+        ):
+            return None
+        from flask import jsonify
+        return jsonify({"error": "CSRF 校验失败", "reason": "非法请求来源"}), 403

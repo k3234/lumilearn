@@ -74,7 +74,7 @@
 <script>
 function $(id){return document.getElementById(id);}
 async function get(p){const r=await fetch(p);const j=await r.json();return j.data||[];}
-function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
 async function loadStats(){
   const d=await get('/api/dashboard/overview');

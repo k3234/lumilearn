@@ -117,6 +117,11 @@
     toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
   }
 
+  /* HTML 转义，防止用户/AI 输出中的特殊字符破坏页面结构 */
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
   /* 读取会话草稿；非学习态则回首页 */
   var draft = SessionStore.draft;
   if (!draft || draft.mode !== "learning" || !draft.session) {
@@ -148,7 +153,7 @@
     p.dataset.pstep = i + 1;
     p.innerHTML =
       '<span class="pdot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' +
-      '<span>' + st.name + '</span>';
+      '<span>' + esc(st.name) + '</span>';
     if (i < session.flow.length - 1) p.insertAdjacentHTML("beforeend", '<span class="psep"></span>');
     strip.appendChild(p);
   });
@@ -161,8 +166,8 @@
     card.innerHTML =
       '<div class="step-card-head">' +
         '<span class="snum">' + (i + 1) + '</span>' +
-        '<b>' + st.name + '</b>' +
-        '<span class="purpose">' + st.purpose + '</span>' +
+        '<b>' + esc(st.name) + '</b>' +
+        '<span class="purpose">' + esc(st.purpose) + '</span>' +
         '<span class="state" data-state></span>' +
       '</div>' +
       '<div class="s-content" data-content></div>' +
@@ -180,7 +185,7 @@
     el.className = "agent-card";
     el.innerHTML =
       '<span class="agent-ico c-' + a.color + '"></span>' +
-      '<div class="ag-body"><b>' + a.name + '</b><span class="ag-role">' + a.role + '</span></div>' +
+      '<div class="ag-body"><b>' + esc(a.name) + '</b><span class="ag-role">' + esc(a.role) + '</span></div>' +
       '<span class="ag-status idle" data-ag="' + a.id + '"><span class="sdot"></span>idle</span>';
     agentList.appendChild(el);
     agentEls[a.id] = el;
@@ -267,7 +272,7 @@
       var res = await api.guideStep({ sessionId: session.id, level: session.difficulty });
       if (!res || !res.data) throw new Error("empty");
       setAgent("feynman", "done", 1);
-      log('第 1 步「' + (res.data.step_name || "现象引入") + '」引导提问', "ll-done");
+      log('第 1 步「' + esc(res.data.step_name || "现象引入") + '」引导提问', "ll-done");
       await renderGuide(res.data);
     } catch (e) {
       /* 引导服务暂不可用：降级为自动讲解（保持学习可用） */
@@ -325,7 +330,7 @@
     var btns = box.querySelectorAll("button");
     btns.forEach(function (b) { b.disabled = true; });
     setAgent("feynman", "running");
-    log('<span class="la">你</span> → ' + text.slice(0, 40), "ll-user");
+    log('<span class="la">你</span> → ' + esc(text.slice(0, 40)), "ll-user");
     try {
       var res = await api.guideStep({ sessionId: session.id, answer: text, level: session.difficulty });
       if (!res || !res.data) throw new Error("empty");
@@ -337,7 +342,7 @@
         for (var i = currentGuideStep; i < nextN; i++) setStepState(i, "done");
         currentGuideStep = nextN;
       }
-      log('费曼教学 → 第 ' + nextN + ' 步「' + (d.step_name || "") + '」', "ll-done");
+      log('费曼教学 → 第 ' + nextN + ' 步「' + esc(d.step_name || "") + '」', "ll-done");
       await renderGuide(d);
     } catch (e) {
       toast("回答提交失败，请重试");
@@ -374,8 +379,8 @@
           setAgent("coach", "done", 1);
           log('费曼测试得分 ' + feynmanScore, "ll-done");
           resultBox.style.display = "block";
-          resultBox.innerHTML = '<b>' + feynmanScore + ' 分</b> ' + r.data.verdict +
-            '<br><span class="faint">' + (r.data.feedback && r.data.feedback.accuracy ? r.data.feedback.accuracy.comment : "") + ' · ' + (r.data.feedback && r.data.feedback.simplicity ? r.data.feedback.simplicity.comment : "") + '</span>';
+          resultBox.innerHTML = '<b>' + feynmanScore + ' 分</b> ' + esc(r.data.verdict) +
+            '<br><span class="faint">' + esc(r.data.feedback && r.data.feedback.accuracy ? r.data.feedback.accuracy.comment : "") + ' · ' + esc(r.data.feedback && r.data.feedback.simplicity ? r.data.feedback.simplicity.comment : "") + '</span>';
           finish();
         });
     });

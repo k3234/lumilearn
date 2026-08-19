@@ -2200,6 +2200,9 @@ input:focus-visible, .chapter-item:focus-visible, .theme-option:focus-visible {
 <div class="toast" id="toast"></div>
 
 <script>
+// HTML 转义（防 XSS：& < > " ' 五种字符）
+function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
 // ═══════════════════════════════════════════
 // SLIDE DATA · 动态从后端生成（默认空）
 // ═══════════════════════════════════════════
@@ -2522,7 +2525,7 @@ return '<div class="block-title">' + escapeHtml(String(data)) + '</div>';
 case 'subtitle':
 return '<div class="block-subtitle">' + escapeHtml(String(data)) + '</div>';
 case 'content':
-return '<div class="block-content">' + (typeof data === 'string' ? data : '') + '</div>';
+return '<div class="block-content">' + esc(typeof data === 'string' ? data : '') + '</div>';
 case 'katex':
 return '<div class="block-katex" data-katex="' + escapeHtml(String(data)).replace(/"/g, '&quot;') + '"></div>';
 case 'code':
@@ -2558,7 +2561,7 @@ return '<div class="block-simulation">' +
 '<div class="simulation-resize-handle" onmousedown="startSimResize(event, \'' + simId + '\')"></div>' +
 '</div>';
 default:
-return '<div class="block-content">' + (typeof data === 'string' ? data : JSON.stringify(data)) + '</div>';
+return '<div class="block-content">' + esc(typeof data === 'string' ? data : JSON.stringify(data)) + '</div>';
 }
 }
 
@@ -2680,7 +2683,7 @@ const qData = quizQuestions[qIndex];
 if (answer === 'correct') {
 optionEl.classList.add('correct');
 feedback.className = 'quiz-feedback correct show';
-feedback.innerHTML = '[OK] 正确！' + qData.explanation;
+feedback.innerHTML = '[OK] 正确！' + esc(qData.explanation);
 quizState.score++;
 } else {
 optionEl.classList.add('wrong');
@@ -2689,7 +2692,7 @@ allOptions.forEach(opt => {
 if (opt.dataset.answer === 'correct') opt.classList.add('correct');
 });
 feedback.className = 'quiz-feedback wrong show';
-feedback.innerHTML = '[X] 不对哦！' + qData.explanation;
+feedback.innerHTML = '[X] 不对哦！' + esc(qData.explanation);
 }
 
 quizState.answered.add(qIndex);
@@ -3360,7 +3363,7 @@ window.slides.forEach((slide, i) => {
 const item = document.createElement('div');
 item.className = 'chapter-item' + (i === currentSlide ? ' active' : '');
 item.dataset.slide = i;
-item.innerHTML = '<span class="chapter-num">' + (i + 1) + '</span><span>' + (slide.title || 'Slide ' + (i + 1)) + '</span>';
+item.innerHTML = '<span class="chapter-num">' + (i + 1) + '</span><span>' + esc(slide.title || 'Slide ' + (i + 1)) + '</span>';
 list.appendChild(item);
 });
 }
@@ -3377,9 +3380,9 @@ const revealSlides = document.getElementById('revealSlides');
 revealSlides.innerHTML = '';
 window.slides.forEach(slide => {
 const section = document.createElement('section');
-section.innerHTML = '<h2>' + (slide.title || '') + '</h2>' +
-'<p style="font-size:0.8em;color:#666;">' + (slide.subtitle || '') + '</p>' +
-'<div style="text-align:left;font-size:0.7em;line-height:1.8;">' + (slide.content || '') + '</div>';
+section.innerHTML = '<h2>' + esc(slide.title || '') + '</h2>' +
+'<p style="font-size:0.8em;color:#666;">' + esc(slide.subtitle || '') + '</p>' +
+'<div style="text-align:left;font-size:0.7em;line-height:1.8;">' + esc(slide.content || '') + '</div>';
 revealSlides.appendChild(section);
 });
 
@@ -3580,7 +3583,7 @@ container.innerHTML = '<div class="feynman-loading" style="color:var(--accent-re
 btn.disabled = false;
 btn.textContent = '开始学习';
 }).catch(function(e) {
-container.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">请求失败: ' + e.message + '</div>';
+container.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">请求失败: ' + esc(e.message) + '</div>';
 btn.disabled = false;
 btn.textContent = '开始学习';
 showToast('请求失败: ' + e.message);
@@ -3948,7 +3951,7 @@ resultDiv.innerHTML = '<div class="feynman-loading" style="color:var(--accent-re
 btn.disabled = false;
 btn.textContent = '提交测试';
 }).catch(function(e) {
-resultDiv.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">请求失败: ' + e.message + '</div>';
+resultDiv.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">请求失败: ' + esc(e.message) + '</div>';
 btn.disabled = false;
 btn.textContent = '提交测试';
 });

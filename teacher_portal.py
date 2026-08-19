@@ -27,6 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, request, jsonify, session, send_file
 
+from framework.core.config import get_app_secret_key, register_csrf_guard
 from framework.database import db
 
 db.init()
@@ -38,7 +39,40 @@ if not TEMPLATE_DIR.exists():
     TEMPLATE_DIR = BASE_DIR / "tianhong" / "templates"
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("TEACHER_SECRET_KEY", "lumilearn-teacher-portal-secret")
+app.secret_key = get_app_secret_key("TEACHER_SECRET_KEY", "Teacher Portal")
+
+# Cookie 安全属性 + CSRF（cookie 会话认证端口）
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("LUMILEARN_COOKIE_SECURE", "").lower() == "true",
+    MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 10MB 上传上限
+)
+register_csrf_guard(app)
+
+
+@app.after_request
+def _teacher_security_headers(response):
+    """全局安全响应头（防御 XSS / 点击劫持 / MIME 嗅探）"""
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"
+    if "text/html" in response.headers.get("Content-Type", ""):
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "img-src 'self' data: blob:; "
+            "connect-src 'self' http://localhost:* http://127.0.0.1:*; "
+            "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "object-src 'none'"
+        )
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+    return response
 
 
 # ============================================================

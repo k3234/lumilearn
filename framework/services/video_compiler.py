@@ -76,10 +76,21 @@ class VideoCompiler:
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # 校验 srt_file 路径：防止路径穿越和 shell 注入
+        srt_path = Path(srt_file)
+        if ".." in srt_path.parts or srt_path.is_absolute():
+            # 相对路径允许，绝对路径需校验是否在允许的目录内
+            srt_resolved = srt_path.resolve()
+            allowed_dirs = [Path(".").resolve(), Path("/tmp").resolve()]
+            if not any(str(srt_resolved).startswith(str(d)) for d in allowed_dirs):
+                raise ValueError(f"不允许的字幕文件路径: {srt_file}")
+        # ffmpeg subtitles 过滤器对路径中的特殊字符敏感，清理控制字符
+        safe_srt = re.sub(r'["\\$`]', r'\\\1', str(srt_path))
+
         cmd = [
             "ffmpeg", "-y",
             "-i", video,
-            "-vf", f"subtitles={srt_file}",
+            "-vf", f"subtitles={safe_srt}",
             "-c:a", "copy",
             str(output_path)
         ]

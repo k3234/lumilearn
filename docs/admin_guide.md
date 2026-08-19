@@ -12,22 +12,25 @@
 | 项 | 值 |
 |:---|:---|
 | 用户名 | `admin` |
-| 初始密码 | `admin123` |
+| 初始密码 | 环境变量 `LUMILEARN_ADMIN_INITIAL_PASSWORD`；未设置时随机生成并打印到日志 |
 | 角色 | `super_admin`（超级管理员） |
 | 显示名 | 超级管理员 |
+| 强制改密 | ✅ 首次登录后强制要求修改密码（`must_change_password`） |
 
-> ⚠️ **务必在首次登录后立即修改密码**，`admin123` 为公开的默认口令，任何人都可能尝试登录。
+> ⚠️ **安全说明**：系统不再使用公开弱口令 `admin/admin123`。
+> - 新部署：初始密码随机生成或由 `LUMILEARN_ADMIN_INITIAL_PASSWORD` 指定，且**首次登录必须改密**，改密前无法执行任何管理操作。
+> - 存量库：若旧版曾创建 `admin/admin123`，用 `admin123` 登录成功后会自动标记强制改密，必须修改后才能继续使用。
 
 修改密码的三种方式：
 
-1. **Web 面板**：登录后调用右上角/用户菜单中的"修改密码"（填写原密码 + 新密码）。
+1. **Web 面板**：登录后调用右上角/用户菜单中的"修改密码"（填写原密码 + 新密码，新密码至少 6 位）。
 2. **REST API**：
 
    ```bash
    curl -X POST http://localhost:18080/api/admin/password \
      -H "Content-Type: application/json" \
      -H "X-Admin-Token: <你的Token>" \
-     -d '{"old_password": "admin123", "new_password": "你的新密码"}'
+     -d '{"old_password": "原密码", "new_password": "你的新密码"}'
    ```
 
 3. **CLI**（忘记密码时由另一管理员重置）：
@@ -153,10 +156,10 @@ python scripts/db_admin.py admin logs --level error --limit 100
 **curl 调用示例**：
 
 ```bash
-# 登录获取 token
+# 登录获取 token（口令从环境变量 ADMIN_PASSWORD 传入，禁止硬编码）
 TOKEN=$(curl -s -X POST http://localhost:18080/api/admin/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}' | python -c "import sys,json;print(json.load(sys.stdin)['token'])")
+  -d '{"username":"admin","password":"'"$ADMIN_PASSWORD"'"}' | python -c "import sys,json;print(json.load(sys.stdin)['token'])")
 
 # 带鉴权调用
 curl -H "X-Admin-Token: $TOKEN" http://localhost:18080/api/admin/overview
@@ -214,7 +217,7 @@ curl -X POST http://localhost:18080/api/admin/agents/adaptive_path/run \
 ## 6. 安全注意事项
 
 1. **密码策略**
-   - 默认账号 `admin/admin123` 为公开口令，**首次登录必须修改**（Web 面板 / API / CLI 均可）。
+   - 系统不再内置公开口令：默认管理员初始密码由环境变量 `LUMILEARN_ADMIN_INITIAL_PASSWORD` 指定或随机生成，**首次登录必须强制改密**（Web 面板 / API / CLI 均可）；新密码至少 6 位。
    - 密码使用 `werkzeug.security.generate_password_hash` 加盐哈希存储，数据库不保存明文。
    - 停用离职管理员：`python scripts/db_admin.py admin disable --username <name>`，停用后无法登录。
 

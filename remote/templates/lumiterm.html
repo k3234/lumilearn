@@ -1187,6 +1187,9 @@ body.keyboard-open .chat {
 /* ═══════════════════════════════════════
 STAR FIELD · Algorithmic Art Background
 ═══════════════════════════════════════ */
+// HTML 转义（防 XSS：& < > " ' 五种字符）
+function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
 const canvas = document.getElementById('stars');
 const ctx = canvas.getContext('2d');
 let stars = [];
@@ -1418,7 +1421,7 @@ div.innerHTML = `
 <div class="msg-avatar ${role}">${isAI ? 'AI' : 'U'}</div>
 <div class="msg-content">
 <div class="msg-label-row">
-<div class="msg-label">${isAI ? currentModel : 'You'}</div>
+<div class="msg-label">${esc(isAI ? currentModel : 'You')}</div>
 ${isAI ? `
 <div class="msg-actions">
 <button class="btn-speak" onclick="toggleSpeak('${msgId}')" title="朗读 (Ctrl+Shift+S)">
@@ -1460,7 +1463,7 @@ div.innerHTML = `
 <div class="msg-avatar model">AI</div>
 <div class="msg-content">
 <div class="msg-label-row">
-<div class="msg-label">${currentModel}</div>
+<div class="msg-label">${esc(currentModel)}</div>
 <div class="msg-actions">
 <button class="btn-speak" onclick="toggleSpeak('${msgId}')" title="朗读">
 <svg viewBox="0 0 24 24" width="14" height="14"><path d="M3 10v4a1 1 0 0 0 1 1h3l4 3a1 1 0 0 0 1.7-.7V5.7A1 1 0 0 0 11 5L7 8H4a1 1 0 0 0-1 2Z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M17.8 6.2a8 8 0 0 1 0 11.6" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".6"/>
@@ -1536,13 +1539,13 @@ var numbered = '';
 for (var i = 0; i < lines.length; i++) {
 numbered += '<span class="line">' + lines[i] + '</span>\n';
 }
-return '<div class="code-block-wrapper"><div class="code-lang-label">' + cb.lang + '</div><pre class="code-block-light"><code>' + numbered + '</code></pre></div>';
+return '<div class="code-block-wrapper"><div class="code-lang-label">' + esc(cb.lang) + '</div><pre class="code-block-light"><code>' + numbered + '</code></pre></div>';
 });
 
 // 替换图表占位符
 text = text.replace(/%%CHARTBLOCK_(\d+)%%/g, function(match, idx) {
 var cb = chartBlocks[parseInt(idx)];
-return '<div class="chart-container" data-chart-type="' + cb.type + '" data-chart-config="' + encodeURIComponent(JSON.stringify(cb.data)) + '"><div class="chart-title">' + (cb.data && cb.data.title ? cb.data.title : '图表') + '</div></div>';
+return '<div class="chart-container" data-chart-type="' + esc(cb.type) + '" data-chart-config="' + encodeURIComponent(JSON.stringify(cb.data)) + '"><div class="chart-title">' + esc(cb.data && cb.data.title ? cb.data.title : '图表') + '</div></div>';
 });
 
 return text;
@@ -2345,7 +2348,7 @@ btnReview.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24"><path d="M16 4h
 .catch(function(err) {
 var panel = document.createElement('div');
 panel.className = 'review-panel';
-panel.innerHTML = '<div style="color:#f85149;font-size:14px;">审查失败: ' + err.message + '</div>';
+panel.innerHTML = '<div style="color:#f85149;font-size:14px;">审查失败: ' + esc(err.message) + '</div>';
 chatArea.insertBefore(panel, chatArea.firstChild);
 chatArea.scrollTop = 0;
 btnReview.disabled = false;
@@ -2382,14 +2385,14 @@ var suggestions = data.suggestions || [];
 if (suggestions.length > 0) {
 suggestionsHTML = '<div class="review-suggestions"><h4>改进建议</h4>';
 for (var i = 0; i < suggestions.length; i++) {
-suggestionsHTML += '<div class="review-suggestion">' + suggestions[i] + '</div>';
+suggestionsHTML += '<div class="review-suggestion">' + esc(suggestions[i]) + '</div>';
 }
 suggestionsHTML += '</div>';
 }
 
 var summaryHTML = '';
 if (data.summary) {
-summaryHTML = '<div class="review-summary">' + data.summary + '</div>';
+summaryHTML = '<div class="review-summary">' + esc(data.summary) + '</div>';
 }
 
 var panel = document.createElement('div');
@@ -2443,7 +2446,7 @@ btnResources.innerHTML = '<svg class="btn-spinner" viewBox="0 0 24 24"><circle c
 
 var panel = document.getElementById('resourcesPanel');
 var list = document.getElementById('resourcesList');
-list.innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:12px 0;"> 正在搜索: ' + keyword + '...</div>';
+list.innerHTML = '<div style="color:var(--text-dim);font-size:13px;padding:12px 0;"> 正在搜索: ' + esc(keyword) + '...</div>';
 panel.classList.remove('collapsed');
 updateResourcesToggle();
 
@@ -2466,7 +2469,7 @@ btnResources.disabled = false;
 btnResources.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 })
 .catch(function(err) {
-list.innerHTML = '<div style="color:#f85149;font-size:13px;padding:12px 0;">[X] 搜索失败: ' + err.message + '</div>';
+list.innerHTML = '<div style="color:#f85149;font-size:13px;padding:12px 0;">[X] 搜索失败: ' + esc(err.message) + '</div>';
 btnResources.disabled = false;
 btnResources.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 });
@@ -2481,12 +2484,12 @@ if (resources.length > 0) {
 for (var i = 0; i < resources.length; i++) {
 var r = resources[i];
 html += '<div class="resource-item">';
-html += '<a href="' + (r.url || '#') + '" target="_blank" rel="noopener">' + (r.title || '未命名资源') + '</a>';
+html += '<a href="' + esc(r.url || '#') + '" target="_blank" rel="noopener">' + esc(r.title || '未命名资源') + '</a>';
 if (r.summary) {
-html += '<div class="resource-summary">' + r.summary + '</div>';
+html += '<div class="resource-summary">' + esc(r.summary) + '</div>';
 }
 if (r.source) {
-html += '<div class="resource-source">来源: ' + r.source + '</div>';
+html += '<div class="resource-source">来源: ' + esc(r.source) + '</div>';
 }
 html += '</div>';
 }
@@ -2497,12 +2500,12 @@ html += '<div style="color:var(--text-dim);font-size:13px;padding:12px 0;">未�
 if (data.rag_summary) {
 html += '<div class="resource-rag-summary">';
 html += '<h4> AI 学习摘要</h4>';
-html += '<p>' + data.rag_summary + '</p>';
+html += '<p>' + esc(data.rag_summary) + '</p>';
 html += '</div>';
 }
 
 if (data.source) {
-html += '<div class="resource-source" style="padding:8px 0;">数据来源: ' + data.source + '</div>';
+html += '<div class="resource-source" style="padding:8px 0;">数据来源: ' + esc(data.source) + '</div>';
 }
 
 list.innerHTML = html;

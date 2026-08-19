@@ -69,11 +69,36 @@ class RestrictedAST(ast.NodeVisitor):
     def visit_Call(self, node):
         """检查函数调用"""
         if isinstance(node.func, ast.Attribute):
+            # 属性链调用，如 os.system()、__class__.__subclasses__()
             attr_name = node.func.attr
             if attr_name in self.DANGEROUS_ATTRS:
                 self.violations.append(
                     f"禁止调用危险方法: {attr_name}"
                 )
+            # 检测 dunder 属性链逃逸
+            if attr_name.startswith('__') and attr_name.endswith('__'):
+                self.violations.append(
+                    f"禁止访问魔术属性: {attr_name}"
+                )
+        elif isinstance(node.func, ast.Name):
+            # 直接调用内置危险函数，如 exec()、eval()、input()
+            if node.func.id in ('exec', 'eval', 'input',
+                                'getattr', 'setattr', 'delattr',
+                                'globals', 'locals', 'vars',
+                                'open', 'compile', 'breakpoint'):
+                self.violations.append(
+                    f"禁止调用危险函数: {node.func.id}"
+                )
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node):
+        """检查属性访问，检测魔术属性链"""
+        attr_name = node.attr
+        if attr_name.startswith('__') and attr_name.endswith('__'):
+            # 检测 __class__, __bases__, __subclasses__ 等魔术属性
+            self.violations.append(
+                f"禁止访问魔术属性: {attr_name}"
+            )
         self.generic_visit(node)
 
     def visit_Assign(self, node):
@@ -132,49 +157,65 @@ class CodeSandbox:
         safe_globals = self._create_safe_globals()
         safe_locals = {}
 
-        # 4. 执行代码
+        # 4. 执行代码（带超时控制，跨平台使用线程方案）
+        effective_timeout = timeout or self.config.sandbox.max_execution_time
         start_time = time.time()
         output_buffer = io.StringIO()
         error_buffer = io.StringIO()
 
-        old_stdout = sys.stdout
-        old_stderr = sys.stderr
-
+        # 编译代码
         try:
-            sys.stdout = output_buffer
-            sys.stderr = error_buffer
-
-            # 编译代码
-            try:
-                tree = ast.parse(code)
-            except SyntaxError as e:
-                return SandboxResult(
-                    success=False,
-                    error=f"语法错误: {str(e)}"
-                )
-
-            # 执行代码
-            try:
-                exec(compile(tree, '<sandbox>', 'exec'), safe_globals, safe_locals)
-            except Exception as e:
-                return SandboxResult(
-                    success=False,
-                    error=f"执行错误: {str(e)}"
-                )
-
-            execution_time = time.time() - start_time
-
+            tree = ast.parse(code)
+            compiled = compile(tree, '<sandbox>', 'exec')
+        except SyntaxError as e:
             return SandboxResult(
-                success=True,
-                output=output_buffer.getvalue(),
-                error=error_buffer.getvalue(),
-                execution_time=execution_time,
-                return_value=safe_locals.get('_result')
+                success=False,
+                error=f"语法错误: {str(e)}"
             )
 
-        finally:
-            sys.stdout = old_stdout
-            sys.stderr = old_stderr
+        result_holder = {}
+
+        def _run():
+            """在子线程中执行沙箱代码"""
+            old_stdout = sys.stdout
+            old_stderr = sys.stderr
+            try:
+                sys.stdout = output_buffer
+                sys.stderr = error_buffer
+                exec(compiled, safe_globals, safe_locals)
+                result_holder['ok'] = True
+            except Exception as e:
+                result_holder['ok'] = False
+                result_holder['error'] = str(e)
+            finally:
+                sys.stdout = old_stdout
+                sys.stderr = old_stderr
+
+        worker = threading.Thread(target=_run, daemon=True)
+        worker.start()
+        worker.join(effective_timeout)
+
+        if worker.is_alive():
+            return SandboxResult(
+                success=False,
+                error=f"执行超时（超过{effective_timeout}秒）"
+            )
+
+        if not result_holder.get('ok'):
+            return SandboxResult(
+                success=False,
+                error=f"执行错误: {result_holder.get('error', '未知错误')}"
+            )
+
+        execution_time = time.time() - start_time
+
+        return SandboxResult(
+            success=True,
+            output=output_buffer.getvalue(),
+            error=error_buffer.getvalue(),
+            execution_time=execution_time,
+            return_value=safe_locals.get('_result')
+        )
 
     def execute_with_return(self, code: str, user_id: str = "anonymous") -> SandboxResult:
         """
@@ -213,61 +254,31 @@ class CodeSandbox:
 
     def _create_safe_globals(self) -> dict:
         """创建安全的globals字典"""
-        safe_builtins = {
-            'print': print,
-            'len': len,
-            'str': str,
-            'int': int,
-            'float': float,
-            'bool': bool,
-            'list': list,
-            'dict': dict,
-            'tuple': tuple,
-            'set': set,
-            'range': range,
-            'enumerate': enumerate,
-            'zip': zip,
-            'map': map,
-            'filter': filter,
-            'sorted': sorted,
-            'reversed': reversed,
-            'min': min,
-            'max': max,
-            'sum': sum,
-            'abs': abs,
-            'round': round,
-            'pow': pow,
-            'divmod': divmod,
-            'isinstance': isinstance,
-            'issubclass': issubclass,
-            'type': type,
-            'hash': hash,
-            'id': id,
-            'input': lambda: '',  # 禁用交互式输入
-        }
-
-        # 允许的内置函数
         allowed_builtins = {
-            'abs': abs, 'all': all, 'any': any, 'bin': bin, 'bool': bool,
-            'bytearray': bytearray, 'bytes': bytes, 'callable': callable,
-            'chr': chr, 'classmethod': classmethod, 'compile': compile,
-            'complex': complex, 'delattr': delattr, 'dict': dict,
-            'dir': dir, 'divmod': divmod, 'enumerate': enumerate,
-            'eval': eval, 'exec': exec, 'filter': filter, 'float': float,
-            'format': format, 'frozenset': frozenset, 'getattr': getattr,
-            'globals': globals, 'hasattr': hasattr, 'hash': hash,
-            'help': help, 'hex': hex, 'id': id, 'input': input,
-            'int': int, 'isinstance': isinstance, 'issubclass': issubclass,
-            'iter': iter, 'len': len, 'list': list, 'locals': locals,
-            'map': map, 'max': max, 'memoryview': memoryview,
-            'min': min, 'next': next, 'object': object, 'oct': oct,
-            'open': open, 'ord': ord, 'pow': pow, 'print': print,
-            'property': property, 'range': range, 'repr': repr,
-            'reversed': reversed, 'round': round, 'set': set,
-            'setattr': setattr, 'slice': slice, 'sorted': sorted,
-            'staticmethod': staticmethod, 'str': str, 'sum': sum,
-            'super': super, 'tuple': tuple, 'type': type, 'vars': vars,
-            'zip': zip,
+            # 算术与数字
+            'abs': abs, 'round': round, 'divmod': divmod, 'pow': pow,
+            'int': int, 'float': float, 'bool': bool, 'complex': complex,
+            'bin': bin, 'hex': hex, 'oct': oct,
+            'sum': sum, 'min': min, 'max': max, 'len': len,
+            # 序列与集合
+            'list': list, 'tuple': tuple, 'set': set, 'frozenset': frozenset,
+            'dict': dict, 'range': range, 'slice': slice,
+            'enumerate': enumerate, 'zip': zip, 'reversed': reversed,
+            'sorted': sorted, 'map': map, 'filter': filter,
+            # 字符串
+            'str': str, 'bytes': bytes, 'bytearray': bytearray,
+            'format': format, 'repr': repr, 'ascii': ascii,
+            'ord': ord, 'chr': chr,
+            # 迭代与判断
+            'any': any, 'all': all, 'next': next, 'iter': iter,
+            # 对象与类型
+            'isinstance': isinstance, 'issubclass': issubclass,
+            'hasattr': hasattr, 'property': property,
+            # 其他安全内置
+            'help': None, 'id': id, 'hash': hash,
+            'callable': callable,
+            # 输出
+            'print': print,
         }
 
         safe_globals = {

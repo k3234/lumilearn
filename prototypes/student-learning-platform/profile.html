@@ -128,7 +128,7 @@
     points.forEach(function (p, i) {
       if (i % Math.ceil(points.length / 6) === 0 || i === points.length - 1) {
         s += '<circle cx="' + x(i) + '" cy="' + y(p.score) + '" r="3.5" fill="#E8A33D"/>';
-        s += '<text x="' + x(i) + '" y="' + (H - 6) + '" text-anchor="middle">' + p.date + '</text>';
+        s += '<text x="' + x(i) + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(p.date) + '</text>';
       }
     });
     s += '</svg>';
@@ -151,7 +151,7 @@
         var sev = w.severity === "高" ? "tag-danger" : w.severity === "中" ? "tag-amber" : "tag-faint";
         var div = document.createElement("div");
         div.className = "pf-weak";
-        div.innerHTML = '<span class="tag ' + sev + '">' + w.severity + '</span><span>' + w.text + '</span><span class="cnt">×' + w.count + '</span>';
+        div.innerHTML = '<span class="tag ' + sev + '">' + esc(w.severity) + '</span><span>' + esc(w.text) + '</span><span class="cnt">×' + w.count + '</span>';
         weakEl.appendChild(div);
       });
     }
@@ -164,7 +164,7 @@
       data.recent_reports.forEach(function (r) {
         var div = document.createElement("div");
         div.className = "pf-row";
-        div.innerHTML = '<span class="tag tag-mint">' + r.score + '%</span><span class="t">' + r.topic + '</span><span class="meta">' + r.date + '</span>';
+        div.innerHTML = '<span class="tag tag-mint">' + r.score + '%</span><span class="t">' + esc(r.topic) + '</span><span class="meta">' + esc(r.date) + '</span>';
         div.addEventListener("click", function () {
           SessionStore.save({ mode: "report", reportId: r.id });
           location.href = "report.html";
@@ -181,7 +181,7 @@
       data.conversations.slice(0, 6).forEach(function (c) {
         var div = document.createElement("div");
         div.className = "pf-row";
-        div.innerHTML = '<span class="tag tag-sky">' + c.msg_count + ' 条</span><span class="t">' + c.title + '</span><span class="meta">' + c.date + '</span>';
+        div.innerHTML = '<span class="tag tag-sky">' + c.msg_count + ' 条</span><span class="t">' + esc(c.title) + '</span><span class="meta">' + esc(c.date) + '</span>';
         convEl.appendChild(div);
       });
     }

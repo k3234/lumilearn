@@ -613,7 +613,7 @@ class OrchestrationEngine:
     def _save_output(self, result: Dict):
         """保存综合结果到文件"""
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        topic_safe = re.sub(r'[\\/:*?"<>|]', '_', result["topic"])[:40]
+        topic_safe = re.sub(r'\.\.', '_', re.sub(r'[\\/:*?"<>|]', '_', result["topic"]))[:40]
 
         # JSON 完整输出
         json_path = os.path.join(OUTPUT_DIR, f"orchestra_{ts}_{topic_safe}.json")

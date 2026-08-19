@@ -10,6 +10,7 @@ from framework.security import (
     reset_gateway, reset_sandbox, reset_firewall,
     SecurityConfig,
 )
+from framework.admin.auth import require_admin
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ def get_gateway_stats():
 
 
 @security_bp.route('/gateway/block', methods=['POST'])
+@require_admin
 def block_ip():
     """封禁IP"""
     data = request.get_json()
@@ -62,6 +64,7 @@ def block_ip():
 
 
 @security_bp.route('/gateway/unblock', methods=['POST'])
+@require_admin
 def unblock_ip():
     """解封IP"""
     data = request.get_json()
@@ -166,6 +169,7 @@ def get_sandbox_stats():
 
 
 @security_bp.route('/sandbox/execute', methods=['POST'])
+@require_admin
 def execute_code():
     """在沙箱中执行代码"""
     data = request.get_json()
@@ -188,6 +192,7 @@ def execute_code():
 
 
 @security_bp.route('/firewall/apply', methods=['POST'])
+@require_admin
 def apply_system_firewall():
     """应用系统级防火墙规则（需要管理员权限）"""
     firewall = get_firewall()
@@ -203,6 +208,7 @@ def apply_system_firewall():
 
 
 @security_bp.route('/reset', methods=['POST'])
+@require_admin
 def reset_security_system():
     """重置安全系统（仅用于测试）"""
     reset_gateway()

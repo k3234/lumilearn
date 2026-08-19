@@ -174,7 +174,7 @@
       var sev = w.severity === "高" ? "tag-danger" : w.severity === "中" ? "tag-amber" : "tag-faint";
       var div = document.createElement("div");
       div.className = "weak-item";
-      div.innerHTML = '<span class="tag ' + sev + '">' + w.severity + '</span><span>' + w.text + '</span>';
+      div.innerHTML = '<span class="tag ' + sev + '">' + esc(w.severity) + '</span><span>' + esc(w.text) + '</span>';
       weak.appendChild(div);
     });
 
@@ -196,9 +196,9 @@
         var cell = document.createElement("div");
         cell.className = "stat-cell";
         var val = s[0] === "model"
-          ? '<b style="font-size:12px;line-height:1.5">' + s[1] + '</b>'
-          : '<b>' + s[1] + '</b>';
-        cell.innerHTML = val + '<span>' + s[2] + '</span>';
+          ? '<b style="font-size:12px;line-height:1.5">' + esc(s[1]) + '</b>'
+          : '<b>' + esc(s[1]) + '</b>';
+        cell.innerHTML = val + '<span>' + esc(s[2]) + '</span>';
         stats.appendChild(cell);
       });
 
@@ -209,8 +209,8 @@
       var row = document.createElement("div");
       row.className = "agent-sum-row";
       row.innerHTML =
-        '<span class="tag tag-amber">' + a.name + '</span>' +
-        '<code>' + (a.model || "") + '</code>' +
+        '<span class="tag tag-amber">' + esc(a.name) + '</span>' +
+        '<code>' + esc(a.model || "") + '</code>' +
         '<span class="calls">' + (a.calls || 1) + ' 次调用</span>';
       agents.appendChild(row);
     });

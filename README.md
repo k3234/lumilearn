@@ -165,6 +165,28 @@ LumiLearn 支持**本地模型容器** 与**云端 API**  两类推理来源，�
 
 **端口模型配置** ：每个端口（终端/API/模型管理/GOAI Web/教师端）可独立指定使用哪个提供商的哪个模型，配置实时生效，无需重启。
 
+## 🚀 零文件一键部署（无需下载任何文件）
+
+不需要下载、保存任何脚本文件，一行命令完成「克隆/更新仓库 → 配置 → 启动」：
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/k3234/lumilearn/master/deploy/install.sh | bash
+# 带参数（管道传参用 bash -s --）：--quick 全默认值 / --no-start 只克隆+配置
+curl -fsSL https://raw.githubusercontent.com/k3234/lumilearn/master/deploy/install.sh | bash -s -- --quick --no-start
+```
+
+```powershell
+# Windows PowerShell
+irm https://raw.githubusercontent.com/k3234/lumilearn/master/deploy/install.ps1 | iex
+# 选项用环境变量：$env:LUMILEARN_QUICK="1"、$env:LUMILEARN_NO_START="1"、$env:LUMILEARN_DIR="D:\lumilearn" 等
+```
+
+- 管道模式自动 `--quick` 全默认值；`--no-start` 只克隆+配置、不启动服务
+- 仓库/分支可用环境变量 `LUMILEARN_REPO_URL` / `LUMILEARN_BRANCH` 覆盖
+- 凭据一律走环境变量（`REMOTE_HOST` / `REMOTE_USER` / `REMOTE_PASSWORD` 或 API Key），脚本不含任何真实 IP / 密码
+- 详细说明（参数/环境变量清单、Node.js 可选路径、与 bootstrap.* 的区别）见 [deploy/README.md](deploy/README.md)
+
 ## 🐳 Docker 部署（推荐）
 
 ```bash

@@ -9,7 +9,7 @@ import os
 BASE = os.environ.get("REMOTE_BASE", "http://localhost:5000").rstrip("/")
 ADMIN_BASE = os.environ.get("ADMIN_BASE", "http://localhost:18080").rstrip("/")
 ADMIN_CREDS = {"username": os.environ.get("ADMIN_USER", "admin"),
-               "password": os.environ.get("ADMIN_PASSWORD", "admin123")}
+               "password": os.environ.get("ADMIN_PASSWORD", "")}
 s = requests.Session()
 
 # 1. 登录（先尝试常用账号）

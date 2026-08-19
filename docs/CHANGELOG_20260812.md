@@ -215,7 +215,7 @@
 
 ### 9.1 部署
 
-- 14 个文件（代码 9 + 模板 5）上传至 `/home/kai/lumilearn`，覆盖前自动备份 `*.bak_时间戳`
+- 14 个文件（代码 9 + 模板 5）上传至 `/home/<user>/lumilearn`，覆盖前自动备份 `*.bak_时间戳`
 - 合并 `port_settings`（补齐 terminal/teacher_portal/student_portal，保留远程其他配置）
 - 重启全部服务：`lumilearn-api`(18080/81/82) + `lumilearn-goai`(5000)（systemd）+ `teacher_portal`(5001) + `analytics_dashboard`(18090) + `student_portal`(5010)（nohup）
 - 7 端口全部 HTTP 200/302 ✅

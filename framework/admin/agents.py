@@ -163,12 +163,102 @@ class ChatAgent(BaseAgent):
         return {"agent_id": self.agent_id, "status": status.get("status", "unknown"), "type": self.agent_type}
 
 
+# ================================================================
+# agent_core 统一编排 Agent（Phase 1 新增）
+# ================================================================
+class RouterTaskAgent(BaseAgent):
+    """Router Agent — 任务路由与复杂度评估"""
+
+    def __init__(self):
+        super().__init__(
+            agent_id="router_task",
+            name="任务路由Agent",
+            agent_type="router",
+            description="分析任务复杂度并路由到最优执行路径",
+        )
+
+    def run(self, payload: Dict) -> Dict:
+        from agent_core.router import get_router_agent
+        topic = payload.get("topic", "")
+        context = payload.get("context", "")
+        if not topic:
+            return {"success": False, "error": "缺少 topic 参数"}
+        router = get_router_agent()
+        result = router.route(topic, context)
+        return {"success": True, "route_result": result}
+
+    def health(self) -> Dict:
+        return {"agent_id": self.agent_id, "status": "healthy", "type": self.agent_type}
+
+
+class UnifiedOrchestratorAgent(BaseAgent):
+    """统一编排 Agent — 整合 Router + LangGraph + 多 Agent 系统"""
+
+    def __init__(self):
+        super().__init__(
+            agent_id="unified_orchestrator",
+            name="统一编排Agent",
+            agent_type="unified_orchestrator",
+            description="统一编排：Router智能路由 + LangGraph并行 + 多Agent串行",
+        )
+
+    def run(self, payload: Dict) -> Dict:
+        from agent_core.orchestrator import get_unified_orchestrator
+        orch = get_unified_orchestrator()
+        return orch.run(payload)
+
+    def health(self) -> Dict:
+        from agent_core.orchestrator import get_unified_orchestrator
+        status = get_unified_orchestrator().get_status()
+        return {
+            "agent_id": self.agent_id,
+            "status": "healthy",
+            "type": self.agent_type,
+            "registered_models": status.get("models", {}).get("total", 0),
+        }
+
+
+class FactCheckAgent(BaseAgent):
+    """事实核查 Agent（P0-2）— 教学内容与 RAG 知识库来源二次核对，防语义幻觉"""
+
+    def __init__(self):
+        super().__init__(
+            agent_id="fact_checker",
+            name="事实核查Agent",
+            agent_type="fact_checker",
+            description="对教学内容做二次事实校验（与RAG来源核对），降低语义级幻觉风险",
+        )
+
+    def run(self, payload: Dict) -> Dict:
+        from agent_core.fact_checker import get_fact_checker_agent
+        topic = payload.get("topic", "")
+        if not topic:
+            return {"success": False, "error": "缺少 topic 参数"}
+        result = get_fact_checker_agent().run(payload)
+        # 统一 Agent 契约：失败以 success=False 表达（与编排层状态机兼容）
+        result["success"] = bool(result.get("passed", False))
+        return result
+
+    def health(self) -> Dict:
+        return {
+            "agent_id": self.agent_id,
+            "status": "healthy",
+            "type": self.agent_type,
+            "sources_checked": 0,
+        }
+
+
 # 内置 Agent 工厂
 BUILTIN_AGENTS: List[Callable[[], BaseAgent]] = [
     FeynmanAgent,
     DetectionAgent,
     AdaptiveAgent,
     ChatAgent,
+    # Phase 1 新增：统一编排体系
+    RouterTaskAgent,
+    UnifiedOrchestratorAgent,
+    # P0-2 新增：事实核查
+    FactCheckAgent,
 ]
 
 

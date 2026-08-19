@@ -28,6 +28,7 @@ from flask import (Flask, request, jsonify, render_template, session,
 from goai_agent import LumiLearnAgent, TaskUnderstanding, FlowOrchestrator
 from goai_multi_agent import get_multi_agent_orchestrator
 from framework.api.routes.student_learn import create_student_learn_bp
+from framework.core.config import get_app_secret_key, register_csrf_guard
 
 # 连接 Framework 数据库（与 18080 管理端共享 lumilearn.db）
 from framework.database import db
@@ -43,7 +44,39 @@ if not TEMPLATE_DIR.exists():
     TEMPLATE_DIR = BASE_DIR / "tianhong" / "templates"
 
 app = Flask(__name__, template_folder=str(TEMPLATE_DIR))
-app.secret_key = os.environ.get("GOAI_SECRET_KEY", "lumilearn-goai-web-secret")
+app.secret_key = get_app_secret_key("GOAI_SECRET_KEY", "GOAI Web")
+# Cookie 安全属性 + CSRF（cookie 会话认证端口）
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("LUMILEARN_COOKIE_SECURE", "").lower() == "true",
+    MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 10MB 上传上限
+)
+register_csrf_guard(app)
+
+
+@app.after_request
+def _goai_security_headers(response):
+    """全局安全响应头（防御 XSS / 点击劫持 / MIME 嗅探）"""
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"
+    if "text/html" in response.headers.get("Content-Type", ""):
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "img-src 'self' data: blob:; "
+            "connect-src 'self' http://localhost:* http://127.0.0.1:*; "
+            "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; "
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "form-action 'self'; "
+            "object-src 'none'"
+        )
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+    return response
 
 # 全局Agent实例（Ollama 地址通过环境变量 OLLAMA_URL 配置，见 .env.example）
 agent = LumiLearnAgent()
@@ -151,6 +184,19 @@ def api_multi_agent():
         if report['assessment']['score'] > 0:
             db.add_learning_report(user['id'], topic, report,
                                    score=report['assessment']['score'])
+        # 自动记录学习进度到自适应引擎（驱动薄弱点/推荐/复习提醒）
+        try:
+            engine = _get_adaptive_engine()
+            if engine is not None:
+                node_id = _match_knowledge_node(topic)
+                if node_id:
+                    engine.record_learning(
+                        str(user['id']), node_id,
+                        score=report['assessment']['score'] / 100.0,
+                        time_spent=float(report.get('total_time') or 0),
+                    )
+        except Exception:
+            pass  # 进度记录失败不影响主流程
         return jsonify({'success': True, 'data': report})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -251,6 +297,143 @@ def _get_current_user():
     if not user_id:
         return None
     return db.get_user(user_id)
+
+
+# ============================================================
+# 自适应学习引擎接入（A1/A2：学习 dashboard + 进度记录）
+# ============================================================
+def _get_adaptive_engine():
+    """懒加载自适应学习引擎单例（失败返回 None，不阻塞主流程）"""
+    try:
+        from framework.services.adaptive_learning import get_adaptive_engine
+        return get_adaptive_engine()
+    except Exception:
+        return None
+
+
+# 主题 → 知识节点匹配表（与 adaptive_learning.KNOWLEDGE_GRAPH 节点名对应）
+_NODE_MATCH_KEYWORDS = {
+    "pythagorean": ["勾股", "毕达哥拉斯", "直角三角形边长"],
+    "triangle_basics": ["三角形", "内角和", "三角"],
+    "circle_area": ["圆面积", "圆的面积", "圆"],
+    "cosine_rule": ["余弦定理", "余弦"],
+    "quadratic_formula": ["求根公式", "一元二次", "二次方程"],
+    "completing_square": ["配方", "配方法"],
+    "polynomial": ["多项式", "因式分解"],
+    "linear_function": ["一次函数", "正比例"],
+    "quadratic_function": ["二次函数", "抛物线"],
+    "function_monotonicity": ["单调性", "单调递增", "单调递减"],
+    "derivative": ["导数", "求导", "微分"],
+    "free_fall": ["自由落体", "自由下落"],
+    "newton_second_law": ["牛顿第二定律", "F=ma", "牛二"],
+    "light_refraction": ["折射", "光的折射", "斯涅尔"],
+    "chemical_equilibrium": ["化学平衡", "平衡移动", "勒夏特列"],
+    "mole": ["物质的量", "摩尔", "阿伏伽德罗"],
+    "mean_median": ["均值", "中位数", "平均数", "众数"],
+    "normal_distribution": ["正态分布", "高斯分布"],
+}
+
+
+def _match_knowledge_node(topic: str) -> Optional[str]:
+    """根据学习主题匹配知识图谱节点 ID，未命中返回 None（兜底不阻塞）"""
+    if not topic:
+        return None
+    for node_id, keywords in _NODE_MATCH_KEYWORDS.items():
+        if any(kw in topic for kw in keywords):
+            return node_id
+    # 兜底：整词包含节点名
+    try:
+        from framework.services.adaptive_learning import get_adaptive_engine
+        engine = get_adaptive_engine()
+        if engine is None:
+            return None
+        for nid, node in engine.graph.items():
+            if node.name and node.name in topic:
+                return nid
+    except Exception:
+        pass
+    return None
+
+
+@app.route('/api/learning/dashboard')
+def api_learning_dashboard():
+    """学习首页聚合数据：进度总览 + 薄弱点TOP3 + 推荐下一步 + 最近学习"""
+    user = _get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    engine = _get_adaptive_engine()
+    if engine is None:
+        return jsonify({'success': False, 'error': '自适应引擎不可用'}), 500
+
+    uid = str(user['id'])
+    try:
+        progress = engine.get_progress(uid)
+        weaknesses = engine.analyze_weaknesses(uid)[:3]
+        recommended = engine.recommend_next(uid, count=5)
+        # 最近学习记录：自适应引擎 history 优先，空则用 learning_reports
+        recent = progress.get("recent_history", [])
+        recent_reports = []
+        if not recent:
+            for r in db.get_learning_reports(user_id=user['id'], limit=5):
+                rep = r.get('report', {})
+                recent_reports.append({
+                    "topic": r.get('topic', ''),
+                    "score": (rep.get('mastery_assessment') or {}).get('score', 0),
+                    "generated_at": rep.get('generated_at', r.get('created_at', '')),
+                })
+        return jsonify({
+            'success': True,
+            'data': {
+                'overall_progress': progress.get('overall_progress', 0),
+                'mastered_nodes': progress.get('mastered_nodes', 0),
+                'learning_nodes': progress.get('learning_nodes', 0),
+                'studied_nodes': progress.get('studied_nodes', 0),
+                'total_knowledge_nodes': progress.get('total_knowledge_nodes', 0),
+                'weaknesses': weaknesses,
+                'recommended': recommended,
+                'recent_history': recent[-10:],
+                'recent_reports': recent_reports,
+            },
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/learning/progress', methods=['POST'])
+def api_learning_progress():
+    """记录学习活动到自适应引擎（掌握度指数平滑更新，驱动推荐/薄弱点）"""
+    user = _get_current_user()
+    if not user:
+        return jsonify({'success': False, 'error': '未登录'}), 401
+    data = request.get_json() or {}
+    topic = (data.get('topic') or '').strip()
+    if not topic:
+        return jsonify({'success': False, 'error': '缺少 topic'}), 400
+    score = float(data.get('score') or 0)
+    # 前端可能传 0-100 或 0-1，统一归一化到 0-1
+    score = max(0.0, min(score, 1.0)) if score <= 1.0 else max(0.0, min(score / 100.0, 1.0))
+    time_spent = float(data.get('time_spent') or 0)
+
+    engine = _get_adaptive_engine()
+    if engine is None:
+        return jsonify({'success': False, 'error': '自适应引擎不可用'}), 500
+
+    node_id = _match_knowledge_node(topic)
+    uid = str(user['id'])
+    try:
+        if node_id:
+            engine.record_learning(uid, node_id, score=score, time_spent=time_spent)
+        return jsonify({
+            'success': True,
+            'data': {
+                'node_id': node_id or None,
+                'topic': topic,
+                'score': round(score, 2),
+                'matched': node_id is not None,
+            },
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/history')

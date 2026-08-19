@@ -17,10 +17,10 @@ STUDENT_URL = os.environ.get("STUDENT_URL",           "http://192.168.2.xx:5010"
 GOAI_URL    = os.environ.get("GOAI_URL",              "http://192.168.2.xx:5000")
 TEACHER_URL = os.environ.get("TEACHER_URL",           "http://192.168.2.xx:5001")
 
-# 远程服务器已知凭据
-ADMIN_CREDS  = {"username": "admin",  "password": "admin123"}
-STU_CREDS    = {"username": "demo",   "password": "123456"}
-TEACH_CREDS  = {"username": "teacher","password": "123456"}
+# 凭据从环境变量读取（禁止硬编码口令）
+ADMIN_CREDS  = {"username": "admin",  "password": os.environ.get("ADMIN_PASSWORD", "")}
+STU_CREDS    = {"username": "demo",   "password": os.environ.get("STUDENT_PASSWORD", "123456")}
+TEACH_CREDS  = {"username": "teacher","password": os.environ.get("TEACHER_PASSWORD", "123456")}
 
 RESULTS = []
 

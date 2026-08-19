@@ -3,6 +3,7 @@
 覆盖 encode、decode、batch 编码
 """
 import pytest
+tokenizers = pytest.importorskip("tokenizers", reason="tokenizers 未安装，跳过分词器测试")
 import os
 import sys
 

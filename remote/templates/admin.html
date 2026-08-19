@@ -105,6 +105,8 @@
     <button class="nav-item" data-panel="analytics" onclick="switchPanel('analytics')">📈 数据可视化</button>
     <button class="nav-item" data-panel="keys" onclick="switchPanel('keys')">🔑 API密钥</button>
     <button class="nav-item" data-panel="ports" onclick="switchPanel('ports')">🔌 端口管理</button>
+    <button class="nav-item" data-panel="mcp" onclick="switchPanel('mcp')">🧩 MCP Server</button>
+    <button class="nav-item" data-panel="tasks" onclick="switchPanel('tasks')">📋 任务队列</button>
     <button class="nav-item" data-panel="admins" onclick="switchPanel('admins')">👑 管理员管理</button>
     <button class="nav-item" data-panel="exports" onclick="switchPanel('exports')">📦 数据导出</button>
     <button class="nav-item" data-panel="settings" onclick="switchPanel('settings')">⚙️ 设置</button>
@@ -171,7 +173,7 @@ function logout() {
 
 function switchPanel(name) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.panel === name));
-  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', reasoning: '推理记录', analytics: '数据可视化', keys: 'API密钥', ports: '端口管理', admins: '管理员管理', exports: '数据导出', settings: '设置' };
+  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', reasoning: '推理记录', analytics: '数据可视化', keys: 'API密钥', ports: '端口管理', mcp: 'MCP Server', interrupts: '待审批队列', costs: '成本报告', weights: '权重配置', admins: '管理员管理', exports: '数据导出', settings: '设置' };
   document.getElementById('panelTitle').textContent = titles[name];
   loaders[name]();
 }
@@ -187,6 +189,7 @@ const loaders = {
   reasoning: loadReasoning,
   analytics: loadAnalytics,
   ports: loadPorts,
+  mcp: loadMcpServers,
   admins: loadAdmins,
   exports: loadExports,
   settings: loadSettings,
@@ -214,7 +217,7 @@ async function loadOverview() {
     </div>
     <h3 style="margin:16px 0 10px;color:#8b949e;">模型服务状态</h3>
     <div class="cards">
-      <div class="card"><div class="num" style="font-size:18px;">${m.status || 'unknown'}</div><div class="label">网关状态</div></div>
+      <div class="card"><div class="num" style="font-size:18px;">${esc(m.status || 'unknown')}</div><div class="label">网关状态</div></div>
       <div class="card"><div class="num" style="font-size:18px;">${m.models ?? '-'}</div><div class="label">本地模型数</div></div>
       <div class="card"><div class="num" style="font-size:18px;">${m.latency_ms ?? '-'}ms</div><div class="label">响应延迟</div></div>
     </div>
@@ -222,7 +225,7 @@ async function loadOverview() {
     <pre class="log-box">${(data.recent_logs || []).map(l => {
       const _tag = {system: '⚙️ 系统', reasoning: '🧠 推理', report: '📚 报告'}[l.source] || l.source;
       const _c = {system: '#58a6ff', reasoning: '#3fb950', report: '#d29922'}[l.source] || '#8b949e';
-      return `[${l.created_at}] [<b style="color:${_c}">${_tag}</b>] [${l.module}] ${l.message}`;
+      return `[${esc(l.created_at)}] [<b style="color:${esc(_c)}">${esc(_tag)}</b>] [${esc(l.module)}] ${esc(l.message)}`;
     }).join('\n') || '（暂无活动，快去课堂/GOAI 学习吧）'}</pre>`;
 }
 
@@ -247,21 +250,38 @@ async function loadUsers() {
       <tr><th>ID</th><th>姓名</th><th>用户名</th><th>角色</th><th>状态</th><th>班级</th><th>密码</th><th>创建时间</th><th>操作</th></tr>
       ${data.users.map(u => `
         <tr>
-          <td>${u.id}</td><td>${u.name}</td><td>${u.username || u.name}</td><td>${u.role}</td>
+          <td>${u.id}</td><td>${esc(u.name)}</td><td>${esc(u.username || u.name)}</td><td>${esc(u.role)}</td>
           <td>${u.is_active === 0 ? '<span class="badge err">已禁用</span>' : '<span class="badge ok">启用</span>'}</td>
-          <td>${(u.classes || []).map(c => `<span class="badge">${c.school_name} / ${c.grade_name} / ${c.class_name}
-                <a href="javascript:void(0)" onclick="unbindClass(${u.id}, ${c.id}, ${u.name.replace(/'/g, "\\'")})" style="color:#f85149;">✕</a></span>`).join(' ') || '-'}
+          <td>${(u.classes || []).map(c => `<span class="badge">${esc(c.school_name)} / ${esc(c.grade_name)} / ${esc(c.class_name)}
+                <a href="javascript:void(0)" data-act="unbind" data-id="${u.id}" data-class-id="${c.id}" data-name="${esc(u.name)}" style="color:#f85149;">✕</a></span>`).join(' ') || '-'}
               ${u.role === 'student' && allClasses.length ? `<select id="cls_${u.id}" style="width:auto;max-width:140px;font-size:12px;padding:2px 4px;">
-                <option value="">+绑定班级</option>${allClasses.map(c => `<option value="${c.id}">${c.school_name} / ${c.grade_name} / ${c.name}</option>`).join('')}</select>
-              <button class="act" style="padding:2px 8px;font-size:12px;" onclick="bindClass(${u.id}, '${u.name.replace(/'/g, "\\'")}')">绑定</button>` : ''}</td>
+                <option value="">+绑定班级</option>${allClasses.map(c => `<option value="${c.id}">${esc(c.school_name)} / ${esc(c.grade_name)} / ${esc(c.name)}</option>`).join('')}</select>
+              <button class="act" style="padding:2px 8px;font-size:12px;" data-act="bind" data-id="${u.id}" data-name="${esc(u.name)}">绑定</button>` : ''}</td>
           <td>${u.has_password ? '<span class="badge ok">已设置</span>' : '<span class="badge off">未设置</span>'}</td>
-          <td>${u.created_at || '-'}</td>
-          <td><button class="act" onclick="resetUserPassword(${u.id}, '${u.name.replace(/'/g, "\\'")}')">重置密码</button>
-              <button class="act" onclick="toggleUserActive(${u.id}, ${u.is_active === 0 ? 1 : 0}, '${u.name.replace(/'/g, "\\'")}')">${u.is_active === 0 ? '启用' : '禁用'}</button>
-              <button class="act" onclick="changeUserRole(${u.id}, '${u.role === 'teacher' ? 'student' : 'teacher'}', '${u.name.replace(/'/g, "\\'")}')">设为${u.role === 'teacher' ? '学生' : '教师'}</button>
+          <td>${esc(u.created_at || '-')}</td>
+          <td><button class="act" data-act="resetPwd" data-id="${u.id}" data-name="${esc(u.name)}">重置密码</button>
+              <button class="act" data-act="toggleActive" data-id="${u.id}" data-target-active="${u.is_active === 0 ? 1 : 0}" data-name="${esc(u.name)}">${u.is_active === 0 ? '启用' : '禁用'}</button>
+              <button class="act" data-act="changeRole" data-id="${u.id}" data-new-role="${u.role === 'teacher' ? 'student' : 'teacher'}" data-name="${esc(u.name)}">设为${u.role === 'teacher' ? '学生' : '教师'}</button>
               <button class="act danger" onclick="deleteUser(${u.id})">删除</button></td>
         </tr>`).join('')}
     </table>`;
+  bindUserActions();
+}
+
+// 用户表格操作按钮：用户数据不拼入 onclick 属性，改为 data-* 属性 + 事件绑定，防止注入
+function bindUserActions() {
+  document.querySelectorAll('#content [data-act="unbind"], #content [data-act="bind"], #content [data-act="resetPwd"], #content [data-act="toggleActive"], #content [data-act="changeRole"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const act = btn.dataset.act;
+      const id = Number(btn.dataset.id);
+      const name = btn.dataset.name || '';
+      if (act === 'unbind') unbindClass(id, Number(btn.dataset.classId), name);
+      else if (act === 'bind') bindClass(id, name);
+      else if (act === 'resetPwd') resetUserPassword(id, name);
+      else if (act === 'toggleActive') toggleUserActive(id, Number(btn.dataset.targetActive), name);
+      else if (act === 'changeRole') changeUserRole(id, btn.dataset.newRole, name);
+    });
+  });
 }
 
 async function bindClass(userId, name) {
@@ -360,11 +380,17 @@ async function renderLocalModels() {
       <tr><th>模型名称</th><th>大小</th><th>更新时间</th><th>操作</th></tr>
       ${(data.models || []).map(m => `
         <tr>
-          <td>${m.name}</td><td>${m.size ? (m.size/1024/1024/1024).toFixed(1) + 'GB' : '-'}</td><td>${m.modified_at || '-'}</td>
-          <td><button class="act" onclick="setDefault('${m.name}')">设为默认</button>
-              <button class="act danger" onclick="deleteModel('${m.name}')">删除</button></td>
+          <td>${esc(m.name)}</td><td>${m.size ? (m.size/1024/1024/1024).toFixed(1) + 'GB' : '-'}</td><td>${esc(m.modified_at || '-')}</td>
+          <td><button class="act" data-act="setDefault" data-name="${esc(m.name)}">设为默认</button>
+              <button class="act danger" data-act="deleteModel" data-name="${esc(m.name)}">删除</button></td>
         </tr>`).join('') || '<tr><td colspan="4">暂无本地模型</td></tr>'}
     </table>`;
+  document.querySelectorAll('#modelSubContent [data-act="setDefault"], #modelSubContent [data-act="deleteModel"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.name || '';
+      if (btn.dataset.act === 'setDefault') setDefault(name); else deleteModel(name);
+    });
+  });
 }
 
 async function pullModel() {
@@ -398,23 +424,23 @@ async function renderProviders() {
     // 构建提供者列表
     let listHtml = '<h3 style="color:#58a6ff;margin-bottom:12px;font-size:15px;">已配置的提供者</h3>';
     for (const p of providers) {
-      const modelsHtml = (p.models || []).map(m => `<span>${m.id || m.name || m}</span>`).join(' ');
+      const modelsHtml = (p.models || []).map(m => `<span>${esc(m.id || m.name || m)}</span>`).join(' ');
       listHtml += `
         <div class="provider-card">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <h4>${p.name} <span style="color:#8b949e;font-size:12px;font-weight:normal;">(${p.key})</span></h4>
-              <div style="font-size:12px;color:#8b949e;">${p.base_url}</div>
+              <h4>${esc(p.name)} <span style="color:#8b949e;font-size:12px;font-weight:normal;">(${esc(p.key)})</span></h4>
+              <div style="font-size:12px;color:#8b949e;">${esc(p.base_url)}</div>
               <div class="models-list">${modelsHtml || '<span style="color:#8b949e;">无模型</span>'}</div>
             </div>
             <div style="display:flex;align-items:center;gap:12px;">
               <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8b949e;">
                 <span>API Key: ${p.has_api_key ? '✅ 已配置' : '❌ 未配置'}</span>
                 <span>|</span>
-                <span>启用: <span class="toggle ${p.enabled ? 'on' : ''}" onclick="toggleProviderEnabled('${p.key}')" style="vertical-align:middle;"></span></span>
+                <span>启用: <span class="toggle ${p.enabled ? 'on' : ''}" data-act="toggleProviderEnabled" data-key="${esc(p.key)}" style="vertical-align:middle;"></span></span>
               </div>
-              <button class="act" onclick="editProvider('${p.key}')">编辑</button>
-              <button class="act danger" onclick="deleteProvider('${p.key}')">删除</button>
+              <button class="act" data-act="editProvider" data-key="${esc(p.key)}">编辑</button>
+              <button class="act danger" data-act="deleteProvider" data-key="${esc(p.key)}">删除</button>
             </div>
           </div>
         </div>`;
@@ -422,7 +448,7 @@ async function renderProviders() {
     if (!providers.length) listHtml += '<div style="color:#8b949e;font-size:13px;padding:12px 0;">暂无已配置的云端提供者</div>';
 
     // 构建模板选择 + 添加区域
-    let templateOpts = templates.map(t => `<option value="${t.key}">${t.name}</option>`).join('');
+    let templateOpts = templates.map(t => `<option value="${esc(t.key)}">${esc(t.name)}</option>`).join('');
     listHtml += `
       <h3 style="color:#58a6ff;margin:20px 0 12px;font-size:15px;">添加/编辑提供者</h3>
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:20px;">
@@ -448,8 +474,17 @@ async function renderProviders() {
       </div>`;
 
     el.innerHTML = listHtml;
+    document.querySelectorAll('#modelSubContent [data-act="toggleProviderEnabled"], #modelSubContent [data-act="editProvider"], #modelSubContent [data-act="deleteProvider"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key || '';
+        const act = btn.dataset.act;
+        if (act === 'toggleProviderEnabled') toggleProviderEnabled(key);
+        else if (act === 'editProvider') editProvider(key);
+        else if (act === 'deleteProvider') deleteProvider(key);
+      });
+    });
   } catch (e) {
-    document.getElementById('modelSubContent').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${e.message}</div>`;
+    document.getElementById('modelSubContent').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -573,7 +608,7 @@ async function renderPortModels() {
       for (const provKey of Object.keys(grouped)) {
         if (provKey === 'ollama') continue;
         const display = grouped[provKey][0]?.provider_display || provKey;
-        providerOpts += `<option value="${provKey}" ${provKey === currentProvider ? 'selected' : ''}>${display}</option>`;
+        providerOpts += `<option value="${esc(provKey)}" ${provKey === currentProvider ? 'selected' : ''}>${esc(display)}</option>`;
       }
 
       // 当前选择提供者的模型列表
@@ -582,10 +617,10 @@ async function renderPortModels() {
       for (const m of currentModels) {
         const modelName = m.name || m;
         const selected = modelName === currentModel ? 'selected' : '';
-        modelOpts += `<option value="${modelName}" ${selected}>${modelName}</option>`;
+        modelOpts += `<option value="${esc(modelName)}" ${selected}>${esc(modelName)}</option>`;
       }
       if (currentModel && !currentModels.find(m => (m.name || m) === currentModel)) {
-        modelOpts = `<option value="${currentModel}" selected>${currentModel}</option>` + modelOpts;
+        modelOpts = `<option value="${esc(currentModel)}" selected>${esc(currentModel)}</option>` + modelOpts;
       }
 
       // 构建所有可用模型列表（用于折叠菜单）
@@ -598,8 +633,8 @@ async function renderPortModels() {
         const providerLabel = m.provider_display || (isLocal ? 'Ollama' : m.provider || '');
         allModelsHtml += `
           <div class="model-item">
-            <span style="color:#e6edf3;">${modelName}</span>
-            <span><span class="tag ${tagClass}">${tagText}</span>${!isLocal ? ` <span style="color:#8b949e;font-size:11px;">· ${providerLabel}</span>` : ''}</span>
+            <span style="color:#e6edf3;">${esc(modelName)}</span>
+            <span><span class="tag ${tagClass}">${tagText}</span>${!isLocal ? ` <span style="color:#8b949e;font-size:11px;">· ${esc(providerLabel)}</span>` : ''}</span>
           </div>`;
       }
       if (!allModelsHtml) allModelsHtml = '<div class="model-item" style="color:#8b949e;">暂无可用模型</div>';
@@ -610,23 +645,23 @@ async function renderPortModels() {
       html += `
         <div class="port-card" style="flex-wrap:wrap;">
           <div style="display:flex;align-items:center;gap:16px;flex:1;min-width:0;flex-wrap:wrap;">
-            <div class="port-name">${displayName}</div>
-            <div class="port-current">当前: ${currentProvider}/${currentModel}</div>
-            <select id="portProvider_${pk}" onchange="onPortProviderChange('${pk}')" style="min-width:140px;">
+            <div class="port-name">${esc(displayName)}</div>
+            <div class="port-current">当前: ${esc(currentProvider)}/${esc(currentModel)}</div>
+            <select id="portProvider_${esc(pk)}" onchange="onPortProviderChange('${esc(pk)}')" style="min-width:140px;">
               ${providerOpts}
             </select>
-            <select id="portModel_${pk}" style="min-width:160px;">
+            <select id="portModel_${esc(pk)}" style="min-width:160px;">
               ${modelOpts}
             </select>
-            <button class="act" onclick="savePortModel('${pk}')" style="background:#238636;border-color:#238636;color:white;font-weight:bold;">保存</button>
+            <button class="act" onclick="savePortModel('${esc(pk)}')" style="background:#238636;border-color:#238636;color:white;font-weight:bold;">保存</button>
           </div>
-          <button class="toggle-btn" onclick="togglePortCollapse('${pk}')" title="查看所有可用模型" style="margin-left:auto;">
-            <span class="arrow ${isOpen ? 'open' : ''}" id="arrow_${pk}">▶</span>
-            <span id="collapseLabel_${pk}">${isOpen ? '收起' : '展开'}可用模型</span>
+          <button class="toggle-btn" onclick="togglePortCollapse('${esc(pk)}')" title="查看所有可用模型" style="margin-left:auto;">
+            <span class="arrow ${isOpen ? 'open' : ''}" id="arrow_${esc(pk)}">▶</span>
+            <span id="collapseLabel_${esc(pk)}">${isOpen ? '收起' : '展开'}可用模型</span>
             <span style="color:#8b949e;font-size:11px;">(${allModels.length}个)</span>
           </button>
         </div>
-        <div class="port-collapse ${isOpen ? 'open' : ''}" id="${collapseId}">
+        <div class="port-collapse ${isOpen ? 'open' : ''}" id="${esc(collapseId)}">
           <div style="background:#0d1117;border:1px solid #30363d;border-top:none;border-radius:0 0 8px 8px;padding:4px 0;">
             ${allModelsHtml}
           </div>
@@ -636,7 +671,7 @@ async function renderPortModels() {
     html += `<div style="font-size:12px;color:#8b949e;margin-top:8px;">提示: 修改后需重启对应服务端口才能生效。</div>`;
     el.innerHTML = html;
   } catch (e) {
-    document.getElementById('modelSubContent').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${e.message}</div>`;
+    document.getElementById('modelSubContent').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -661,7 +696,7 @@ async function onPortProviderChange(portKey) {
     const allModels = data.all_models || [];
     const filtered = allModels.filter(m => (m.provider || 'ollama') === provider);
     const sel = document.getElementById(`portModel_${portKey}`);
-    sel.innerHTML = filtered.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+    sel.innerHTML = filtered.map(m => `<option value="${esc(m.name)}">${esc(m.name)}</option>`).join('');
     if (!filtered.length) sel.innerHTML = '<option value="">-- 无可用模型 --</option>';
   } catch (e) {
     toast('加载模型列表失败: ' + e.message);
@@ -700,17 +735,27 @@ async function loadAgents() {
       <tr><th>ID</th><th>名称</th><th>类型</th><th>状态</th><th>运行中</th><th>操作</th></tr>
       ${data.agents.map(a => `
         <tr>
-          <td>${a.agent_id}</td><td>${a.name}</td><td>${a.agent_type}</td>
-          <td><span class="badge ${a.status === 'running' ? 'on' : a.status === 'error' ? 'err' : 'off'}">${a.status}</span></td>
+          <td>${esc(a.agent_id)}</td><td>${esc(a.name)}</td><td>${esc(a.agent_type)}</td>
+          <td><span class="badge ${a.status === 'running' ? 'on' : a.status === 'error' ? 'err' : 'off'}">${esc(a.status)}</span></td>
           <td>${a.running ? '✅' : '—'}</td>
           <td>
-            ${a.running ? `<button class="act" onclick="stopAgent('${a.agent_id}')">停止</button>`
-                        : `<button class="act" onclick="startAgent('${a.agent_id}')">启动</button>`}
-            <button class="act" onclick="testAgent('${a.agent_id}')">测试</button>
-            ${a.is_builtin ? '' : `<button class="act danger" onclick="deleteAgent('${a.agent_id}')">删除</button>`}
+            ${a.running ? `<button class="act" data-act="stopAgent" data-id="${esc(a.agent_id)}">停止</button>`
+                        : `<button class="act" data-act="startAgent" data-id="${esc(a.agent_id)}">启动</button>`}
+            <button class="act" data-act="testAgent" data-id="${esc(a.agent_id)}">测试</button>
+            ${a.is_builtin ? '' : `<button class="act danger" data-act="deleteAgent" data-id="${esc(a.agent_id)}">删除</button>`}
           </td>
         </tr>`).join('')}
     </table>`;
+  document.querySelectorAll('#content [data-act="stopAgent"], #content [data-act="startAgent"], #content [data-act="testAgent"], #content [data-act="deleteAgent"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id || '';
+      const act = btn.dataset.act;
+      if (act === 'stopAgent') stopAgent(id);
+      else if (act === 'startAgent') startAgent(id);
+      else if (act === 'testAgent') testAgent(id);
+      else if (act === 'deleteAgent') deleteAgent(id);
+    });
+  });
 }
 
 async function registerAgent() {
@@ -763,7 +808,7 @@ async function loadLogs() {
       const tag = badge[l.source] || l.source;
       const c = colors[l.source] || '#8b949e';
       const err = l.level === 'error' ? '#f85149' : '#8b949e';
-      return `<span style="color:${err}">[${l.created_at}] [<b style="color:${c}">${tag}</b>] [${l.module}] ${l.message}</span>`;
+      return `<span style="color:${esc(err)}">[${esc(l.created_at)}] [<b style="color:${esc(c)}">${esc(tag)}</b>] [${esc(l.module)}] ${esc(l.message)}</span>`;
     }).join('\n') || '（暂无活动记录，快去使用课堂/GOAI 学习吧）'}</pre>`;
 }
 
@@ -792,12 +837,15 @@ async function loadKeys() {
       <tr><th>ID</th><th>名称</th><th>密钥</th><th>权限</th><th>最后使用</th><th>操作</th></tr>
       ${(data.api_keys || []).map(k => `
         <tr>
-          <td>${k.id}</td><td>${k.key_name}</td>
-          <td style="font-family:monospace;font-size:11px;">${k.api_key}</td>
-          <td>${k.scope}</td><td>${k.last_used_at || '从未'}</td>
-          <td><button class="act danger" onclick="deleteKey('${k.api_key}')">删除</button></td>
+          <td>${k.id}</td><td>${esc(k.key_name)}</td>
+          <td style="font-family:monospace;font-size:11px;">${esc(k.api_key)}</td>
+          <td>${esc(k.scope)}</td><td>${esc(k.last_used_at || '从未')}</td>
+          <td><button class="act danger" data-act="deleteKey" data-key="${esc(k.api_key)}">删除</button></td>
         </tr>`).join('') || '<tr><td colspan="6">暂无密钥</td></tr>'}
     </table>`;
+  document.querySelectorAll('#content [data-act="deleteKey"]').forEach(btn => {
+    btn.addEventListener('click', () => deleteKey(btn.dataset.key || ''));
+  });
 }
 
 async function createKey() {
@@ -833,19 +881,19 @@ async function loadReports() {
       html += `
         <tr>
           <td>${r.id}</td>
-          <td>${r.user_name}</td>
-          <td>${s.core_topic || r.topic}</td>
-          <td>${s.subject || '-'}</td>
+          <td>${esc(r.user_name)}</td>
+          <td>${esc(s.core_topic || r.topic)}</td>
+          <td>${esc(s.subject || '-')}</td>
           <td>${s.score ?? '-'}</td>
-          <td>${s.level || '-'}</td>
-          <td>${s.generated_at || r.created_at || '-'}</td>
+          <td>${esc(s.level || '-')}</td>
+          <td>${esc(s.generated_at || r.created_at || '-')}</td>
           <td><button class="act" onclick="viewReport(${r.id})">查看</button></td>
         </tr>`;
     }
     html += '</table>';
     document.getElementById('content').innerHTML = html;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${e.message}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -862,36 +910,36 @@ async function viewReport(reportId) {
     const stepNames = ['现象引入', '认知冲突', '思维模型', '自主推导', '费曼测试'];
     document.getElementById('content').innerHTML = `
       <button class="act" onclick="loadReports()" style="margin-bottom:12px;">← 返回列表</button>
-      <h3 style="color:#58a6ff;margin-bottom:8px;">${rep.title || '学习报告'}</h3>
-      <div style="color:#8b949e;font-size:12px;margin-bottom:16px;">生成时间: ${rep.generated_at || ''}</div>
+      <h3 style="color:#58a6ff;margin-bottom:8px;">${esc(rep.title || '学习报告')}</h3>
+      <div style="color:#8b949e;font-size:12px;margin-bottom:16px;">生成时间: ${esc(rep.generated_at || '')}</div>
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
         <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">任务理解</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
-          <div><span style="color:#8b949e;font-size:11px;">学科</span><br>${task.subject || '-'}</div>
-          <div><span style="color:#8b949e;font-size:11px;">类型</span><br>${task.topic_type || '-'}</div>
-          <div><span style="color:#8b949e;font-size:11px;">难度</span><br>${task.difficulty || '-'}</div>
-          <div><span style="color:#8b949e;font-size:11px;">核心主题</span><br>${task.core_topic || '-'}</div>
+          <div><span style="color:#8b949e;font-size:11px;">学科</span><br>${esc(task.subject || '-')}</div>
+          <div><span style="color:#8b949e;font-size:11px;">类型</span><br>${esc(task.topic_type || '-')}</div>
+          <div><span style="color:#8b949e;font-size:11px;">难度</span><br>${esc(task.difficulty || '-')}</div>
+          <div><span style="color:#8b949e;font-size:11px;">核心主题</span><br>${esc(task.core_topic || '-')}</div>
         </div>
       </div>
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
-        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">掌握度: ${mastery.score ?? '-'} (${mastery.level || '-'})</div>
-        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">${mastery.summary || ''}</div>
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">掌握度: ${mastery.score ?? '-'} (${esc(mastery.level || '-')})</div>
+        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">${esc(mastery.summary || '')}</div>
       </div>
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
         <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">教学流程 (${steps.length}步)</div>
         ${steps.map((s, i) => `
           <div style="padding:8px;border-bottom:1px solid #21262d;font-size:13px;">
-            <b>${s.success ? '✅' : '⬜'} ${stepNames[i] || s.name || ('步骤' + (i + 1))}</b>
-            <div style="color:#8b949e;font-size:12px;margin-top:4px;white-space:pre-wrap;">${(s.content || '')}</div>
+            <b>${s.success ? '✅' : '⬜'} ${esc(stepNames[i] || s.name || ('步骤' + (i + 1)))}</b>
+            <div style="color:#8b949e;font-size:12px;margin-top:4px;white-space:pre-wrap;">${esc(s.content || '')}</div>
           </div>`).join('') || '<div style="color:#8b949e;">无流程数据</div>'}
       </div>
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
         <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">薄弱点</div>
-        ${(rep.weak_points || []).map(w => `<div style="font-size:13px;padding:4px 0;">• ${w}</div>`).join('') || '<div style="color:#8b949e;">无</div>'}
+        ${(rep.weak_points || []).map(w => `<div style="font-size:13px;padding:4px 0;">• ${esc(w)}</div>`).join('') || '<div style="color:#8b949e;">无</div>'}
       </div>
       <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;">
         <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">下一步建议</div>
-        ${(rep.next_steps || []).map(n => `<div style="font-size:13px;padding:4px 0;">• ${n}</div>`).join('') || '<div style="color:#8b949e;">无</div>'}
+        ${(rep.next_steps || []).map(n => `<div style="font-size:13px;padding:4px 0;">• ${esc(n)}</div>`).join('') || '<div style="color:#8b949e;">无</div>'}
       </div>`;
   } catch (e) {
     toast('加载失败: ' + e.message);
@@ -901,9 +949,9 @@ async function viewReport(reportId) {
 // ---------- 推理记录 ----------
 const reasoningState = { page: 0, pageSize: 20, filters: {}, users: [] };
 
-// HTML 转义，防止模型输出中的特殊字符破坏页面结构
+// HTML 转义，防止模型输出/用户数据中的特殊字符破坏页面结构
 function esc(s) {
-  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 async function loadReasoning() {
@@ -1027,7 +1075,7 @@ async function renderReasoning() {
         ${pager}
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${e.message}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -1078,16 +1126,16 @@ async function loadPorts() {
     return `
       <div style="display:flex;align-items:center;gap:14px;padding:14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;margin-bottom:10px;">
         <label style="display:flex;align-items:center;gap:8px;min-width:60px;cursor:pointer;">
-          <input type="checkbox" data-key="${k}" data-field="enabled" ${s.enabled ? 'checked' : ''} onchange="onPortChange()" style="width:16px;height:16px;accent-color:#58a6ff;">
+          <input type="checkbox" data-key="${esc(k)}" data-field="enabled" ${s.enabled ? 'checked' : ''} onchange="onPortChange()" style="width:16px;height:16px;accent-color:#58a6ff;">
           <span style="color:${s.enabled ? '#58a6ff' : '#8b949e'};font-weight:600;">${s.enabled ? '启用' : '禁用'}</span>
         </label>
         <div style="flex:1;min-width:180px;">
-          <div style="color:#e6edf3;font-size:14px;font-weight:600;">${s.display_name}</div>
-          <div style="color:#8b949e;font-size:12px;">${s.desc || ''}</div>
+          <div style="color:#e6edf3;font-size:14px;font-weight:600;">${esc(s.display_name)}</div>
+          <div style="color:#8b949e;font-size:12px;">${esc(s.desc || '')}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span style="color:#8b949e;font-size:13px;">端口</span>
-          <input type="number" data-key="${k}" data-field="port" value="${s.port}" min="1" max="65535"
+          <input type="number" data-key="${esc(k)}" data-field="port" value="${s.port}" min="1" max="65535"
                  onchange="onPortChange()"
                  style="width:80px;padding:8px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;text-align:center;">
         </div>
@@ -1440,7 +1488,7 @@ async function loadExports() {
       return `<tr>
         <td>${e.id}</td>
         <td>${esc(e.requester_name)} <span style="color:#8b949e;font-size:11px;">(${e.requester_type === 'teacher' ? '教师' : '管理员'})</span></td>
-        <td>${typeName}</td>
+        <td>${esc(typeName)}</td>
         <td>${e.format.toUpperCase()}</td>
         <td>${e.scope === 'class' ? '班级' : '全部'}</td>
         <td>${statusBadge}</td>
@@ -1517,6 +1565,410 @@ async function downloadExport(id) {
     URL.revokeObjectURL(url);
     setTimeout(() => toast('⬇ 下载已开始'), 300);
   } catch (e) { toast('❌ 下载失败: ' + e.message); }
+}
+
+// ---------- P1-4 待审批队列（人工监督 / EU AI Act Art.14） ----------
+async function loadInterrupts() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const data = await api('/interrupts?status=all');
+    const list = data.interrupts || [];
+    const pending = list.filter(i => i.status === 'pending');
+    const done = list.filter(i => i.status !== 'pending');
+    const nodeName = { router: '敏感主题路由', verifier: '内容验证', complex_parallel: '并行生成质量', fact_check: '事实核查' };
+    const statusBadge = s => s === 'pending' ? '<span class="badge warn">待审批</span>'
+      : s === 'approved' ? '<span class="badge ok">已放行</span>' : '<span class="badge err">已拒绝</span>';
+    const pendingRows = pending.map(i => `
+      <tr>
+        <td><code style="font-size:11px;">${esc(i.trace_id)}</code></td>
+        <td><span class="badge ok">${esc(nodeName[i.node] || i.node || '—')}</span></td>
+        <td style="max-width:340px;word-break:break-all;">${esc(i.reason || '')}</td>
+        <td>${esc(i.topic || '—')}</td>
+        <td>${esc(i.requested_at || '—')}</td>
+        <td style="white-space:nowrap;">
+          <button class="act" style="background:#238636;color:#fff;border-color:#238636;" onclick="reviewInterrupt('${i.trace_id}', 'approved')">✓ 放行</button>
+          <button class="act" style="color:#f85149;" onclick="reviewInterrupt('${i.trace_id}', 'rejected')">✕ 拒绝</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="6" style="color:#8b949e;">暂无待审批项 🎉</td></tr>';
+    const doneRows = done.slice(0, 20).map(i => `
+      <tr>
+        <td><code style="font-size:11px;">${esc(i.trace_id)}</code></td>
+        <td><span class="badge ok">${esc(nodeName[i.node] || i.node || '—')}</span></td>
+        <td style="max-width:300px;word-break:break-all;">${esc(i.reason || '')}</td>
+        <td>${statusBadge(i.status)}</td>
+        <td>${esc(i.reviewer || '—')}</td>
+        <td>${esc(i.reviewed_at || '—')}</td>
+      </tr>`).join('') || '<tr><td colspan="6" style="color:#8b949e;">暂无历史记录</td></tr>';
+    document.getElementById('content').innerHTML = `
+      <div class="cards">
+        <div class="card"><div class="num" style="color:${pending.length ? '#e8a33d' : '#3fb950'};">${pending.length}</div><div class="label">待审批</div></div>
+        <div class="card"><div class="num">${done.length}</div><div class="label">已处理</div></div>
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🛡️ 待审批队列（人工监督 Art.14）</h3>
+        <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">敏感主题 / 内容质量异常 / 事实核查矛盾 触发的中断请求，放行后原请求可继续执行，拒绝则终止。审批全程留痕并写入审计日志。</div>
+        <table style="width:100%;font-size:13px;">
+          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">Trace ID</th><th>节点</th><th>原因</th><th>主题</th><th>请求时间</th><th>操作</th></tr>
+          ${pendingRows}
+        </table>
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📋 已处理记录（最近20条）</h3>
+        <table style="width:100%;font-size:13px;">
+          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">Trace ID</th><th>节点</th><th>原因</th><th>结果</th><th>审批人</th><th>审批时间</th></tr>
+          ${doneRows}
+        </table>
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+async function reviewInterrupt(traceId, decision) {
+  const label = decision === 'approved' ? '放行' : '拒绝';
+  if (!confirm(`确认${label}该人工审核请求？`)) return;
+  try {
+    const d = await api(`/interrupts/${traceId}/${decision}`, { method: 'POST' });
+    toast('✅ ' + (d.message || label + '成功'));
+    loadInterrupts();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ---------- P1-4 成本报告 ----------
+async function loadCosts() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const d = await api('/costs?days=7');
+    const s = d.summary || {};
+    const byAgent = Object.entries(d.by_agent || {});
+    const trend = d.trend || [];
+    const anomalies = d.anomalies || [];
+    // Agent 占比条形
+    const agentBars = byAgent.length ? byAgent.sort((a, b) => b[1].cost - a[1].cost).map(([k, v], i) => {
+      const pct = s.total_cost ? (v.cost / s.total_cost * 100).toFixed(1) : 0;
+      return `<div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#e6edf3;margin-bottom:2px;">
+          <span>${esc(k)} <span style="color:#8b949e;">(${v.calls}次)</span></span>
+          <span style="color:#58a6ff;">¥${v.cost.toFixed(4)} (${pct}%)</span>
+        </div>
+        <div style="background:#21262d;border-radius:4px;height:8px;overflow:hidden;"><div style="width:${pct}%;background:#58a6ff;height:100%;border-radius:4px;"></div></div>
+      </div>`;
+    }).join('') : '<div style="color:#8b949e;font-size:13px;">暂无成本数据（Agent 调用后生成）</div>';
+    const modelChips = Object.entries(s.by_model || {})
+      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} · ¥${v.cost.toFixed(4)} · ${v.calls}次</span>`).join('') || '<span style="color:#8b949e;font-size:12px;">无</span>';
+    const anomRows = anomalies.length ? anomalies.map(a => `
+      <tr><td>${esc(a.date || a.day || '—')}</td><td>${esc(a.agent_id || a.agent || '—')}</td><td style="color:#f85149;">¥${(a.cost || 0).toFixed(4)}</td><td>${esc(a.reason || '异常波动')}</td></tr>`).join('')
+      : '<tr><td colspan="4" style="color:#8b949e;">无异常</td></tr>';
+    document.getElementById('content').innerHTML = `
+      <div class="cards">
+        <div class="card"><div class="num">${s.total_calls ?? 0}</div><div class="label">总调用次数</div></div>
+        <div class="card"><div class="num">¥${(s.total_cost ?? 0).toFixed(4)}</div><div class="label">总成本（元）</div></div>
+        <div class="card"><div class="num">${s.total_tokens ?? 0}</div><div class="label">总 Token</div></div>
+        <div class="card"><div class="num">${trend.length}</div><div class="label">趋势天数</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🧠 按 Agent 成本分布</h3>
+          ${agentBars}
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🤖 按模型分布</h3>
+          <div>${modelChips}</div>
+        </div>
+      </div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-top:16px;">
+        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🚨 成本异常检测</h3>
+        <table style="width:100%;font-size:13px;">
+          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">日期</th><th>Agent</th><th>成本</th><th>说明</th></tr>
+          ${anomRows}
+        </table>
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+// ---------- P1-4 权重配置（Agent 动态权重） ----------
+async function loadWeights() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const d = await api('/weights');
+    const list = d.weights || [];
+    const rows = list.map(w => `
+      <tr>
+        <td><b>${esc(w.agent_id)}</b></td>
+        <td><span class="badge ok">${w.dynamic_weight != null ? w.dynamic_weight : w.base_weight}</span></td>
+        <td>${w.base_weight != null ? w.base_weight : '—'}</td>
+        <td>${w.call_count ?? 0}</td>
+        <td>${w.success_count ?? 0}</td>
+        <td>${w.fail_count ?? 0}</td>
+        <td>${w.avg_latency_ms != null ? Math.round(w.avg_latency_ms) + 'ms' : '—'}</td>
+        <td style="white-space:nowrap;">
+          <input id="wInput_${esc(w.agent_id)}" type="number" step="0.1" min="0.1" max="10" value="${w.base_weight != null ? w.base_weight : 1}" style="width:70px;padding:5px;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#e6edf3;font-size:12px;">
+          <button class="act" onclick="setWeight('${esc(w.agent_id)}')">保存</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="8" style="color:#8b949e;">暂无权重配置（Agent 调用后自动创建）</td></tr>';
+    document.getElementById('content').innerHTML = `
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">⚖️ Agent 动态权重</h3>
+        <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">动态权重 = 基础权重 × 成功率 × 延迟因子。基础权重由管理员配置，动态部分随调用表现自动更新。权重越高，路由时越优先被选用。</div>
+        <button class="act" onclick="recalcWeights()" style="background:#238636;color:#fff;border-color:#238636;">🔄 批量重算动态权重</button>
+        <table style="width:100%;font-size:13px;margin-top:12px;">
+          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">Agent</th><th>动态权重</th><th>基础权重</th><th>调用数</th><th>成功</th><th>失败</th><th>平均延迟</th><th>操作</th></tr>
+          ${rows}
+        </table>
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+async function setWeight(agentId) {
+  const input = document.getElementById('wInput_' + agentId);
+  if (!input) return;
+  const base_weight = parseFloat(input.value);
+  if (!(base_weight > 0 && base_weight <= 10)) return toast('权重必须在 (0, 10] 范围');
+  try {
+    const d = await api(`/weights/${encodeURIComponent(agentId)}`, { method: 'POST', body: JSON.stringify({ base_weight }) });
+    toast('✅ ' + (d.message || '已更新'));
+    loadWeights();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function recalcWeights() {
+  try {
+    const d = await api('/weights/recalculate', { method: 'POST' });
+    toast(`✅ 已重算 ${d.updated} 个 Agent 权重`);
+    loadWeights();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ---------- P1-5 MCP Server 管理 ----------
+async function loadMcpServers() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const d = await api('/mcp-servers');
+    const servers = d.servers || [];
+    const statusMap = {};
+    for (const st of (d.status || [])) statusMap[st.server_name] = st;
+    const rows = servers.map(s => {
+      const st = statusMap[s.server_name] || {};
+      const enabled = st.enabled !== undefined ? st.enabled : s.enabled;
+      const addr = s.transport === 'stdio'
+        ? esc(s.command || '—') + ((s.args || []).length ? ' ' + esc(s.args.join(' ')) : '')
+        : esc(s.url || '—');
+      const statusBadge = !enabled ? '<span class="badge off">已停用</span>'
+        : st.reachable === true ? '<span class="badge ok">在线</span>'
+        : st.reachable === false ? '<span class="badge err">不可达</span>'
+        : '<span class="badge warn">未知</span>';
+      return `
+      <tr>
+        <td><b>${esc(s.server_name)}</b></td>
+        <td><span class="badge">${esc(s.transport)}</span></td>
+        <td style="max-width:280px;word-break:break-all;">${addr}</td>
+        <td>${statusBadge}${st.error ? `<div style="font-size:11px;color:#f85149;margin-top:2px;word-break:break-all;">${esc(st.error)}</div>` : ''}</td>
+        <td>${st.tools_count != null ? st.tools_count : '—'}</td>
+        <td style="white-space:nowrap;">
+          <button class="act" onclick="testMcpServer('${esc(s.server_name)}')">测试</button>
+          <button class="act" onclick="toggleMcpServer('${esc(s.server_name)}')">${enabled ? '停用' : '启用'}</button>
+          <button class="act danger" onclick="deleteMcpServer('${esc(s.server_name)}')">删除</button>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="6" style="color:#8b949e;">暂无 MCP Server（可先添加）</td></tr>';
+    document.getElementById('content').innerHTML = `
+      <div id="panel-mcp">
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:12px;">➕ 注册 MCP Server</h3>
+          <div class="form-row">
+            <input id="mcpName" placeholder="名称 (如 my-tools)" style="flex:0.8;">
+            <select id="mcpTransport" style="flex:0.4;">
+              <option value="http">http</option>
+              <option value="stdio">stdio</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <input id="mcpUrl" placeholder="HTTP URL (transport=http 时填写，如 http://127.0.0.1:8000/mcp)">
+            <input id="mcpCommand" placeholder="启动命令 (transport=stdio 时填写，如 npx)">
+          </div>
+          <div class="form-row">
+            <input id="mcpArgs" placeholder="命令参数 (逗号或空格分隔，如 -y @modelcontextprotocol/server-everything)">
+            <input id="mcpDesc" placeholder="描述 (可选)">
+          </div>
+          <button class="act" onclick="addMcpServer()" style="background:#238636;color:#fff;border-color:#238636;padding:10px 20px;font-weight:bold;">添加 Server</button>
+          <div style="font-size:12px;color:#8b949e;margin-top:8px;">http 传输需填写 URL；stdio 传输需填写命令与参数（逗号或空格分隔）。</div>
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🧩 MCP Server 列表（${servers.length}）</h3>
+          <table style="width:100%;font-size:13px;">
+            <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">名称</th><th>传输</th><th>地址/命令</th><th>状态</th><th>工具数</th><th>操作</th></tr>
+            ${rows}
+          </table>
+        </div>
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+async function addMcpServer() {
+  const server_name = document.getElementById('mcpName').value.trim();
+  const transport = document.getElementById('mcpTransport').value;
+  const url = document.getElementById('mcpUrl').value.trim();
+  const command = document.getElementById('mcpCommand').value.trim();
+  const argsStr = document.getElementById('mcpArgs').value.trim();
+  const description = document.getElementById('mcpDesc').value.trim();
+  if (!server_name) return toast('请输入 Server 名称');
+  if (transport === 'http' && !url) return toast('http 传输需填写 URL');
+  if (transport === 'stdio' && !command) return toast('stdio 传输需填写启动命令');
+  const args = argsStr ? argsStr.split(/[,，\s]+/).map(s => s.trim()).filter(Boolean) : [];
+  try {
+    const d = await api('/mcp-servers', { method: 'POST', body: JSON.stringify({ server_name, transport, url, command, args, description, enabled: true }) });
+    toast('✅ ' + (d.message || 'Server 已注册'));
+    ['mcpName', 'mcpUrl', 'mcpCommand', 'mcpArgs', 'mcpDesc'].forEach(id => document.getElementById(id).value = '');
+    loadMcpServers();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function toggleMcpServer(name) {
+  try {
+    const d = await api(`/mcp-servers/${encodeURIComponent(name)}/toggle`, { method: 'POST' });
+    toast(d.enabled ? '✅ 已启用' : '⛔ 已停用');
+    loadMcpServers();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function testMcpServer(name) {
+  try {
+    const d = await api(`/mcp-servers/${encodeURIComponent(name)}/test`, { method: 'POST' });
+    if (d.success) {
+      const tools = d.tools || [];
+      alert(`✅ Server ${name} 连接成功，共 ${tools.length} 个工具：\n` + tools.map(t => '- ' + (t.name || JSON.stringify(t))).join('\n'));
+    } else {
+      alert(`❌ Server ${name} 连接失败：` + (d.error || '未知错误'));
+    }
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function deleteMcpServer(name) {
+  if (!confirm(`确认删除 MCP Server ${name}？此操作不可恢复。`)) return;
+  try {
+    const d = await api(`/mcp-servers/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    toast('✅ ' + (d.message || '已删除'));
+    loadMcpServers();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+// ---------- P2-12 分布式任务队列 ----------
+async function loadTasks() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const d = await api('/tasks');
+    const tasks = d.tasks || [];
+    const s = d.stats || {};
+    const counts = s.counts || {};
+    const badge = (st) => st === 'completed' ? '<span class="badge ok">completed</span>'
+      : st === 'failed' ? '<span class="badge err">failed</span>'
+      : st === 'running' ? '<span class="badge warn">running</span>'
+      : st === 'canceled' ? '<span class="badge off">canceled</span>'
+      : '<span class="badge">pending</span>';
+    const rows = tasks.map(t => `
+      <tr>
+        <td><b>${esc(t.task_id)}</b></td>
+        <td><span class="badge">${esc(t.task_type)}</span></td>
+        <td>${badge(t.status)}</td>
+        <td>${t.priority}</td>
+        <td>${t.retries}/${t.max_retries}</td>
+        <td style="max-width:220px;word-break:break-all;font-size:12px;color:#8b949e;">${esc(t.topic || '')}</td>
+        <td>${esc(t.created_at)}</td>
+        <td style="white-space:nowrap;">
+          <button class="act" onclick="getTask('${esc(t.task_id)}')">详情</button>
+          ${t.status === 'pending' ? `<button class="act danger" onclick="cancelTask('${esc(t.task_id)}')">取消</button>` : ''}
+        </td>
+      </tr>`).join('') || '<tr><td colspan="8" style="color:#8b949e;">暂无任务</td></tr>';
+    const total = s.total || 0;
+    document.getElementById('content').innerHTML = `
+      <div id="panel-tasks">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+          <div class="card"><div class="num">${total}</div><div class="label">总任务</div></div>
+          <div class="card"><div class="num">${counts.pending || 0}</div><div class="label">待执行</div></div>
+          <div class="card"><div class="num">${counts.running || 0}</div><div class="label">运行中</div></div>
+          <div class="card"><div class="num">${counts.completed || 0}</div><div class="label">已完成</div></div>
+          <div class="card"><div class="num">${counts.failed || 0}</div><div class="label">失败</div></div>
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:12px;">➕ 提交任务</h3>
+          <div class="form-row">
+            <select id="taskType" style="flex:0.6;">
+              <option value="unified_orchestrator">unified_orchestrator（统一编排器）</option>
+            </select>
+            <input id="taskPriority" placeholder="优先级 1-10（越小越优先）" value="5" style="flex:0.5;">
+            <input id="taskTimeout" placeholder="超时秒" value="300" style="flex:0.5;">
+          </div>
+          <div class="form-row">
+            <input id="taskTopic" placeholder="学习主题（如 牛顿第二定律）">
+            <input id="taskMaxRetries" placeholder="重试次数" value="1" style="flex:0.5;">
+            <input id="taskDelay" placeholder="延迟秒" value="0" style="flex:0.5;">
+          </div>
+          <button class="act" onclick="submitTask()" style="background:#238636;color:#fff;border-color:#238636;padding:10px 20px;font-weight:bold;">提交任务</button>
+          <button class="act" onclick="processTasks()">手动消费队列</button>
+          <button class="act" onclick="loadTasks()">刷新</button>
+          <div style="font-size:12px;color:#8b949e;margin-top:8px;">任务在后台异步执行；未启动 worker 时点击「手动消费队列」立即执行到期任务。</div>
+        </div>
+        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
+          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📋 任务列表（${tasks.length}）</h3>
+          <table style="width:100%;font-size:13px;">
+            <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">任务ID</th><th>类型</th><th>状态</th><th>优先级</th><th>重试</th><th>主题</th><th>创建时间</th><th>操作</th></tr>
+            ${rows}
+          </table>
+        </div>
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+async function submitTask() {
+  const task_type = document.getElementById('taskType').value;
+  const topic = document.getElementById('taskTopic').value.trim();
+  if (!topic) return toast('请输入学习主题');
+  const payload = { topic, subject: '', difficulty: '高中', user_id: 1 };
+  try {
+    const d = await api('/tasks', { method: 'POST', body: JSON.stringify({
+      task_type, payload,
+      priority: parseInt(document.getElementById('taskPriority').value) || 5,
+      max_retries: parseInt(document.getElementById('taskMaxRetries').value) || 1,
+      delay: parseFloat(document.getElementById('taskDelay').value) || 0,
+      timeout: parseInt(document.getElementById('taskTimeout').value) || 300,
+    }) });
+    toast('✅ 已提交任务 ' + (d.task ? d.task.task_id : ''));
+    document.getElementById('taskTopic').value = '';
+    loadTasks();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function cancelTask(id) {
+  if (!confirm(`确认取消任务 ${id}？`)) return;
+  try {
+    const d = await api(`/tasks/${encodeURIComponent(id)}/cancel`, { method: 'POST' });
+    toast('✅ ' + (d.status || '已取消'));
+    loadTasks();
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function getTask(id) {
+  try {
+    const d = await api(`/tasks/${encodeURIComponent(id)}`);
+    const t = d.task || {};
+    alert(`任务 ${t.task_id}\n类型: ${t.task_type}\n状态: ${t.status}\n重试: ${t.retries}/${t.max_retries}\n创建: ${t.created_at}\n错误: ${t.error || '无'}\n结果: ${JSON.stringify(t.result || {}).slice(0, 2000)}`);
+  } catch (e) { toast('❌ ' + e.message); }
+}
+
+async function processTasks() {
+  try {
+    const d = await api('/tasks/process', { method: 'POST' });
+    toast(`✅ 已执行 ${d.processed} 个任务`);
+    loadTasks();
+  } catch (e) { toast('❌ ' + e.message); }
 }
 
 // ---------- 初始化 ----------

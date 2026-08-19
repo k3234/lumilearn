@@ -16,11 +16,12 @@
 import os
 import sys
 import time
+import socket
 import threading
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from flask import Flask, jsonify, redirect, send_from_directory
+from flask import Flask, jsonify, redirect, request, send_from_directory
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(BASE_DIR))
@@ -50,6 +51,47 @@ from framework.services.chat_service import get_chat_service
 from framework.api.routes import chat_bp, speech_bp, ocr_bp, review_bp, resources_bp, models_bp, feynman_bp, payment_bp, voicebox_bp, animation_bp, providers_bp, slides_bp, mindmap_bp, security_bp, admin_bp, auth_bp
 
 
+def _local_hosts() -> set:
+    """本机可访问的主机名集合：localhost + 127.0.0.1 + 服务器局域网 IP。
+
+    演示环境通常以局域网 IP（如 http://192.168.x.x:18080）访问页面，前端跨端口
+    调用 API 时 Origin 即该 IP，因此必须动态纳入 CORS/CSRF 白名单，否则功能被拦截。
+    """
+    hosts = {"localhost", "127.0.0.1"}
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        if ip:
+            hosts.add(ip)
+    except Exception:
+        pass
+    return hosts
+
+
+def _get_cors_origins() -> list:
+    """CORS 白名单来源。
+
+    - 优先读取环境变量 CORS_ALLOWED_ORIGINS（逗号分隔的完整 Origin，如
+      `http://localhost:18080,https://learn.example.com`）；
+    - 默认放行本机各端口（localhost/127.0.0.1 + 服务器局域网 IP）；
+    - 不再使用 `*` 通配：避免任意恶意网站跨域调用本服务 API。
+    """
+    raw = os.environ.get("CORS_ALLOWED_ORIGINS", "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    local_ports = (18080, 18081, 18082, 5000, 5001, 5010, 18090)
+    return [f"http://{h}:{p}" for h in sorted(_local_hosts()) for p in local_ports]
+
+
+def _origin_allowed(origin: str) -> bool:
+    """Origin 是否在白名单内（无 Origin 视为同源请求，放行）。"""
+    if not origin:
+        return True
+    return origin in _get_cors_origins()
+
+
 def create_app(debug: bool = None, template_dir: str = None, homepage: str = "terminal") -> Flask:
     """
     创建Flask应用
@@ -76,24 +118,40 @@ def create_app(debug: bool = None, template_dir: str = None, homepage: str = "te
                 static_folder=str(STATIC_DIR), static_url_path="/static")
     app.debug = debug
 
+    # 请求体上限 + 可信 Host（防止大体积上传/ Host 头注入）
+    app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10MB
+    app.config["TRUSTED_HOSTS"] = [
+        h.strip() for h in os.environ.get("LUMILEARN_TRUSTED_HOSTS", "localhost,127.0.0.1").split(",")
+        if h.strip()
+    ]
+    # 反向代理部署时启用 ProxyFix（生产通过 LUMILEARN_PROXY_ENABLED=true 开启）
+    if os.environ.get("LUMILEARN_PROXY_ENABLED", "").lower() == "true":
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     @app.before_request
     def handle_options():
-        """全局OPTIONS处理"""
+        """全局OPTIONS处理（CORS 预检：仅放行白名单 Origin）"""
         from flask import request as req
         if req.method == "OPTIONS":
             resp = app.make_default_options_response()
-            resp.headers["Access-Control-Allow-Origin"] = "*"
-            resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-            resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
-            resp.headers["Access-Control-Max-Age"] = "3600"
+            origin = req.headers.get("Origin", "")
+            if _origin_allowed(origin):
+                resp.headers["Access-Control-Allow-Origin"] = origin
+                resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+                resp.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+                resp.headers["Access-Control-Max-Age"] = "3600"
             return resp
 
     @app.after_request
     def add_security_headers(response):
         """全局 CORS + 安全响应头（防御 XSS/点击劫持/MIME 嗅探）"""
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+        origin = request.headers.get("Origin", "")
+        if _origin_allowed(origin):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Vary"] = "Origin"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer-when-downgrade"

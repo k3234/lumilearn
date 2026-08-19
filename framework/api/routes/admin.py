@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import time
+from typing import Dict
 from flask import Blueprint, request, jsonify
 
 from framework.database import db
@@ -1080,3 +1081,370 @@ def admin_download_export(export_id):
         return jsonify({"error": "导出文件已不存在"}), 404
     db.add_system_log("info", "export", f"下载导出文件 #{export_id} ({exp['file_path']})")
     return send_from_directory(_EXPORT_DIR, exp["file_path"], as_attachment=True)
+
+
+# ---------------------------------------------------------------------------
+# P1-4 人工监督：待审批队列（EU AI Act Art.14）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/interrupts", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_interrupts():
+    """待审批中断队列：status=pending / all（含已处理）"""
+    from agent_core.observability import get_telemetry
+    status = (request.args.get("status") or "pending").lower()
+    interrupts = get_telemetry().get_all_interrupts()
+    if status == "pending":
+        interrupts = [i for i in interrupts if i["status"] == "pending"]
+    elif status != "all":
+        interrupts = [i for i in interrupts if i["status"] == status]
+    # 关联调用链摘要（主题/节点详情）
+    for i in interrupts:
+        trace = get_telemetry().get_trace(i.get("trace_id", ""))
+        i["topic"] = (trace or {}).get("topic", "")
+        i["user_id"] = (trace or {}).get("user_id", "")
+    return jsonify({"success": True, "interrupts": interrupts,
+                     "pending_count": sum(1 for x in interrupts if x["status"] == "pending")})
+
+
+@admin_bp.route("/api/admin/interrupts/<trace_id>/approve", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_approve_interrupt(trace_id):
+    """审批放行：approved"""
+    from agent_core.observability import get_telemetry
+    result = get_telemetry().resolve_interrupt(
+        trace_id, "approved", request.admin.get("username") or "admin")
+    if "error" in result:
+        return jsonify(result), 404
+    db.add_system_log("info", "interrupt",
+                      f"管理员放行人工审核 trace={trace_id}",
+                      "审批人: " + str(request.admin.get("username")))
+    return jsonify({"success": True, "message": "已放行", **result})
+
+
+@admin_bp.route("/api/admin/interrupts/<trace_id>/reject", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_reject_interrupt(trace_id):
+    """审批拒绝：rejected"""
+    from agent_core.observability import get_telemetry
+    result = get_telemetry().resolve_interrupt(
+        trace_id, "rejected", request.admin.get("username") or "admin")
+    if "error" in result:
+        return jsonify(result), 404
+    db.add_system_log("info", "interrupt",
+                      f"管理员拒绝人工审核 trace={trace_id}",
+                      "审批人: " + str(request.admin.get("username")))
+    return jsonify({"success": True, "message": "已拒绝", **result})
+
+
+# ---------------------------------------------------------------------------
+# P1-4 成本报告
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/costs", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_cost_report():
+    """成本报告：汇总 + 按模型分布 + 按 Agent 分布 + 趋势"""
+    from agent_core.observability import get_telemetry
+    from agent_core.cost_tracker import get_cost_tracker
+    telemetry = get_telemetry()
+    summary = telemetry.get_cost_summary()
+    tracker = get_cost_tracker()
+    days = int(request.args.get("days", 7))
+    try:
+        trend = tracker.get_daily_trend(days=days)
+        by_agent = tracker.get_cost_by_agent()
+        anomalies = tracker.detect_anomalies()
+    except Exception:
+        trend, by_agent, anomalies = [], {}, []
+    # Agent 分布兜底：从 telemetry 缓冲按 agent_id 聚合
+    if not by_agent:
+        for c in telemetry.get_calls(limit=5000):
+            if c.get("type") == "audit" or "cost" not in c:
+                continue
+            aid = c.get("agent_id", "unknown")
+            by_agent.setdefault(aid, {"calls": 0, "cost": 0.0})
+            by_agent[aid]["calls"] += 1
+            by_agent[aid]["cost"] += c.get("cost", 0)
+    return jsonify({
+        "success": True,
+        "summary": summary,
+        "by_agent": by_agent,
+        "trend": trend,
+        "anomalies": anomalies,
+        "days": days,
+    })
+
+
+# ---------------------------------------------------------------------------
+# P1-4 权重配置（Agent 动态权重）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/weights", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_weights():
+    """Agent 权重配置列表（base / dynamic / 调用统计）"""
+    from agent_core.weight_manager import get_weight_manager
+    weights = get_weight_manager().get_weights()
+    return jsonify({"success": True, "weights": weights})
+
+
+@admin_bp.route("/api/admin/weights/<agent_id>", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_set_weight(agent_id):
+    """设置 Agent 基础权重（动态权重 = base × success × latency）"""
+    from agent_core.weight_manager import get_weight_manager
+    data = request.get_json(force=True) or {}
+    try:
+        base_weight = float(data.get("base_weight", 0))
+    except (TypeError, ValueError):
+        return jsonify({"error": "base_weight 必须是数字"}), 400
+    if not (0 < base_weight <= 10):
+        return jsonify({"error": "base_weight 必须在 (0, 10] 范围"}), 400
+    get_weight_manager().set_base_weight(agent_id, base_weight)
+    db.add_system_log("info", "weights",
+                      f"设置 Agent 权重: {agent_id} → {base_weight}")
+    return jsonify({"success": True, "agent_id": agent_id,
+                    "base_weight": base_weight,
+                    "message": f"{agent_id} 基础权重已更新为 {base_weight}"})
+
+
+@admin_bp.route("/api/admin/weights/recalculate", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_recalc_weights():
+    """批量重算所有 Agent 动态权重"""
+    from agent_core.weight_manager import get_weight_manager
+    results = get_weight_manager().batch_update_weights()
+    db.add_system_log("info", "weights", "批量重算 Agent 动态权重",
+                      str(len(results)))
+    return jsonify({"success": True, "updated": len(results), "results": results})
+
+
+# ---------------------------------------------------------------------------
+# P1-5 外部 MCP Server 管理
+# ---------------------------------------------------------------------------
+
+def _mcp_config_to_dict(config) -> dict:
+    """ExternalMCPServerConfig → dict（enabled 保持 bool，args 保持 list）"""
+    return {
+        "server_name": config.server_name,
+        "transport": config.transport,
+        "url": config.url,
+        "command": config.command,
+        "args": list(config.args or []),
+        "enabled": bool(config.enabled),
+        "description": config.description,
+    }
+
+
+@admin_bp.route("/api/admin/mcp-servers", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_mcp_servers():
+    """外部 MCP 服务器配置列表 + 连接状态概览"""
+    from agent_core.mcp_external import get_external_mcp_registry
+    registry = get_external_mcp_registry()
+    servers = [_mcp_config_to_dict(c) for c in registry.list_servers()]
+    return jsonify({"success": True, "servers": servers,
+                    "status": registry.get_status()})
+
+
+@admin_bp.route("/api/admin/mcp-servers", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_add_mcp_server():
+    """注册外部 MCP 服务器（http / stdio）"""
+    from agent_core.mcp_external import (
+        get_external_mcp_registry, ExternalMCPServerConfig)
+    data = request.get_json(force=True) or {}
+    server_name = (data.get("server_name") or "").strip()
+    if not server_name:
+        return jsonify({"error": "缺少 server_name 字段"}), 400
+    transport = (data.get("transport") or "http").strip().lower()
+    if transport not in ("http", "stdio"):
+        return jsonify({"error": "transport 只能是 http 或 stdio"}), 400
+    url = (data.get("url") or "").strip()
+    command = (data.get("command") or "").strip()
+    if transport == "http" and not url:
+        return jsonify({"error": "http 传输需提供 url"}), 400
+    if transport == "stdio" and not command:
+        return jsonify({"error": "stdio 传输需提供 command"}), 400
+    args = data.get("args") or []
+    if not isinstance(args, list):
+        return jsonify({"error": "args 必须是数组"}), 400
+    config = ExternalMCPServerConfig(
+        server_name=server_name,
+        transport=transport,
+        url=url,
+        command=command,
+        args=args,
+        enabled=bool(data.get("enabled", True)),
+        description=data.get("description") or "",
+    )
+    registry = get_external_mcp_registry()
+    result = registry.add_server(config)
+    if "error" in result:
+        return jsonify({"error": result["error"]}), 400
+    db.add_system_log("info", "mcp", f"注册 MCP Server: {server_name} ({transport})")
+    return jsonify({"success": True, "server": _mcp_config_to_dict(config)})
+
+
+@admin_bp.route("/api/admin/mcp-servers/<server_name>/toggle", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_toggle_mcp_server(server_name):
+    """启用/停用外部 MCP 服务器"""
+    current = db.get_mcp_server(server_name)
+    if not current:
+        return jsonify({"error": "MCP Server 不存在"}), 404
+    new_enabled = 0 if current.get("enabled") else 1
+    db.update_mcp_server(server_name, enabled=new_enabled)
+    return jsonify({"success": True, "enabled": new_enabled})
+
+
+@admin_bp.route("/api/admin/mcp-servers/<server_name>/test", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_test_mcp_server(server_name):
+    """测试连接外部 MCP 服务器并枚举工具"""
+    from agent_core.mcp_external import get_external_mcp_registry
+    registry = get_external_mcp_registry()
+    client = registry.connect_server(server_name)
+    if isinstance(client, dict) and "error" in client:
+        return jsonify({"success": False, "error": client["error"]})
+    tools = registry.list_tools(server_name)
+    if isinstance(tools, dict) and tools.get("isError"):
+        content = tools.get("content") or []
+        error = "".join(item.get("text", "") for item in content
+                        if isinstance(item, dict))
+        return jsonify({"success": False, "error": error or "连接失败"})
+    return jsonify({"success": True, "tools": tools})
+
+
+@admin_bp.route("/api/admin/mcp-servers/<server_name>", methods=["DELETE", "OPTIONS"])
+@require_admin
+def admin_delete_mcp_server(server_name):
+    """删除外部 MCP 服务器配置"""
+    from agent_core.mcp_external import get_external_mcp_registry
+    if not db.get_mcp_server(server_name):
+        return jsonify({"error": "MCP Server 不存在"}), 404
+    registry = get_external_mcp_registry()
+    registry.delete_server(server_name)
+    db.add_system_log("info", "mcp", f"删除 MCP Server: {server_name}")
+    return jsonify({"success": True, "message": "已删除"})
+
+
+# ---------------------------------------------------------------------------
+# P2-12 分布式任务队列
+# ---------------------------------------------------------------------------
+
+def _task_to_api(task: Dict, full: bool = False) -> Dict:
+    """任务记录 → API 响应（列表视图截断 payload/result，详情视图返回完整）"""
+    if not task:
+        return {}
+    if not full:
+        payload = task.get("payload") or {}
+        return {
+            "task_id": task.get("task_id"),
+            "task_type": task.get("task_type"),
+            "status": task.get("status"),
+            "priority": task.get("priority"),
+            "retries": task.get("retries"),
+            "max_retries": task.get("max_retries"),
+            "timeout": task.get("timeout"),
+            "created_at": task.get("created_at"),
+            "finished_at": task.get("finished_at") or "",
+            "error": (task.get("error") or "")[:300],
+            "topic": payload.get("topic", "") if isinstance(payload, dict) else "",
+        }
+    return {
+        "task_id": task.get("task_id"),
+        "task_type": task.get("task_type"),
+        "status": task.get("status"),
+        "priority": task.get("priority"),
+        "retries": task.get("retries"),
+        "max_retries": task.get("max_retries"),
+        "timeout": task.get("timeout"),
+        "created_at": task.get("created_at"),
+        "started_at": task.get("started_at") or "",
+        "finished_at": task.get("finished_at") or "",
+        "error": (task.get("error") or "")[:2000],
+        "payload": task.get("payload") or {},
+        "result": task.get("result") or {},
+    }
+
+
+@admin_bp.route("/api/admin/tasks", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_tasks():
+    """任务队列：列表（按状态/类型筛选）+ 统计 + worker 状态"""
+    from agent_core.task_queue import get_task_queue
+    q = get_task_queue()
+    status = request.args.get("status", "").strip()
+    task_type = request.args.get("task_type", "").strip()
+    limit = request.args.get("limit", 50)
+    try:
+        limit = int(limit)
+    except (TypeError, ValueError):
+        limit = 50
+    tasks = [_task_to_api(t) for t in q.list(
+        status=status, task_type=task_type, limit=limit)]
+    return jsonify({"success": True, "tasks": tasks, "stats": q.stats()})
+
+
+@admin_bp.route("/api/admin/tasks", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_submit_task():
+    """提交异步任务"""
+    from agent_core.task_queue import get_task_queue
+    data = request.get_json(force=True) or {}
+    task_type = (data.get("task_type") or "").strip()
+    if not task_type:
+        return jsonify({"error": "缺少 task_type 字段"}), 400
+    payload = data.get("payload") or {}
+    if not isinstance(payload, dict):
+        return jsonify({"error": "payload 必须是对象"}), 400
+    try:
+        result = get_task_queue().submit(
+            task_type=task_type,
+            payload=payload,
+            priority=int(data.get("priority", 5)),
+            max_retries=int(data.get("max_retries", 1)),
+            delay=float(data.get("delay", 0)),
+            timeout=int(data.get("timeout", 300)),
+        )
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": f"参数格式错误: {e}"}), 400
+    if not result.get("success"):
+        return jsonify({"error": result.get("error", "提交失败")}), 400
+    db.add_system_log("info", "task_queue",
+                      f"提交任务: {task_type} -> {result['task_id']}")
+    return jsonify({"success": True, "task": result})
+
+
+@admin_bp.route("/api/admin/tasks/<task_id>", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_get_task(task_id):
+    """查询任务状态与完整结果"""
+    from agent_core.task_queue import get_task_queue
+    task = get_task_queue().get(task_id)
+    if not task:
+        return jsonify({"error": "任务不存在"}), 404
+    return jsonify({"success": True, "task": _task_to_api(task, full=True)})
+
+
+@admin_bp.route("/api/admin/tasks/<task_id>/cancel", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_cancel_task(task_id):
+    """取消 pending 任务"""
+    from agent_core.task_queue import get_task_queue
+    result = get_task_queue().cancel(task_id)
+    if not result.get("success"):
+        return jsonify({"error": result.get("error", "取消失败")}), 400
+    return jsonify(result)
+
+
+@admin_bp.route("/api/admin/tasks/process", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_process_tasks():
+    """手动消费队列：同步执行当前所有到期任务（未启动后台 worker 时使用）"""
+    from agent_core.task_queue import get_task_queue
+    q = get_task_queue()
+    processed = q.run_pending_now()
+    return jsonify({"success": True, "processed": processed, "stats": q.stats()})

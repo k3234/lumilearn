@@ -14,6 +14,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional
 
+from framework.security.uploads import validate_upload_file, check_file_magic, ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES
+
 logger = logging.getLogger("lumilearn.speech_service")
 
 WHISPER_MODEL_NAME = os.environ.get("WHISPER_MODEL", "tiny")
@@ -96,6 +98,11 @@ class SpeechService:
                 "language": "检测到的语言代码"
             }
         """
+        # 前置校验：文件名、扩展名、大小、魔数，在模型加载前拒绝恶意文件
+        ok, err = validate_upload_file(file_storage, ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES)
+        if not ok:
+            raise ValueError(err)
+
         suffix = Path(file_storage.filename).suffix.lower()
         tmp_path = None
 
@@ -104,6 +111,7 @@ class SpeechService:
                 file_storage.save(tmp.name)
                 tmp_path = tmp.name
 
+            check_file_magic(tmp_path, suffix) or (_ for _ in ()).throw(ValueError("文件魔数校验失败"))
             return self.transcribe(tmp_path)
 
         finally:

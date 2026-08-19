@@ -448,6 +448,9 @@
 // 全局状态
 let isProcessing = false;
 
+// HTML 转义（防 XSS：& < > " ' 五种字符）
+function esc(s) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
 // ---------- 登录认证 ----------
 async function checkLogin() {
   try {
@@ -516,8 +519,8 @@ async function loadHistory() {
       const s = r.summary || {};
       div.innerHTML = `
         <div>
-          <div class="h-topic">${s.core_topic || r.topic}</div>
-          <div class="h-meta">${s.subject || ''} · ${s.generated_at || r.created_at || ''}</div>
+          <div class="h-topic">${esc(s.core_topic || r.topic)}</div>
+          <div class="h-meta">${esc(s.subject || '')} · ${esc(s.generated_at || r.created_at || '')}</div>
         </div>
         <div class="h-score">${s.score ?? '-'}分</div>`;
       div.onclick = () => showSavedReport(r);
@@ -544,25 +547,25 @@ function showSavedReport(r) {
   document.getElementById('reportTitle').textContent = rep.title || '学习报告';
   document.getElementById('reportMeta').textContent = (rep.generated_at || '') + ' · 历史记录';
   document.getElementById('taskCard').innerHTML = `
-    <div class="task-item"><div class="label">学科</div><div class="value">${task.subject || '-'}</div></div>
-    <div class="task-item"><div class="label">类型</div><div class="value">${task.topic_type || '-'}</div></div>
-    <div class="task-item"><div class="label">难度</div><div class="value">${task.difficulty || '-'}</div></div>
-    <div class="task-item"><div class="label">学习类型</div><div class="value">${task.learning_type || '-'}</div></div>
+    <div class="task-item"><div class="label">学科</div><div class="value">${esc(task.subject || '-')}</div></div>
+    <div class="task-item"><div class="label">类型</div><div class="value">${esc(task.topic_type || '-')}</div></div>
+    <div class="task-item"><div class="label">难度</div><div class="value">${esc(task.difficulty || '-')}</div></div>
+    <div class="task-item"><div class="label">学习类型</div><div class="value">${esc(task.learning_type || '-')}</div></div>
     <div class="task-item"><div class="label">置信度</div><div class="value">${((task.confidence || 0) * 100).toFixed(0)}%</div></div>`;
   document.getElementById('teachSteps').innerHTML = steps.map((s, i) => `
     <div class="teach-step ${s.success ? 'done' : ''}">
       <div class="step-num">${s.success ? '✓' : i + 1}</div>
       <div class="step-content">
-        <div class="step-name">${stepNames[i] || s.name || ('步骤' + (i + 1))}</div>
-        <div class="step-detail">${(s.content || '').substring(0, 100)}...</div>
+        <div class="step-name">${esc(stepNames[i] || s.name || ('步骤' + (i + 1)))}</div>
+        <div class="step-detail">${esc((s.content || '').substring(0, 100))}...</div>
       </div>
     </div>`).join('');
   document.getElementById('assessmentBox').innerHTML = `
     <div class="assessment-item"><div class="score">${mastery.score || 0}</div><div class="label">综合评分</div></div>
-    <div class="assessment-item"><div class="score" style="font-size:16px">${mastery.level || '-'}</div><div class="label">掌握等级</div></div>
-    <div class="assessment-item"><div class="score" style="font-size:14px">${mastery.emoji || ''}</div><div class="label">${mastery.summary || ''}</div></div>`;
-  document.getElementById('weakPointsList').innerHTML = (rep.weak_points || []).map(wp => `<li>${wp}</li>`).join('');
-  document.getElementById('nextStepsList').innerHTML = (rep.next_steps || []).map(ns => `<li>${ns}</li>`).join('');
+    <div class="assessment-item"><div class="score" style="font-size:16px">${esc(mastery.level || '-')}</div><div class="label">掌握等级</div></div>
+    <div class="assessment-item"><div class="score" style="font-size:14px">${esc(mastery.emoji || '')}</div><div class="label">${esc(mastery.summary || '')}</div></div>`;
+  document.getElementById('weakPointsList').innerHTML = (rep.weak_points || []).map(wp => `<li>${esc(wp)}</li>`).join('');
+  document.getElementById('nextStepsList').innerHTML = (rep.next_steps || []).map(ns => `<li>${esc(ns)}</li>`).join('');
   document.getElementById('reportSection').classList.add('active');
   window.scrollTo({ top: document.getElementById('reportSection').offsetTop - 80, behavior: 'smooth' });
 }
@@ -664,10 +667,10 @@ function renderReport(report) {
   // 任务理解
   const task = report.task_understanding || {};
   document.getElementById('taskCard').innerHTML = `
-    <div class="task-item"><div class="label">学科</div><div class="value">${task.subject || '-'}</div></div>
-    <div class="task-item"><div class="label">类型</div><div class="value">${task.topic_type || '-'}</div></div>
-    <div class="task-item"><div class="label">难度</div><div class="value">${task.difficulty || '-'}</div></div>
-    <div class="task-item"><div class="label">学习类型</div><div class="value">${task.learning_type || '-'}</div></div>
+    <div class="task-item"><div class="label">学科</div><div class="value">${esc(task.subject || '-')}</div></div>
+    <div class="task-item"><div class="label">类型</div><div class="value">${esc(task.topic_type || '-')}</div></div>
+    <div class="task-item"><div class="label">难度</div><div class="value">${esc(task.difficulty || '-')}</div></div>
+    <div class="task-item"><div class="label">学习类型</div><div class="value">${esc(task.learning_type || '-')}</div></div>
     <div class="task-item"><div class="label">置信度</div><div class="value">${((task.confidence || 0) * 100).toFixed(0)}%</div></div>
   `;
 
@@ -678,8 +681,8 @@ function renderReport(report) {
     <div class="teach-step ${s.success ? 'done' : ''}">
       <div class="step-num">${s.success ? '✓' : i + 1}</div>
       <div class="step-content">
-        <div class="step-name">${stepNames[i] || s.name || ('步骤' + (i + 1))}</div>
-        <div class="step-detail">${(s.content || '').substring(0, 100)}...</div>
+        <div class="step-name">${esc(stepNames[i] || s.name || ('步骤' + (i + 1)))}</div>
+        <div class="step-detail">${esc((s.content || '').substring(0, 100))}...</div>
       </div>
     </div>
   `).join('');
@@ -692,22 +695,22 @@ function renderReport(report) {
       <div class="label">综合评分</div>
     </div>
     <div class="assessment-item">
-      <div class="score" style="font-size:16px">${mastery.level || '-'}</div>
+      <div class="score" style="font-size:16px">${esc(mastery.level || '-')}</div>
       <div class="label">掌握等级</div>
     </div>
     <div class="assessment-item">
-      <div class="score" style="font-size:14px">${mastery.emoji || ''}</div>
-      <div class="label">${mastery.summary || ''}</div>
+      <div class="score" style="font-size:14px">${esc(mastery.emoji || '')}</div>
+      <div class="label">${esc(mastery.summary || '')}</div>
     </div>
   `;
 
   // 薄弱点
   document.getElementById('weakPointsList').innerHTML =
-    (report.weak_points || []).map(wp => `<li>${wp}</li>`).join('');
+    (report.weak_points || []).map(wp => `<li>${esc(wp)}</li>`).join('');
 
   // 下一步建议
   document.getElementById('nextStepsList').innerHTML =
-    (report.next_steps || []).map(ns => `<li>${ns}</li>`).join('');
+    (report.next_steps || []).map(ns => `<li>${esc(ns)}</li>`).join('');
 
   // 显示报告
   document.getElementById('reportSection').classList.add('active');
@@ -724,8 +727,8 @@ function renderMultiAgentReport(data) {
   // 任务理解
   const task = data.teaching || {};
   document.getElementById('taskCard').innerHTML = `
-    <div class="task-item"><div class="label">学科</div><div class="value">${data.subject || '自动识别'}</div></div>
-    <div class="task-item"><div class="label">难度</div><div class="value">${data.difficulty || '高中'}</div></div>
+    <div class="task-item"><div class="label">学科</div><div class="value">${esc(data.subject || '自动识别')}</div></div>
+    <div class="task-item"><div class="label">难度</div><div class="value">${esc(data.difficulty || '高中')}</div></div>
     <div class="task-item"><div class="label">教学模式</div><div class="value">费曼五步</div></div>
     <div class="task-item"><div class="label">知识库来源</div><div class="value">${(task.rag_sources || []).length} 条</div></div>
   `;
@@ -737,8 +740,8 @@ function renderMultiAgentReport(data) {
     <div class="teach-step done">
       <div class="step-num">${i + 1}</div>
       <div class="step-content">
-        <div class="step-name">${s.step_name || stepNames[i] || ('步骤' + (i + 1))}</div>
-        <div class="step-detail">${(s.content || '').substring(0, 160)}...</div>
+        <div class="step-name">${esc(s.step_name || stepNames[i] || ('步骤' + (i + 1)))}</div>
+        <div class="step-detail">${esc((s.content || '').substring(0, 160))}...</div>
       </div>
     </div>
   `).join('') || '<div style="color:#94a3b8;font-size:13px;">教学步骤生成中或不可用</div>';
@@ -746,8 +749,8 @@ function renderMultiAgentReport(data) {
   // 知识库参考来源（RAG）
   const ragSources = task.rag_sources || [];
   const ragHtml = ragSources.length ? ragSources.map((rs, i) => `
-    <li><strong>${rs.title || ('来源' + (i + 1))}</strong>
-      <span style="color:#94a3b8;font-size:12px;"> · ${rs.subject || ''} · 相关度 ${(rs.score || 0).toFixed(2)}</span>
+    <li><strong>${esc(rs.title || ('来源' + (i + 1)))}</strong>
+      <span style="color:#94a3b8;font-size:12px;"> · ${esc(rs.subject || '')} · 相关度 ${(rs.score || 0).toFixed(2)}</span>
     </li>`).join('') : '<li style="color:#94a3b8;">本次未检索到知识库资料（索引为空或主题无匹配）</li>';
   const ragEl = document.getElementById('ragSourcesList');
   if (ragEl) ragEl.innerHTML = ragHtml;
@@ -762,7 +765,7 @@ function renderMultiAgentReport(data) {
       <div class="label">综合评分</div>
     </div>
     <div class="assessment-item">
-      <div class="score" style="font-size:16px">${(data.coaching && data.coaching.mastery_level) || '未评分'}</div>
+      <div class="score" style="font-size:16px">${esc((data.coaching && data.coaching.mastery_level) || '未评分')}</div>
       <div class="label">掌握等级</div>
     </div>
     <div class="assessment-item">
@@ -776,11 +779,11 @@ function renderMultiAgentReport(data) {
   const suggestions = coaching.suggestions || [];
   const nextTopics = coaching.next_topics || [];
   document.getElementById('weakPointsList').innerHTML =
-    suggestions.map(s => `<li>${s}</li>`).join('') ||
+    suggestions.map(s => `<li>${esc(s)}</li>`).join('') ||
     '<li style="color:#94a3b8;">暂无建议（教学已完成，可补充你的理解以获得个性化建议）</li>';
 
   document.getElementById('nextStepsList').innerHTML =
-    nextTopics.map(nt => `<li>${nt.name || nt.title || nt}</li>`).join('') ||
+    nextTopics.map(nt => `<li>${esc(nt.name || nt.title || nt)}</li>`).join('') ||
     '<li style="color:#94a3b8;">暂无推荐，继续学习新主题即可</li>';
 
   // Agent 协作状态
@@ -790,7 +793,7 @@ function renderMultiAgentReport(data) {
     const st = trace[k] || {};
     const badge = st.status === 'ok' ? '✅' : (st.status === 'skipped' ? '⏭️' : '⚠️');
     return `<div style="flex:1;text-align:center;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;color:#64748b;">
-      ${badge} ${label}<br><span style="color:#94a3b8;">${st.status || '-'}</span>
+      ${badge} ${label}<br><span style="color:#94a3b8;">${esc(st.status || '-')}</span>
     </div>`;
   }).join('');
   const traceEl = document.getElementById('agentTrace');

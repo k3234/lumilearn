@@ -560,6 +560,7 @@ CREATE TABLE IF NOT EXISTS admins (
     display_name  TEXT DEFAULT '',
     role          TEXT DEFAULT 'super_admin',  -- super_admin / operator
     is_active     INTEGER DEFAULT 1,
+    must_change_password INTEGER DEFAULT 0,    -- 1=首次登录需强制改密（默认管理员安全策略）
     last_login_at TEXT,
     created_at    TEXT DEFAULT (datetime('now','localtime'))
 );
@@ -695,12 +696,124 @@ CREATE TABLE IF NOT EXISTS data_exports (
 );
 CREATE INDEX IF NOT EXISTS idx_data_exports_status ON data_exports(status);
 CREATE INDEX IF NOT EXISTS idx_data_exports_requester ON data_exports(requester_id);
+
+-- ============================================================
+-- N. Agent 跨调用与自积累系统
+-- ============================================================
+
+-- Agent 调用日志：记录每次Agent调用，用于权重计算和追溯
+CREATE TABLE IF NOT EXISTS agent_call_log (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    call_id         TEXT UNIQUE NOT NULL,
+    caller_agent    TEXT NOT NULL,
+    target_agent    TEXT DEFAULT '',
+    topic           TEXT NOT NULL,
+    subject         TEXT DEFAULT '',
+    call_type       TEXT DEFAULT 'standalone',
+    payload         TEXT DEFAULT '{}',
+    result          TEXT DEFAULT '{}',
+    latency_ms      INTEGER DEFAULT 0,
+    success         INTEGER DEFAULT 1,
+    weight_used     REAL DEFAULT 0.0,
+    call_chain      TEXT DEFAULT '[]',
+    created_at      TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (caller_agent) REFERENCES agents(agent_id),
+    FOREIGN KEY (target_agent) REFERENCES agents(agent_id)
+);
+CREATE INDEX IF NOT EXISTS idx_agent_call_caller ON agent_call_log(caller_agent);
+CREATE INDEX IF NOT EXISTS idx_agent_call_target ON agent_call_log(target_agent);
+CREATE INDEX IF NOT EXISTS idx_agent_call_topic ON agent_call_log(topic);
+CREATE INDEX IF NOT EXISTS idx_agent_call_created ON agent_call_log(created_at);
+
+-- Agent 权重配置：管理员可配基础权重 + 系统计算的动态权重
+CREATE TABLE IF NOT EXISTS agent_weight_config (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id            TEXT UNIQUE NOT NULL,
+    base_weight         REAL DEFAULT 1.0,
+    max_calls_per_min   INTEGER DEFAULT 10,
+    priority            INTEGER DEFAULT 5,
+    call_count          INTEGER DEFAULT 0,
+    success_count       INTEGER DEFAULT 0,
+    fail_count          INTEGER DEFAULT 0,
+    avg_latency_ms      REAL DEFAULT 0.0,
+    dynamic_weight      REAL DEFAULT 1.0,
+    last_calculated     TEXT,
+    config_json         TEXT DEFAULT '{}',
+    created_at          TEXT DEFAULT (datetime('now','localtime')),
+    updated_at          TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (agent_id) REFERENCES agents(agent_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_agent_weight_agent ON agent_weight_config(agent_id);
+
+-- 外部 MCP 服务器配置：P1-5 Agent 通过 MCP 接入外部工具/服务
+CREATE TABLE IF NOT EXISTS agent_mcp_configs (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    server_name TEXT UNIQUE NOT NULL,
+    transport   TEXT NOT NULL DEFAULT 'http',
+    url         TEXT DEFAULT '',
+    command     TEXT DEFAULT '',
+    args        TEXT DEFAULT '[]',
+    enabled     INTEGER DEFAULT 1,
+    description TEXT DEFAULT '',
+    config_json TEXT DEFAULT '{}',
+    created_at  TEXT DEFAULT (datetime('now','localtime')),
+    updated_at  TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE INDEX IF NOT EXISTS idx_mcp_server_name ON agent_mcp_configs(server_name);
+
+-- 分布式任务队列：P2-12 异步任务（SQLite broker + 结果后端，无外部依赖）
+CREATE TABLE IF NOT EXISTS task_queue (
+    task_id     TEXT PRIMARY KEY,
+    task_type   TEXT NOT NULL,
+    payload     TEXT NOT NULL DEFAULT '{}',     -- JSON 任务参数
+    priority    INTEGER DEFAULT 5,              -- 越小越优先
+    status      TEXT DEFAULT 'pending',         -- pending/running/completed/failed/canceled
+    max_retries INTEGER DEFAULT 1,              -- 失败重试次数上限
+    retries     INTEGER DEFAULT 0,
+    next_run_at REAL DEFAULT 0,                 -- 到期时间（epoch 秒，延迟/重试退避用）
+    worker_id   TEXT DEFAULT '',                -- 执行该任务的 worker 标识
+    result      TEXT DEFAULT '',                -- JSON 执行结果
+    error       TEXT DEFAULT '',
+    timeout     INTEGER DEFAULT 300,            -- 单次执行超时（秒）
+    created_at  TEXT DEFAULT (datetime('now','localtime')),
+    started_at  TEXT DEFAULT '',
+    finished_at TEXT DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_task_queue_pick ON task_queue(status, priority, created_at);
+CREATE INDEX IF NOT EXISTS idx_task_queue_type ON task_queue(task_type, status);
+
+-- 自积累知识库：Agent产出的可复用知识
+CREATE TABLE IF NOT EXISTS knowledge_accumulation (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    knowledge_id    TEXT UNIQUE NOT NULL,
+    topic           TEXT NOT NULL,
+    subject         TEXT DEFAULT '',
+    knowledge_type  TEXT NOT NULL,
+    content         TEXT NOT NULL,
+    summary         TEXT DEFAULT '',
+    source_agent    TEXT NOT NULL,
+    source_call_id  INTEGER DEFAULT 0,
+    quality_score   REAL DEFAULT 0.0,
+    usage_count     INTEGER DEFAULT 0,
+    tags            TEXT DEFAULT '[]',
+    related_nodes   TEXT DEFAULT '[]',
+    created_at      TEXT DEFAULT (datetime('now','localtime')),
+    updated_at      TEXT DEFAULT (datetime('now','localtime')),
+    FOREIGN KEY (source_agent) REFERENCES agents(agent_id),
+    FOREIGN KEY (source_call_id) REFERENCES agent_call_log(id)
+);
+CREATE INDEX IF NOT EXISTS idx_knowledge_topic ON knowledge_accumulation(topic);
+CREATE INDEX IF NOT EXISTS idx_knowledge_subject ON knowledge_accumulation(subject);
+CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge_accumulation(knowledge_type);
+CREATE INDEX IF NOT EXISTS idx_knowledge_quality ON knowledge_accumulation(quality_score);
+CREATE INDEX IF NOT EXISTS idx_knowledge_source ON knowledge_accumulation(source_agent);
+
+-- ============================================================
+-- 索引（加速常用查询）
+-- ============================================================
+
+CREATE INDEX IF NOT EXISTS idx_training_data_subject ON training_data(subject);
 """
-
-
-# ============================================================
-# 预置学科数据
-# ============================================================
 
 _DEFAULT_SUBJECTS = [
     "数学", "英语", "语文", "物理", "化学", "生物",
@@ -799,6 +912,14 @@ class DatabaseManager:
         self.conn.executescript(_SCHEMA)
         # 迁移：为已存在的 users 表补充 username/password_hash 列
         self._migrate_users_columns()
+        # 迁移：admins 表补充 must_change_password 列（默认管理员强口令强制改密）
+        self._migrate_admins_columns()
+        # 迁移：agents 表补充权重相关列
+        self._migrate_agent_columns()
+        # 迁移：reasoning_logs 表补充 agent_id/call_chain/context_injected 列
+        self._migrate_reasoning_log_columns()
+        # 迁移：新建 agent_call_log / agent_weight_config / knowledge_accumulation 表
+        self._migrate_new_tables()
         self.conn.commit()
 
         # 填充默认数据（仅首次）
@@ -821,6 +942,136 @@ class DatabaseManager:
         except Exception as e:
             logger = __import__("logging").getLogger("lumilearn.database")
             logger.warning(f"迁移 users 表列失败（可忽略）: {e}")
+
+    def _migrate_admins_columns(self):
+        """迁移：admins 表补充 must_change_password 列（默认管理员强制改密）"""
+        try:
+            cols = [r["name"] for r in self._query("PRAGMA table_info(admins)")]
+            if "must_change_password" not in cols:
+                self.conn.execute(
+                    "ALTER TABLE admins ADD COLUMN must_change_password INTEGER DEFAULT 0"
+                )
+        except Exception as e:
+            logger = __import__("logging").getLogger("lumilearn.database")
+            logger.warning(f"迁移 admins 表列失败（可忽略）: {e}")
+
+    def _migrate_agent_columns(self):
+        """迁移：agents 表补充权重相关列"""
+        try:
+            cols = [r["name"] for r in self._query("PRAGMA table_info(agents)")]
+            for col in ("base_weight", "call_count", "success_count", "fail_count",
+                        "dynamic_weight", "last_call_at"):
+                if col not in cols:
+                    self.conn.execute(f"ALTER TABLE agents ADD COLUMN {col} DEFAULT ''")
+                    # 将数值列从 TEXT 修正为正确类型
+                    if col in ("base_weight", "dynamic_weight"):
+                        self.conn.execute(
+                            f"UPDATE agents SET {col} = 1.0 WHERE {col} = ''"
+                        )
+                    elif col in ("call_count", "success_count", "fail_count"):
+                        self.conn.execute(
+                            f"UPDATE agents SET {col} = 0 WHERE {col} = ''"
+                        )
+                    elif col == "last_call_at":
+                        self.conn.execute(
+                            f"UPDATE agents SET {col} = NULL WHERE {col} = ''"
+                        )
+        except Exception as e:
+            logger = __import__("logging").getLogger("lumilearn.database")
+            logger.warning(f"迁移 agents 表列失败（可忽略）: {e}")
+
+    def _migrate_reasoning_log_columns(self):
+        """迁移：reasoning_logs 表补充 agent_id/call_chain/context_injected 列"""
+        try:
+            cols = [r["name"] for r in self._query("PRAGMA table_info(reasoning_logs)")]
+            for col in ("agent_id", "call_chain", "context_injected"):
+                if col not in cols:
+                    self.conn.execute(
+                        f"ALTER TABLE reasoning_logs ADD COLUMN {col} DEFAULT ''"
+                    )
+        except Exception as e:
+            logger = __import__("logging").getLogger("lumilearn.database")
+            logger.warning(f"迁移 reasoning_logs 表列失败（可忽略）: {e}")
+
+    def _migrate_new_tables(self):
+        """迁移：确保 agent_call_log / agent_weight_config / knowledge_accumulation 表存在"""
+        try:
+            tables = [r["name"] for r in
+                      self._query("SELECT name FROM sqlite_master WHERE type='table'")]
+            if "agent_call_log" not in tables:
+                self.conn.execute("""
+                    CREATE TABLE agent_call_log (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        call_id TEXT UNIQUE NOT NULL,
+                        caller_agent TEXT NOT NULL,
+                        target_agent TEXT DEFAULT '',
+                        topic TEXT NOT NULL,
+                        subject TEXT DEFAULT '',
+                        call_type TEXT DEFAULT 'standalone',
+                        payload TEXT DEFAULT '{}',
+                        result TEXT DEFAULT '{}',
+                        latency_ms INTEGER DEFAULT 0,
+                        success INTEGER DEFAULT 1,
+                        weight_used REAL DEFAULT 0.0,
+                        call_chain TEXT DEFAULT '[]',
+                        created_at TEXT DEFAULT (datetime('now','localtime'))
+                    )
+                """)
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_call_caller ON agent_call_log(caller_agent)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_call_target ON agent_call_log(target_agent)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_call_topic ON agent_call_log(topic)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_call_created ON agent_call_log(created_at)")
+            if "agent_weight_config" not in tables:
+                self.conn.execute("""
+                    CREATE TABLE agent_weight_config (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        agent_id TEXT UNIQUE NOT NULL,
+                        base_weight REAL DEFAULT 1.0,
+                        max_calls_per_min INTEGER DEFAULT 10,
+                        priority INTEGER DEFAULT 5,
+                        call_count INTEGER DEFAULT 0,
+                        success_count INTEGER DEFAULT 0,
+                        fail_count INTEGER DEFAULT 0,
+                        avg_latency_ms REAL DEFAULT 0.0,
+                        dynamic_weight REAL DEFAULT 1.0,
+                        last_calculated TEXT,
+                        config_json TEXT DEFAULT '{}',
+                        created_at TEXT DEFAULT (datetime('now','localtime')),
+                        updated_at TEXT DEFAULT (datetime('now','localtime')),
+                        FOREIGN KEY (agent_id) REFERENCES agents(agent_id) ON DELETE CASCADE
+                    )
+                """)
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_agent_weight_agent ON agent_weight_config(agent_id)")
+            if "knowledge_accumulation" not in tables:
+                self.conn.execute("""
+                    CREATE TABLE knowledge_accumulation (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        knowledge_id TEXT UNIQUE NOT NULL,
+                        topic TEXT NOT NULL,
+                        subject TEXT DEFAULT '',
+                        knowledge_type TEXT NOT NULL,
+                        content TEXT NOT NULL,
+                        summary TEXT DEFAULT '',
+                        source_agent TEXT NOT NULL,
+                        source_call_id INTEGER DEFAULT 0,
+                        quality_score REAL DEFAULT 0.0,
+                        usage_count INTEGER DEFAULT 0,
+                        tags TEXT DEFAULT '[]',
+                        related_nodes TEXT DEFAULT '[]',
+                        created_at TEXT DEFAULT (datetime('now','localtime')),
+                        updated_at TEXT DEFAULT (datetime('now','localtime')),
+                        FOREIGN KEY (source_agent) REFERENCES agents(agent_id),
+                        FOREIGN KEY (source_call_id) REFERENCES agent_call_log(id)
+                    )
+                """)
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_topic ON knowledge_accumulation(topic)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_subject ON knowledge_accumulation(subject)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge_accumulation(knowledge_type)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_quality ON knowledge_accumulation(quality_score)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_source ON knowledge_accumulation(source_agent)")
+        except Exception as e:
+            logger = __import__("logging").getLogger("lumilearn.database")
+            logger.warning(f"迁移新表失败（可忽略）: {e}")
 
     def _seed_defaults(self):
         """填充默认数据（学科、知识图谱），仅首次执行"""
@@ -3330,12 +3581,22 @@ class DatabaseManager:
     # ============================================================
 
     def add_admin(self, username: str, password_hash: str,
-                  display_name: str = "", role: str = "super_admin") -> Dict:
+                  display_name: str = "", role: str = "super_admin",
+                  must_change_password: int = 0) -> Dict:
         cur = self._execute(
-            "INSERT INTO admins (username, password_hash, display_name, role) VALUES (?, ?, ?, ?)",
-            (username, password_hash, display_name, role)
+            "INSERT INTO admins (username, password_hash, display_name, role, must_change_password) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (username, password_hash, display_name, role, must_change_password)
         )
         return {"id": cur.lastrowid, "username": username, "role": role}
+
+    def set_admin_must_change_password(self, admin_id: int, must_change: bool) -> bool:
+        """设置管理员是否需强制改密（首次登录用）"""
+        cur = self._execute(
+            "UPDATE admins SET must_change_password = ? WHERE id = ?",
+            (1 if must_change else 0, admin_id)
+        )
+        return cur.rowcount > 0
 
     def get_admin_by_username(self, username: str) -> Optional[Dict]:
         return self._query_one("SELECT * FROM admins WHERE username = ?", (username,))
@@ -4183,6 +4444,382 @@ class DatabaseManager:
             (task_id,)
         )
         return rows
+
+    # ============================================================
+    # Z5. Agent 跨调用与自积累系统
+    # ============================================================
+
+    def record_agent_call(
+        self, call_id: str, caller_agent: str, topic: str,
+        target_agent: str = "", subject: str = "", call_type: str = "standalone",
+        payload: Dict = None, result: Dict = None, latency_ms: int = 0,
+        success: bool = True, weight_used: float = 0.0, call_chain: List = None,
+    ) -> int:
+        """记录一次 Agent 调用"""
+        cur = self._execute(
+            """INSERT INTO agent_call_log
+               (call_id, caller_agent, target_agent, topic, subject, call_type,
+                payload, result, latency_ms, success, weight_used, call_chain)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (call_id, caller_agent, target_agent, topic, subject, call_type,
+             json.dumps(payload or {}, ensure_ascii=False),
+             json.dumps(result or {}, ensure_ascii=False),
+             latency_ms, 1 if success else 0, weight_used,
+             json.dumps(call_chain or [], ensure_ascii=False))
+        )
+        # 更新调用方统计
+        self._execute(
+            "UPDATE agents SET call_count = call_count + 1, last_call_at = datetime('now','localtime') WHERE agent_id = ?",
+            (caller_agent,)
+        )
+        if not success:
+            self._execute("UPDATE agents SET fail_count = fail_count + 1 WHERE agent_id = ?", (caller_agent,))
+        else:
+            self._execute("UPDATE agents SET success_count = success_count + 1 WHERE agent_id = ?", (caller_agent,))
+        return cur.lastrowid
+
+    def get_agent_call_log(self, agent_id: str = None, topic: str = None, limit: int = 50) -> List[Dict]:
+        """查询 Agent 调用日志"""
+        sql = "SELECT * FROM agent_call_log WHERE 1=1"
+        params = []
+        if agent_id:
+            sql += " AND (caller_agent = ? OR target_agent = ?)"
+            params.extend([agent_id, agent_id])
+        if topic:
+            sql += " AND topic LIKE ?"
+            params.append(f"%{topic}%")
+        sql += " ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+        return self._query(sql, tuple(params))
+
+    def upsert_agent_weight(
+        self, agent_id: str, base_weight: float = 1.0,
+        max_calls_per_min: int = 10, priority: int = 5,
+    ) -> Dict:
+        """插入或更新 Agent 权重配置"""
+        self._execute(
+            """INSERT INTO agent_weight_config
+               (agent_id, base_weight, max_calls_per_min, priority)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(agent_id) DO UPDATE SET
+               base_weight = excluded.base_weight,
+               max_calls_per_min = excluded.max_calls_per_min,
+               priority = excluded.priority,
+               updated_at = datetime('now','localtime')""",
+            (agent_id, base_weight, max_calls_per_min, priority)
+        )
+        return {"agent_id": agent_id, "base_weight": base_weight}
+
+    def get_agent_weight(self, agent_id: str) -> Optional[Dict]:
+        """获取 Agent 权重配置"""
+        row = self._query_one(
+            "SELECT * FROM agent_weight_config WHERE agent_id = ?", (agent_id,)
+        )
+        return row
+
+    def get_all_agent_weights(self) -> List[Dict]:
+        """获取所有 Agent 权重配置"""
+        return self._query("SELECT * FROM agent_weight_config ORDER BY priority, dynamic_weight DESC")
+
+    def update_agent_weight_stats(
+        self, agent_id: str, call_count: int, success_count: int,
+        fail_count: int, avg_latency_ms: float, dynamic_weight: float,
+    ) -> bool:
+        """更新 Agent 权重统计（由 WeightManager 调用）"""
+        cur = self._execute(
+            """UPDATE agent_weight_config SET
+               call_count = ?, success_count = ?, fail_count = ?,
+               avg_latency_ms = ?, dynamic_weight = ?,
+               last_calculated = datetime('now','localtime'),
+               updated_at = datetime('now','localtime')
+               WHERE agent_id = ?""",
+            (call_count, success_count, fail_count, avg_latency_ms, dynamic_weight, agent_id)
+        )
+        # 同步回 agents 表
+        self._execute(
+            "UPDATE agents SET dynamic_weight = ? WHERE agent_id = ?",
+            (dynamic_weight, agent_id)
+        )
+        return cur.rowcount > 0
+
+    def save_knowledge(
+        self, knowledge_id: str, topic: str, subject: str,
+        knowledge_type: str, content: str, summary: str = "",
+        source_agent: str = "", source_call_id: Optional[int] = None,
+        quality_score: float = 0.0, tags: List[str] = None,
+        related_nodes: List[str] = None,
+    ) -> int:
+        """保存一条积累知识"""
+        cur = self._execute(
+            """INSERT INTO knowledge_accumulation
+               (knowledge_id, topic, subject, knowledge_type, content, summary,
+                source_agent, source_call_id, quality_score, tags, related_nodes)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON CONFLICT(knowledge_id) DO UPDATE SET
+               content = excluded.content, summary = excluded.summary,
+               quality_score = MAX(knowledge_accumulation.quality_score, excluded.quality_score),
+               updated_at = datetime('now','localtime')""",
+            (knowledge_id, topic, subject, knowledge_type, content, summary,
+             source_agent, source_call_id, quality_score,
+             json.dumps(tags or [], ensure_ascii=False),
+             json.dumps(related_nodes or [], ensure_ascii=False))
+        )
+        return cur.lastrowid
+
+    def get_knowledge(self, topic: str = None, subject: str = None,
+                      knowledge_type: str = None, min_quality: float = 0.0,
+                      source_agent: str = None, limit: int = 10) -> List[Dict]:
+        """查询积累知识（支持多条件筛选）"""
+        sql = "SELECT * FROM knowledge_accumulation WHERE 1=1"
+        params = []
+        if topic:
+            sql += " AND topic LIKE ?"
+            params.append(f"%{topic}%")
+        if subject:
+            sql += " AND subject = ?"
+            params.append(subject)
+        if knowledge_type:
+            sql += " AND knowledge_type = ?"
+            params.append(knowledge_type)
+        if source_agent:
+            sql += " AND source_agent = ?"
+            params.append(source_agent)
+        if min_quality > 0:
+            sql += " AND quality_score >= ?"
+            params.append(min_quality)
+        sql += " ORDER BY quality_score DESC, usage_count DESC, created_at DESC LIMIT ?"
+        params.append(limit)
+        return self._query(sql, tuple(params))
+
+    def increment_knowledge_usage(self, knowledge_id: str) -> bool:
+        """增加知识被引用次数"""
+        cur = self._execute(
+            "UPDATE knowledge_accumulation SET usage_count = usage_count + 1 WHERE knowledge_id = ?",
+            (knowledge_id,)
+        )
+        return cur.rowcount > 0
+
+    # ============================================================
+    # Z5.1 外部 MCP 服务器配置管理
+    # ============================================================
+
+    def list_mcp_servers(self, enabled_only: bool = False) -> List[Dict]:
+        """列出外部 MCP 服务器配置；enabled_only=True 时仅返回启用项"""
+        sql = "SELECT * FROM agent_mcp_configs"
+        params: tuple = ()
+        if enabled_only:
+            sql += " WHERE enabled = 1"
+        sql += " ORDER BY id"
+        rows = self._query(sql, params)
+        for row in rows:
+            row["args"] = self._deserialize_args(row.get("args"))
+        return rows
+
+    def get_mcp_server(self, server_name: str) -> Optional[Dict]:
+        """按 server_name 获取外部 MCP 服务器配置"""
+        row = self._query_one(
+            "SELECT * FROM agent_mcp_configs WHERE server_name = ?", (server_name,)
+        )
+        if row:
+            row["args"] = self._deserialize_args(row.get("args"))
+        return row
+
+    def add_mcp_server(self, server_name: str, transport: str = "http",
+                       url: str = "", command: str = "", args: Optional[List] = None,
+                       enabled: int = 1, description: str = "") -> Dict:
+        """新增外部 MCP 服务器配置（args 列表 JSON 序列化后存库）"""
+        cur = self._execute(
+            """INSERT INTO agent_mcp_configs
+               (server_name, transport, url, command, args, enabled, description)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (server_name, transport, url, command,
+             json.dumps(args or [], ensure_ascii=False), enabled, description)
+        )
+        return {"id": cur.lastrowid, "server_name": server_name}
+
+    def update_mcp_server(self, server_name: str, **fields) -> bool:
+        """更新外部 MCP 服务器配置（仅更新传入字段，args 为 list 时自动序列化）；
+        无该记录返回 False；同时刷新 updated_at"""
+        if not fields:
+            return False
+        allowed = {"transport", "url", "command", "args", "enabled",
+                   "description", "config_json"}
+        sets: List[str] = []
+        params: List[Any] = []
+        for key, value in fields.items():
+            if key not in allowed:
+                continue
+            if key == "args" and isinstance(value, list):
+                value = json.dumps(value, ensure_ascii=False)
+            sets.append(f"{key} = ?")
+            params.append(value)
+        if not sets:
+            return False
+        sets.append("updated_at = datetime('now','localtime')")
+        params.append(server_name)
+        cur = self._execute(
+            f"UPDATE agent_mcp_configs SET {', '.join(sets)} WHERE server_name = ?",
+            tuple(params)
+        )
+        return cur.rowcount > 0
+
+    def delete_mcp_server(self, server_name: str) -> bool:
+        """删除外部 MCP 服务器配置"""
+        cur = self._execute(
+            "DELETE FROM agent_mcp_configs WHERE server_name = ?", (server_name,)
+        )
+        return cur.rowcount > 0
+
+    @staticmethod
+    def _deserialize_args(raw) -> List:
+        """将库中的 args JSON 字符串反序列化为 list"""
+        try:
+            value = json.loads(raw or "[]")
+            return value if isinstance(value, list) else []
+        except (ValueError, TypeError):
+            return []
+
+    # ============================================================
+    # Z6. 分布式任务队列（P2-12：SQLite broker + 结果后端）
+    # ============================================================
+
+    def submit_task(self, task_id: str, task_type: str, payload: dict,
+                    priority: int = 5, max_retries: int = 1,
+                    next_run_at: float = 0.0, timeout: int = 300) -> bool:
+        """提交一个任务到队列（初始状态 pending）"""
+        cur = self._execute(
+            """INSERT INTO task_queue
+               (task_id, task_type, payload, priority, max_retries, next_run_at, timeout)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (task_id, task_type,
+             json.dumps(payload or {}, ensure_ascii=False),
+             int(priority), int(max_retries), float(next_run_at), int(timeout))
+        )
+        return cur.rowcount > 0
+
+    def get_task(self, task_id: str) -> Optional[Dict]:
+        """按 task_id 查询任务（payload/result 自动反序列化）"""
+        row = self._query_one("SELECT * FROM task_queue WHERE task_id = ?", (task_id,))
+        if not row:
+            return None
+        row["payload"] = self._deserialize_json(row.get("payload"), {})
+        row["result"] = self._deserialize_json(row.get("result"), {})
+        return row
+
+    def list_tasks(self, status: str = "", task_type: str = "",
+                   limit: int = 50) -> List[Dict]:
+        """任务列表（按创建时间倒序），payload/result 反序列化"""
+        sql = "SELECT * FROM task_queue WHERE 1=1"
+        params: List[Any] = []
+        if status:
+            sql += " AND status = ?"
+            params.append(status)
+        if task_type:
+            sql += " AND task_type = ?"
+            params.append(task_type)
+        sql += " ORDER BY created_at DESC LIMIT ?"
+        params.append(min(int(limit), 200))
+        rows = self._query(sql, tuple(params))
+        for row in rows:
+            row["payload"] = self._deserialize_json(row.get("payload"), {})
+            row["result"] = self._deserialize_json(row.get("result"), {})
+        return rows
+
+    def count_tasks(self, status: str = "") -> Any:
+        """任务统计：status 为空返回各状态计数 dict，否则返回该状态数量 int"""
+        if status:
+            row = self._query_one(
+                "SELECT COUNT(*) AS n FROM task_queue WHERE status = ?", (status,))
+            return int((row or {}).get("n") or 0)
+        rows = self._query(
+            "SELECT status, COUNT(*) AS n FROM task_queue GROUP BY status")
+        return {r["status"]: int(r["n"]) for r in rows}
+
+    def claim_next_task(self, worker_id: str, now: float) -> Optional[Dict]:
+        """原子领取一个到期的 pending 任务（优先级高 → 先创建先执行）。
+        在进程内锁保护下完成 SELECT + UPDATE，多 worker 并发安全。"""
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT * FROM task_queue WHERE status = 'pending' "
+                "AND next_run_at <= ? ORDER BY priority ASC, created_at ASC LIMIT 1",
+                (float(now),)).fetchone()
+            if not row:
+                return None
+            cur = self.conn.execute(
+                "UPDATE task_queue SET status = 'running', worker_id = ?, "
+                "started_at = datetime('now','localtime') "
+                "WHERE task_id = ? AND status = 'pending'",
+                (worker_id, row["task_id"]))
+            self.conn.commit()
+            if cur.rowcount == 0:
+                return None
+            result = dict(row)
+            result["payload"] = self._deserialize_json(result.get("payload"), {})
+            return result
+
+    def complete_task(self, task_id: str, result: dict) -> bool:
+        """标记任务完成并写入结果（终态）"""
+        cur = self._execute(
+            """UPDATE task_queue SET status = 'completed', result = ?,
+               finished_at = datetime('now','localtime')
+               WHERE task_id = ?""",
+            (self._serialize_json(result), task_id))
+        return cur.rowcount > 0
+
+    def fail_task(self, task_id: str, error: str) -> bool:
+        """标记任务失败（终态）"""
+        cur = self._execute(
+            """UPDATE task_queue SET status = 'failed', error = ?,
+               finished_at = datetime('now','localtime')
+               WHERE task_id = ?""",
+            (str(error)[:2000], task_id))
+        return cur.rowcount > 0
+
+    def mark_task_retry(self, task_id: str, retries: int,
+                        next_run_at: float, error: str) -> bool:
+        """失败重试：回到 pending 并设置指数退避到期时间"""
+        cur = self._execute(
+            """UPDATE task_queue SET status = 'pending', retries = ?,
+               next_run_at = ?, error = ?, finished_at = ''
+               WHERE task_id = ?""",
+            (int(retries), float(next_run_at), str(error)[:2000], task_id))
+        return cur.rowcount > 0
+
+    def cancel_task(self, task_id: str) -> bool:
+        """取消任务（仅 pending 可取消）"""
+        cur = self._execute(
+            """UPDATE task_queue SET status = 'canceled',
+               finished_at = datetime('now','localtime')
+               WHERE task_id = ? AND status = 'pending'""",
+            (task_id,))
+        return cur.rowcount > 0
+
+    def reset_stale_tasks(self, now: float, lease_timeout: float = 300.0) -> int:
+        """宕机恢复：运行中但超租约（started_at 过旧）的任务重置为 pending"""
+        cur = self._execute(
+            """UPDATE task_queue SET status = 'pending', worker_id = '',
+               error = 'worker 失联，任务重置待执行'
+               WHERE status = 'running' AND started_at != ''
+               AND (julianday('now','localtime') - julianday(started_at)) * 86400.0 > ?""",
+            (float(lease_timeout),))
+        return cur.rowcount
+
+    @staticmethod
+    def _serialize_json(value) -> str:
+        """JSON 序列化（失败时降级为字符串包裹，保证不阻塞队列）"""
+        try:
+            return json.dumps(value or {}, ensure_ascii=False)
+        except (ValueError, TypeError):
+            return json.dumps({"raw": str(value)[:2000]}, ensure_ascii=False)
+
+    @staticmethod
+    def _deserialize_json(raw, default=None) -> Any:
+        """JSON 反序列化（失败/为空时返回默认值）"""
+        try:
+            value = json.loads(raw) if raw else None
+            return value if value is not None else default
+        except (ValueError, TypeError):
+            return default
 
 
 # ============================================================

@@ -63,6 +63,10 @@ def isolated_db(tmp_path, monkeypatch):
     from framework.admin import agents as agents_module
     agents_module._registry_instance = None
     agents_module._agent_runners.clear()
+    # 重新注册内置 Agent：agents 表必须预置数据，
+    # 否则 agent_weight_config / knowledge_accumulation / agent_call_log
+    # 的外键约束（REFERENCES agents）会失败
+    agents_module.get_agent_registry()
 
     yield
 

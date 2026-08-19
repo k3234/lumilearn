@@ -159,9 +159,9 @@
 
 ### 2. 部署到天虹（scripts/_deploy_goai_integration.py）
 
-- 上传 5 个后端文件（goai_web/goai_agent/langgraph_engine/lumilearn_config/conversation_store）+ 9 个原型文件到 `/home/kai/lumilearn`。
+- 上传 5 个后端文件（goai_web/goai_agent/langgraph_engine/lumilearn_config/conversation_store）+ 9 个原型文件到 `/home/<user>/lumilearn`。
 - 重启 `systemctl --user restart lumilearn-goai`（RC=0），无需重启 framework（18080 未改动）。
-- **坑**：paramiko SFTP 不展开 `~`，远程路径必须用绝对路径 `/home/kai/lumilearn`。
+- **坑**：paramiko SFTP 不展开 `~`，远程路径必须用绝对路径 `/home/<user>/lumilearn`。
 
 ### 3. 远程验证结果（真实服务）
 

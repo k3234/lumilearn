@@ -429,6 +429,14 @@ def main():
     parser.add_argument("--quick", action="store_true", help="全部使用默认值，不交互（自动化场景）")
     args = parser.parse_args()
 
+    # 管道/非交互场景根因修复（P2 收尾 spec）：
+    # `curl | bash` / `irm | iex` 等管道执行时 stdin 非终端，
+    # 若仍走 input() 会抢读管道中脚本残留字节（污染 .env / 打断流程），
+    # 因此自动切换 --quick 全默认值，保证整个流程绝不读取 stdin。
+    if not args.quick and not sys.stdin.isatty():
+        print("  [提示] 检测到非交互输入（管道/重定向），自动使用 --quick 全部默认值")
+        args.quick = True
+
     print("=" * 60)
     print("  🚀 LumiLearn 部署配置引导")
     print("  （环境检测 / 依赖安装 / 端口配置 / 模型配置）")

@@ -9,6 +9,7 @@ from unittest import mock
 import pytest
 from datetime import datetime, timedelta
 from dataclasses import replace
+from flask import Flask
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
@@ -87,14 +88,14 @@ class TestSecurityGateway:
         assert gateway.check_request("10.0.0.1", "/api/test", "GET")["allowed"] is True
 
     def test_get_stats(self, gateway):
-        gateway.check_request("127.0.0.1", "/api/test", "GET")
+        gateway.check_request("192.168.1.1", "/api/test", "GET")
         stats = gateway.get_stats()
         assert "total_requests" in stats
         assert "blocked_ips" in stats
         assert stats["total_requests"] >= 1
 
     def test_get_request_log(self, gateway):
-        gateway.check_request("127.0.0.1", "/api/test", "GET")
+        gateway.check_request("192.168.1.1", "/api/test", "GET")
         logs = gateway.get_request_log(limit=10)
         assert isinstance(logs, list)
         if logs:
@@ -114,20 +115,18 @@ class TestSecurityGateway:
         with pytest.raises(RuntimeError, match="request context"):
             test_view()
 
-    @mock.patch("framework.security.gateway.request")
-    def test_protect_endpoint_with_mock_request(self, mock_request):
-        """测试装饰器在有请求上下文时正常工作"""
-        config = SecurityConfig(gateway=GatewayConfig(rate_limit=100, window=60))
-        gateway = SecurityGateway(config)
+    def test_protect_endpoint_with_mock_request(self):
+        """测试 protect_endpoint 装饰器在有请求上下文时正常工作"""
+        gateway = get_gateway()
+        gateway.reset()
 
-        @gateway.protect_endpoint(max_requests=5, window=60)
+        @gateway.protect_endpoint
         def test_view():
             return "ok"
 
-        # 需要 Flask 请求上下文
-        from flask import Flask
         app = Flask(__name__)
-        with app.test_request_context('/api/test'):
+        app.add_url_rule("/test", "test", test_view)
+        with app.test_request_context("/test", environ_base={"REMOTE_ADDR": "192.168.1.1"}):
             result = test_view()
             assert result == "ok"
 

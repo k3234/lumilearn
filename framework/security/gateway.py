@@ -84,6 +84,7 @@ class SecurityGateway:
             return result
 
         # 4. 检查速率限制
+        blocked = False
         with self._lock:
             current_time = time.time()
             if ip not in self.request_counts:
@@ -99,29 +100,33 @@ class SecurityGateway:
             if len(self.request_counts[ip]) >= self.config.gateway.rate_limit:
                 result["allowed"] = False
                 result["reason"] = "请求频率超限"
-                self._block_ip(ip, "请求频率超限", duration=60)
-                return result
+                blocked = True
+            else:
+                # 记录请求
+                self.request_counts[ip].append(current_time)
+                result["remaining_requests"] = self.config.gateway.rate_limit - len(self.request_counts[ip])
 
-            # 记录请求
-            self.request_counts[ip].append(current_time)
-            result["remaining_requests"] = self.config.gateway.rate_limit - len(self.request_counts[ip])
+        # _block_ip 内部也加锁，必须在 with 块外调用，避免死锁
+        if blocked:
+            self._block_ip(ip, "请求频率超限", duration=60)
 
         # 5. 记录请求日志
         self._log_request(ip, path, method)
 
         return result
 
-    def protect_endpoint(self, max_requests: int = 10, window: int = 60):
+    def protect_endpoint(self, func=None, max_requests: int = 10, window: int = 60):
         """
         装饰器：保护API端点
 
         用法:
-            @gateway.protect_endpoint(max_requests=10, window=60)
+            @gateway.protect_endpoint  # 无参调用
+            @gateway.protect_endpoint(max_requests=10, window=60)  # 有参调用
             def my_api():
                 ...
         """
-        def decorator(func):
-            @wraps(func)
+        def decorator(fn):
+            @wraps(fn)
             def wrapper(*args, **kwargs):
                 from flask import request
                 ip = request.remote_addr
@@ -135,8 +140,13 @@ class SecurityGateway:
                         "retry_after": result["reset_at"] - time.time()
                     }), 429
 
-                return func(*args, **kwargs)
+                return fn(*args, **kwargs)
             return wrapper
+
+        if func is not None:
+            # 无参调用: @gateway.protect_endpoint
+            return decorator(func)
+        # 有参调用: @gateway.protect_endpoint(max_requests=10)
         return decorator
 
     def block_ip(self, ip: str, reason: str, duration: int = 3600):
@@ -185,6 +195,14 @@ class SecurityGateway:
             # 只保留最近1000条日志
             if len(self.request_log) > 1000:
                 self.request_log = self.request_log[-1000:]
+
+    def reset(self):
+        """重置网关状态（用于测试）"""
+        with self._lock:
+            self.request_counts.clear()
+            self.blocked_ips.clear()
+            self.request_log.clear()
+            self._request_counter = 0
 
     def get_request_log(self, limit: int = 100) -> list:
         """获取请求日志"""

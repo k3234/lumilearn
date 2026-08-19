@@ -642,7 +642,7 @@ class ResultDelivery:
         """保存学习报告到文件"""
         os.makedirs(output_dir, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        topic_safe = re.sub(r'[\\/:*?"<>|]', '_', report['task_understanding']['core_topic'])[:20]
+        topic_safe = re.sub(r'\.\.', '_', re.sub(r'[\\/:*?"<>|]', '_', report['task_understanding']['core_topic']))[:20]
         
         # JSON格式
         json_path = os.path.join(output_dir, f"report_{ts}_{topic_safe}.json")

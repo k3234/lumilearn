@@ -14,6 +14,8 @@ import logging
 from pathlib import Path
 from typing import Dict, Optional
 
+from framework.security.uploads import validate_upload_file, check_file_magic, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_BYTES
+
 logger = logging.getLogger("lumilearn.ocr_service")
 
 PADDLEOCR_LANG = os.environ.get("PADDLEOCR_LANG", "ch")
@@ -133,6 +135,11 @@ class OCRService:
                 "details": [...]
             }
         """
+        # 前置校验：文件名、扩展名、大小、魔数，在模型加载前拒绝恶意文件
+        ok, err = validate_upload_file(file_storage, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
+        if not ok:
+            raise ValueError(err)
+
         suffix = Path(file_storage.filename).suffix.lower()
         tmp_path = None
 
@@ -141,6 +148,7 @@ class OCRService:
                 file_storage.save(tmp.name)
                 tmp_path = tmp.name
 
+            check_file_magic(tmp_path, suffix) or (_ for _ in ()).throw(ValueError("文件魔数校验失败"))
             return self.recognize(tmp_path)
 
         finally:

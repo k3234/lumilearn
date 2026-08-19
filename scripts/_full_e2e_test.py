@@ -21,6 +21,9 @@ BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, BASE)
 os.chdir(BASE)
 
+# 本地测试管理员口令：优先从环境变量读取；默认值仅供本地测试，禁止用于真实环境
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "test_admin_pwd_2026")
+
 # 使用临时数据库，避免污染真实数据
 _TMP_DB = os.path.join(tempfile.mkdtemp(), "lumilearn_test.db")
 os.environ["LUMILEARN_DB_PATH"] = _TMP_DB
@@ -37,7 +40,7 @@ def _setup_test_data():
     """创建测试账号、班级、年级、学校等基础数据"""
     # 默认管理员（framework/admin/auth 要求）
     if not db.get_admins():
-        db.add_admin("admin", generate_password_hash("admin123"),
+        db.add_admin("admin", generate_password_hash(ADMIN_PASSWORD),
                      display_name="超级管理员", role="super_admin")
 
     # 已有用户清理并重建（确保幂等）
@@ -72,7 +75,7 @@ def _setup_test_data():
     db.add_student_to_class(cls2["id"], stu03["id"])
 
     return {
-        "admin": {"username": "admin", "password": "admin123"},
+        "admin": {"username": "admin", "password": ADMIN_PASSWORD},
         "teacher": {"id": teacher["id"], "username": "teacher1", "password": "test1234", "name": "王老师"},
         "stu01": {"id": stu01["id"], "username": "stu01", "password": "test1234", "name": "张三"},
         "stu02": {"id": stu02["id"], "username": "stu02", "password": "test1234", "name": "李四"},
@@ -113,7 +116,7 @@ client_admin = api_app.test_client()
 
 # 1.1 认证
 print("\n【1.1 认证】")
-r = client_admin.post("/api/admin/login", json={"username": "admin", "password": "admin123"})
+r = client_admin.post("/api/admin/login", json={"username": "admin", "password": ADMIN_PASSWORD})
 d = r.get_json()
 admin_token = d.get("token", "")
 test("Admin", "admin 登录成功", r.status_code == 200 and admin_token, "HTTP %d" % r.status_code)
@@ -399,7 +402,7 @@ print("=" * 70)
 client_a = api_app.test_client()
 
 # 登录 admin
-r = client_a.post("/api/admin/login", json={"username": "admin", "password": "admin123"})
+r = client_a.post("/api/admin/login", json={"username": "admin", "password": ADMIN_PASSWORD})
 admin_tok = (r.get_json() or {}).get("token", "")
 
 # 5.1 绑定学生到班级
