@@ -343,3 +343,6 @@ _replace_rules.txt
 /scripts/sync_to_tianhong.py
 /scripts/_launch_merge.py
 /scripts/_launch_lora_train.py
+# scripts 一次性远程调试/测试脚本（不入库）
+/scripts/_*.py
+/scripts/p1_*.py

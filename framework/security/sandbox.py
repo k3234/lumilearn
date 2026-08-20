@@ -75,6 +75,12 @@ class RestrictedAST(ast.NodeVisitor):
                 self.violations.append(
                     f"禁止调用危险方法: {attr_name}"
                 )
+            # str.format 字段在运行时解析，'{0.__class__}'.format(x)
+            # 可绕过 AST 检查读取魔术属性，一律拦截
+            if attr_name == 'format':
+                self.violations.append(
+                    "禁止调用 format 方法（存在属性逃逸风险）"
+                )
             # 检测 dunder 属性链逃逸
             if attr_name.startswith('__') and attr_name.endswith('__'):
                 self.violations.append(

@@ -17,6 +17,7 @@ from flask import Blueprint, request, jsonify, Response, stream_with_context
 from framework.services.chat_service import get_chat_service
 from framework.services.provider_service import get_provider_service, ProviderService
 from framework.database import db
+from framework.api.routes.auth import require_user_token
 
 logger = logging.getLogger("lumilearn.routes.chat")
 
@@ -202,6 +203,10 @@ def chat():
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"})
 
+    # 需要登录：防止未授权调用付费模型/刷推理日志
+    if not require_user_token():
+        return jsonify({"error": "未登录，请先登录"}), 401
+
     data = request.get_json(force=True)
     messages = list(data.get("messages", []))
     model = data.get("model", None)
@@ -336,6 +341,9 @@ def reasoning_logs():
     """
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"})
+    # 只读接口也需登录：日志含学生回答原文，防止隐私泄露
+    if not require_user_token():
+        return jsonify({"error": "未登录，请先登录"}), 401
     session_id = request.args.get("session_id") or None
     topic = request.args.get("topic") or None
     if not session_id and not topic:

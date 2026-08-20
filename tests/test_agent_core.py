@@ -534,9 +534,9 @@ class TestBackwardCompatibility(unittest.TestCase):
             self.fail(f"导入 goai_multi_agent 失败: {e}")
 
     def test_langgraph_engine_still_works(self):
-        """原有 langgraph_engine.py 仍可导入"""
+        """langgraph_engine 兼容层可导入（统一走 agent_core 版本）"""
         try:
-            from langgraph_engine import OrchestrationEngine
+            from agent_core.langgraph_engine import OrchestrationEngine
             engine = OrchestrationEngine()
             self.assertIsNotNone(engine)
         except ImportError as e:

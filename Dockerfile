@@ -37,5 +37,13 @@ EXPOSE 5010
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
     CMD curl -f http://localhost:5010/health || exit 1
 
-# 启动命令
-CMD ["python", "framework/api/server.py", "--port", "5010"]
+# 启动命令：按 SERVICE_NAME 分发到对应 Web 入口（默认跑主框架 API）
+# compose 中 api 不设 SERVICE_NAME；goai/teacher/student/admin/analytics 各自设置
+CMD ["sh", "-c", "case \"$SERVICE_NAME\" in \
+  goai) exec python goai_web.py ;; \
+  teacher) exec python teacher_portal.py ;; \
+  student) exec python student_portal.py ;; \
+  admin) exec python framework/api/server.py --port 18080 ;; \
+  analytics) exec python analytics_dashboard.py ;; \
+  *) exec python framework/api/server.py --port 5010 ;; \
+  esac"]

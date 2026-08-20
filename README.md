@@ -231,10 +231,15 @@ docker compose logs -f api
 | [deploy/README.md](deploy/README.md) | 一键部署工具说明 |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献指南 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
-| [SECURITY.md](SECURITY.md) | 安全声明 |
+| [docs/SECURITY_LOCAL_AUDIT_20260817.md](docs/SECURITY_LOCAL_AUDIT_20260817.md) | 本地安全审计报告 |
 
 ## 核心模块
 
 | 模块 | 说明 | 状态 |
 |---|---|---|
-| **微型 Transformer** | GPT-2 风格，8 层 8 头，
+| **微型 Transformer** | GPT-2 风格，8 层 8 头，自训练轻量模型（framework/trainer.py） | ✅ 可用 |
+| **Agent 核心** | 路由 / 费曼教学 / 验证 / 事实核查多智能体（agent_core/） | ✅ 可用 |
+| **多智能体编排** | LangGraph 工作流 + 任务队列 + 成本追踪（agent_core/langgraph_engine.py） | ✅ 可用 |
+| **安全系统** | 安全网关 / 防火墙 / 代码沙箱 / 上传校验（framework/security/） | ✅ 可用 |
+| **Web 应用** | 学生端 / 教师端 / Admin 管理 / 学习分析仪表盘 | ✅ 可用 |
+| **部署** | Docker Compose / 一键脚本（deploy/）/ 远程部署（scripts/deploy_remote.py） | ✅ 可用 |

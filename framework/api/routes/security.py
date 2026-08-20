@@ -104,6 +104,7 @@ def get_firewall_rules():
 
 
 @security_bp.route('/firewall/rules', methods=['POST'])
+@require_admin
 def add_firewall_rule():
     """添加防火墙规则"""
     data = request.get_json()
@@ -162,6 +163,7 @@ def check_access():
 
 
 @security_bp.route('/sandbox/stats', methods=['GET'])
+@require_admin
 def get_sandbox_stats():
     """获取沙箱统计"""
     sandbox = get_sandbox()
