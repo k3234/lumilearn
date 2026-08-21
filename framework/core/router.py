@@ -5,7 +5,16 @@ LumiLearn 模型路由器
 """
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
+from enum import Enum
 import random
+
+
+class TaskType(str, Enum):
+    """任务类型（多基座自适应调度）"""
+    comprehension = "comprehension"  # 理解
+    calculation = "calculation"      # 计算
+    generation = "generation"        # 生成
+    diagnostic = "diagnostic"        # 诊断
 
 
 @dataclass
@@ -15,6 +24,7 @@ class RouteRequest:
     mode: str = "chat"
     messages: List[Dict] = field(default_factory=list)
     preferred_model: Optional[str] = None
+    task_type: Optional[TaskType] = None
 
 
 @dataclass
@@ -55,6 +65,11 @@ class ModelRouter:
                 base_url=self._models.get("ollama", {}).get("base_url", ""),
                 reason="用户偏好"
             )
+        # 多基座自适应调度：按任务类型优先选择最合适的模型系列
+        if request.task_type is not None:
+            task_result = self._route_by_task_type(request.task_type)
+            if task_result is not None:
+                return task_result
         if request.mode == "feynman":
             return RouteResult(
                 model_name="lumilearn-v2:latest",
@@ -101,6 +116,29 @@ class ModelRouter:
             base_url="http://localhost:11434",
             reason="兜底默认"
         )
+
+    # 任务类型 -> 优先模型系列关键词（多基座自适应调度）
+    _TASK_TYPE_KEYWORDS: Dict[TaskType, str] = {
+        TaskType.calculation: "deepseek",   # 计算 → DeepSeek 系列
+        TaskType.comprehension: "qwen",     # 理解 → Qwen 系列
+    }
+
+    def _route_by_task_type(self, task_type: TaskType) -> Optional[RouteResult]:
+        """按任务类型在模型表中查找匹配的模型系列，未命中返回 None"""
+        keyword = self._TASK_TYPE_KEYWORDS.get(task_type)
+        if not keyword:
+            return None
+        for provider, cfg in self._models.items():
+            for model in cfg.get("models", []):
+                if keyword.lower() in model.get("id", "").lower():
+                    return RouteResult(
+                        model_name=model["id"],
+                        provider=provider,
+                        base_url=cfg.get("base_url", ""),
+                        reason=f"任务类型 {task_type.value} 优先 {keyword} 系列模型"
+                    )
+        return None
+
     def add_provider(self, name: str, base_url: str, models: List[Dict]):
         self._models[name] = {"base_url": base_url, "models": models}
     def list_models(self) -> List[Dict]:

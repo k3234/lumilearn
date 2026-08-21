@@ -23,6 +23,7 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
     default_config = {
         "version": "1.0.0",
         "debug": False,
+        "lite_mode": False,
         "server": {
             "terminal_port": 18080,
             "api_port": 18081,

@@ -369,6 +369,30 @@ class FactCheckerAgent:
             pass
         return None
 
+    @staticmethod
+    def verify_question(question: Dict) -> bool:
+        """
+        校验题目 dict 是否符合规范（P0-3 双路校验前置检查）：
+
+          1. question / answer / explanation / options 字段齐全
+          2. 各文本字段非空
+          3. options 为非空列表，且 answer 必须是 options 的成员之一
+
+        返回：True（合法）/ False（不合法）
+        """
+        if not isinstance(question, dict):
+            return False
+        for field in ("question", "answer", "explanation"):
+            if not (question.get(field) or "").strip():
+                return False
+        options = question.get("options")
+        if not isinstance(options, list) or not options:
+            return False
+        options = [str(o).strip() for o in options]
+        if not all(options):
+            return False
+        return str(question["answer"]).strip() in options
+
 
 # ================================================================
 # 单例

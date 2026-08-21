@@ -78,8 +78,8 @@
 </head>
 <body>
   <div class="header">
-    <h1>LumiLearn <span>服务仪表盘</span></h1>
-    <div class="sub">全面配置 — 全部服务已开放</div>
+    <h1>LumiLearn <span>{% if lite_mode %}轻量自学模式{% else %}服务仪表盘{% endif %}</span></h1>
+    <div class="sub">{% if lite_mode %}导入资料 → Agent 自主学习 → 刷题复盘{% else %}全面配置 — 全部服务已开放{% endif %}</div>
     <div class="ip-badge">🌐 本机 IP: {{ local_ip }}</div>
     <div class="user-badge">{{ user_badge }}</div>
     <a href="/learn" class="start-link">🚀 开始学习</a>
@@ -97,6 +97,7 @@
       </div>
       {% endfor %}
     </div>
+    {% if not lite_mode %}
     <div class="quick-links">
       <h3>📋 快速参考</h3>
       <div class="label">GOAI 学习 API (POST)</div>
@@ -112,6 +113,7 @@
       <div class="label">多 Agent 协作 API (POST)</div>
       <code>curl -X POST http://localhost:5000/api/multi-agent -H "Content-Type: application/json" -d '{"topic":"函数的单调性"}'</code>
     </div>
+    {% endif %}
     <div class="footer">
       LumiLearn · <a href="https://github.com/k3234/lumilearn" target="_blank">GitHub</a>
     </div>

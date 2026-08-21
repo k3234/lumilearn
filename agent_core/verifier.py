@@ -21,6 +21,7 @@ LumiLearn Agent Core — Verifier Agent（质量验证 / 反馈回路核心）
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import time
@@ -462,6 +463,93 @@ def get_verifier_agent(**kwargs) -> VerifierAgent:
 def verify_teaching(payload: Dict, **kwargs) -> Dict:
     """一行调用 Verifier Agent"""
     return get_verifier_agent(**kwargs).run(payload)
+
+
+# ================================================================
+# 双路校验（独立校验模型复核，fail-open）
+# ================================================================
+_DUAL_VERIFY_TIMEOUT = 60
+
+
+def _dual_verify_unavailable() -> Dict:
+    """fail-open 兜底：校验模型不可用时放行，绝不阻塞主流程"""
+    return {
+        "passed": True,
+        "confidence": 50,
+        "issues": [],
+        "reason": "校验模型不可用，跳过复核",
+    }
+
+
+def _parse_dual_verify_verdict(raw: str) -> Optional[Dict]:
+    """解析校验模型的 JSON 输出（容忍 markdown 代码块/前后杂文）"""
+    if not raw or not isinstance(raw, str):
+        return None
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    try:
+        data = json.loads(raw[start:end + 1])
+    except Exception:
+        return None
+    if not isinstance(data, dict):
+        return None
+    try:
+        passed = bool(data.get("passed", True))
+        confidence = max(0, min(100, int(data.get("confidence", 50))))
+        issues = data.get("issues") or []
+        if not isinstance(issues, list):
+            issues = []
+        reason = str(data.get("reason")
+                     or ("复核通过" if passed else "复核未通过"))
+    except (TypeError, ValueError):
+        return None
+    return {"passed": passed, "confidence": confidence,
+            "issues": issues, "reason": reason}
+
+
+def dual_verify(content: str, prompt: str,
+                checker_model: str = "deepseek-r1:1.5b") -> Dict:
+    """
+    双路校验：用独立校验模型对 content 做二次复核（fail-open）。
+
+    参数：
+        content: 待复核的内容（教学内容/题目等）
+        prompt:  复核指令（说明从哪些角度检查）
+        checker_model: 独立校验模型（默认 deepseek-r1:1.5b，
+                        与内容生成模型隔离，形成双路校验）
+
+    返回：
+        {"passed": bool, "confidence": int(0-100),
+         "issues": list[str], "reason": str}
+
+    fail-open 设计：校验模型不可用/调用异常/输出无法解析时，
+    放行不阻塞主流程（passed=True, confidence=50, reason 说明跳过原因）。
+    """
+    try:
+        model = get_model(checker_model)
+        if model is None:
+            return _dual_verify_unavailable()
+        full_prompt = (
+            f"{prompt}\n\n待复核内容:\n{content}\n\n"
+            f"请只回复如下 JSON（不要输出其他文字）：\n"
+            f'{{"passed": true/false, "confidence": 0到100的整数, '
+            f'"issues": ["问题清单"], "reason": "结论说明"}}'
+        )
+        raw = model.call(full_prompt, timeout=_DUAL_VERIFY_TIMEOUT)
+    except Exception:
+        return _dual_verify_unavailable()
+
+    verdict = _parse_dual_verify_verdict(raw)
+    if verdict is None:
+        return {
+            "passed": True,
+            "confidence": 50,
+            "issues": [],
+            "reason": "校验模型输出无法解析，跳过复核",
+        }
+    return verdict
 
 
 if __name__ == "__main__":

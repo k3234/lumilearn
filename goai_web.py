@@ -130,8 +130,15 @@ def index():
             "link": path if path.startswith("http") else path,
         })
 
+    # lite 模式（轻量自学）：只保留核心学习服务，简化 UI
+    lite_mode = bool(app.config.get("LITE_MODE", False))
+    if lite_mode:
+        core_ports = {"5000", "18080", "18081"}
+        services = [s for s in services if s["port"] in core_ports]
+
     return render_template("goai_dashboard.html",
                            local_ip=local_ip,
+                           lite_mode=lite_mode,
                            user_badge=user_badge,
                            services=services)
 
@@ -629,4 +636,9 @@ def main():
 
 
 if __name__ == '__main__':
+    # lite 模式（轻量自学）：解析 --mode lite，启用后跳过演示模块加载
+    from framework.lite_mode import LiteModeManager
+    if LiteModeManager().parse_args() == "lite":
+        app.config["LITE_MODE"] = True
+        print("[LiteMode] 轻量自学模式已启用：跳过演示模块加载")
     main()

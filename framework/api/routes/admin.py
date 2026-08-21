@@ -1448,3 +1448,97 @@ def admin_process_tasks():
     q = get_task_queue()
     processed = q.run_pending_now()
     return jsonify({"success": True, "processed": processed, "stats": q.stats()})
+
+
+# ---------------------------------------------------------------------------
+# 文档导入（格式解析 → 知识拆解 → 落库）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/documents/import", methods=["POST", "OPTIONS"])
+@require_admin
+def admin_import_document():
+    """导入文档：按 format 解析内容 → 知识拆解 → 写入 knowledge_decomposition
+
+    请求体 JSON：
+        {
+            "filename": "三角学笔记.md",   # 文件名（用于默认学科名）
+            "content":  "...# 标题\n正文...",  # 文档内容；format=pdf 时为文件路径
+            "format":   "markdown|obsidian|pdf|text"   # 省略时按扩展名自动识别
+        }
+
+    返回：
+        {"status": "ok", "doc_id": str, "points": int}
+        或 {"status": "error", "message": 友好提示}
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+    data = request.get_json(force=True) or {}
+    filename = (data.get("filename") or "").strip()
+    content = data.get("content") or ""
+    fmt = (data.get("format") or "").strip().lower()
+
+    if not filename:
+        return jsonify({"status": "error", "message": "缺少 filename 字段"}), 400
+    if not content:
+        return jsonify({"status": "error", "message": "content 不能为空"}), 400
+
+    from framework.pipeline.knowledge_parser import KnowledgeParser
+    from agent_core.knowledge_pipeline import KnowledgePipeline
+
+    parser = KnowledgeParser()
+    try:
+        if not fmt:
+            fmt = parser.detect_format(filename)
+        if fmt in ("markdown", "md"):
+            text = parser.parse_markdown(content)
+        elif fmt == "obsidian":
+            text = parser.parse_obsidian(content)
+        elif fmt == "pdf":
+            text = parser.parse_pdf(content)
+        else:
+            text = content
+    except ImportError:
+        return jsonify({"status": "error",
+                        "message": "PDF 解析库未安装（pdfplumber/PyPDF2），无法解析 PDF 文件"}), 400
+    except Exception as exc:  # noqa: BLE001 - 解析异常转为友好提示
+        logger.warning("文档解析失败 filename=%s: %s", filename, exc)
+        return jsonify({"status": "error", "message": f"文档解析失败: {exc}"}), 400
+
+    if not text or not text.strip():
+        return jsonify({"status": "error", "message": "文档内容为空，无法提取知识点"}), 400
+
+    try:
+        pipeline = KnowledgePipeline()
+        chapters = pipeline.parse_document(text, subject=filename)
+        points = []
+        for ch in chapters:
+            pts = pipeline.extract_knowledge_points(ch["content"])
+            for p in pts:
+                p["chapter"] = ch["title"]
+            points.extend(pts)
+        points = pipeline.deduplicate(points)
+
+        if not points:
+            return jsonify({"status": "error", "message": "未从文档中提取到知识点"}), 400
+
+        doc_id = "doc_" + time.strftime("%Y%m%d%H%M%S") + "_" + str(int(time.time() * 1000) % 1000)
+        saved = pipeline.save_to_db(doc_id, points, subject=filename)
+        db.add_system_log("info", "documents",
+                          f"导入文档: {filename} (doc_id={doc_id}, 知识点={saved})")
+        return jsonify({"status": "ok", "doc_id": doc_id, "points": saved})
+    except Exception as exc:  # noqa: BLE001 - 拆解/落库异常转为友好提示
+        logger.error("文档拆解/落库失败 filename=%s: %s", filename, exc)
+        return jsonify({"status": "error", "message": f"文档处理失败: {exc}"}), 500
+
+
+# ---------------------------------------------------------------------------
+# 系统自动评测报告（Task 8.4）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/eval/report", methods=["GET", "OPTIONS"])
+@require_admin
+def get_eval_report():
+    """管理员查看系统自动评测报告（learning_session 等，最新优先）"""
+    limit = request.args.get("limit", 20, type=int)
+    reports = db.get_eval_reports(limit=min(max(limit, 1), 100))
+    return jsonify({"status": "ok", "reports": reports})

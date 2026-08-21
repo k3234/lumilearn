@@ -4,6 +4,9 @@
 version: "1.0.0"
 debug: false
 
+# 轻量自学模式（lite）：仅保留核心学习服务，适合低资源/自学场景
+lite_mode: false
+
 server:
   terminal_port: 18080
   api_port: 18081

@@ -31,6 +31,35 @@
 | **适合谁？** | 想学习"从数据到模型到部署"完整流程的学生开发者 |
 | **教育价值** | 让老旧设备也能跑 AI 教学演示，推动"算力平权"，让资源不足的学校也能接触 AI 教育 |
 
+## ⚡ 快速开始
+
+```bash
+# 安装依赖
+pip install -r goai_requirements.txt
+
+# 标准模式启动（竞赛演示，默认）
+python goai_web.py
+
+# Lite 模式启动（轻量自学，仅保留核心学习流程）
+python goai_web.py --mode lite
+```
+
+启动后浏览器访问 `http://localhost:5000` 进入 GOAI 学习 Web（端口可用环境变量或端口配置调整）。两种模式的差异见下方「模式说明」。
+
+## 🧭 模式说明
+
+LumiLearn 提供两种运行模式，按使用场景选择：
+
+| 模式 | 使用场景 | 启动命令 |
+|---|---|---|
+| **标准模式（竞赛演示）** | GOAI 竞赛演示、完整功能展示，启用全部服务（终端 / API / 学生端 / 教师端 / 分析仪表盘 / Admin 等） | `python goai_web.py` |
+| **Lite 模式（轻量自学）** | 个人轻量自学、低资源设备，聚焦「导入 → 学习 → 复盘」核心闭环 | `python goai_web.py --mode lite` |
+
+Lite 模式（`--mode lite`）具体表现：
+
+- 关闭演示模块加载，只保留「导入 → 学习 → 复盘」核心流程
+- 仅启用 `terminal` / `api` / `student_portal` 三个核心服务，关闭教师端、分析仪表盘等非核心服务，降低资源占用、启动更快
+
 ## 系统架构
 
 ```
@@ -164,6 +193,17 @@ LumiLearn 支持**本地模型容器** 与**云端 API**  两类推理来源，�
 | 云端模型（可选） | 各厂商 API | 高质量生成场景 |
 
 **端口模型配置** ：每个端口（终端/API/模型管理/GOAI Web/教师端）可独立指定使用哪个提供商的哪个模型，配置实时生效，无需重启。
+
+## 💡 技术创新
+
+| 创新点 | 位置 | 说明 |
+|---|---|---|
+| **知识分层拆解流水线** | `agent_core/knowledge_pipeline.py` | 章节粗切 → 知识点细切 → 格式校验 → 去重/冲突检测，将教材文档自动拆解为结构化知识点并落库 |
+| **双路校验机制** | `agent_core/verifier.py`（`dual_verify`）+ `agent_core/fact_checker.py`（`verify_question`） | 主模型生成内容，校验子模型独立复核，双重把关输出质量 |
+| **Trace + 自动评测闭环** | `agent_core/observability.py`（`eval_metrics` + `system_eval` 表） | 自动统计知识点召回率、出题格式合格率、错题识别准确率，形成可量化的评测闭环 |
+| **多基座自适应调度** | `framework/core/router.py`（`TaskType`）+ `agent_core/model_registry.py`（`fallback_chain`） | 按任务类型路由到合适的模型基座，基座失败时自动降级（fallback），保证服务持续可用 |
+| **分层记忆系统** | `framework/storage/layered_memory.py` | 短期会话（24 小时过期）/ 中期单元（按章节沉淀）/ 长期错题（持久保存并标记）三层记忆 |
+| **SQLite/文件存储双模式** | `framework/storage/file_compat.py` | SQLite 优先、JSON 文件自动降级，接口一致、无缝切换 |
 
 ## 🚀 零文件一键部署（无需下载任何文件）
 

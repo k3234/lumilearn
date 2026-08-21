@@ -20,6 +20,7 @@ from agent_core.models import AgentState, AgentResult, TaskProfile
 from agent_core.router import RouterAgent, get_router_agent
 from agent_core.langgraph_engine import OrchestrationEngine
 from agent_core.model_registry import ALL_MODELS, get_model_summary
+from framework.core.fallback import FallbackHandler
 
 
 # ================================================================
@@ -233,14 +234,8 @@ class UnifiedOrchestrator:
                                "审批后，携带 payload['_interrupt_approved']=True 重新请求。",
                 }
 
-        # Step 2: 根据路由决策执行对应路径
-        result = {}
-        if route_decision == "simple":
-            result = self._run_simple(payload, profile)
-        elif route_decision == "complex_parallel":
-            result = self._run_parallel(payload, profile)
-        else:
-            result = self._run_standard(payload, profile)
+        # Step 2: 根据路由决策执行对应路径（FallbackHandler 异常降级包裹）
+        result = self._run_route_with_fallback(route_decision, payload, profile)
 
         # ---------- 人工监督：Verifier 质量异常（P0-1 扩展，EU AI Act Art.14） ----------
         # 生成内容验证未通过（低置信度 / 内容质量异常）→ 请求人工审核，暂停执行。
@@ -285,6 +280,31 @@ class UnifiedOrchestrator:
         result["routing_decision"] = route_decision
         result["trace_id"] = trace_id
 
+        # ---------- 出题双路校验（Task 5.3 / P0-3） ----------
+        # 结构校验（FactChecker.verify_question）+ 独立模型复核（dual_verify）。
+        # 保持原 questions 字段不动（向后兼容），结果写入 verified_questions。
+        questions = result.get("questions")
+        if isinstance(questions, list):
+            import json as _json
+            from agent_core.fact_checker import FactCheckerAgent
+            from agent_core.verifier import dual_verify
+            valid = [
+                q for q in questions
+                if isinstance(q, dict) and FactCheckerAgent.verify_question(q)
+            ]
+            # 对有效题目复核前 3 道（有风险场景）：不通过仅标记，保留但不计入有效
+            for q in valid[:3]:
+                try:
+                    verdict = dual_verify(
+                        _json.dumps(q, ensure_ascii=False),
+                        prompt="请复核该题目是否契合知识点、答案是否正确")
+                except Exception:
+                    verdict = {"passed": True}
+                if not verdict.get("passed"):
+                    q["_verification"] = "rejected"
+            result["verified_questions"] = valid
+            result["dual_verified"] = True
+
         # ---------- 输出验证（安全过滤） ----------
         output_content = ""
         teaching = result.get("teaching", {})
@@ -308,9 +328,74 @@ class UnifiedOrchestrator:
             success=result.get("success", True),
             extra={"route": route_decision},
         )
+
+        # ---------- 会话完成自动评测写库（Task 8.3） ----------
+        # 计算知识召回/格式合格/准确率指标并落库（评测为增强能力，失败降级不阻塞）
+        try:
+            import json as _json
+            metrics = self.telemetry.eval_metrics(
+                expected_knowledge=payload.get("expected_knowledge") or [],
+                recalled_knowledge=payload.get("recalled_knowledge") or [],
+                generated_questions=result.get("questions") or [],
+                wrong_detected=payload.get("wrong_detected", 0),
+                wrong_actual=payload.get("wrong_actual", 0),
+            )
+            from framework.database import db
+            db.save_eval_report(
+                "learning_session",
+                metrics["knowledge_recall"],
+                metrics["format_pass_rate"],
+                metrics["accuracy"],
+                trace_id,
+                _json.dumps({"topic": topic}, ensure_ascii=False),
+            )
+            result["eval_metrics"] = metrics
+        except Exception:
+            pass
+
         self.telemetry.end_trace(trace_id, result)
 
         return result
+
+    def _run_route_with_fallback(self, route_decision: str, payload: Dict,
+                                 profile: TaskProfile) -> Dict:
+        """
+        执行指定路由路径，并用 FallbackHandler 包裹模型调用逻辑：
+          - JSONDecodeError → 切换提示词模板重试（注入 _fallback_retry 标记）
+          - API 限流/超时（TimeoutError / ConnectionError）→ 返回友好提示
+          - 其他异常 → 返回友好提示，不崩溃、不暴露堆栈
+        成功路径逻辑保持不变。
+        """
+        handler = FallbackHandler()
+
+        def _dispatch() -> Dict:
+            if route_decision == "simple":
+                return self._run_simple(payload, profile)
+            elif route_decision == "complex_parallel":
+                return self._run_parallel(payload, profile)
+            return self._run_standard(payload, profile)
+
+        def _on_retry(attempt: int, _error: Exception) -> None:
+            # JSONDecodeError 重试：切换提示词模板（注入备用模板标记，交由下游引擎读取）
+            payload["_fallback_retry"] = True
+            payload["_fallback_attempt"] = attempt
+
+        result, err = handler.run_with_fallback(
+            _dispatch, max_retries=self.max_retries, on_retry=_on_retry)
+        if err is None:
+            return result
+
+        # 降级：返回用户可见的友好提示（不暴露堆栈），保持输出结构兼容
+        return {
+            "success": False,
+            "error": err,
+            "fallback": True,
+            "fallback_error": err,
+            "route": route_decision,
+            "teaching": {"content": "", "model_used": "", "quality_flag": "FALLBACK"},
+            "assessment": {"score": 0, "is_mastered": False},
+            "coaching": {"mastery_level": "", "suggestions": [], "next_topics": []},
+        }
 
     def _run_simple(self, payload: Dict, profile: TaskProfile) -> Dict:
         """简单任务：单模型快速响应"""

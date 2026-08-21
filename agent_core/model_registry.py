@@ -202,6 +202,28 @@ ALL_MODELS_DICT: Dict[str, ModelEntry] = {m.id: m for m in ALL_MODELS}
 # ================================================================
 # 模型查询工具
 # ================================================================
+
+# ================================================================
+# 多基座自适应调度 — 降级链配置
+# 顺序即优先级：首个模型不可用时依次降级到后续模型
+# ================================================================
+FALLBACK_CHAIN: Dict[str, List[str]] = {
+    "remote_ollama": ["qwen2.5:7b", "deepseek-r1:1.5b"],
+    "cloud": [
+        "Doubao-Seed-2.0-Code", "GLM-5", "Kimi-K2.5", "MiniMax-M2.5",
+    ],
+    "solo": [
+        "Doubao-Seed-2.0-Code", "Doubao-Seed-Code",
+        "MiniMax-M2.5", "GLM-5", "Kimi-K2.5",
+    ],
+}
+
+
+def get_fallback_chain(provider: str) -> List[str]:
+    """返回指定 provider 的降级链（未配置的 provider 返回空列表）"""
+    return list(FALLBACK_CHAIN.get(provider, []))
+
+
 def get_model(model_id: str) -> Optional[ModelEntry]:
     """按 ID 查询模型"""
     return ALL_MODELS_DICT.get(model_id)

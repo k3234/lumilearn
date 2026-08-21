@@ -808,6 +808,51 @@ CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge_accumulation(knowledg
 CREATE INDEX IF NOT EXISTS idx_knowledge_quality ON knowledge_accumulation(quality_score);
 CREATE INDEX IF NOT EXISTS idx_knowledge_source ON knowledge_accumulation(source_agent);
 
+-- 三层记忆系统：短期（short，24h 过期）/ 中期（mid）/ 长期（long，含错题标记）
+CREATE TABLE IF NOT EXISTS layered_memory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    memory_type TEXT NOT NULL,
+    session_id TEXT,
+    chapter TEXT,
+    topic TEXT,
+    content TEXT NOT NULL,
+    is_wrong_answer INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP,
+    compacted INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_mem_user ON layered_memory(user_id);
+CREATE INDEX IF NOT EXISTS idx_mem_type ON layered_memory(memory_type);
+
+-- 系统自动评测报告（Trace + 自动评测闭环）
+CREATE TABLE IF NOT EXISTS system_eval (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    eval_type TEXT NOT NULL,
+    recall_rate REAL DEFAULT 0,
+    format_pass_rate REAL DEFAULT 0,
+    accuracy REAL DEFAULT 0,
+    trace_id TEXT,
+    detail_json TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 知识拆解：将文档按章节拆解为知识点条目
+CREATE TABLE IF NOT EXISTS knowledge_decomposition (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    doc_id          TEXT NOT NULL,
+    chapter         TEXT,
+    knowledge_point TEXT NOT NULL,
+    subject         TEXT,
+    difficulty      INTEGER DEFAULT 1,
+    source_text     TEXT,
+    raw_json        TEXT,
+    status          TEXT DEFAULT 'pending',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_kd_doc_id ON knowledge_decomposition(doc_id);
+CREATE INDEX IF NOT EXISTS idx_kd_status ON knowledge_decomposition(status);
+
 -- ============================================================
 -- 索引（加速常用查询）
 -- ============================================================
@@ -1069,6 +1114,54 @@ class DatabaseManager:
                 self.conn.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_type ON knowledge_accumulation(knowledge_type)")
                 self.conn.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_quality ON knowledge_accumulation(quality_score)")
                 self.conn.execute("CREATE INDEX IF NOT EXISTS idx_knowledge_source ON knowledge_accumulation(source_agent)")
+            if "knowledge_decomposition" not in tables:
+                self.conn.execute("""
+                    CREATE TABLE knowledge_decomposition (
+                        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                        doc_id          TEXT NOT NULL,
+                        chapter         TEXT,
+                        knowledge_point TEXT NOT NULL,
+                        subject         TEXT,
+                        difficulty      INTEGER DEFAULT 1,
+                        source_text     TEXT,
+                        raw_json        TEXT,
+                        status          TEXT DEFAULT 'pending',
+                        created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_kd_doc_id ON knowledge_decomposition(doc_id)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_kd_status ON knowledge_decomposition(status)")
+            if "layered_memory" not in tables:
+                self.conn.execute("""
+                    CREATE TABLE layered_memory (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        user_id TEXT NOT NULL,
+                        memory_type TEXT NOT NULL,
+                        session_id TEXT,
+                        chapter TEXT,
+                        topic TEXT,
+                        content TEXT NOT NULL,
+                        is_wrong_answer INTEGER DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        expires_at TIMESTAMP,
+                        compacted INTEGER DEFAULT 0
+                    )
+                """)
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_mem_user ON layered_memory(user_id)")
+                self.conn.execute("CREATE INDEX IF NOT EXISTS idx_mem_type ON layered_memory(memory_type)")
+            if "system_eval" not in tables:
+                self.conn.execute("""
+                    CREATE TABLE system_eval (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        eval_type TEXT NOT NULL,
+                        recall_rate REAL DEFAULT 0,
+                        format_pass_rate REAL DEFAULT 0,
+                        accuracy REAL DEFAULT 0,
+                        trace_id TEXT,
+                        detail_json TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
         except Exception as e:
             logger = __import__("logging").getLogger("lumilearn.database")
             logger.warning(f"迁移新表失败（可忽略）: {e}")
@@ -4600,6 +4693,64 @@ class DatabaseManager:
         return cur.rowcount > 0
 
     # ============================================================
+    # B3. 知识拆解管理
+    # ============================================================
+
+    def add_knowledge_decomposition(
+        self, doc_id: str, chapter: str, knowledge_point: str,
+        subject: str = "", difficulty: int = 1,
+        source_text: str = "", raw_json: str = "",
+        status: str = "ok"
+    ) -> int:
+        """
+        新增一条知识拆解记录
+
+        参数：
+            doc_id:          来源文档ID
+            chapter:         所属章节
+            knowledge_point: 知识点名称
+            subject:         学科
+            difficulty:      难度 1-5
+            source_text:     原文片段
+            raw_json:        原始 JSON（可选）
+            status:          状态（pending/ok/failed）
+
+        返回：
+            新记录的 id
+        """
+        cur = self._execute(
+            """INSERT INTO knowledge_decomposition
+               (doc_id, chapter, knowledge_point, subject, difficulty,
+                source_text, raw_json, status)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (doc_id, chapter, knowledge_point, subject, difficulty,
+             source_text, raw_json, status)
+        )
+        return cur.lastrowid
+
+    def get_knowledge_by_doc(self, doc_id: str) -> List[Dict]:
+        """按 doc_id 查询所有知识拆解记录"""
+        return self._query(
+            "SELECT * FROM knowledge_decomposition WHERE doc_id = ? ORDER BY id",
+            (doc_id,)
+        )
+
+    def get_knowledge_by_chapter(self, doc_id: str, chapter: str) -> List[Dict]:
+        """按 doc_id + chapter 查询知识拆解记录"""
+        return self._query(
+            "SELECT * FROM knowledge_decomposition WHERE doc_id = ? AND chapter = ? ORDER BY id",
+            (doc_id, chapter)
+        )
+
+    def count_by_status(self, doc_id: str, status: str) -> int:
+        """统计指定 doc_id 下某状态的记录数"""
+        row = self._query_one(
+            "SELECT COUNT(*) AS cnt FROM knowledge_decomposition WHERE doc_id = ? AND status = ?",
+            (doc_id, status)
+        )
+        return row["cnt"] if row else 0
+
+    # ============================================================
     # Z5.1 外部 MCP 服务器配置管理
     # ============================================================
 
@@ -4820,6 +4971,74 @@ class DatabaseManager:
             return value if value is not None else default
         except (ValueError, TypeError):
             return default
+
+    # ============================================================
+    # 分层记忆（Layered Memory）
+    # ============================================================
+
+    def save_memory(self, user_id: str, memory_type: str, session_id: str = None,
+                    chapter: str = None, topic: str = None, content: str = '',
+                    is_wrong_answer: int = 0, expires_at: str = None) -> int:
+        """写入一条分层记忆（short / mid / long），返回记录 id"""
+        cur = self._execute(
+            """INSERT INTO layered_memory
+               (user_id, memory_type, session_id, chapter, topic, content,
+                is_wrong_answer, expires_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (user_id, memory_type, session_id, chapter, topic, content,
+             int(is_wrong_answer), expires_at))
+        return cur.lastrowid
+
+    def get_active_memories(self, user_id: str, session_id: str = None) -> List[Dict]:
+        """查询该用户未过期的短期/中期记忆（可选按 session 过滤）"""
+        sql = ("SELECT * FROM layered_memory WHERE user_id = ? "
+               "AND memory_type IN ('short', 'mid') "
+               "AND (expires_at IS NULL OR expires_at > datetime('now','localtime'))")
+        params: List = [user_id]
+        if session_id:
+            sql += " AND session_id = ?"
+            params.append(session_id)
+        return self._query(sql, tuple(params))
+
+    def get_long_term_memories(self, user_id: str, limit: int = 500) -> List[Dict]:
+        """查询长期记忆（long 类型，最新优先）"""
+        return self._query(
+            """SELECT * FROM layered_memory
+               WHERE user_id = ? AND memory_type = 'long'
+               ORDER BY id DESC LIMIT ?""",
+            (user_id, int(limit)))
+
+    def delete_expired_memories(self) -> int:
+        """删除已过期的记忆记录，返回删除条数"""
+        cur = self._execute(
+            """DELETE FROM layered_memory
+               WHERE expires_at IS NOT NULL
+               AND expires_at <= datetime('now','localtime')""")
+        return cur.rowcount
+
+    # ============================================================
+    # 系统自动评测（System Eval）
+    # ============================================================
+
+    def save_eval_report(self, eval_type: str, recall_rate: float,
+                         format_pass_rate: float, accuracy: float,
+                         trace_id: str = '', detail_json: str = '') -> int:
+        """保存一份系统自动评测报告，返回记录 id"""
+        cur = self._execute(
+            """INSERT INTO system_eval
+               (eval_type, recall_rate, format_pass_rate, accuracy,
+                trace_id, detail_json)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (eval_type, float(recall_rate), float(format_pass_rate),
+             float(accuracy), trace_id, detail_json))
+        return cur.lastrowid
+
+    def get_eval_reports(self, limit: int = 20) -> List[Dict]:
+        """查询最近的系统自动评测报告（最新优先）"""
+        return self._query(
+            """SELECT * FROM system_eval
+               ORDER BY id DESC LIMIT ?""",
+            (int(limit),))
 
 
 # ============================================================

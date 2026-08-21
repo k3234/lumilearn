@@ -340,6 +340,54 @@ class AgentTelemetry:
                 reverse=True)
 
     # ============================================================
+    # 自动评测指标（Trace + 自动评测闭环）
+    # ============================================================
+    def eval_metrics(self, expected_knowledge: list, recalled_knowledge: list,
+                     generated_questions: list, wrong_detected: int,
+                     wrong_actual: int) -> Dict:
+        """
+        计算一次自动评测的量化指标。
+
+        参数：
+            expected_knowledge: 期望覆盖的知识点列表
+            recalled_knowledge: 实际召回的知识点列表
+            generated_questions: 生成的题目列表（每题为 dict）
+            wrong_detected: 系统检测出的错题数
+            wrong_actual: 实际错题数（人工/标准答案核对）
+
+        返回：
+            {"knowledge_recall": float, "format_pass_rate": float,
+             "accuracy": float}
+        """
+        # 知识召回率：召回知识点 ∩ 期望知识点 / 期望知识点（期望为空视为满分）
+        expected = set(expected_knowledge)
+        recalled = set(recalled_knowledge)
+        if len(expected) == 0:
+            knowledge_recall = 1.0
+        else:
+            knowledge_recall = len(expected & recalled) / len(expected)
+
+        # 格式合格率：同时含 question/answer/options 字段的题目占比
+        # （生成题目为空视为满分，与 expected 为空的处理保持一致）
+        if not generated_questions:
+            format_pass_rate = 1.0
+        else:
+            passed = sum(
+                1 for q in generated_questions
+                if isinstance(q, dict) and all(
+                    k in q for k in ("question", "answer", "options")))
+            format_pass_rate = passed / len(generated_questions)
+
+        # 检测准确率：1 - |检测数 - 实际数| / max(实际数, 1)
+        accuracy = 1 - abs(wrong_detected - wrong_actual) / max(wrong_actual, 1)
+
+        return {
+            "knowledge_recall": float(knowledge_recall),
+            "format_pass_rate": float(format_pass_rate),
+            "accuracy": float(accuracy),
+        }
+
+    # ============================================================
     # 查询
     # ============================================================
     def get_trace(self, trace_id: str) -> Optional[Dict]:
