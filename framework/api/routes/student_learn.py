@@ -30,6 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirna
 
 from framework.database import db
 from framework.services.conversation_store import conversation_store as conv_store
+from framework.api.validation import validate_text_field
 from goai_agent import FlowOrchestrator, TaskUnderstanding
 
 # 与原型 mock.js 保持一致的 Agent 定义
@@ -133,6 +134,9 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
         difficulty = data.get("difficulty") or "高中"
         if not topic:
             return jsonify({"code": 400, "message": "请提供学习目标"}), 400
+        ok, err = validate_text_field(topic, "topic", 200)
+        if not ok:
+            return jsonify({"code": 400, "message": err}), 400
 
         task = TaskUnderstanding().understand(topic)
         flow = FlowOrchestrator().orchestrate(task)

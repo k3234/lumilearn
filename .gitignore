@@ -242,7 +242,8 @@ deploy/.pids.json
 
 # Runtime data directories
 # ============================================
-data/
+data/*
+!data/eval_dataset/
 export_data/  # 学生数据导出（姓名/成绩/推理记录，严禁提交）
 orchestration_output/
 phases/

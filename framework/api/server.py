@@ -236,6 +236,17 @@ def create_app(debug: bool = None, template_dir: str = None, homepage: str = "te
             return response
         return "<h1>LumiLearn Admin</h1><p>admin.html not found</p>", 404
 
+    @app.route("/admin/traces")
+    def admin_traces_page():
+        """Agent 调用链追踪面板"""
+        html_path = _template_path("admin_traces.html")
+        if html_path.exists():
+            content = html_path.read_text(encoding="utf-8")
+            response = app.make_response(content)
+            response.headers["Content-Type"] = "text/html; charset=utf-8"
+            return response
+        return "<h1>LumiLearn Traces</h1><p>admin_traces.html not found</p>", 404
+
     @app.route("/learn")
     def learn_page():
         """学习页面：重定向到互动课堂"""
@@ -343,6 +354,10 @@ def create_app(debug: bool = None, template_dir: str = None, homepage: str = "te
                 "gateway": "offline",
                 "error": str(e)
             })
+
+    # 统一 404 / 500 错误处理（API 请求返回友好 JSON，页面请求渲染 404.html）
+    from framework.api.errors import register_error_handlers
+    register_error_handlers(app)
 
     return app
 

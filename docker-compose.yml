@@ -8,7 +8,7 @@ services:
       dockerfile: Dockerfile
     container_name: lumilearn-api
     ports:
-      - "5010:5010"
+      - "${API_PORT:-5010}:5010"
     environment:
       - FLASK_ENV=production
       - OLLAMA_HOST=http://ollama:11434
@@ -38,7 +38,7 @@ services:
       dockerfile: Dockerfile
     container_name: lumilearn-goai
     ports:
-      - "5000:5000"
+      - "${GOAI_PORT:-5000}:5000"
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - SERVICE_PORT=5000
@@ -57,7 +57,7 @@ services:
       dockerfile: Dockerfile
     container_name: lumilearn-teacher
     ports:
-      - "5001:5001"
+      - "${TEACHER_PORT:-5001}:5001"
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - SERVICE_PORT=5001
@@ -76,7 +76,7 @@ services:
       dockerfile: Dockerfile
     container_name: lumilearn-admin
     ports:
-      - "18080:18080"
+      - "${LUMILEARN_PORT:-18080}:18080"
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - SERVICE_PORT=18080
@@ -95,7 +95,7 @@ services:
       dockerfile: Dockerfile
     container_name: lumilearn-analytics
     ports:
-      - "18090:18090"
+      - "${ANALYTICS_PORT:-18090}:18090"
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - SERVICE_PORT=18090
@@ -112,7 +112,7 @@ services:
     image: ollama/ollama:latest
     container_name: lumilearn-ollama
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ./ollama_data:/root/.ollama
     healthcheck:
@@ -127,7 +127,7 @@ services:
     image: nginx:alpine
     container_name: lumilearn-nginx
     ports:
-      - "80:80"
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:

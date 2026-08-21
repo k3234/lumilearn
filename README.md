@@ -11,6 +11,13 @@
 [![pytest](https://img.shields.io/badge/tested%20with-pytest-009688.svg)](https://pytest.org/)
 [![Ruff](https://img.shields.io/badge/linted%20with-ruff-ff69b4.svg)](https://docs.astral.sh/ruff/)
 
+## 安全声明
+
+- **AI 辅助教育工具边界**：LumiLearn 是 AI 辅助教学工具，**不替代教师**。AI 生成的知识讲解、练习题与学习报告仅供参考，请由教师/家长/学习者**人工校验后使用**。
+- **幻觉风险提示**：大语言模型可能生成看似合理但错误的"幻觉"内容，涉及考试、升学等关键决策时务必以权威教材和教师意见为准。
+- **数据本地存储**：学习数据默认存储在本机 **SQLite 数据库**，**不上传云端**；如需调用云端模型，仅按需发送请求文本，请勿提交含个人敏感信息的资料。
+- **密钥走环境变量**：所有密钥（API Key、SECRET_KEY、管理员密码等）一律通过环境变量（`.env`）注入，不写入代码或配置文件，且 `.env` 已被 `.gitignore` 忽略、不进入公开仓库。
+
 ## 📋 GOAI 2026 参赛材料
 
 - [作品简介](docs/GOAI_SUBMISSION.md) — 可直接复制到 GOAI 作品提交页面「作品简介」字段

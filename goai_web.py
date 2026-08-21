@@ -28,6 +28,7 @@ from flask import (Flask, request, jsonify, render_template, session,
 from goai_agent import LumiLearnAgent, TaskUnderstanding, FlowOrchestrator
 from goai_multi_agent import get_multi_agent_orchestrator
 from framework.api.routes.student_learn import create_student_learn_bp
+from framework.api.validation import validate_text_field
 from framework.core.config import get_app_secret_key, register_csrf_guard
 
 # 连接 Framework 数据库（与 18080 管理端共享 lumilearn.db）
@@ -53,6 +54,10 @@ app.config.update(
     MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 10MB 上传上限
 )
 register_csrf_guard(app)
+
+# 统一 404 / 500 错误处理
+from framework.api.errors import register_error_handlers
+register_error_handlers(app)
 
 
 @app.after_request
@@ -230,6 +235,9 @@ def api_knowledge_search():
 
     if not q:
         return jsonify({'success': False, 'error': '缺少查询关键词 q'}), 400
+    ok, err = validate_text_field(q, "query", 100)
+    if not ok:
+        return jsonify({'success': False, 'error': err}), 400
     try:
         from framework.services.knowledge_retrieval import get_knowledge_retriever
         retriever = get_knowledge_retriever()

@@ -837,6 +837,21 @@ CREATE TABLE IF NOT EXISTS system_eval (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 竞赛版本评估报告（V2.5 自动化评测）
+CREATE TABLE IF NOT EXISTS eval_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    eval_type TEXT NOT NULL,
+    total_questions INTEGER DEFAULT 0,
+    knowledge_recall REAL DEFAULT 0,
+    accuracy REAL DEFAULT 0,
+    hallucination_count INTEGER DEFAULT 0,
+    hit_rate REAL DEFAULT 0,
+    avg_latency_ms REAL DEFAULT 0,
+    report_path TEXT DEFAULT '',
+    detail_json TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- 知识拆解：将文档按章节拆解为知识点条目
 CREATE TABLE IF NOT EXISTS knowledge_decomposition (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -852,6 +867,26 @@ CREATE TABLE IF NOT EXISTS knowledge_decomposition (
 );
 CREATE INDEX IF NOT EXISTS idx_kd_doc_id ON knowledge_decomposition(doc_id);
 CREATE INDEX IF NOT EXISTS idx_kd_status ON knowledge_decomposition(status);
+
+-- Agent 调用链追踪（持久化，供后台可视化）
+CREATE TABLE IF NOT EXISTS agent_traces (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trace_id TEXT NOT NULL,
+    user_id TEXT DEFAULT '',
+    topic TEXT DEFAULT '',
+    agent_id TEXT DEFAULT '',
+    model TEXT DEFAULT '',
+    latency_ms INTEGER DEFAULT 0,
+    input_tokens INTEGER DEFAULT 0,
+    output_tokens INTEGER DEFAULT 0,
+    success INTEGER DEFAULT 1,
+    error TEXT DEFAULT '',
+    status TEXT DEFAULT 'completed',
+    detail_json TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_traces_trace_id ON agent_traces(trace_id);
+CREATE INDEX IF NOT EXISTS idx_traces_created ON agent_traces(created_at);
 
 -- ============================================================
 -- 索引（加速常用查询）
@@ -5039,6 +5074,77 @@ class DatabaseManager:
             """SELECT * FROM system_eval
                ORDER BY id DESC LIMIT ?""",
             (int(limit),))
+
+    # ============================================================
+    # 竞赛版本评估报告（V2.5 自动化评测，eval_reports 表）
+    # ============================================================
+
+    def save_v25_eval_report(self, eval_type: str, total_questions: int = 0,
+                             knowledge_recall: float = 0.0, accuracy: float = 0.0,
+                             hallucination_count: int = 0, hit_rate: float = 0.0,
+                             avg_latency_ms: float = 0.0, report_path: str = '',
+                             detail_json: str = '') -> int:
+        """保存一份 V2.5 标准化学科测试集评测报告，返回记录 id"""
+        cur = self._execute(
+            """INSERT INTO eval_reports
+               (eval_type, total_questions, knowledge_recall, accuracy,
+                hallucination_count, hit_rate, avg_latency_ms, report_path,
+                detail_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (eval_type, int(total_questions), float(knowledge_recall),
+             float(accuracy), int(hallucination_count), float(hit_rate),
+             float(avg_latency_ms), report_path, detail_json))
+        return cur.lastrowid
+
+    def get_v25_eval_reports(self, limit: int = 20) -> List[Dict]:
+        """查询最近的 V2.5 评测报告（最新优先）"""
+        return self._query(
+            """SELECT * FROM eval_reports
+               ORDER BY id DESC LIMIT ?""",
+            (int(limit),))
+
+    # ============================================================
+    # Agent 调用链追踪（agent_traces，供后台可视化）
+    # ============================================================
+
+    def save_agent_trace(self, trace_id: str, user_id: str = "",
+                         topic: str = "", agent_id: str = "",
+                         model: str = "", latency_ms: int = 0,
+                         input_tokens: int = 0, output_tokens: int = 0,
+                         success: bool = True, error: str = "",
+                         status: str = "completed",
+                         detail_json: str = "") -> int:
+        """保存一条 Agent 调用链追踪记录，返回记录 id"""
+        cur = self._execute(
+            """INSERT INTO agent_traces
+               (trace_id, user_id, topic, agent_id, model, latency_ms,
+                input_tokens, output_tokens, success, error, status,
+                detail_json)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (trace_id, user_id, topic, agent_id, model, int(latency_ms),
+             int(input_tokens), int(output_tokens),
+             1 if success else 0, error, status, detail_json))
+        return cur.lastrowid
+
+    def get_agent_traces(self, limit: int = 100, offset: int = 0,
+                         trace_id: str = "") -> List[Dict]:
+        """查询调用链追踪记录（按 id DESC，支持可选 trace_id 过滤）"""
+        if trace_id:
+            return self._query(
+                """SELECT * FROM agent_traces
+                   WHERE trace_id = ? ORDER BY id DESC LIMIT ? OFFSET ?""",
+                (trace_id, int(limit), int(offset)))
+        return self._query(
+            """SELECT * FROM agent_traces
+               ORDER BY id DESC LIMIT ? OFFSET ?""",
+            (int(limit), int(offset)))
+
+    def get_agent_trace_detail(self, trace_id: str) -> List[Dict]:
+        """按 trace_id 查询某条调用链的全部记录"""
+        return self._query(
+            """SELECT * FROM agent_traces
+               WHERE trace_id = ? ORDER BY id ASC""",
+            (trace_id,))
 
 
 # ============================================================

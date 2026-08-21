@@ -13,6 +13,7 @@ from flask import Blueprint, request, jsonify
 from framework.database import db
 from framework.admin.auth import get_admin_auth, require_admin
 from framework.admin.agents import get_agent_registry
+from framework.api.validation import validate_document_import
 from framework.core.config import get_config
 from framework.models.ollama_provider import get_ollama_provider
 
@@ -1481,6 +1482,9 @@ def admin_import_document():
         return jsonify({"status": "error", "message": "缺少 filename 字段"}), 400
     if not content:
         return jsonify({"status": "error", "message": "content 不能为空"}), 400
+    ok, err = validate_document_import(filename, fmt)
+    if not ok:
+        return jsonify({"status": "error", "message": err}), 400
 
     from framework.pipeline.knowledge_parser import KnowledgeParser
     from agent_core.knowledge_pipeline import KnowledgePipeline
@@ -1542,3 +1546,48 @@ def get_eval_report():
     limit = request.args.get("limit", 20, type=int)
     reports = db.get_eval_reports(limit=min(max(limit, 1), 100))
     return jsonify({"status": "ok", "reports": reports})
+
+
+# ---------------------------------------------------------------------------
+# V2.5 标准化学科测试集评测报表（Task 5）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/eval-reports", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_v25_eval_reports():
+    """V2.5 自动化评测报表列表（eval_reports 表，最新优先）"""
+    limit = request.args.get("limit", 20, type=int)
+    reports = db.get_v25_eval_reports(limit=min(max(limit, 1), 100))
+    return jsonify({"success": True, "reports": reports})
+
+
+# ---------------------------------------------------------------------------
+# Task 3: Agent 调用链追踪（持久化 + 可视化面板）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/traces", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_traces():
+    """Agent 调用链追踪列表（分页 + 可选 trace_id 过滤）"""
+    limit = min(max(int(request.args.get("limit", 50)), 1), 200)
+    offset = max(int(request.args.get("offset", 0)), 0)
+    trace_id = (request.args.get("trace_id") or "").strip()
+    traces = db.get_agent_traces(limit=limit, offset=offset, trace_id=trace_id)
+    if trace_id:
+        row = db._query_one(
+            "SELECT COUNT(*) AS n FROM agent_traces WHERE trace_id = ?",
+            (trace_id,))
+    else:
+        row = db._query_one("SELECT COUNT(*) AS n FROM agent_traces")
+    total = row["n"] if row else 0
+    return jsonify({"success": True, "traces": traces, "total": total})
+
+
+@admin_bp.route("/api/admin/traces/<trace_id>", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_get_trace_detail(trace_id):
+    """某条调用链的全部记录（含各 Agent 调用与汇总，按时间正序）"""
+    calls = db.get_agent_trace_detail(trace_id)
+    if not calls:
+        return jsonify({"error": "调用链不存在"}), 404
+    return jsonify({"success": True, "trace_id": trace_id, "calls": calls})

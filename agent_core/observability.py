@@ -19,6 +19,7 @@ LumiLearn Agent Core — 可观测性基础设施（Phase 3）
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import threading
 import time
@@ -121,7 +122,32 @@ class AgentTelemetry:
             self.stats["total_cost"] += total_cost
             self.stats["error_count"] += errors
             self._buffer.append(trace)
-            return trace
+
+        # 持久化调用链汇总（一条 status=completed 记录，detail_json 存 summary）
+        # 落库失败不影响主流程
+        if trace.get("summary"):
+            try:
+                from framework.database import db
+                db.save_agent_trace(
+                    trace_id=trace_id,
+                    user_id=trace.get("user_id", ""),
+                    topic=trace.get("topic", ""),
+                    agent_id="__trace_summary__",
+                    model="",
+                    latency_ms=trace["summary"].get("total_latency_ms", 0),
+                    input_tokens=0,
+                    output_tokens=0,
+                    success=trace["summary"].get("error_count", 0) == 0,
+                    error="",
+                    status="completed",
+                    detail_json=json.dumps(
+                        {"summary": trace["summary"],
+                         "result_summary": trace.get("result_summary", {})},
+                        ensure_ascii=False),
+                )
+            except Exception as e:  # noqa: BLE001 - 落库失败仅告警
+                logger.warning(f"Trace 汇总落库失败: {e}")
+        return trace
 
     # ============================================================
     # 调用记录
@@ -186,6 +212,22 @@ class AgentTelemetry:
                 detail=f"trace={trace_id} model={model} latency={latency_ms}ms "
                        f"error={error[:100] if error else '无'}",
             )
+
+        # 持久化到 agent_traces（延迟导入避免循环依赖；落库失败不影响主流程）
+        try:
+            from framework.database import db
+            db.save_agent_trace(
+                trace_id=trace_id,
+                agent_id=agent_id,
+                model=model,
+                latency_ms=latency_ms,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                success=success,
+                error=error[:200] if error else "",
+            )
+        except Exception as e:  # noqa: BLE001 - 落库失败仅告警
+            logger.warning(f"Agent 调用追踪落库失败: {e}")
         return record
 
     def measure(self, trace_id: str = "", agent_id: str = ""):

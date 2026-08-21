@@ -50,6 +50,10 @@ app.config.update(
 )
 register_csrf_guard(app)
 
+# 统一 404 / 500 错误处理
+from framework.api.errors import register_error_handlers
+register_error_handlers(app)
+
 
 @app.after_request
 def _student_security_headers(response):

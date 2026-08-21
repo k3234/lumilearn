@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn 调用链追踪</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", sans-serif; background: #0d1117; color: #e6edf3; }
+  .login-wrap { display: flex; justify-content: center; align-items: center; height: 100vh; }
+  .login-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 40px; width: 360px; }
+  .login-card h1 { font-size: 22px; margin-bottom: 24px; color: #58a6ff; }
+  .login-card input { width: 100%; padding: 12px; margin-bottom: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; font-size: 14px; }
+  .login-card button { width: 100%; padding: 12px; background: #238636; border: none; border-radius: 6px; color: #fff; font-size: 15px; cursor: pointer; }
+  .login-card button:hover { background: #2ea043; }
+  .error { color: #f85149; font-size: 13px; margin-bottom: 10px; min-height: 18px; }
+  .app { display: none; }
+  .sidebar { position: fixed; left: 0; top: 0; width: 200px; height: 100vh; background: #161b22; border-right: 1px solid #30363d; padding-top: 20px; }
+  .sidebar .brand { padding: 0 20px; font-size: 18px; font-weight: bold; color: #58a6ff; margin-bottom: 30px; }
+  .sidebar .nav-item { display: block; width: 100%; padding: 12px 20px; color: #8b949e; background: none; border: none; text-align: left; font-size: 14px; cursor: pointer; }
+  .sidebar .nav-item:hover, .sidebar .nav-item.active { color: #58a6ff; background: #0d1117; border-left: 3px solid #58a6ff; }
+  .main { margin-left: 200px; padding: 24px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .topbar h2 { font-size: 20px; }
+  .topbar .user { color: #8b949e; font-size: 13px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
+  .card .num { font-size: 28px; font-weight: bold; color: #58a6ff; }
+  .card .label { font-size: 13px; color: #8b949e; margin-top: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #21262d; }
+  th { color: #8b949e; font-weight: normal; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; }
+  .badge.ok { background: #1f6feb33; color: #58a6ff; }
+  .badge.on { background: #23863633; color: #3fb950; }
+  .badge.off { background: #30363d; color: #8b949e; }
+  .badge.err { background: #f8514933; color: #f85149; }
+  .badge.warn { background: #d2992233; color: #d29922; }
+  button.act { padding: 6px 14px; margin-right: 6px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; cursor: pointer; font-size: 12px; }
+  button.act:hover { border-color: #58a6ff; color: #58a6ff; }
+  .form-row { display: flex; gap: 10px; margin-bottom: 16px; }
+  .form-row input { flex: 1; padding: 10px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; }
+  .toast { position: fixed; top: 20px; right: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 20px; z-index: 999; display: none; }
+  .toast.show { display: block; }
+  pre.log-box { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; max-height: 500px; overflow-y: auto; font-size: 12px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <h1>🔐 LumiLearn 管理面板</h1>
+    <div class="error" id="loginError"></div>
+    <input type="text" id="username" placeholder="用户名" value="admin">
+    <input type="password" id="password" placeholder="密码" value="admin123">
+    <button onclick="doLogin()">登 录</button>
+  </div>
+</div>
+
+<div class="app" id="app">
+  <div class="sidebar">
+    <div class="brand">LumiLearn Admin</div>
+    <button class="nav-item active" onclick="loadTraces()">🧬 调用链追踪</button>
+    <div style="position:absolute; bottom:20px; left:20px; right:20px;">
+      <button class="act" onclick="logout()" style="width:100%;">退出登录</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <h2>🧬 Agent 调用链追踪</h2>
+      <div class="user" id="adminInfo"></div>
+    </div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api/admin';
+let TOKEN = localStorage.getItem('admin_token') || '';
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (TOKEN) headers['X-Admin-Token'] = TOKEN;
+  const resp = await fetch(API + path, { ...opts, headers });
+  if (resp.status === 401) { location.reload(); throw new Error('未登录'); }
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok && data.error) throw new Error(data.error);
+  return data;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// HTML 转义，防止 trace 数据中的特殊字符破坏页面结构
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+async function doLogin() {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  try {
+    const data = await fetch(API + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    }).then(r => r.json());
+    if (!data.success) throw new Error(data.error || '登录失败');
+    TOKEN = data.token;
+    localStorage.setItem('admin_token', TOKEN);
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  } catch (e) { document.getElementById('loginError').textContent = e.message; }
+}
+
+function logout() {
+  api('/logout', { method: 'POST' }).catch(() => {});
+  TOKEN = '';
+  localStorage.removeItem('admin_token');
+  location.reload();
+}
+
+// ---------- 调用链追踪 ----------
+const traceState = { page: 0, pageSize: 50, traceId: '', loaded: {} };
+
+async function init() {
+  const me = await api('/me');
+  document.getElementById('adminInfo').textContent = `${me.admin.display_name || me.admin.username} (${me.admin.role})`;
+  loadTraces();
+}
+
+async function loadTraces() {
+  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  try {
+    const params = new URLSearchParams();
+    params.set('limit', traceState.pageSize);
+    params.set('offset', traceState.page * traceState.pageSize);
+    if (traceState.traceId) params.set('trace_id', traceState.traceId);
+    const data = await api('/traces?' + params.toString());
+    const traces = data.traces || [];
+    const total = data.total || 0;
+    const totalPages = Math.max(1, Math.ceil(total / traceState.pageSize));
+
+    const rows = traces.map((t, i) => {
+      const successBadge = t.success ? '<span class="badge on">成功</span>' : '<span class="badge err">失败</span>';
+      const statusBadge = t.status === 'completed' ? '<span class="badge ok">completed</span>'
+        : '<span class="badge warn">' + esc(t.status || '-') + '</span>';
+      const tokens = (t.input_tokens || 0) + (t.output_tokens || 0);
+      return `
+      <tr>
+        <td><a href="javascript:void(0)" onclick="viewTrace('${esc(t.trace_id)}', ${i})" style="color:#58a6ff;font-family:monospace;font-size:11px;">${esc(t.trace_id)}</a></td>
+        <td style="max-width:200px;word-break:break-all;">${esc(t.topic || '-')}</td>
+        <td>${esc(t.user_id || '-')}</td>
+        <td>${esc(t.agent_id || '-')}</td>
+        <td>${esc(t.model || '-')}</td>
+        <td>${t.latency_ms != null ? t.latency_ms + 'ms' : '-'}</td>
+        <td>${tokens}</td>
+        <td>${successBadge}</td>
+        <td>${statusBadge}</td>
+        <td style="white-space:nowrap;">${esc(t.created_at || '-')}</td>
+      </tr>
+      <tr id="trace-detail-${i}" style="display:none;background:#0d1117;">
+        <td colspan="10" style="padding:14px 16px;">
+          <div id="trace-detail-body-${i}" style="color:#8b949e;font-size:12px;">加载中…</div>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="10" style="color:#8b949e;">暂无调用链记录</td></tr>';
+
+    const pager = `
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:13px;color:#8b949e;">
+        <button class="act" onclick="prevPage()" ${traceState.page === 0 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>← 上一页</button>
+        <span>第 ${traceState.page + 1} / ${totalPages} 页（共 ${total} 条）</span>
+        <button class="act" onclick="nextPage()" ${(traceState.page + 1) * traceState.pageSize >= total ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>下一页 →</button>
+      </div>`;
+
+    document.getElementById('content').innerHTML = `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px;">
+        <input id="traceIdFilter" value="${esc(traceState.traceId)}" placeholder="按 trace_id 过滤（留空=全部）" style="flex:1;min-width:220px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+        <button class="act" onclick="queryTraces()">查询</button>
+        <button class="act" onclick="resetTraces()">重置</button>
+      </div>
+      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">Agent 调用链全量追踪（持久化）：每次 Agent 调用落一条记录，trace 结束时写入一条汇总记录（agent_id 为 __trace_summary__）。点击 trace_id 展开查看该调用链全部明细。</div>
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;">
+        <table>
+          <tr><th>trace_id</th><th>主题</th><th>用户</th><th>agent</th><th>模型</th><th>耗时</th><th>tokens</th><th>成功</th><th>状态</th><th>时间</th></tr>
+          ${rows}
+        </table>
+        ${pager}
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+async function viewTrace(traceId, rowIndex) {
+  const detailRow = document.getElementById('trace-detail-' + rowIndex);
+  if (!detailRow) return;
+  const body = document.getElementById('trace-detail-body-' + rowIndex);
+  const isOpen = detailRow.style.display !== 'none';
+  detailRow.style.display = isOpen ? 'none' : '';
+  if (!isOpen) {
+    if (traceState.loaded[traceId]) {
+      body.innerHTML = traceState.loaded[traceId];
+    } else {
+      body.innerHTML = '<span style="color:#8b949e;">加载中…</span>';
+      try {
+        const data = await api('/traces/' + encodeURIComponent(traceId));
+        const calls = data.calls || [];
+        const html = calls.map((c, idx) => {
+          const isSummary = c.agent_id === '__trace_summary__';
+          const successBadge = c.success ? '<span class="badge on">成功</span>' : '<span class="badge err">失败</span>';
+          const tokens = (c.input_tokens || 0) + (c.output_tokens || 0);
+          let extra = '';
+          if (isSummary && c.detail_json) {
+            try {
+              const dj = JSON.parse(c.detail_json);
+              const s = dj.summary || {};
+              extra = `<div style="margin-top:6px;color:#8b949e;font-size:12px;">调用数 <b style="color:#58a6ff;">${s.call_count}</b> · 总耗时 <b style="color:#58a6ff;">${s.total_latency_ms}ms</b> · 总成本 <b style="color:#58a6ff;">¥${s.total_cost}</b> · 失败 <b style="color:${s.error_count ? '#f85149' : '#3fb950'};">${s.error_count}</b></div>`;
+            } catch (err) {}
+          }
+          if (c.error) {
+            extra += `<div style="margin-top:4px;color:#f85149;font-size:12px;word-break:break-all;">错误: ${esc(c.error)}</div>`;
+          }
+          return `
+            <div style="padding:10px 0;border-bottom:1px solid #21262d;font-size:13px;">
+              <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+                <span class="badge ${isSummary ? 'warn' : 'ok'}" style="${isSummary ? '' : 'background:#21262d;color:#8b949e;'}">${isSummary ? '📊 汇总' : '#' + (idx + 1)}</span>
+                <b>${esc(c.agent_id || '-')}</b>
+                <span style="color:#8b949e;">${esc(c.model || '-')}</span>
+                <span>${c.latency_ms != null ? c.latency_ms + 'ms' : '-'}</span>
+                <span style="color:#8b949e;">${tokens} tokens</span>
+                ${successBadge}
+                <span style="color:#8b949e;margin-left:auto;white-space:nowrap;">${esc(c.created_at || '')}</span>
+              </div>
+              ${extra}
+            </div>`;
+        }).join('') || '<div style="color:#8b949e;">无明细</div>';
+        const rendered = `<div style="font-size:12px;color:#8b949e;margin-bottom:8px;">调用链明细（${calls.length} 条记录）</div>` + html;
+        body.innerHTML = rendered;
+        traceState.loaded[traceId] = rendered;
+      } catch (e) {
+        body.innerHTML = `<span style="color:#f85149;">加载失败: ${esc(e.message)}</span>`;
+      }
+    }
+  }
+}
+
+function queryTraces() {
+  traceState.traceId = document.getElementById('traceIdFilter').value.trim();
+  traceState.page = 0;
+  loadTraces();
+}
+
+function resetTraces() {
+  traceState.traceId = '';
+  traceState.page = 0;
+  loadTraces();
+}
+
+function prevPage() {
+  if (traceState.page > 0) { traceState.page--; loadTraces(); }
+}
+
+function nextPage() {
+  traceState.page++;
+  loadTraces();
+}
+
+// ---------- 初始化 ----------
+if (TOKEN) {
+  fetch(API + '/me', { headers: { 'X-Admin-Token': TOKEN } })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(() => {
+      document.getElementById('loginWrap').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      init();
+    })
+    .catch(() => localStorage.removeItem('admin_token'));
+}
+</script>
+</body>
+</html>

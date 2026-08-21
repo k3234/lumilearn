@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import os
 import sys
+import threading
 import time
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -20,6 +21,7 @@ from agent_core.models import AgentState, AgentResult, TaskProfile
 from agent_core.router import RouterAgent, get_router_agent
 from agent_core.langgraph_engine import OrchestrationEngine
 from agent_core.model_registry import ALL_MODELS, get_model_summary
+from agent_core.self_critique import SelfCritiqueAgent
 from framework.core.fallback import FallbackHandler
 
 
@@ -356,6 +358,291 @@ class UnifiedOrchestrator:
         self.telemetry.end_trace(trace_id, result)
 
         return result
+
+    # ------------------------------------------------------------
+    # Task 2: 自我批判反馈回路 + 超时 + token 预算
+    # ------------------------------------------------------------
+    def run_with_critique(self, topic: str, subject: str = "",
+                          max_retries: int = 2, timeout_s: int = 60,
+                          token_budget: int = 8000, **kwargs) -> Dict:
+        """
+        带自我批判（SelfCritique）反馈回路的教学生成。
+
+        流程：
+          1. 调用教学生成（默认复用 run()，可用 teach_fn 注入 fake 生成器）
+          2. 用 SelfCritiqueAgent 对输出评分（默认阈值 70）
+          3. score < 阈值 → 重试教学生成（最多 max_retries=2 次），每次重试记录轮次
+          4. 达到最大重试仍不达标 → 接受分数最高的那次输出，
+             结果标记 "critique_warning": True
+          5. token 超预算 → 跳过评分与重试，直接返回降级结果
+
+        参数：
+            topic: 教学主题（必填）
+            subject: 学科（可选，同时作为评分 knowledge_context）
+            max_retries: 最大重试次数（默认 2）
+            timeout_s: 单次教学生成超时秒数（默认 60）
+            token_budget: 单轮输入+输出 token 预算（默认 8000）
+            **kwargs:
+                teach_fn: 可注入教学生成器，签名 teach_fn(topic, subject, **kw) -> Dict
+                          （返回与 run() 兼容的结构；缺省用 self._teach_fn 或 run()）
+                critique_agent: 可注入评分器（需有 .score(text, topic, knowledge_context)
+                                -> {"score": int, "reason": str, "passed": bool}）
+                _prompt_tokens / _completion_tokens: 覆盖 token 估算（测试用）
+                其余 kwargs 透传给教学生成器
+
+        返回：
+            教学结果 dict（含原生成字段），并增加：
+              - feedback_rounds: int   实际重试次数
+              - critique_score: int    最终评分
+              - critique_passed: bool  最终是否通过阈值
+              - critique_reason: str   评分依据
+              - critique_warning: bool 重试耗尽仍未达标时为 True（仅在降级接受时存在）
+        """
+        topic = (topic or "").strip()
+        if not topic:
+            return {"success": False, "error": "缺少 topic 参数"}
+
+        # ---- 可注入组件（测试用）：教学生成器 / 评分器 ----
+        teach_fn = kwargs.pop("teach_fn", None)
+        if teach_fn is None:
+            teach_fn = getattr(self, "_teach_fn", None) or self._default_teach_fn
+        critique = kwargs.pop("critique_agent", None)
+        if critique is None:
+            critique = SelfCritiqueAgent()
+        threshold = int(getattr(critique, "threshold", 70) or 70)
+
+        # ---- 可注入 token 估算（测试用）；默认由 safety 估算 ----
+        prompt_tokens_override = kwargs.pop("_prompt_tokens", None)
+        completion_tokens_override = kwargs.pop("_completion_tokens", None)
+
+        # ---- 可观测性：开启追踪 ----
+        trace_id = self.telemetry.start_trace(
+            user_id=str(kwargs.get("user_id", "critique")),
+            topic=topic, context=subject)
+        self._last_trace_id = trace_id
+
+        def _estimate_tokens(text: str) -> int:
+            try:
+                return self.safety.estimate_tokens(text or "")
+            except Exception:
+                return max(1, len(text or "") // 2)
+
+        best_result: Optional[Dict] = None
+        best_score = -1
+        best_reason = ""
+        feedback_rounds = 0
+        attempts = max(int(max_retries), 0) + 1  # 首轮生成 + max_retries 次重试
+
+        for attempt in range(attempts):
+            if attempt > 0:
+                feedback_rounds += 1
+
+            t0 = time.time()
+            result = self._call_with_timeout(
+                lambda: teach_fn(topic, subject, **kwargs),
+                timeout_s=timeout_s,
+                agent_id="critique_teach",
+                default=None,
+            )
+
+            # ---- 超时 / 生成异常：返回降级结果（不抛异常） ----
+            if result is None:
+                status = getattr(self, "_last_call_status", "timeout")
+                degraded = {
+                    "success": False,
+                    "degraded": True,
+                    "reason": "timeout",
+                    "message": f"教学生成超过 {timeout_s}s 未完成"
+                               f"{'或发生异常' if status == 'error' else ''}，已降级处理",
+                    "topic": topic,
+                    "subject": subject,
+                    "feedback_rounds": feedback_rounds,
+                    "critique_score": 0,
+                    "critique_passed": False,
+                    "critique_reason": "timeout",
+                    "trace_id": trace_id,
+                }
+                self.telemetry.end_trace(trace_id, degraded)
+                return degraded
+
+            # ---- 上游生成失败（安全拦截等）：直接返回，避免无意义重试 ----
+            if not result.get("success", True):
+                result.update({
+                    "feedback_rounds": feedback_rounds,
+                    "critique_score": 0,
+                    "critique_passed": False,
+                    "critique_reason": "teach_generation_failed",
+                    "trace_id": trace_id,
+                })
+                self.telemetry.end_trace(trace_id, result)
+                return result
+
+            # ---- token 预算检查：超预算跳过评分与重试，直接降级 ----
+            output_text = self._extract_output_text(result)
+            prompt_tokens = (int(prompt_tokens_override)
+                             if prompt_tokens_override is not None
+                             else _estimate_tokens(topic + " " + subject))
+            completion_tokens = (int(completion_tokens_override)
+                                 if completion_tokens_override is not None
+                                 else _estimate_tokens(output_text))
+            if not self._check_token_budget(
+                    prompt_tokens, completion_tokens, budget=token_budget):
+                degraded = {
+                    "success": False,
+                    "degraded": True,
+                    "reason": "token_budget_exceeded",
+                    "message": "生成内容超过 token 预算，已截断处理",
+                    "topic": topic,
+                    "subject": subject,
+                    "feedback_rounds": feedback_rounds,
+                    "critique_score": 0,
+                    "critique_passed": False,
+                    "critique_reason": "token_budget_exceeded",
+                    "trace_id": trace_id,
+                }
+                self.telemetry.record_call(
+                    trace_id=trace_id,
+                    agent_id="critique_teach",
+                    model="",
+                    latency_ms=int((time.time() - t0) * 1000),
+                    input_tokens=prompt_tokens,
+                    output_tokens=completion_tokens,
+                    success=False,
+                    error="token_budget_exceeded",
+                    extra={"route": "critique", "token_budget_exceeded": True},
+                )
+                self.telemetry.end_trace(trace_id, degraded)
+                return degraded
+
+            # ---- 自我批判评分 ----
+            verdict = critique.score(output_text, topic=topic,
+                                     knowledge_context=subject)
+            score = int(verdict.get("score", 0) or 0)
+            reason = str(verdict.get("reason", ""))
+            passed = bool(verdict.get("passed", score >= threshold))
+
+            self.telemetry.record_call(
+                trace_id=trace_id,
+                agent_id="critique_teach",
+                model="",
+                latency_ms=int((time.time() - t0) * 1000),
+                input_tokens=prompt_tokens,
+                output_tokens=completion_tokens,
+                success=passed,
+                extra={"route": "critique", "feedback_rounds": feedback_rounds},
+            )
+
+            # 记录本轮最高分（重试耗尽时接受最佳输出）
+            if score > best_score:
+                best_score = score
+                best_reason = reason
+                best_result = result
+
+            if passed:
+                final = dict(result)
+                final.update({
+                    "feedback_rounds": feedback_rounds,
+                    "critique_score": score,
+                    "critique_passed": True,
+                    "critique_reason": reason,
+                    "trace_id": trace_id,
+                })
+                self.telemetry.end_trace(trace_id, final)
+                return final
+
+        # ---- 重试耗尽仍未达标：接受分数最高的那次输出，标记警告 ----
+        final = dict(best_result) if best_result is not None \
+            else {"success": False, "topic": topic, "subject": subject}
+        final.update({
+            "feedback_rounds": feedback_rounds,
+            "critique_score": best_score,
+            "critique_passed": best_score >= threshold,
+            "critique_reason": best_reason,
+            "critique_warning": True,
+            "trace_id": trace_id,
+        })
+        self.telemetry.end_trace(trace_id, final)
+        return final
+
+    def _call_with_timeout(self, fn: Callable, timeout_s: int = 60,
+                           agent_id: str = "", default: Optional[Dict] = None):
+        """
+        用守护线程执行 fn，超过 timeout_s 未完成则返回 default（降级结果）。
+        - fn 内部异常 → 捕获并返回 default（不向上抛）
+        - 超时 / 异常均在 trace 记录事件（extra 带 "timeout": True 或 "error": True）
+        """
+        t0 = time.time()
+        box: Dict = {}
+        self._last_call_status = "ok"
+
+        def _runner() -> None:
+            try:
+                box["value"] = fn()
+            except BaseException as exc:  # noqa: BLE001 健壮性：fn 异常不外抛
+                box["error"] = exc
+
+        thread = threading.Thread(target=_runner, daemon=True)
+        thread.start()
+        thread.join(timeout_s)
+
+        if thread.is_alive():
+            self._last_call_status = "timeout"
+            self.telemetry.record_call(
+                trace_id=self._last_trace_id,
+                agent_id=agent_id or "timeout_guard",
+                model="",
+                latency_ms=int((time.time() - t0) * 1000),
+                success=False,
+                error="timeout",
+                extra={"route": "critique", "timeout": True},
+            )
+            return default
+
+        if "error" in box:
+            self._last_call_status = "error"
+            self.telemetry.record_call(
+                trace_id=self._last_trace_id,
+                agent_id=agent_id or "timeout_guard",
+                model="",
+                latency_ms=int((time.time() - t0) * 1000),
+                success=False,
+                error=str(box["error"])[:200],
+                extra={"route": "critique", "error": True},
+            )
+            return default
+
+        return box.get("value")
+
+    def _check_token_budget(self, prompt_tokens: int, completion_tokens: int,
+                            budget: int = 8000) -> bool:
+        """
+        token 预算检查：输入+输出 token 总和 <= budget 返回 True（预算内），
+        超过预算返回 False。token 计数非法时按预算内处理，不阻塞主流程。
+        """
+        try:
+            total = int(prompt_tokens or 0) + int(completion_tokens or 0)
+            return total <= int(budget)
+        except (TypeError, ValueError):
+            return True
+
+    # ------------------------------------------------------------
+    # 辅助：教学生成默认实现与输出文本提取
+    # ------------------------------------------------------------
+    def _default_teach_fn(self, topic: str, subject: str = "", **kwargs) -> Dict:
+        """默认教学生成：复用 run()（保持原有完整编排流程）"""
+        payload: Dict = {"topic": topic}
+        if subject:
+            payload["subject"] = subject
+        payload.update(kwargs)
+        return self.run(payload)
+
+    @staticmethod
+    def _extract_output_text(result: Dict) -> str:
+        """从编排结果中提取教学输出文本（teaching.full_content / content）"""
+        teaching = result.get("teaching") or {}
+        if isinstance(teaching, dict):
+            return str(teaching.get("full_content") or teaching.get("content") or "")
+        return ""
 
     def _run_route_with_fallback(self, route_decision: str, payload: Dict,
                                  profile: TaskProfile) -> Dict:

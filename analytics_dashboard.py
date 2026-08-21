@@ -40,6 +40,10 @@ if not TEMPLATE_DIR.exists():
 
 app = Flask(__name__, template_folder=str(TEMPLATE_DIR))
 
+# 统一 404 / 500 错误处理
+from framework.api.errors import register_error_handlers
+register_error_handlers(app)
+
 # ============================================================
 # 数据查询
 # ============================================================

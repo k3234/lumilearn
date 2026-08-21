@@ -27,6 +27,9 @@ import re
 import time
 from typing import Dict, List, Optional
 
+# 学科同义词词典：查询扩展（同义词 OR 关系），提升召回率
+from framework.services.synonym_dict import expand_query
+
 # 领域词典（与 feynman_engine 的学科/主题关键词保持一致，保证检索一致性）
 DOMAIN_TERMS = [
     # 数学
@@ -195,15 +198,15 @@ class KnowledgeRetriever:
     def search(self, query: str, top_k: int = 5,
                subject: Optional[str] = None) -> List[Dict]:
         """
-        关键词检索，返回按相关度排序的文档列表。
+        关键词检索（含同义词扩展），返回按相关度排序的文档列表。
 
         参数:
             query:   查询文本（如教学主题）
             top_k:   返回条数
-            subject: 可选学科过滤
+            subject: 可选学科过滤（同时用于限定同义词扩展的学科范围）
         返回:
             [{source, id, title, subject, grade, difficulty, content,
-              keywords, score}, ...]
+              keywords, snippet, score}, ...]
         """
         if not query or not query.strip():
             return []
@@ -214,7 +217,13 @@ class KnowledgeRetriever:
         if not self.docs:
             return []
 
-        q_tokens = tokenize(query)
+        # 同义词扩展：对每个扩展词分别分词并合并打分（同义词 OR 关系）
+        expand_subject = subject if subject else "all"
+        q_tokens: List[str] = []
+        for q in expand_query(query.strip(), expand_subject):
+            for t in tokenize(q):
+                if t not in q_tokens:
+                    q_tokens.append(t)
         if not q_tokens:
             return []
 
@@ -239,9 +248,18 @@ class KnowledgeRetriever:
         for doc_idx, score in ranked[:top_k]:
             doc = dict(self.docs[doc_idx])
             doc["score"] = round(score, 4)
+            doc["snippet"] = (doc.get("content") or "")[:200]
             doc.pop("_text", None)
             results.append(doc)
         return results
+
+    def search_semantic(self, query: str, top_k: int = 5,
+                        subject: Optional[str] = None) -> List[Dict]:
+        """
+        预留语义检索接口，未来接入 embedding 向量检索。
+        当前返回空列表，不参与召回。
+        """
+        return []
 
     def status(self) -> Dict:
         """索引状态（供管理/调试）"""
