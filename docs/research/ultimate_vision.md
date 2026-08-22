@@ -1,11 +1,11 @@
-# LumiLearn 终极愿景：本地化 OpenMAIC × Claude 级教育 AI
+# LumiLearn 终极愿景：本地化 OpenMAIC 课堂范式 + 轻量教育 AI 能力
 
-## 让每个孩子都能获得 OpenMAIC 的课堂体验 + Claude 级 AI 能力
+## 让每个孩子都能获得 OpenMAIC 式课堂体验 + 轻量级 AI 教学能力
 
 > 愿景日期：2026-06-03
 > 教育平台参考：OpenMAIC (https://open.maic.chat/)
 > AI 能力参考：Claude (https://claude.ai/)
-> 核心理念：**本地化 + 低成本 + Claude 级教育能力**
+> 核心理念：**本地化 + 低成本 + 场景化教育能力**（基于已有范式工程改良，非全新范式）
 
 ---
 
@@ -17,10 +17,10 @@
 │   🎯 教育平台：OpenMAIC（清华 L4 级 AI 课堂）                        │
 │   └── 本地化 + 低成本 + 性能不减                                   │
 │                                                                     │
-│   🤖 AI 能力：Claude（Anthropic 最强模型）                          │
-│   └── 教育专精 + 蒸馏到本地                                        │
+│   🤖 AI 能力：本地轻量模型（开源模型微调）                        │
+│   └── 教育场景化适配 + 低配设备可用                                │
 │                                                                     │
-│   🌏 最终愿景：让每个孩子都能获得顶级教育资源                        │
+│   🌏 最终愿景：让每个孩子都能获得高质量教育资源                      │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -41,7 +41,7 @@
 | **白板** | ✅ | ✅ |
 | **测验生成** | ✅ | ✅ |
 | **导出** | ✅ PPT/HTML | ✅ |
-| **多 Provider** | ✅ | ✅ Claude蒸馏 |
+| **多 Provider** | ✅ | ✅ 多模型源（Ollama/API） |
 
 ### 2.2 Claude 核心能力
 
@@ -51,7 +51,7 @@
 | **推理能力** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 | **代码能力** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 | **数学能力** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **教育能力** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ **专精** |
+| **教育能力** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ **场景专精** |
 | **安全对齐** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 | **对话流畅** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 
@@ -62,7 +62,7 @@ Claude 训练成本 ≈ $1000万+（估计）
 我们的预算 ≈ ¥1-10万
 
 差距：1000倍预算
-策略：不是复制 Claude，而是蒸馏 Claude 的"教育能力"
+策略：不复制大模型，而是用大模型 API 辅助构建教学数据，微调本地小模型
 ```
 
 ---
@@ -87,7 +87,7 @@ Claude 训练成本 ≈ $1000万+（估计）
 │           │  LumiLearn Ultimate │                                  │
 │           │  ━━━━━━━━━━━━━━━━━ │                                  │
 │           │  • 本地部署        │                                  │
-│           │  • Claude 级教育   │                                  │
+│           │  • 场景化教育能力  │                                  │
 │           │  • 极低成本运行   │                                  │
 │           └─────────────────────┘                                  │
 │                                                                     │
@@ -99,9 +99,9 @@ Claude 训练成本 ≈ $1000万+（估计）
 ```
 LumiLearn Ultimate
 │
-├── L5: Claude 级 AI 能力（蒸馏）
-│   ├── 教育知识蒸馏
-│   ├── 教学风格蒸馏
+├── L5: 场景化教育能力（轻量模型微调）
+│   ├── 教学数据构建（参考大模型教学风格）
+│   ├── 教学流程适配
 │   └── 对齐优化
 │
 ├── L4: OpenMAIC 课堂功能
@@ -123,7 +123,7 @@ LumiLearn Ultimate
 
 ---
 
-## 四、Claude 级能力获取策略
+## 四、轻量模型教育能力获取策略
 
 ### 4.1 蒸馏 vs 复制
 
@@ -133,29 +133,33 @@ LumiLearn Ultimate
 ├── 需要海量 GPU 集群
 └── 需要顶级 AI 团队
 
-✅ 可行：蒸馏 Claude 的"教育能力"
-├── 使用 Claude API 生成教育数据
-├── 用蒸馏数据微调小模型
+✅ 可行：在已有小模型基础上做场景化教学微调
+├── 使用大模型 API 辅助构建教学数据
+├── 用教学数据微调小模型（LoRA）
 ├── 专注于教育场景
-└── 达到 Claude 80% 的教育能力
+└── 目标是"在低配设备上可用"，而非对标 Claude 能力
 ```
 
 ### 4.2 三阶段蒸馏策略
 
-#### Stage 1: Claude 教育数据生成
+#### Stage 1: 大模型教育数据生成
 
 ```python
-class ClaudeEducationDistiller:
-    """使用 Claude 生成教育蒸馏数据"""
+import os
+import requests
 
-    def __init__(self, claude_api_key):
-        self.client = anthropic.Client(api_key=claude_api_key)
+class LLMEducationDataBuilder:
+    """使用大模型 API 生成教育数据"""
+
+    def __init__(self, llm_api_key):
+        self.api_key = llm_api_key
+        self.endpoint = os.environ.get("LLM_API_ENDPOINT", "http://127.0.0.1:11434/v1")
 
     def generate_education_data(self, topic, difficulty):
         """生成教育导向的问答数据"""
 
         prompts = {
-            "concept_explanation": f"""你是 Claude，一位专业教育家。
+            "concept_explanation": f"""你是一位专业教育家。
             请用简洁有趣的方式解释"{topic}"。
             要求：
             1. 用比喻和例子
@@ -177,16 +181,21 @@ class ClaudeEducationDistiller:
 
         dataset = []
         for task_type, prompt in prompts.items():
-            response = self.client.messages.create(
-                model="claude-opus-4-5",
-                max_tokens=4096,
-                messages=[{"role": "user", "content": prompt}]
+            response = requests.post(
+                f"{self.endpoint}/chat/completions",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json={
+                    "model": "qwen2.5:7b",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 4096,
+                },
             )
+            content = response.json()["choices"][0]["message"]["content"]
             dataset.append({
                 "topic": topic,
                 "type": task_type,
-                "response": response.content[0].text,
-                "teacher": "claude"
+                "response": content,
+                "teacher": "llm"
             })
 
         return dataset
@@ -202,7 +211,7 @@ class ClaudeEducationDistiller:
         return full_dataset
 
 # 使用示例
-distiller = ClaudeEducationDistiller(api_key="sk-ant-...")
+builder = LLMEducationDataBuilder(api_key=os.environ.get("LLM_API_KEY", ""))
 
 # 生成 K12 全科教育数据
 topics = [
@@ -210,9 +219,9 @@ topics = [
     "英语时态", "作文写作", "物理力学"
 ]
 
-dataset = distiller.create_full_dataset(topics)
+dataset = builder.create_full_dataset(topics)
 # 保存为训练数据
-save_distillation_data(dataset, "claude_education_data.json")
+save_training_data(dataset, "llm_education_data.json")
 ```
 
 #### Stage 2: 小模型微调
@@ -315,12 +324,12 @@ class LocalOptimizer:
 
 | 模块 | OpenMAIC | 本地化实现 |
 |------|----------|------------|
-| **AI 教师** | Claude/Qwen | Claude 蒸馏模型 |
+| **AI 教师** | Claude/Qwen | 大模型辅助微调模型 |
 | **AI 同学** | 多 Agent | 简化版多 Agent |
 | **TTS** | VoxCPM2 | 火山引擎/MiniMax |
 | **白板** | React 白板 | 轻量白板库 |
 | **3D 可视化** | Three.js | 可选插件 |
-| **课程生成** | LLM | Claude 蒸馏模型 |
+| **课程生成** | LLM | 大模型辅助数据生成 |
 
 ### 5.2 前端实现（轻量化）
 
@@ -344,7 +353,7 @@ backend_stack = {
     "api": "FastAPI",
     "ai": {
         "local": "llama.cpp HTTP",
-        "cloud": "Claude API（蒸馏阶段）"
+        "cloud": "大模型 API（数据构建阶段）"
     },
     "tts": {
         "local": "Coqui TTS",  # 开源 TTS
@@ -382,11 +391,11 @@ CMD ["python", "/app/main.py"]
 
 ## 六、成本估算
 
-### 6.1 Claude 蒸馏成本
+### 6.1 大模型辅助数据构建成本
 
 | 阶段 | 操作 | 成本 | 说明 |
 |------|------|------|------|
-| 数据生成 | Claude API 调用 | ¥500-1000 | 生成 10K 条教育数据 |
+| 数据生成 | 大模型 API 调用 | ¥500-1000 | 生成 10K 条教育数据 |
 | 微调 | RTX 4090 | ¥0 | 已有的硬件 |
 | 评测 | 人工 | ¥0 | 自己测试 |
 | **总计** | | **¥500-1000** | |
@@ -407,7 +416,7 @@ CMD ["python", "/app/main.py"]
 | 项目 | 成本 | 说明 |
 |------|------|------|
 | 硬件（已有） | ¥0 | R7-7840HS |
-| Claude 蒸馏 | ¥500-1000 | 数据生成 |
+| 大模型辅助数据 | ¥500-1000 | 数据生成 |
 | 云训练（可选） | ¥500/月 | RTX 4090 云服务器 |
 | 内容制作 | ¥0 | 使用现有 LumiLearn |
 | **总计** | **¥500-1000** | 极低成本 |
@@ -416,16 +425,16 @@ CMD ["python", "/app/main.py"]
 
 ## 七、里程碑
 
-### 7.1 阶段一：Claude 教育蒸馏（2026.6-8）
+### 7.1 阶段一：大模型辅助数据构建（2026.6-8）
 
 ```
 Month 1: 准备
 ├── 收集 K12 全科知识点
 ├── 设计教育数据格式
-└── Claude API 接入测试
+└── 大模型 API 接入测试
 
 Month 2: 生成数据
-├── 生成 10K 条教育蒸馏数据
+├── 生成 10K 条教育数据
 ├── 质量审核
 └── 数据清洗
 
@@ -506,7 +515,7 @@ LumiLearn Ultimate 独特优势
 ├── 完全本地部署（隐私、安全）
 ├── 极低成本运行（无 API 费用）
 ├── 离线可用（无网络也能用）
-├── 教育专精（超过 Claude 的教育能力）
+├── 教育场景适配（面向国内数理化自学流程）
 └── 完全可控（可定制、可优化）
 ```
 
@@ -520,7 +529,7 @@ LumiLearn Ultimate 独特优势
 |------|----------|------|
 | **前端** | Next.js + shadcn/ui | 现代、响应式 |
 | **后端** | FastAPI + SQLite | 轻量、可靠 |
-| **AI** | Qwen2.5 + Claude 蒸馏 | Claude 级能力 |
+| **AI** | Qwen2.5 + 场景化教学微调 | 轻量可用能力 |
 | **推理** | llama.cpp | 高效本地推理 |
 | **TTS** | Coqui / 火山引擎 | 语音输出 |
 | **白板** | @usequill/quill | 轻量白板 |
@@ -543,13 +552,13 @@ LumiLearn Ultimate 独特优势
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                                                                     │
-│   OpenMAIC 的课堂能力                                               │
+│   OpenMAIC 的课堂范式能力                                │
 │          +                                                          │
-│   Claude 的 AI 能力                                                 │
+│   轻量级教育 AI 能力                                                │
 │          =                                                          │
 │   LumiLearn Ultimate                                               │
 │                                                                     │
-│   本地化 + 低成本 + Claude 级教育能力                               │
+│   本地化 + 低成本 + 场景化教育能力                                  │
 │                                                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -557,8 +566,8 @@ LumiLearn Ultimate 独特优势
 ### 10.2 行动路线
 
 ```
-阶段一：Claude 教育蒸馏（2026.6-8）
-├── 生成教育蒸馏数据
+阶段一：大模型辅助数据构建（2026.6-8）
+├── 生成教育数据
 └── 微调小模型
 
 阶段二：OpenMAIC 本地化（2026.9-12）
@@ -574,7 +583,7 @@ LumiLearn Ultimate 独特优势
 
 ### 10.3 最终愿景
 
-> **让每个孩子，无论身在何处、设备如何，都能获得 OpenMAIC 的课堂体验 + Claude 级的 AI 教育能力**
+> **让每个孩子，无论身在何处、设备如何，都能获得 OpenMAIC 式课堂体验 + 轻量级 AI 教学能力**（注：目标愿景，实际能力受本地模型上限约束，详见项目局限声明）
 
 ---
 
