@@ -290,3 +290,23 @@ docker compose logs -f api
 | **安全系统** | 安全网关 / 防火墙 / 代码沙箱 / 上传校验（framework/security/） | ✅ 可用 |
 | **Web 应用** | 学生端 / 教师端 / Admin 管理 / 学习分析仪表盘 | ✅ 可用 |
 | **部署** | Docker Compose / 一键脚本（deploy/）/ 远程部署（scripts/deploy_remote.py） | ✅ 可用 |
+
+## ⚠️ 系统局限性与未来规划
+
+### 当前局限
+
+- **自研模型能力上限**：8M 参数自研 Transformer 适合演示；实际教学推荐 lumilearn-v2（1.5B）或 qwen2.5:7b
+- **评测规模有限**：当前 150 题自动化评测反映种子知识库规模较小；未进行大规模真实课堂试验
+- **学科覆盖**：聚焦数理化，语文、英语等其他学科暂不支持
+- **Skills 插件**：部分技能模块（hyperframes / rtk）为设计文档阶段，未接入主流程
+- **并发测试**：未做高并发压力测试，多用户同时使用时响应时间可能延长
+
+### 完整风险声明
+
+详见 [RISK-STATEMENT.md](RISK-STATEMENT.md)，包含 AI 幻觉风险、教育适用边界、隐私说明、模型依赖风险等完整披露。
+
+### 未来规划
+
+- **V3**：扩充学科（语文/英语/生物），接入真实用户试用反馈，完善 Skills 插件生态
+- **V4**：探索多模态（图文混排教学）、离线语音交互、跨设备学习同步
+- 详细路线见 [docs/runtime-roadmap/spec.md](docs/runtime-roadmap/spec.md)
