@@ -17,7 +17,7 @@
 |---|---|---|
 | ① 标准化测试集评测 | 固定数理题样例，对比 8M 自研模型 vs Qwen-7B 答题正确率；对比开启/关闭双路事实校验的幻觉错误率 | `docs/comparative-model-eval.md` |
 | ② CPU 低配性能基准 | 普通笔记本环境下，Agent 链路平均耗时、失败率、内存占用；客观写明性能短板，不回避延迟 | ✅ 已有 `docs/performance-benchmark.md` |
-| ③ 小规模真实用户证据 | 10-15 名中学生试用，问卷反馈摘要 + 使用记录截图 | `docs/USER_TEST_REPORT.md`（新增）|
+| ③ 小规模真实用户证据 | 10-15 名中学生试用，问卷反馈摘要 + 使用记录截图 | ✅ 已有 `docs/USER_TEST_REPORT.md`（12 人内测）|
 | ④ 差异化对标文档 | 明确与 OpenMAIC 的定位差异：OpenMAIC 做沉浸虚拟课堂，LumiLearn 做课后自学 + 学情管理 | `docs/COMPARISON_WITH_OPENMAIC.md`（新增）|
 | ⑤ 安全伦理声明定稿 | AI 幻觉风险、数据隐私、AI 辅助开发边界三者完整披露 | ✅ 已有 `RISK-STATEMENT.md` + `AI-DECLARATION.md` |
 
