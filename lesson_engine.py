@@ -526,6 +526,29 @@ class LessonController:
 # ============================================================
 # HTTP API 服务器（供 OBS 浏览器源调用）
 # ============================================================
+def _lesson_cors_origins() -> list:
+    """CORS 白名单（与 framework/api/server.py 保持一致）。
+
+    - 优先读取环境变量 CORS_ALLOWED_ORIGINS（逗号分隔）；
+    - 默认放行本机各端口（localhost/127.0.0.1 + 局域网 IP）；
+    - 不使用 `*` 通配，避免任意网站跨域调用本服务。
+    """
+    raw = os.environ.get("CORS_ALLOWED_ORIGINS", "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    hosts = {"localhost", "127.0.0.1"}
+    try:
+        import socket as _socket
+        s = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        hosts.add(s.getsockname()[0])
+        s.close()
+    except Exception:
+        pass
+    local_ports = (8766, 5000, 5001, 5010, 18080, 18081, 18082, 18090)
+    return [f"http://{h}:{p}" for h in sorted(hosts) for p in local_ports]
+
+
 def start_api_server(port: int = 8766):
     """启动 HTTP API 服务器"""
     from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -633,7 +656,12 @@ def start_api_server(port: int = 8766):
         def _json(self, data, code=200):
             self.send_response(code)
             self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
+            # CORS：仅放行白名单 Origin（无 Origin 视为同源请求）
+            origin = self.headers.get("Origin", "")
+            if origin and origin in _lesson_cors_origins():
+                self.send_header("Access-Control-Allow-Origin", origin)
+                self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
             self.end_headers()
             self.wfile.write(_json.dumps(data, ensure_ascii=False).encode("utf-8"))
 

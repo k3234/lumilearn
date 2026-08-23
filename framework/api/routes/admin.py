@@ -205,12 +205,14 @@ def admin_create_user():
     username = data.get("username", "")
     password = data.get("password", "")
     if not name:
-        return jsonify({"error": "缺少 name 字段"}), 400
-    if not password or len(password) < 4:
-        return jsonify({"error": "密码不能为空且至少4位"}), 400
+        return jsonify({"success": False, "code": 400, "error": "缺少 name 字段"}), 400
+    if not password or len(password) < 8:
+        return jsonify({"success": False, "code": 400, "error": "密码不能为空且至少8位"}), 400
+    if not any(c.isupper() for c in password) or not any(c.isdigit() for c in password):
+        return jsonify({"success": False, "code": 400, "error": "密码需包含大写字母和数字"}), 400
     # 检查用户名是否已存在
     if db.get_user_by_username(username or name):
-        return jsonify({"error": f"用户名 '{username or name}' 已存在"}), 400
+        return jsonify({"success": False, "code": 400, "error": f"用户名 '{username or name}' 已存在"}), 400
     user = db.add_user(name, role=role, username=username, password=password)
     db.add_system_log("info", "admin", f"管理员创建用户: {name} ({role})")
     return jsonify({"success": True, "user": user})

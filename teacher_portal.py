@@ -346,8 +346,10 @@ def api_create_student():
     password = data.get("password", "").strip()
     if not name:
         return jsonify({"success": False, "error": "请输入学生姓名"}), 400
-    if not password or len(password) < 4:
-        return jsonify({"success": False, "error": "密码不能为空且至少4位"}), 400
+    if not password or len(password) < 8:
+        return jsonify({"success": False, "error": "密码不能为空且至少8位"}), 400
+    if not any(c.isupper() for c in password) or not any(c.isdigit() for c in password):
+        return jsonify({"success": False, "error": "密码需包含大写字母和数字"}), 400
     if db.get_user_by_username(username or name):
         return jsonify({"success": False, "error": f"用户名 '{username or name}' 已存在"}), 400
     user = db.add_user(name, role="student", username=username, password=password)
