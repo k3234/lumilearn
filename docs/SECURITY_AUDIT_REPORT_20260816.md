@@ -21,7 +21,7 @@ LumiLearn 是一个功能丰富的教育智能体系统，后端能力扎实（�
 |:---|:---|:---|:---|:---|
 | C-1 | 代码沙箱任意代码执行 | Critical | ✅ 已修复 | AST 拦截裸调用+属性链逃逸；`allowed_builtins` 仅保留纯计算函数；移除二次 exec 通道；`threading.Thread` 真超时；`execute_code` 加 `@require_admin`；`user_id` 改服务端生成 |
 | C-2 | 模型训练端点命令注入 | Critical | ✅ 已修复 | `trigger_training`/`switch_model`/`compare_models` 加 `@require_admin`；API 层 `_validate_training_params` 正则白名单；`train_lumilearn.sh` 纵深校验（名称/学科/整数） |
-| C-3 | 默认超级管理员 `admin/admin123` | Critical | ✅ 已修复 | 初始密码改环境变量或随机生成；`must_change_password` 强制改密；存量 `admin123` 登录自动触发强制改密；改密最小 6 位；全部运维脚本硬编码口令/IP 清除并改环境变量 |
+| C-3 | 默认超级管理员账号使用弱口令 | Critical | ✅ 已修复 | 初始密码改环境变量或随机生成；`must_change_password` 强制改密；存量账号登录自动触发强制改密；改密最小 6 位；全部运维脚本硬编码口令/IP 清除并改环境变量 |
 | H-1 | SECRET_KEY 硬编码默认值 | High | ✅ 已修复 | 新增 `get_app_secret_key`（fail-closed）：生产缺失环境变量拒绝启动，非生产随机生成；三入口 + `.env.example` 更新 |
 | H-2 | 前端 XSS | High | ✅ 已修复 | 6 个模板统一 `esc()`（含单引号转义）；innerHTML 动态插值全部包裹；animation_learn 的 onclick 字符串注入改 data-* + addEventListener；修复遗漏的 err.message 反射路径 |
 | H-3 | CORS 全通配 | High | ✅ 已修复 | `Access-Control-Allow-Origin` 由 `*` 改为白名单回显（环境变量 `CORS_ALLOWED_ORIGINS`）；server.py/lesson_engine/配置默认值同步 |
@@ -84,14 +84,14 @@ LumiLearn 是一个功能丰富的教育智能体系统，后端能力扎实（�
 
 ---
 
-### C-3 默认超级管理员账号 `admin/admin123`
+### C-3 默认超级管理员账号弱口令问题
 
 | 项目 | 内容 |
 |:---|:---|
 | **位置** | [auth.py](file:///e:/学习LLM/lumilearn/framework/admin/auth.py#L33-L43) `_ensure_default_admin()` |
 | **严重性** | Critical |
 
-**证据**：首次运行自动创建密码为 `admin123` 的超级管理员（公开弱口令）。[admin.py:27-37](file:///e:/学习LLM/lumilearn/framework/api/routes/admin.py#L27-L37) 登录端点**无速率限制/锁定**，可被在线暴力破解。超级管理员可访问全部 60+ 管理端点（用户管理、API Key、模型/Agent 管理、数据导出）。
+**证据**：首次运行自动创建密码为 `[REDACTED]` 的超级管理员（公开弱口令）。[admin.py:27-37](file:///e:/学习LLM/lumilearn/framework/api/routes/admin.py#L27-L37) 登录端点**无速率限制/锁定**，可被在线暴力破解。超级管理员可访问全部 60+ 管理端点（用户管理、API Key、模型/Agent 管理、数据导出）。
 
 **影响**：部署后未改密即被接管整个系统。
 
@@ -226,7 +226,7 @@ LumiLearn 是一个功能丰富的教育智能体系统，后端能力扎实（�
 全部 SQL 使用参数化 `?` 占位符；f-string 动态列名均来自硬编码白名单（database.py 多处），值全走参数化。审计确认**安全**。
 
 ### L-4 硬编码管理员口令的运维脚本
-[scripts/_deploy_feynman_flow.py:91](file:///e:/学习LLM/lumilearn/scripts/_deploy_feynman_flow.py) 硬编码 `admin/admin123` 走 SSH。本地运维脚本，建议改为环境变量。
+[scripts/_deploy_feynman_flow.py:91](file:///e:/学习LLM/lumilearn/scripts/_deploy_feynman_flow.py) 硬编码 `[REDACTED_CREDS]` 走 SSH。本地运维脚本，建议改为环境变量。
 
 ### L-5 敏感信息泄漏 — **基本未发现**
 `.env` 未被 git 追踪；`.gitignore` 已覆盖 `.env`/`*.db`/`*.key` 等；密码使用 `generate_password_hash` 存储；`session[...]` 仅存 `user_id`。测试脚本打印 API Key 前 8 位（已截断）。**符合预期**。

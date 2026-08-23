@@ -275,6 +275,7 @@ scripts/record_screen.py
 # ============================================
 .github_token
 *.token
+admin-token.txt
 *SSH_KEY*
 *.pem
 *.key
