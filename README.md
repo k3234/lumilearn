@@ -279,6 +279,7 @@ docker compose logs -f api
 | [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献指南 |
 | [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
 | [docs/SECURITY_LOCAL_AUDIT_20260817.md](docs/SECURITY_LOCAL_AUDIT_20260817.md) | 本地安全审计报告 |
+| [docs/ZERO_BASE_SETUP_GUIDE.md](docs/ZERO_BASE_SETUP_GUIDE.md) | 零基础用户配置指南（Windows，15分钟上手） |
 
 ## 核心模块
 
