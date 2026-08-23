@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="380" viewBox="0 0 700 380">
+<rect width="700" height="380" fill="#fafafa"/>
+<text x="350" y="24" text-anchor="middle" font-family="system-ui" font-size="15" font-weight="bold" fill="#111">图2: 关键API延迟分布对比 (ms)</text>
+<text x="84" y="66" text-anchor="end" font-family="system-ui" font-size="11" fill="#333">登录 /api/login</text>
+<line x1="316.4907462686567" y1="62" x2="566.0" y2="62" stroke="#999" stroke-width="1.5"/>
+<circle cx="316.4907462686567" cy="62" r="3" fill="#999"/>
+<circle cx="566.0" cy="62" r="3" fill="#999"/>
+<rect x="486.99820895522384" y="54" width="19.32417910447765" height="16" fill="#2563eb" opacity="0.7" rx="2"/>
+<line x1="486.99820895522384" y1="52" x2="486.99820895522384" y2="72" stroke="#111" stroke-width="2"/>
+<circle cx="554.9170149253731" cy="62" r="3" fill="#2563eb"/>
+<text x="316.4907462686567" y="80" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">min:80</text>
+<text x="486.99820895522384" y="80" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="bold" fill="#111">P50:140</text>
+<text x="506.3223880597015" y="80" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">P90:146</text>
+<text x="566.0" y="80" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">max:168</text>
+<text x="84" y="151" text-anchor="end" font-family="system-ui" font-size="11" fill="#333">学习 /api/learn</text>
+<line x1="108.51002865329512" y1="147" x2="566.0" y2="147" stroke="#999" stroke-width="1.5"/>
+<circle cx="108.51002865329512" cy="147" r="3" fill="#999"/>
+<circle cx="566.0" cy="147" r="3" fill="#999"/>
+<rect x="135.49570200573066" y="139" width="3.7020057306590104" height="16" fill="#16a34a" opacity="0.7" rx="2"/>
+<line x1="135.49570200573066" y1="137" x2="135.49570200573066" y2="157" stroke="#111" stroke-width="2"/>
+<circle cx="308.8080229226361" cy="147" r="3" fill="#16a34a"/>
+<text x="108.51002865329512" y="165" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">min:19</text>
+<text x="135.49570200573066" y="165" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="bold" fill="#111">P50:47</text>
+<text x="139.19770773638967" y="165" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">P90:50</text>
+<text x="566.0" y="165" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">max:489</text>
+<text x="84" y="236" text-anchor="end" font-family="system-ui" font-size="11" fill="#333">聊天 /api/chat</text>
+<line x1="247.67499999999998" y1="232" x2="566.0" y2="232" stroke="#999" stroke-width="1.5"/>
+<circle cx="247.67499999999998" cy="232" r="3" fill="#999"/>
+<circle cx="566.0" cy="232" r="3" fill="#999"/>
+<rect x="385.51666666666665" y="224" width="14.875" height="16" fill="#ca8a04" opacity="0.7" rx="2"/>
+<line x1="385.51666666666665" y1="222" x2="385.51666666666665" y2="242" stroke="#111" stroke-width="2"/>
+<circle cx="546.1666666666666" cy="232" r="3" fill="#ca8a04"/>
+<text x="247.67499999999998" y="250" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">min:16</text>
+<text x="385.51666666666665" y="250" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="bold" fill="#111">P50:30</text>
+<text x="400.39166666666665" y="250" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">P90:31</text>
+<text x="566.0" y="250" text-anchor="middle" font-family="system-ui" font-size="9" fill="#666">max:48</text>
+</svg>

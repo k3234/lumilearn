@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="400" viewBox="0 0 720 400">
+<rect width="720" height="400" fill="#fafafa"/>
+<text x="360" y="24" text-anchor="middle" font-family="system-ui" font-size="15" font-weight="bold" fill="#111">图3: 500用户学科分布 (N=500)</text>
+<path d="M 200 210 L 340.0 210.0 A 140 140 0 0 1 298.3709957718389 309.61499480929996 Z" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+<text x="352.24100207856895" y="273.62135872577045" text-anchor="middle" font-family="system-ui" font-size="11" fill="#333">数学 63</text>
+<path d="M 200 210 L 298.3709957718389 309.61499480929996 A 140 140 0 0 1 198.24075441633062 349.9889461885342 Z" fill="#16a34a" stroke="#fff" stroke-width="2"/>
+<text x="261.7032689467371" y="363.0284503002191" text-anchor="middle" font-family="system-ui" font-size="11" fill="#333">语文 63</text>
+<path d="M 200 210 L 198.24075441633062 349.9889461885342 A 140 140 0 0 1 99.15673651569307 307.11146281379274 Z" fill="#ca8a04" stroke="#fff" stroke-width="2"/>
+<text x="134.47059804526117" y="361.4295132378569" text-anchor="middle" font-family="system-ui" font-size="11" fill="#333">英语 63</text>
+<path d="M 200 210 L 99.15673651569307 307.11146281379274 A 140 140 0 0 1 60.044213500338 206.48178663793274 Z" fill="#dc2626" stroke="#fff" stroke-width="2"/>
+<text x="46.20826644439521" y="269.77543550625006" text-anchor="middle" font-family="system-ui" font-size="11" fill="#333">物理 63</text>
+<path d="M 200 210 L 60.044213500338 206.48178663793274 A 140 140 0 0 1 102.88853718620726 109.15673651569307 Z" fill="#7c3aed" stroke="#fff" stroke-width="2"/>
+<text x="48.98520651754859" y="143.5204381072457" text-anchor="middle" font-family="system-ui" font-size="11" fill="#333">化学 62</text>
+<path d="M 200 210 L 102.88853718620726 109.15673651569307 A 140 140 0 0 1 201.75924558366924 70.01105381146576 Z" fill="#db2777" stroke="#fff" stroke-width="2"/>
+<text x="139.25944880702804" y="56.586879828438555" text-anchor="middle" font-family="system-ui" font-size="11" fill="#333">生物 62</text>
+<path d="M 200 210 L 201.75924558366924 70.01105381146576 A 140 140 0 0 1 299.6149948092999 111.62900422816105 Z" fill="#0891b2" stroke="#fff" stroke-width="2"/>
+<text x="264.57665502813836" y="58.16174518463137" text-anchor="middle" font-family="system-ui" font-size="11" fill="#333">历史 62</text>
+<path d="M 200 210 L 299.6149948092999 111.62900422816105 A 140 140 0 0 1 340.0 209.99999999999983 Z" fill="#65a30d" stroke="#fff" stroke-width="2"/>
+<text x="352.63773912768556" y="147.33644923890267" text-anchor="middle" font-family="system-ui" font-size="11" fill="#333">地理 62</text>
+<rect x="400" y="80" width="14" height="14" fill="#2563eb" rx="2"/>
+<text x="420" y="92" text-anchor="start" font-family="system-ui" font-size="12" fill="#333">数学: 63 (12.6%)</text>
+<rect x="400" y="104" width="14" height="14" fill="#16a34a" rx="2"/>
+<text x="420" y="116" text-anchor="start" font-family="system-ui" font-size="12" fill="#333">语文: 63 (12.6%)</text>
+<rect x="400" y="128" width="14" height="14" fill="#ca8a04" rx="2"/>
+<text x="420" y="140" text-anchor="start" font-family="system-ui" font-size="12" fill="#333">英语: 63 (12.6%)</text>
+<rect x="400" y="152" width="14" height="14" fill="#dc2626" rx="2"/>
+<text x="420" y="164" text-anchor="start" font-family="system-ui" font-size="12" fill="#333">物理: 63 (12.6%)</text>
+<rect x="400" y="176" width="14" height="14" fill="#7c3aed" rx="2"/>
+<text x="420" y="188" text-anchor="start" font-family="system-ui" font-size="12" fill="#333">化学: 62 (12.4%)</text>
+<rect x="400" y="200" width="14" height="14" fill="#db2777" rx="2"/>
+<text x="420" y="212" text-anchor="start" font-family="system-ui" font-size="12" fill="#333">生物: 62 (12.4%)</text>
+<rect x="400" y="224" width="14" height="14" fill="#0891b2" rx="2"/>
+<text x="420" y="236" text-anchor="start" font-family="system-ui" font-size="12" fill="#333">历史: 62 (12.4%)</text>
+<rect x="400" y="248" width="14" height="14" fill="#65a30d" rx="2"/>
+<text x="420" y="260" text-anchor="start" font-family="system-ui" font-size="12" fill="#333">地理: 62 (12.4%)</text>
+</svg>
