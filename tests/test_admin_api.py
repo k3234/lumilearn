@@ -61,7 +61,7 @@ class TestAdminAPI(unittest.TestCase):
     def test_create_and_delete_user(self):
         token = self._login()
         resp = self.client.post("/api/admin/users",
-                                json={"name": "API测试用户", "role": "student", "password": "test123"},
+                                json={"name": "API测试用户", "role": "student", "password": "Test1234"},
                                 headers={"X-Admin-Token": token})
         self.assertEqual(resp.status_code, 200)
         user_id = resp.get_json()["user"]["id"]

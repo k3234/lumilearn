@@ -163,8 +163,10 @@ class AdminAuth:
         if not check_password_hash(admin["password_hash"], old_password):
             return {"success": False, "error": "原密码错误"}
         # 强制改密场景（must_change_password=1）要求新密码满足最小强度
-        if not new_password or len(new_password) < 6:
-            return {"success": False, "error": "新密码长度至少 6 位"}
+        if not new_password or len(new_password) < 8:
+            return {"success": False, "error": "新密码长度至少 8 位"}
+        if not any(c.isupper() for c in new_password) or not any(c.isdigit() for c in new_password):
+            return {"success": False, "error": "新密码需包含大写字母和数字"}
         db.update_admin_password(admin_id, generate_password_hash(new_password))
         db.set_admin_must_change_password(admin_id, False)
         return {"success": True, "message": "密码修改成功"}

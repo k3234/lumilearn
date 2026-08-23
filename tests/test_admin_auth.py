@@ -52,11 +52,11 @@ class TestAdminAuth(unittest.TestCase):
 
     def test_change_password_and_login(self):
         admin = db.get_admin_by_username("admin")
-        result = self.auth.change_password(admin["id"], "admin123", "newpass456")
+        result = self.auth.change_password(admin["id"], "admin123", "NewPass123")
         self.assertTrue(result["success"])
 
         # 新密码可登录
-        login = self.auth.login("admin", "newpass456")
+        login = self.auth.login("admin", "NewPass123")
         self.assertTrue(login["success"])
 
         # 旧密码失效
@@ -64,7 +64,7 @@ class TestAdminAuth(unittest.TestCase):
         self.assertFalse(failed["success"])
 
         # 还原密码
-        self.auth.change_password(admin["id"], "newpass456", "admin123")
+        self.auth.change_password(admin["id"], "NewPass123", "admin123")
 
 
 if __name__ == "__main__":

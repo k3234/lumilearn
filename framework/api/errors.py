@@ -26,16 +26,16 @@ def register_error_handlers(app):
     @app.errorhandler(404)
     def _handle_not_found(e):  # noqa: ANN001 - Flask 传入 HTTPException
         if request.path.startswith("/api/"):
-            return jsonify({"error": "资源不存在", "code": 404}), 404
+            return jsonify({"success": False, "code": 404, "error": "资源不存在"}), 404
         try:
             return render_template("404.html"), 404
         except Exception:
-            return jsonify({"error": "资源不存在", "code": 404}), 404
+            return jsonify({"success": False, "code": 404, "error": "资源不存在"}), 404
 
     @app.errorhandler(500)
     def _handle_internal_error(e):  # noqa: ANN001 - Flask 传入异常
         logger.error("服务器内部错误 %s %s: %s",
                      request.method, request.path, e, exc_info=True)
-        return jsonify({"error": "服务器内部错误，请稍后重试", "code": 500}), 500
+        return jsonify({"success": False, "code": 500, "error": "服务器内部错误，请稍后重试"}), 500
 
     return app

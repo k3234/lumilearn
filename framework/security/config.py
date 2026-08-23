@@ -52,7 +52,7 @@ class GatewayConfig:
         "X-API-Key",
     ])
     cors_enabled: bool = True
-    cors_origins: List[str] = field(default_factory=lambda: ["*"])
+    cors_origins: List[str] = field(default_factory=lambda: ["http://localhost:5000", "http://127.0.0.1:5000"])
     cors_methods: List[str] = field(default_factory=lambda: [
         "GET", "POST", "PUT", "DELETE", "OPTIONS"
     ])

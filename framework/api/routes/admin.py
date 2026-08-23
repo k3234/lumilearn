@@ -222,8 +222,10 @@ def admin_reset_user_password(user_id):
     """重置学生/教师用户密码"""
     data = request.get_json(force=True) or {}
     new_password = data.get("password", "")
-    if not new_password or len(new_password) < 4:
-        return jsonify({"error": "密码不能为空且至少4位"}), 400
+    if not new_password or len(new_password) < 8:
+        return jsonify({"success": False, "code": 400, "error": "密码不能为空且至少8位"}), 400
+    if not any(c.isupper() for c in new_password) or not any(c.isdigit() for c in new_password):
+        return jsonify({"success": False, "code": 400, "error": "密码需包含大写字母和数字"}), 400
     user = db.get_user(user_id)
     if not user:
         return jsonify({"error": "用户不存在"}), 404
@@ -876,8 +878,10 @@ def admin_create_admin():
     role = data.get("role", "operator")
     if not username or not password:
         return jsonify({"error": "用户名和密码不能为空"}), 400
-    if len(password) < 6:
-        return jsonify({"error": "密码至少 6 位"}), 400
+    if len(password) < 8:
+        return jsonify({"success": False, "code": 400, "error": "密码至少 8 位"}), 400
+    if not any(c.isupper() for c in password) or not any(c.isdigit() for c in password):
+        return jsonify({"success": False, "code": 400, "error": "密码需包含大写字母和数字"}), 400
     if role not in ("super_admin", "operator"):
         return jsonify({"error": "角色只能是 super_admin 或 operator"}), 400
     if db.get_admin_by_username(username):

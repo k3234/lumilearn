@@ -30,7 +30,9 @@ def _decode_image_from_base64(b64_data: str, filename: str) -> bytes:
         raise ValueError("图片数据 base64 解码失败")
     # 用虚拟 FileStorage 做文件名和扩展名校验
     fs = FileStorage(stream=io.BytesIO(raw), filename=filename, content_type="image/png")
-    validate_upload_file(fs, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
+    ok, err = validate_upload_file(fs, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_BYTES)
+    if not ok:
+        raise ValueError(err)
     return raw
 
 

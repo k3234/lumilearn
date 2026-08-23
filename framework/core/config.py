@@ -36,7 +36,7 @@ def load_config(config_path: str = None) -> Dict[str, Any]:
             "timeout": 300
         },
         "models": {"providers": {}},
-        "security": {"api_key_required": False, "allowed_origins": ["*"]}
+        "security": {"api_key_required": False, "allowed_origins": ["http://localhost:5000", "http://127.0.0.1:5000"]}
     }
     if os.path.exists(config_path):
         try:

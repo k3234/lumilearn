@@ -826,6 +826,7 @@ function renderStudents() {
       <td>${s.report_count}</td>
       <td><span class="badge ${((s.stats || {}).accuracy || 0) >= 70 ? 'badge-green' : ((s.stats || {}).accuracy || 0) >= 50 ? 'badge-orange' : 'badge-red'}">${(s.stats || {}).accuracy || 0}%</span></td>
       <td>
+        <button class="btn btn-primary btn-sm" onclick="viewStudentScores(${s.id}, '${esc(s.name)}')">成绩</button>
         <button class="btn btn-ghost btn-sm" onclick="openStudentModal(${s.id}, '${esc(s.name)}')">详情</button>
         <button class="btn btn-ghost btn-sm" onclick="openReasoningForStudent(${s.id}, '${esc(s.name)}')">推理记录</button>
         <button class="btn btn-ghost btn-sm" onclick="resetPassword(${s.id}, '${esc(s.name)}')">重置密码</button>
@@ -855,6 +856,30 @@ async function resetPassword(userId, name) {
   if (!pwd) return;
   const d = await api(`/api/students/${userId}/password`, 'POST', { password: pwd });
   if (d.success) toast('密码已重置');
+}
+
+// ═══════════ 学生成绩直查 ═══════════
+async function viewStudentScores(userId, name) {
+  const d = await api(`/api/students/${userId}/stats`);
+  const acc = d.accuracy || 0;
+  const modalContent = `
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
+      <div class="stat-card"><div class="num">${d.total_answers || 0}</div><div class="label">总答题</div></div>
+      <div class="stat-card"><div class="num" style="color:${acc >= 70 ? '#16a34a' : acc >= 50 ? '#ea580c' : '#dc2626'}">${acc}%</div><div class="label">正确率</div></div>
+      <div class="stat-card"><div class="num">${d.total_sessions || 0}</div><div class="label">学习会话</div></div>
+      <div class="stat-card"><div class="num">${d.total_time_minutes || 0}</div><div class="label">累计分钟</div></div>
+    </div>
+    <div class="mt-3">
+      <div class="card-title">⚠️ 薄弱知识点</div>
+      ${(d.weak_topics || []).length ? d.weak_topics.map(w => `
+        <div class="flex between" style="padding:8px 0;border-bottom:1px solid #f8fafc;">
+          <span style="font-size:13px;">${esc(w.topic)}</span>
+          <span><span class="badge badge-red">错误率 ${Math.round(w.error_rate * 100)}%</span></span>
+        </div>`).join('') : '<div class="empty">暂无薄弱知识点</div>'}
+    </div>`;
+  $('resourceModalTitle').textContent = `📊 成绩 — ${name}`;
+  $('resourceModalContent').innerHTML = modalContent;
+  $('resourceModal').classList.add('active');
 }
 
 // ═══════════ 学生详情 ═══════════

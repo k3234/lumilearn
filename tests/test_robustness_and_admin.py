@@ -203,7 +203,7 @@ admin_results.append(("日志管理", logs_ok))
 # 2.10 修改密码
 print("\n  [2.10] 修改密码")
 resp = admin_request("POST", "/api/admin/password",
-                     {"old_password": "admin123", "new_password": "admin123"}, token=token)
+                     {"old_password": "admin123", "new_password": "Admin12345"}, token=token)
 change_pwd_ok = resp.status_code == 200
 print(f"     修改密码: {'✅' if change_pwd_ok else '❌'} (HTTP {resp.status_code})")
 admin_results.append(("修改密码", change_pwd_ok))

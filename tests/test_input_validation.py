@@ -52,9 +52,9 @@ def goai_client():
 
 def _login_goai(client):
     """创建测试学生并登录（session 认证，供 learn/search 接口使用）。"""
-    db.add_user("接口测试学生", role="student", username="stu_api", password="test123")
+    db.add_user("接口测试学生", role="student", username="stu_api", password="Test1234")
     resp = client.post("/api/auth/login",
-                       json={"username": "stu_api", "password": "test123"})
+                       json={"username": "stu_api", "password": "Test1234"})
     assert resp.status_code == 200, resp.get_data(as_text=True)
 
 

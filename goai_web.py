@@ -18,6 +18,8 @@ API端点：
 import json
 import os
 import sys
+import urllib.request
+import urllib.error
 from datetime import datetime
 from pathlib import Path
 
@@ -603,6 +605,62 @@ def _send_proto(filename):
         from flask import Response
         return Response(html, mimetype="text/html; charset=utf-8")
     return send_from_directory(PROTO_DIR, safe)
+
+
+# ============================================================
+# 统一端口代理（将 18080/18081/18082 服务通过 /proxy/ 前缀聚合到主端口）
+# ============================================================
+_PROXY_PORTS = {
+    "terminal": 18080,    # 框架终端
+    "api-gateway": 18081, # REST API
+    "model-manager": 18082,  # 模型管理
+}
+
+
+@app.route('/proxy/<service>/<path:sub_path>')
+def proxy_route(service, sub_path):
+    """将 /proxy/{service}/xxx 转发到对应端口的 /xxx"""
+    if service not in _PROXY_PORTS:
+        return jsonify({"success": False, "error": "未知服务"}), 404
+    target_port = _PROXY_PORTS[service]
+    target_url = f"http://127.0.0.1:{target_port}/{sub_path}"
+
+    headers = {k: v for k, v in request.headers if k.lower() not in ("host", "transfer-encoding")}
+    headers["X-Forwarded-Host"] = request.host
+    headers["X-Forwarded-Proto"] = request.scheme
+
+    try:
+        data = request.get_data()
+        req = urllib.request.Request(
+            target_url,
+            data=data or None,
+            method=request.method,
+            headers=headers,
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            body = resp.read()
+            resp_headers = dict(resp.headers)
+            resp_headers.pop("Transfer-Encoding", None)
+            resp_headers.pop("Content-Encoding", None)
+            from flask import Response
+            return Response(body, status=resp.status, content_type=resp_headers.get("Content-Type", "application/octet-stream"))
+    except urllib.error.HTTPError as e:
+        return jsonify({"success": False, "error": f"代理服务错误: {e.code}", "message": str(e.read() or "")}), e.code
+    except Exception as e:
+        return jsonify({"success": False, "error": f"代理服务不可用（{service} 端口 {target_port}）: {e}"}), 502
+
+
+@app.route('/proxy/')
+def proxy_index():
+    """统一代理入口：列出所有可用子服务"""
+    return jsonify({
+        "success": True,
+        "proxies": {
+            name: f"http://localhost:{_get_goai_port()}/proxy/{name}/"
+            for name, port in _PROXY_PORTS.items()
+        },
+        "help": "将请求路径中的 /proxy/{service}/ 替换为原始路径转发到对应端口",
+    })
 
 
 # ============================================================

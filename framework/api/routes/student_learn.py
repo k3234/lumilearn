@@ -295,13 +295,47 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
         data = request.get_json() or {}
         sid = _sid(data.get("sessionId"))
         text = (data.get("text") or "").strip()
+        sess = conv_store.get_session(sid) if sid else None
+        topic = (sess["title"] if sess else "").strip() or (data.get("topic") or "").strip() or "学习主题"
 
-        # 启发式评分（真实环境可替换为输出检测 Agent 五维评分）
-        length = len(text)
-        score = 62 if length < 20 else (78 if length < 60 else 88)
-        verdict = ("讲解清晰，能用自己的话讲明白" if score >= 80
-                   else "基本合格，再具体一些会更好" if score >= 70
-                   else "建议补充一个具体例子再讲一遍")
+        # 尝试使用 OutputDetector 进行 AI 语义评分（失败时自动降级）
+        score, verdict, feedback = None, None, None
+        try:
+            from framework.output_detector import OutputDetector
+            detector = OutputDetector(user_id=user["id"])
+            result = detector.run_detection(topic, text)
+            score = getattr(result, "total_score", None)
+            if score is None or score < 0:
+                raise ValueError("detector returned invalid score")
+            verdict = getattr(result, "feedback", None) or ("讲解清晰，能用自己的话讲明白" if score >= 80 else "基本合格，再具体一些会更好" if score >= 70 else "建议补充一个具体例子再讲一遍")
+            dim_results = getattr(result, "dimensions", [])
+            feedback = {}
+            dim_map = {"简洁度": "simplicity", "准确度": "accuracy", "比喻": "analogy", "完整度": "completeness", "术语规避": "jargon_free"}
+            for d in dim_results:
+                key = dim_map.get(d.name, d.name)
+                feedback[key] = {"score": d.score, "comment": d.comment}
+            if not feedback:
+                raise ValueError("no dimension results")
+            model_used = getattr(result, "model_used", "output_detector")
+        except Exception:
+            # 降级：启发式评分（按文本长度 + 关键词覆盖）
+            length = len(text)
+            has_example = any(kw in text for kw in ["比如", "例如", "就像", "比方", "例如", "比如"])
+            has_concept = any(kw in text for kw in ["定义", "概念", "原理", "公式", "定律", "定理"])
+            base = 62 if length < 20 else (78 if length < 60 else 88)
+            bonus = min(8, (has_example * 4) + (has_concept * 4))
+            score = min(95, base + bonus)
+            verdict = ("讲解清晰，能用自己的话讲明白" if score >= 80
+                       else "基本合格，再具体一些会更好" if score >= 70
+                       else "建议补充一个具体例子再讲一遍")
+            feedback = {
+                "simplicity": {"score": score - 2, "comment": "整体用语口语化"},
+                "accuracy": {"score": score + 3, "comment": "核心概念方向正确"},
+                "analogy": {"score": score - 4, "comment": "可再增加一个生活比喻" if not has_example else "已包含生活比喻"},
+                "completeness": {"score": score - 1, "comment": "关键点已覆盖" if has_concept else "缺少关键概念阐述"},
+                "jargon_free": {"score": score - 3, "comment": "术语使用需再克制"},
+            }
+
         try:
             conv_store.add_message(sid, "user", text or "（跳过测试）")
             conv_store.add_message(sid, "assistant", "费曼测试 {} 分：{}".format(score, verdict), model="coach")
@@ -309,14 +343,8 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
             pass
         return jsonify({"code": 0, "data": {
             "score": score, "verdict": verdict,
-            "feedback": {
-                "simplicity": {"score": score - 2, "comment": "整体用语口语化"},
-                "accuracy": {"score": score + 3, "comment": "核心概念方向正确"},
-                "analogy": {"score": score - 4, "comment": "可再增加一个生活比喻"},
-                "completeness": {"score": score - 1, "comment": "关键点已覆盖"},
-                "jargon_free": {"score": score - 3, "comment": "术语使用需再克制"},
-            },
-            "agents": [{"id": "coach", "action": "对费曼测试讲解进行五维评分"}],
+            "feedback": feedback,
+            "agents": [{"id": "coach", "action": "对费曼测试讲解进行五维语义评分"}],
         }})
 
     @bp.route("/api/learn/report", methods=["POST"])

@@ -361,8 +361,10 @@ def api_reset_student_password(user_id):
         return err
     data = request.get_json(force=True) or {}
     new_password = data.get("password", "").strip()
-    if not new_password or len(new_password) < 4:
-        return jsonify({"success": False, "error": "密码不能为空且至少4位"}), 400
+    if not new_password or len(new_password) < 8:
+        return jsonify({"success": False, "error": "密码不能为空且至少8位"}), 400
+    if not any(c.isupper() for c in new_password) or not any(c.isdigit() for c in new_password):
+        return jsonify({"success": False, "error": "密码需包含大写字母和数字"}), 400
     user = db.get_user(user_id)
     if not user:
         return jsonify({"success": False, "error": "用户不存在"}), 404
