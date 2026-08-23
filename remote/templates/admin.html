@@ -102,6 +102,7 @@
     <button class="nav-item" data-panel="agents" onclick="switchPanel('agents')">🧠 Agent管理</button>
     <button class="nav-item" data-panel="logs" onclick="switchPanel('logs')">📜 系统日志</button>
     <button class="nav-item" data-panel="reports" onclick="switchPanel('reports')">📚 学习记录</button>
+    <button class="nav-item" data-panel="memories" onclick="switchPanel('memories')">🧠 三层记忆</button>
     <button class="nav-item" data-panel="analytics" onclick="switchPanel('analytics')">📈 数据可视化</button>
     <button class="nav-item" data-panel="keys" onclick="switchPanel('keys')">🔑 API密钥</button>
     <button class="nav-item" data-panel="ports" onclick="switchPanel('ports')">🔌 端口管理</button>
@@ -173,7 +174,7 @@ function logout() {
 
 function switchPanel(name) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.panel === name));
-  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', reasoning: '推理记录', analytics: '数据可视化', keys: 'API密钥', ports: '端口管理', mcp: 'MCP Server', interrupts: '待审批队列', costs: '成本报告', weights: '权重配置', admins: '管理员管理', exports: '数据导出', settings: '设置' };
+  const titles = { overview: '系统概览', users: '用户管理', models: '模型管理', agents: 'Agent管理', logs: '系统日志', reports: '学习记录', memories: '三层记忆', reasoning: '推理记录', analytics: '数据可视化', keys: 'API密钥', ports: '端口管理', mcp: 'MCP Server', interrupts: '待审批队列', costs: '成本报告', weights: '权重配置', admins: '管理员管理', exports: '数据导出', settings: '设置' };
   document.getElementById('panelTitle').textContent = titles[name];
   loaders[name]();
 }
@@ -186,6 +187,7 @@ const loaders = {
   logs: loadLogs,
   keys: loadKeys,
   reports: loadReports,
+  memories: loadMemories,
   reasoning: loadReasoning,
   analytics: loadAnalytics,
   ports: loadPorts,
@@ -1111,6 +1113,156 @@ function prevReasoningPage() {
 function nextReasoningPage() {
   reasoningState.page++;
   renderReasoning();
+}
+
+// ---------- 三层记忆可视化（短期/中期/长期 + 错题标记） ----------
+const memoryState = { page: 0, pageSize: 20, filters: {}, users: [] };
+
+const MEMORY_TYPE_NAMES = { short: '短期', mid: '中期', long: '长期' };
+const MEMORY_TYPE_COLORS = { short: '#58a6ff', mid: '#d29922', long: '#3fb950' };
+
+async function loadMemories() {
+  // 加载有记忆的用户列表用于筛选下拉
+  try {
+    const ud = await api('/memories/users');
+    memoryState.users = ud.users || [];
+  } catch (e) { memoryState.users = []; }
+  await renderMemories();
+}
+
+async function renderMemories() {
+  try {
+    const f = memoryState.filters;
+    const params = new URLSearchParams();
+    if (f.memory_type) params.set('memory_type', f.memory_type);
+    if (f.user_id) params.set('user_id', f.user_id);
+    if (f.wrong_only) params.set('wrong_only', '1');
+    params.set('limit', memoryState.pageSize);
+    params.set('offset', memoryState.page * memoryState.pageSize);
+    const qs = params.toString();
+    const data = await api('/memories' + (qs ? '?' + qs : ''));
+    const items = data.items || [];
+    const total = data.total || 0;
+    const st = data.stats || {};
+
+    // 顶部统计卡片
+    const statCards = ['short', 'mid', 'long'].map(k => `
+      <div class="card">
+        <div class="num" style="color:${MEMORY_TYPE_COLORS[k]};">${st[k] ?? 0}</div>
+        <div class="label">${MEMORY_TYPE_NAMES[k]}记忆</div>
+      </div>`).join('');
+    const wrongCard = `<div class="card"><div class="num" style="color:#f85149;">${st.wrong ?? 0}</div><div class="label">错题记忆（is_wrong_answer）</div></div>`;
+
+    // 筛选栏
+    const filterBar = `
+      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px;margin-bottom:16px;">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+          <select id="mfType" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+            <option value="">全部类型</option>
+            <option value="short" ${f.memory_type === 'short' ? 'selected' : ''}>短期记忆</option>
+            <option value="mid" ${f.memory_type === 'mid' ? 'selected' : ''}>中期记忆</option>
+            <option value="long" ${f.memory_type === 'long' ? 'selected' : ''}>长期记忆</option>
+          </select>
+          <select id="mfUser" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;min-width:130px;">
+            <option value="">全部用户</option>
+            ${memoryState.users.map(u => `<option value="${esc(u.user_id)}" ${String(u.user_id) === String(f.user_id || '') ? 'selected' : ''}>用户 #${esc(u.user_id)}（短${u.short}/中${u.mid}/长${u.long}）</option>`).join('')}
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#8b949e;cursor:pointer;">
+            <input type="checkbox" id="mfWrong" ${f.wrong_only ? 'checked' : ''} style="accent-color:#f85149;">仅看错题记忆
+          </label>
+          <button class="act" onclick="queryMemories()">查询</button>
+          <button class="act" onclick="resetMemories()">重置</button>
+        </div>
+      </div>`;
+
+    // 表格行：点击展开详情
+    const rows = items.map(it => {
+      const typeName = MEMORY_TYPE_NAMES[it.memory_type] || esc(it.memory_type || '-');
+      const typeColor = MEMORY_TYPE_COLORS[it.memory_type] || '#8b949e';
+      const typeBadge = `<span style="display:inline-block;background:${typeColor}22;color:${typeColor};border-radius:10px;padding:2px 10px;font-size:12px;">${typeName}</span>`;
+      const wrongBadge = it.is_wrong_answer ? '<span class="badge err">错题</span>' : '';
+      const expiredTxt = it.expires_at ? `过期时间: ${esc(it.expires_at)}` : '长期有效';
+      const contentFull = it.content || '';
+      const contentSummary = esc(contentFull.slice(0, 200));
+      return `
+      <tr class="reasoning-row" onclick="toggleMemoryDetail(${it.id})" style="cursor:pointer;">
+        <td>${it.id}</td>
+        <td>#${esc(it.user_id)}</td>
+        <td>${typeBadge} ${wrongBadge}</td>
+        <td>${esc(it.chapter || '-')}</td>
+        <td>${esc(it.topic || '-')}</td>
+        <td>${esc(it.session_id || '-')}</td>
+        <td>${contentSummary}${contentFull.length > 200 ? '…' : ''}</td>
+        <td style="white-space:nowrap;">${esc(it.created_at || '-')}</td>
+        <td style="font-size:12px;color:#8b949e;">${expiredTxt}</td>
+      </tr>
+      <tr id="memory-detail-${it.id}" style="display:none;background:#0d1117;">
+        <td colspan="9" style="padding:14px 16px;">
+          <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${esc(contentFull) || '<span style="color:#8b949e;">（空）</span>'}</div>
+        </td>
+      </tr>`;
+    }).join('') || '<tr><td colspan="9" style="color:#8b949e;">暂无记忆数据</td></tr>';
+
+    // 分页
+    const totalPages = Math.max(1, Math.ceil(total / memoryState.pageSize));
+    const pager = `
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:13px;color:#8b949e;">
+        <button class="act" onclick="prevMemoryPage()" ${memoryState.page === 0 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>← 上一页</button>
+        <span>第 ${memoryState.page + 1} / ${totalPages} 页（共 ${total} 条）</span>
+        <button class="act" onclick="nextMemoryPage()" ${(memoryState.page + 1) * memoryState.pageSize >= total ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>下一页 →</button>
+      </div>`;
+
+    document.getElementById('content').innerHTML = `
+      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">三层记忆内部链路：短期（会话上下文，24h 过期）/ 中期（章节沉淀）/ 长期（持久，含错题标记）。点击行展开完整内容。</div>
+      <div class="cards">
+        ${statCards}
+        ${wrongCard}
+        <div class="card"><div class="num">${st.total ?? 0}</div><div class="label">记忆总条数</div></div>
+      </div>
+      ${filterBar}
+      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;">
+        <table>
+          <tr><th>ID</th><th>用户</th><th>类型</th><th>章节</th><th>知识点</th><th>会话</th><th>内容摘要</th><th>创建时间</th><th>有效期</th></tr>
+          ${rows}
+        </table>
+        ${pager}
+      </div>`;
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+  }
+}
+
+function toggleMemoryDetail(id) {
+  const detailRow = document.getElementById('memory-detail-' + id);
+  if (!detailRow) return;
+  detailRow.style.display = detailRow.style.display === 'none' ? '' : 'none';
+}
+
+function queryMemories() {
+  memoryState.filters = {
+    memory_type: document.getElementById('mfType').value,
+    user_id: document.getElementById('mfUser').value,
+    wrong_only: document.getElementById('mfWrong').checked,
+  };
+  memoryState.page = 0;
+  renderMemories();
+}
+
+function resetMemories() {
+  ['mfType', 'mfUser'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mfWrong').checked = false;
+  memoryState.filters = {};
+  memoryState.page = 0;
+  renderMemories();
+}
+
+function prevMemoryPage() {
+  if (memoryState.page > 0) { memoryState.page--; renderMemories(); }
+}
+
+function nextMemoryPage() {
+  memoryState.page++;
+  renderMemories();
 }
 
 // ---------- 端口管理（选择性配置） ----------

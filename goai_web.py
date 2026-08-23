@@ -646,7 +646,11 @@ def main():
 if __name__ == '__main__':
     # lite 模式（轻量自学）：解析 --mode lite，启用后跳过演示模块加载
     from framework.lite_mode import LiteModeManager
-    if LiteModeManager().parse_args() == "lite":
+    _lm = LiteModeManager()
+    if _lm.parse_args() == "lite":
         app.config["LITE_MODE"] = True
         print("[LiteMode] 轻量自学模式已启用：跳过演示模块加载")
+    # 日志开关：lite 模式默认 WARNING（仅错误与警告），可用 --log-level 或
+    # LUMILEARN_LOG_LEVEL 显式指定；静默 werkzeug 访问日志降低 CPU/IO 负载
+    _lm.configure_logging()
     main()

@@ -68,6 +68,93 @@ STOPWORDS = {
 }
 
 _SPLIT_RE = re.compile(r"[^\w\u4e00-\u9fff]+")
+# 不可见/控制字符（零宽字符、乱码 BOM 残留等）
+_INVISIBLE_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\u200b\u200c\u200d\u2060\ufeff]")
+# 中文句子边界（句号/问号/感叹号/分号 + 换行）
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[。！？；\n])\s*")
+# 分片默认参数
+DEFAULT_CHUNK_CHARS = 260        # 每片目标字符数（与 LLM 上下文友好）
+DEFAULT_CHUNK_OVERLAP = 40       # 相邻片重叠字符数（保留跨片语义）
+
+
+def clean_text(text: str) -> str:
+    """清洗文本：去除不可见字符/控制字符、压缩空白，减少解析乱码。
+
+    - 移除零宽字符、BOM、控制字符（乱码常见来源）
+    - \r\n / \r → \n
+    - 连续空白压缩为单个空格
+    """
+    if not text:
+        return ""
+    text = _INVISIBLE_RE.sub("", text).replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text.strip()
+
+
+def chunk_text(text: str, max_chars: int = DEFAULT_CHUNK_CHARS,
+               overlap: int = DEFAULT_CHUNK_OVERLAP) -> List[str]:
+    """将长文本按句子边界智能分片，避免在公式/单词中间切断产生乱码碎片。
+
+    策略：
+    - 优先按句子边界（。！？；换行）切分
+    - 句子过长时按空白/逗号回退切分，仍保留完整词元
+    - 相邻片带 overlap 重叠字符，保留跨片语义，避免关键词被截断
+    - 空串返回空列表
+
+    返回：分片后的文本列表（已清洗）
+    """
+    text = clean_text(text)
+    if not text:
+        return []
+    if len(text) <= max_chars:
+        return [text]
+
+    # 1) 按句子边界切分，再合并为不超 max_chars 的片
+    sentences = [s for s in _SENTENCE_SPLIT_RE.split(text) if s.strip()]
+    chunks: List[str] = []
+    cur = ""
+    for sent in sentences:
+        # 单句超长：内部按逗号/分号/空格回退切分
+        if len(sent) > max_chars:
+            if cur:
+                chunks.append(cur.strip())
+                cur = ""
+            for piece in re.split(r"(?<=[，、,;；])\s*", sent):
+                if len(piece) > max_chars:
+                    # 最后兜底：硬切但保留完整词（避免切进 URL/公式中间）
+                    while len(piece) > max_chars:
+                        chunks.append(piece[:max_chars].strip())
+                        piece = piece[max_chars:]
+                    if piece.strip():
+                        cur = piece.strip()
+                elif len(cur) + len(piece) > max_chars:
+                    if cur:
+                        chunks.append(cur.strip())
+                    cur = piece.strip()
+                else:
+                    cur = (cur + piece).strip()
+            continue
+        if len(cur) + len(sent) > max_chars:
+            if cur:
+                chunks.append(cur.strip())
+            cur = sent
+        else:
+            cur = (cur + sent).strip()
+    if cur:
+        chunks.append(cur.strip())
+
+    # 2) 应用 overlap：前一个片尾部 overlap 字符并入后一片开头
+    if overlap > 0 and len(chunks) > 1:
+        overlapped: List[str] = []
+        prev_tail = ""
+        for i, ch in enumerate(chunks):
+            if prev_tail:
+                ch = prev_tail + ch
+            overlapped.append(ch)
+            prev_tail = ch[-overlap:] if len(ch) >= overlap else ch
+        chunks = overlapped
+
+    return chunks
 
 
 def tokenize(text: str, max_terms: int = 32) -> List[str]:
@@ -112,28 +199,41 @@ class KnowledgeRetriever:
     # ---------------- 索引构建 ----------------
 
     def _load_docs(self) -> List[Dict]:
-        """从数据库加载训练数据 + 知识点"""
+        """从数据库加载训练数据 + 知识点，长文档按句子边界分片索引。
+
+        分片策略（RAG 稳定性优化）：
+        - 长 content 按 chunk_text 切分为多片，每片作为独立检索文档
+        - 分片避免关键词被长文档稀释，提升召回精度；清洗去除乱码字符
+        - 每片标题标注 [片段 N/M]，便于追溯来源
+        """
         docs = []
         try:
             from framework.database import db
             records = db.get_training_data(status="published", limit=self.max_docs)
             for r in records:
-                text = " ".join(filter(None, [
-                    r.get("subject", ""), r.get("chapter", ""),
-                    r.get("title", ""), r.get("keywords", ""),
-                    (r.get("content", "") or "")[:600],
-                ]))
-                docs.append({
-                    "source": "training_data",
-                    "id": r.get("id"),
-                    "title": r.get("title") or r.get("chapter") or "",
-                    "subject": r.get("subject", ""),
-                    "grade": r.get("grade", ""),
-                    "difficulty": r.get("difficulty", ""),
-                    "content": (r.get("content", "") or "")[:1000],
-                    "keywords": r.get("keywords", ""),
-                    "_text": text,
-                })
+                content_raw = r.get("content", "") or ""
+                content_parts = chunk_text(content_raw)
+                n = len(content_parts)
+                for idx, part in enumerate(content_parts):
+                    part_title = r.get("title") or r.get("chapter") or ""
+                    if n > 1:
+                        part_title = f"{part_title} [片段 {idx + 1}/{n}]"
+                    text = " ".join(filter(None, [
+                        r.get("subject", ""), r.get("chapter", ""),
+                        part_title, r.get("keywords", ""),
+                        part,
+                    ]))
+                    docs.append({
+                        "source": "training_data",
+                        "id": r.get("id"),
+                        "title": part_title,
+                        "subject": r.get("subject", ""),
+                        "grade": r.get("grade", ""),
+                        "difficulty": r.get("difficulty", ""),
+                        "content": part[:1000],
+                        "keywords": r.get("keywords", ""),
+                        "_text": text,
+                    })
         except Exception:
             pass
 
@@ -141,9 +241,9 @@ class KnowledgeRetriever:
             from framework.database import db
             nodes = db.get_knowledge_nodes()
             for n in nodes:
+                desc = clean_text(n.get("description", "") or "")
                 text = " ".join(filter(None, [
-                    n.get("category", ""), n.get("name", ""),
-                    n.get("description", ""),
+                    n.get("category", ""), n.get("name", ""), desc,
                 ]))
                 docs.append({
                     "source": "knowledge_node",
@@ -152,7 +252,7 @@ class KnowledgeRetriever:
                     "subject": n.get("category", ""),
                     "grade": "",
                     "difficulty": n.get("difficulty", ""),
-                    "content": n.get("description", "") or "",
+                    "content": desc,
                     "keywords": "",
                     "_text": text,
                 })

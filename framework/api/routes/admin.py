@@ -407,6 +407,88 @@ def admin_reasoning_logs_stats():
 
 
 # ---------------------------------------------------------------------------
+# 三层记忆可视化（⑪ 记忆视图：短期 / 中期 / 长期 + 错题标记）
+# ---------------------------------------------------------------------------
+
+@admin_bp.route("/api/admin/memories", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_memories():
+    """列出三层记忆（可按记忆类型 / 用户 / 错题标记筛选，分页）。
+
+    参数：
+        memory_type: short / mid / long（缺省返回全部）
+        user_id:     按用户过滤
+        wrong_only:  =1 仅返回错题记忆（is_wrong_answer=1）
+        limit:       每页条数（默认 20，上限 200）
+        offset:      分页偏移
+    """
+    memory_type = request.args.get("memory_type") or None
+    user_id = request.args.get("user_id") or None
+    wrong_only = request.args.get("wrong_only") in ("1", "true", "True")
+    limit = min(int(request.args.get("limit", 20)), 200)
+    offset = max(int(request.args.get("offset", 0)), 0)
+
+    conds, params = [], []
+    if memory_type:
+        conds.append("memory_type = ?")
+        params.append(memory_type)
+    if user_id:
+        conds.append("user_id = ?")
+        params.append(user_id)
+    if wrong_only:
+        conds.append("is_wrong_answer = 1")
+    where = ("WHERE " + " AND ".join(conds)) if conds else ""
+
+    total = db._query_one(
+        f"SELECT COUNT(*) AS n FROM layered_memory {where}", tuple(params))["n"]
+    items = db._query(
+        f"SELECT * FROM layered_memory {where} "
+        f"ORDER BY id DESC LIMIT ? OFFSET ?",
+        tuple(params) + (limit, offset))
+
+    # 各类型数量统计（用于顶部卡片）
+    type_rows = db._query(
+        "SELECT memory_type, COUNT(*) AS cnt, "
+        "SUM(CASE WHEN is_wrong_answer = 1 THEN 1 ELSE 0 END) AS wrong_cnt "
+        "FROM layered_memory GROUP BY memory_type")
+    stats = {"short": 0, "mid": 0, "long": 0, "wrong": 0, "total": 0}
+    for r in type_rows:
+        key = r["memory_type"]
+        if key in stats:
+            stats[key] = r["cnt"]
+        stats["wrong"] += r["wrong_cnt"] or 0
+        stats["total"] += r["cnt"]
+
+    return jsonify({
+        "success": True,
+        "items": items,
+        "total": total,
+        "stats": stats,
+        "limit": limit,
+        "offset": offset,
+    })
+
+
+@admin_bp.route("/api/admin/memories/users", methods=["GET", "OPTIONS"])
+@require_admin
+def admin_list_memory_users():
+    """记忆分布统计：每个用户各类型记忆数量（用于 Admin 面板用户下拉）"""
+    rows = db._query(
+        "SELECT user_id, memory_type, COUNT(*) AS cnt "
+        "FROM layered_memory GROUP BY user_id, memory_type "
+        "ORDER BY user_id")
+    users: Dict[str, Dict] = {}
+    for r in rows:
+        u = users.setdefault(r["user_id"], {"user_id": r["user_id"],
+                                            "short": 0, "mid": 0, "long": 0, "total": 0})
+        key = r["memory_type"]
+        if key in u:
+            u[key] = r["cnt"]
+        u["total"] += r["cnt"]
+    return jsonify({"success": True, "users": list(users.values())})
+
+
+# ---------------------------------------------------------------------------
 # 模型管理
 # ---------------------------------------------------------------------------
 
