@@ -1,0 +1,1 @@
+{"test_name": "500用户创建结果", "created_at": "2026-08-23T13:34:27", "total_requested": 499, "created_ok": 499, "created_fail": 0, "elapsed_s": 54.5, "rate_per_sec": 9.2, "notes": ["所有账号名称为匿名化伪名(学生XXX/教师XXX格式)，不构成PIPL定义的个人信息", "密码为统一测试密码，非真实用户密码", "数据存储于远程服务器本地SQLite数据库，未出境、未共享"]}

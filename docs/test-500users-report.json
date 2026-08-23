@@ -1,0 +1,62 @@
+{
+  "test_info": {
+    "test_name": "500用户完整浏览器模拟测试",
+    "start_time": "2026-08-23 13:35:21",
+    "total_users": 500,
+    "elapsed_s": 258.3,
+    "throughput_per_sec": 1.9,
+    "students": 399,
+    "teachers": 101
+  },
+  "api_success_rates": {
+    "login": {"total": 500, "ok": 499, "rate": "99.8%"},
+    "learn": {"total": 500, "ok": 499, "rate": "99.8%"},
+    "chat": {"total": 500, "ok": 499, "rate": "99.8%"},
+    "history": {"total": 500, "ok": 499, "rate": "99.8%"},
+    "status": {"total": 500, "ok": 499, "rate": "99.8%"},
+    "health": {"total": 500, "ok": 499, "rate": "99.8%"},
+    "models": {"total": 500, "ok": 499, "rate": "99.8%"},
+    "tags": {"total": 500, "ok": 499, "rate": "99.8%"}
+  },
+  "latency": {
+    "login": {"avg_ms": 140.2, "p50_ms": 139.7, "p90_ms": 146.5, "p99_ms": 163.6, "max_ms": 167.5},
+    "learn": {"avg_ms": 50.2, "p50_ms": 46.7, "p90_ms": 50.5, "p99_ms": 224.6, "max_ms": 488.6},
+    "chat": {"avg_ms": 29.9, "p50_ms": 29.8, "p90_ms": 31.3, "p99_ms": 46.0, "max_ms": 48.0}
+  },
+  "subject_distribution": {
+    "数学": 63, "语文": 63, "英语": 63, "物理": 63,
+    "化学": 62, "生物": 62, "历史": 62, "地理": 62
+  },
+  "error_summary": {
+    "total_errors": 1,
+    "errors": [{"type": "login:401", "count": 1, "rate": "0.2%", "note": "用户登录失败，可能原因：账号创建后密码写入异常"}]
+  },
+  "mastery_stats": {
+    "scored_users": 499,
+    "mean": 100.0, "median": 100.0, "stdev": 0.0,
+    "min": 100, "max": 100,
+    "note": "条件性结果：Ollama不可用，全为rule_fallback规则模板输出，无真实模型推理"
+  },
+  "per_user_summary": [
+    {"name": "教师001", "role": "teacher", "user_id": 546, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "教师002", "role": "teacher", "user_id": 547, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "教师003", "role": "teacher", "user_id": 548, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生001", "role": "student", "user_id": 527, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生002", "role": "student", "user_id": 528, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生003", "role": "student", "user_id": 529, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生004", "role": "student", "user_id": 530, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生005", "role": "student", "user_id": 531, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生006", "role": "student", "user_id": 532, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生007", "role": "student", "user_id": 533, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生008", "role": "student", "user_id": 534, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生009", "role": "student", "user_id": 535, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "学生010", "role": "student", "user_id": 536, "login": "ok", "learn": "ok", "mastery": 100},
+    {"name": "教师101", "role": "teacher", "user_id": 645, "login": "fail", "learn": "skip", "mastery": null, "error": "401 UNAUTHORIZED"}
+  ],
+  "test_notes": [
+    "所有用户名采用匿名化格式(学生XXX/教师XXX)，不构成PIPL定义的个人信息",
+    "密码为统一测试密码(已脱敏)，非真实用户密码",
+    "Ollama服务不可用，掌握度评分全为100分(规则模板输出)，非真实模型推理结果",
+    "HTTP请求直接发送到远程服务，无中间代理或第三方收集"
+  ]
+}
