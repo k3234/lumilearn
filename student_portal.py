@@ -78,7 +78,7 @@ def _student_security_headers(response):
         response.headers["Pragma"] = "no-cache"
     return response
 
-# 全局 Agent 实例（与 GOAI Web 共用逻辑；Ollama 地址由 OLLAMA_URL 环境变量配置）
+# 全局 Agent 实例（Ollama 地址由 OLLAMA_URL 环境变量配置）
 agent = LumiLearnAgent()
 
 # 共享费曼学习 Blueprint（认证 + 学习流程 + 档案）

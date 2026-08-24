@@ -71,12 +71,11 @@ PROVIDER_TEMPLATES = {
     },
 }
 
-# 默认端口-模型映射（各端口使用的模型配置，与 PORT_SETTINGS_DEFAULTS 保持 7 端口同步）
+# 默认端口-模型映射（各端口使用的模型配置）
 DEFAULT_PORT_MODEL_MAP = {
     "terminal": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 18080},
     "api": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 18081},
     "models": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 18082},
-    "goai_web": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 5000},
     "teacher_portal": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 5001},
     "student_portal": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 5010},
     "analytics_dashboard": {"provider": "ollama", "model": "lumilearn-v2:latest", "port": 18090},
@@ -86,7 +85,6 @@ PORT_DISPLAY_NAMES = {
     "terminal": "终端 (18080)",
     "api": "REST API (18081)",
     "models": "模型管理 (18082)",
-    "goai_web": "GOAI Web (5000)",
     "teacher_portal": "教师端 (5001)",
     "student_portal": "学生端学习平台 (5010)",
     "analytics_dashboard": "学习分析仪表盘 (18090)",
@@ -97,7 +95,6 @@ PORT_SETTINGS_DEFAULTS = {
     "terminal": {"enabled": True, "port": 18080, "desc": "框架终端 + Admin 面板", "script": "framework/api/server.py"},
     "api": {"enabled": True, "port": 18081, "desc": "REST API 纯接口服务", "script": "framework/api/server.py"},
     "models": {"enabled": True, "port": 18082, "desc": "模型管理服务", "script": "framework/api/server.py"},
-    "goai_web": {"enabled": True, "port": 5000, "desc": "GOAI Web 学习平台（学生端）", "script": "goai_web.py"},
     "teacher_portal": {"enabled": True, "port": 5001, "desc": "教师端 Teacher Portal", "script": "teacher_portal.py"},
     "student_portal": {"enabled": True, "port": 5010, "desc": "学生端学习平台（原型+真实后端）", "script": "student_portal.py"},
     "analytics_dashboard": {"enabled": True, "port": 18090, "desc": "学习分析仪表盘", "script": "analytics_dashboard.py"},

@@ -59,7 +59,6 @@ PORT_SERVICES = [
     ("terminal", "框架终端 (Terminal)", 18080),
     ("api", "REST API", 18081),
     ("models", "模型管理 (Models)", 18082),
-    ("goai_web", "GOAI 学习 Web", 5000),
     ("teacher_portal", "教师门户 (Teacher Portal)", 5001),
 ]
 
@@ -293,7 +292,7 @@ def configure_ollama(quick):
     url = ask("  Ollama 服务地址", OLLAMA_BASE_URL_DEFAULT, quick)
     url = str(url).strip().rstrip("/") or OLLAMA_BASE_URL_DEFAULT
     write_env_key("OLLAMA_BASE_URL", url)
-    write_env_key("OLLAMA_URL", url)  # goai_web 使用 OLLAMA_URL 读取
+    write_env_key("OLLAMA_URL", url)  # teacher_portal 使用 OLLAMA_URL 读取
     print("  ✓ OLLAMA_BASE_URL / OLLAMA_URL 已写入 .env: {}".format(url))
 
     models = probe_ollama(url)

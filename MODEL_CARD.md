@@ -66,7 +66,7 @@ ollama create lumilearn-v2 -f Modelfile
 ```bash
 # PowerShell
 $env:OLLAMA_URL='http://<ollama_host>:11434'
-python goai_agent.py "讲解勾股定理"
+python -c "from framework.engines.feynman_engine import FeynmanEngine; print(FeynmanEngine.run('讲解勾股定理'))"
 ```
 
 ## 部署后验证

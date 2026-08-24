@@ -454,7 +454,6 @@ else:
             echo ""
             echo -e "  ${BOLD}课堂/终端:${NC}  http://localhost:$health_port/classroom"
             echo -e "  ${BOLD}管理面板:${NC}   http://localhost:18082/admin"
-            echo -e "  ${BOLD}GOAI 学习:${NC}  http://localhost:5000"
             echo -e "  ${BOLD}学生端:${NC}     http://localhost:5010"
             echo -e "  ${BOLD}教师端:${NC}     http://localhost:5001"
             echo -e "  ${BOLD}分析仪表盘:${NC} http://localhost:18090"

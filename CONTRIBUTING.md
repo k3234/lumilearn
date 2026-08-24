@@ -23,7 +23,7 @@ source venv/bin/activate  # Linux/Mac
 ### 3. 安装依赖
 
 ```bash
-pip install -r goai_requirements.txt
+pip install -r requirements.txt
 pip install -r requirements.txt  # 开发环境需要额外依赖
 ```
 

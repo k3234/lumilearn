@@ -39,7 +39,7 @@ def goai_client():
     - 导入前把 DB 指向临时目录，避免在项目根创建 lumilearn.db
     - 阻断 requests.get（LumiLearnAgent 构造时会探测 Ollama 可用性）
     """
-    tmp_dir = tempfile.mkdtemp(prefix="lumilearn_goai_test_")
+    tmp_dir = tempfile.mkdtemp(prefix="lumilearn_test_")
     os.environ["LUMILEARN_DB_PATH"] = os.path.join(tmp_dir, "lumilearn.db")
     try:
         with mock.patch("requests.get", side_effect=ConnectionError("offline")):

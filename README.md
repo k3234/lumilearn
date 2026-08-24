@@ -42,30 +42,16 @@
 
 ```bash
 # 安装依赖
-pip install -r goai_requirements.txt
+pip install -r requirements.txt
 
-# 标准模式启动（竞赛演示，默认）
-python goai_web.py
+# 启动框架服务（端口 18080/18081/18082）
+python -m framework.api.server --multi-port
 
-# Lite 模式启动（轻量自学，仅保留核心学习流程）
-python goai_web.py --mode lite
+# 启动教师门户（端口 5001）
+python teacher_portal.py
 ```
 
-启动后浏览器访问 `http://localhost:5000` 进入 GOAI 学习 Web（端口可用环境变量或端口配置调整）。两种模式的差异见下方「模式说明」。
-
-## 🧭 模式说明
-
-LumiLearn 提供两种运行模式，按使用场景选择：
-
-| 模式 | 使用场景 | 启动命令 |
-|---|---|---|
-| **标准模式（竞赛演示）** | GOAI 竞赛演示、完整功能展示，启用全部服务（终端 / API / 学生端 / 教师端 / 分析仪表盘 / Admin 等） | `python goai_web.py` |
-| **Lite 模式（轻量自学）** | 个人轻量自学、低资源设备，聚焦「导入 → 学习 → 复盘」核心闭环 | `python goai_web.py --mode lite` |
-
-Lite 模式（`--mode lite`）具体表现：
-
-- 关闭演示模块加载，只保留「导入 → 学习 → 复盘」核心流程
-- 仅启用 `terminal` / `api` / `student_portal` 三个核心服务，关闭教师端、分析仪表盘等非核心服务，降低资源占用、启动更快
+启动后浏览器访问 `http://localhost:18080` 进入 Admin 管理面板，`http://localhost:5001` 进入教师门户。
 
 ## 系统架构
 
@@ -119,7 +105,7 @@ Lite 模式（`--mode lite`）具体表现：
 | 测试用例数 | **387+** | 覆盖 Agent / 安全 / 费曼 / 配置 / 存储全链路 |
 | 峰值内存占用 | **1.77 GB** | 完整训练流程实测（见 [CPU_LOWMEM_EVALUATION.md](docs/CPU_LOWMEM_EVALUATION.md)） |
 | 安全脱敏 | **100%** | 全部历史重写，零 IP/密码泄露 |
-| 一键部署 | **1 条命令** | `pip install -r goai_requirements.txt && python goai_web.py` |
+| 一键部署 | **1 条命令** | `pip install -r requirements.txt && python -m framework.api.server --multi-port` |
 
 | 我想... | 去看 |
 |---|---|
@@ -146,11 +132,11 @@ LumiLearn 内置一套可独立启停、统一生命周期的 Agent 框架（`fr
 | **对话助手 Agent** | `chat_assistant` | 通用多轮对话，自动路由到当前端口配置的模型 |
 | **GOAI 教育智能体** | `goai_agent.py` | 任务理解 → 流程编排（费曼五步） → 多模型工具调用 → 完整学习报告（掌握度 + 薄弱点 + 建议），推理过程写入本地推理记录库，供管理员/教师/模型自查 |
 
-所有 Agent 支持 `start / stop / status / run` 统一生命周期，Agent 运行状态持久化到数据库；推理过程（费曼每步、GOAI 学习）自动写入 `reasoning_logs` 推理记录库，可通过 Admin「推理记录」、教师端「推理记录」、API `/api/reasoning-logs` 三方查看。
+所有 Agent 支持 `start / stop / status / run` 统一生命周期，Agent 运行状态持久化到数据库；推理过程（费曼每步、对话学习）自动写入 `reasoning_logs` 推理记录库，可通过 Admin「推理记录」、教师端「推理记录」、API `/api/reasoning-logs` 三方查看。
 
-## 🤖 多 Agent 协作系统（GOAI 评审亮点）
+## 🤖 多 Agent 协作系统
 
-从"单 Agent 四模块串行"升级为"三 Agent 协作编排"（`goai_multi_agent.py`），GOAI 学习 Web（5000 端口）学习页默认调用：
+从"单 Agent 四模块串行"升级为"三 Agent 协作编排"（`framework/engines/feynman_engine.py`），学习页默认调用：
 
 ```
 学生输入 ─→ FeynmanTeacher（教学）─→ ScoreAgent（评分）─→ CoachAgent（建议）─→ 聚合报告
@@ -261,7 +247,6 @@ docker compose logs -f api
 | 服务 | 端口 | 说明 |
 |---|---|---|
 | `api` | 5010 | 主 API 服务 |
-| `goai-web` | 5000 | GOAI 学习 Web |
 | `teacher` | 5001 | 教师端 |
 | `admin` | 18080 | Admin 管理面板 |
 | `analytics` | 18090 | 学习分析仪表盘 |

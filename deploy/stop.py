@@ -35,11 +35,9 @@ except ImportError:
     psutil = None
 
 # 残留进程识别关键字（与进程命令行匹配）
-MARKERS = ("goai_web", "teacher_portal", "framework.api.server")
+MARKERS = ("teacher_portal", "framework.api.server")
 
-# 各服务显示名
 SERVICE_NAMES = {
-    "goai_web": "GOAI 学习 Web",
     "teacher_portal": "教师门户",
     "framework": "Framework API",
 }
@@ -135,7 +133,7 @@ def find_leftover_pids():
 
     # Linux/macOS 兜底
     try:
-        out = subprocess.run(["pgrep", "-f", "goai_web|teacher_portal|framework.api.server"],
+        out = subprocess.run(["pgrep", "-f", "teacher_portal|framework.api.server"],
                              capture_output=True, text=True, timeout=30)
         return [int(line) for line in out.stdout.split() if line.strip().isdigit()]
     except Exception:

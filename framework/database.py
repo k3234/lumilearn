@@ -618,7 +618,7 @@ CREATE TABLE IF NOT EXISTS reasoning_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER DEFAULT 0,            -- 学生用户 id（0 表示未登录/匿名）
     session_id TEXT DEFAULT '',           -- 会话标识
-    mode TEXT DEFAULT 'feynman',          -- feynman / chat / goai
+    mode TEXT DEFAULT 'feynman',          -- feynman / chat
     topic TEXT DEFAULT '',                -- 学习主题
     step_order INTEGER DEFAULT 0,         -- 费曼步骤序号 1-5（非费曼为 0）
     step_name TEXT DEFAULT '',            -- 费曼步骤名
@@ -1379,7 +1379,7 @@ class DatabaseManager:
         return cur.rowcount > 0
 
     # ============================================================
-    # C0. 学习报告（GOAI Web 生成）
+    # C0. 学习报告
     # ============================================================
 
     def add_learning_report(self, user_id: int, topic: str,
@@ -3916,7 +3916,7 @@ class DatabaseManager:
                 rep = json.loads(r.get("report_json") or "{}")
             except Exception:
                 rep = {}
-            # GOAI 报告结构：subject 在 task_understanding 下；兼容顶层直接字段
+            # 报告结构：subject 在 task_understanding 下；兼容顶层直接字段
             subj = rep.get("subject") or (rep.get("task_understanding") or {}).get("subject") or "综合"
             item = agg.setdefault(subj, {"sum": 0, "n": 0})
             item["sum"] += float(r.get("score") or 0)
@@ -4110,7 +4110,7 @@ class DatabaseManager:
         参数：
             user_id:       学生用户 id（0 表示未登录/匿名）
             session_id:    会话标识
-            mode:          模式（feynman / chat / goai）
+            mode:          模式（feynman / chat）
             topic:         学习主题
             step_order:    费曼步骤序号 1-5（非费曼为 0）
             step_name:     费曼步骤名
@@ -4144,7 +4144,7 @@ class DatabaseManager:
             user_id:     按用户 id 筛选
             model:       按模型名筛选
             topic:       按学习主题筛选
-            mode:        按模式筛选（feynman / chat / goai）
+            mode:        按模式筛选（feynman / chat）
             session_id:  按会话标识筛选
             start_date:  起始时间（含），如 '2026-01-01 00:00:00'
             end_date:    结束时间（含）

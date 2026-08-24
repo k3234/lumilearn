@@ -274,8 +274,8 @@ API Key 仅写入本仓库 `.env`（已被 `.gitignore` 忽略），不会硬编
 **Q3：修改端口后不生效？**
 重启对应服务；框架三端口优先读取 `config/framework.yaml` 的 `port_settings`，确认 `enabled: true` 且端口未被占用。
 
-**Q4：goai_web.py 连不上远程 Ollama？**
-`goai_web.py` 读取环境变量 `OLLAMA_URL`（部署脚本会与 `OLLAMA_BASE_URL` 同步写入 `.env`）。通过 `start_services.bat` 启动时，其内部委托 `deploy/start.py`，会从 `.env` 读取 `OLLAMA_URL` / `OLLAMA_BASE_URL` 并注入子进程环境，无硬编码地址；确认 `.env` 中两个变量已同步更新后重启服务即可。
+**Q4：teacher_portal 连不上远程 Ollama？**
+`teacher_portal.py` 读取环境变量 `OLLAMA_URL`（部署脚本会与 `OLLAMA_BASE_URL` 同步写入 `.env`）。通过 `start_services.bat` 启动时，其内部委托 `deploy/start.py`，会从 `.env` 读取 `OLLAMA_URL` / `OLLAMA_BASE_URL` 并注入子进程环境，无硬编码地址；确认 `.env` 中两个变量已同步更新后重启服务即可。
 
 **Q5：--quick 模式会做什么？**
 端口全部沿用当前配置；Ollama 地址用 `localhost` 并探测（探测失败则保留默认模型名）；云端 API 全部跳过。适合无人值守自动化部署。

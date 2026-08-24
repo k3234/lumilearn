@@ -631,7 +631,7 @@ def admin_activity_logs():
     """统一活动日志：系统操作 + 学生推理 + 学习报告，按时间倒序合并。
 
     让管理员在「系统日志」页也能直接看到学生实际使用产生的数据
-    （课堂聊天 / 五步学习 / GOAI 学习报告），不再只有管理操作。
+    （课堂聊天 / 五步学习 / 学习报告），不再只有管理操作。
     """
     source = request.args.get("source") or "all"
     limit = int(request.args.get("limit", 200))

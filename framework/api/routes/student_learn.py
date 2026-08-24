@@ -6,7 +6,6 @@
 可复用 Blueprint，供多个端口服务注册使用：
 
 - student_portal.py（5010）：学生端学习平台
-- goai_web.py（5000）：GOAI Web（/proto/ 学生端原型走同一套真实 API）
 
 认证契约（api.js 前端一致）：
     POST /api/auth/login · GET /api/auth/me · POST /api/auth/logout （session 会话）

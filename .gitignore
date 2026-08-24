@@ -331,16 +331,11 @@ _replace_rules.txt
 /test_migration.py
 # 本地推送工具（依赖本地 .github_token，不公开）
 /push_git.ps1
-# GOAI 运行产物（可再生成，不入库）
-/goai_output/
-/scripts/goai_output/
 # 历史一次性远程部署工具（含远程主机用户名，已由 scripts/deploy_remote.py 取代）
 /scripts/_check_remote.py
-/scripts/_check_remote_goai.py
 /scripts/_deploy_auth_portal.py
 /scripts/_deploy_day2.py
 /scripts/_deploy_feynman_flow.py
-/scripts/_deploy_goai_integration.py
 /scripts/_deploy_new_ports.py
 /scripts/sync_to_tianhong.py
 /scripts/_launch_merge.py

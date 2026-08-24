@@ -289,7 +289,7 @@ def chat():
             db.add_reasoning_log(
                 user_id=0,  # 终端/课堂匿名会话；关联用户由上层会话系统负责
                 session_id=f"chat:{role or 'anonymous'}:{topic[:40]}",
-                mode=mode if mode in ("feynman", "chat", "goai") else "chat",
+                mode=mode if mode in ("feynman", "chat") else "chat",
                 topic=topic,
                 step_order=0,
                 step_name="",

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from framework.lite_mode import LiteModeManager
 
 # ------------------------------------------------------------
-# goai_web 仪表盘 lite 模式渲染测试准备（保持完全离线）
+# 学生端学习平台 lite 模式渲染测试准备（保持完全离线）
 # 1) 先把数据库指向系统临时目录，避免 import goai_web 时在项目根创建 lumilearn.db
 # 2) goai_web 模块顶层会实例化 LumiLearnAgent 并探测 Ollama（requests.get），
 #    用 mock 阻断外部网络调用
@@ -82,7 +82,7 @@ class TestLiteMode(unittest.TestCase):
 
 
 class TestLiteModeDashboard(unittest.TestCase):
-    """goai_dashboard 首页 lite / 完整模式渲染差异（Flask test client，不启动真实服务）"""
+    """学习平台首页 lite / 完整模式渲染差异（Flask test client，不启动真实服务）"""
 
     def setUp(self):
         self.client = app.test_client()

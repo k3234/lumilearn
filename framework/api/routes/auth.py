@@ -9,7 +9,7 @@ LumiLearn 账号认证路由（users 表）
     POST /api/auth/logout  头 X-Auth-Token → 注销 token
 
 采用轻量内存 token（服务重启后失效），不引入额外依赖；
-与 student_portal / goai_web / teacher_portal 的 users 表登录保持同一套账号。
+与 student_portal / teacher_portal 的 users 表登录保持同一套账号。
 """
 import logging
 import secrets

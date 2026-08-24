@@ -50,7 +50,6 @@ except ImportError:
 
 # 兜底默认端口：仅在配置文件缺失对应字段时使用，正常端口一律来自 framework.yaml
 DEFAULT_PORTS = {
-    "goai_web": 5000,
     "teacher_portal": 5001,
     "student_portal": 5010,
     "analytics_dashboard": 18090,
@@ -133,19 +132,6 @@ def build_services(config):
     """按 port_settings 的 enabled 状态组装服务列表。"""
     settings = _port_settings(config)
     services = []
-
-    # --- GOAI 学习 Web（goai_web.py 支持 GOAI_PORT 环境变量覆盖端口）---
-    enabled, port = _enabled_port(settings, "goai_web")
-    if enabled:
-        services.append({
-            "key": "goai_web",
-            "name": "GOAI 学习 Web",
-            "cmd": [sys.executable, "goai_web.py"],
-            "ports": [port],
-            "env": {"GOAI_PORT": str(port)},
-            "url": "http://localhost:{}".format(port),
-            "desc": "AI 教官问答 + 费曼教学法",
-        })
 
     # --- 教师门户（teacher_portal.py 支持 TEACHER_PORT 环境变量覆盖端口）---
     enabled, port = _enabled_port(settings, "teacher_portal")

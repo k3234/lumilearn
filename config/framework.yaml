@@ -25,9 +25,6 @@ port_settings:
   models:
     enabled: true
     port: 18082
-  goai_web:
-    enabled: true
-    port: 5000
   teacher_portal:
     enabled: true
     port: 5001
