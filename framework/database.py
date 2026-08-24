@@ -56,8 +56,28 @@ import json
 import sqlite3
 import threading
 import time
+import re
 from typing import List, Dict, Optional, Any, Tuple
 from pathlib import Path
+
+
+# ============================================================
+# SQL 标识符校验（防注入）
+# ============================================================
+
+#: 表/列名白名单正则：仅允许小写字母、数字、下划线（数据库全部使用 snake_case）
+_SQL_IDENT_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
+
+
+def _validate_sql_ident(ident: str) -> str:
+    """校验 SQL 标识符（表名/列名）合法性，非法则抛 ValueError。
+
+    f-string 拼接表名/列名前必须调用，防止外部输入注入 SQL；
+    合法时原样返回，调用方无需额外处理。
+    """
+    if not ident or not _SQL_IDENT_RE.match(ident):
+        raise ValueError(f"非法 SQL 标识符: {ident!r}")
+    return ident
 
 
 # ============================================================
@@ -3693,7 +3713,8 @@ class DatabaseManager:
         ]
         stats = {}
         for table in tables:
-            count = self._query_one(f"SELECT COUNT(*) as n FROM {table}")["n"]
+            # 表名白名单校验后再拼接，杜绝任何注入可能
+            count = self._query_one(f"SELECT COUNT(*) as n FROM {_validate_sql_ident(table)}")["n"]
             stats[table] = count
         stats["db_path"] = self.db_path
         db_size = os.path.getsize(self.db_path) if os.path.exists(self.db_path) else 0

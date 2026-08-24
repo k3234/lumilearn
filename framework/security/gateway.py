@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from functools import wraps
 import threading
 
+from framework.security.sanitize import mask_query_string
+
 logger = logging.getLogger(__name__)
 
 
@@ -182,13 +184,13 @@ class SecurityGateway:
         logger.warning(f"IP已封禁: {ip}, 原因: {reason}")
 
     def _log_request(self, ip: str, path: str, method: str):
-        """记录请求日志"""
+        """记录请求日志（路径中的查询参数先脱敏，防止 token/key 落盘）"""
         with self._lock:
             self._request_counter += 1
             self.request_log.append({
                 "timestamp": time.time(),
                 "ip": ip,
-                "path": path,
+                "path": mask_query_string(path),
                 "method": method,
                 "request_id": str(uuid.uuid4())
             })

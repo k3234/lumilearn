@@ -95,8 +95,21 @@ def batch_recognize():
     images = data.get("images", [])
     if not images:
         return jsonify({"error": "缺少 images 字段"}), 400
+    if not isinstance(images, list) or len(images) > 50:
+        return jsonify({"error": "images 必须为列表且不超过 50 张"}), 400
 
-    # TODO: 对每张图做 validate_upload_file 后调用 OCRService
+    # 逐张校验 base64 图片（解码 + 扩展名 + 大小 + 魔术字节），非法即整体拒绝
+    for i, item in enumerate(images):
+        if not isinstance(item, dict):
+            return jsonify({"error": f"第 {i + 1} 张图片格式错误，需为 {{image, filename}} 对象"}), 400
+        b64 = item.get("image", "")
+        filename = item.get("filename") or f"image_{i + 1}.png"
+        try:
+            _decode_image_from_base64(b64, filename)
+        except ValueError as e:
+            return jsonify({"error": f"第 {i + 1} 张图片校验失败: {e}"}), 400
+
+    # TODO: 对每张图调用 OCRService
     return jsonify({
         "status": "success",
         "message": "批量 OCR 功能开发中",

@@ -17,6 +17,8 @@ import logging
 
 from flask import jsonify, render_template, request
 
+from framework.security.sanitize import mask_query_string, sanitize_text
+
 logger = logging.getLogger("lumilearn.errors")
 
 
@@ -34,8 +36,10 @@ def register_error_handlers(app):
 
     @app.errorhandler(500)
     def _handle_internal_error(e):  # noqa: ANN001 - Flask 传入异常
+        # 记录前脱敏：路径中的查询参数可能携带 token/key，异常信息可能内联凭据
         logger.error("服务器内部错误 %s %s: %s",
-                     request.method, request.path, e, exc_info=True)
+                     request.method, mask_query_string(request.path),
+                     sanitize_text(str(e)), exc_info=True)
         return jsonify({"success": False, "code": 500, "error": "服务器内部错误，请稍后重试"}), 500
 
     return app
