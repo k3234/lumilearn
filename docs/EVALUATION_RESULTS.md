@@ -1,4 +1,4 @@
-# LumiLearn 评测结果
+﻿# LumiLearn 评测结果
 
 > 本文档汇总 LumiLearn 在开发过程中全部自动化测试与真实环境测评结果，所有数据可复现。
 
@@ -68,4 +68,4 @@
 
 1. `bash scripts/quick_deploy.sh` 一键部署（见 `docs/DEPLOYMENT_GUIDE.md`）
 2. `python3 scripts/health_check.py` 校验全部服务
-3. 按 `docs/GOAI_SUBMISSION.md` 第五节流程发起一次学习即可复现核心链路
+3. 按 `docs/LumiLearn_SUBMISSION.md` 第五节流程发起一次学习即可复现核心链路

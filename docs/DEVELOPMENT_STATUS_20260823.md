@@ -1,9 +1,9 @@
-# LumiLearn 开发情况综合报告
+﻿# LumiLearn 开发情况综合报告
 
 > 生成时间：2026-08-23 12:30 (Beijing time)
 > 仓库路径：e:\学习LLM\lumilearn
 > GitHub：https://github.com/k3234/lumilearn
-> 最新提交：`10783bc` feat: GOAI竞赛优化
+> 最新提交：`10783bc` feat: LumiLearn竞赛优化
 
 ---
 
@@ -15,7 +15,7 @@
 | **测试通过率** | ✅ 613 passed / 2 skipped | 全量 pytest，0 失败 |
 | **远端同步** | ✅ 已同步 | 本地 master = GitHub master |
 | **隐私安全** | ✅ 已通过 | 全部历史已重写脱敏 |
-| **GOAI 预估分** | **82-87 / 100** | 原 70-73，提升 +12~14 分 |
+| **LumiLearn 预估分** | **82-87 / 100** | 原 70-73，提升 +12~14 分 |
 
 ---
 
@@ -50,7 +50,7 @@
 | `agent_core/orchestrator.py` | 869 | 任务理解→费曼五步→评分→建议 |
 | `framework/api/server.py` | 539 | Flask API 服务器入口 |
 | `framework/security/sandbox.py` | 327 | AST 代码沙箱 |
-| `goai_web.py` | 714 | GOAI Web 服务（含统一代理） |
+| `lumilearn_web.py` | 714 | 学习平台 Web 服务（含统一代理） |
 | `framework/security/gateway.py` | 230 | 安全网关（限流/IP封锁） |
 | `framework/admin/auth.py` | 208 | 管理员认证 |
 | `inference.py` | 178 | 推理引擎 |
@@ -64,9 +64,9 @@
 ### 3.1 Commit 历史（最新 20 条）
 
 ```
-10783bc feat: GOAI竞赛优化 - 费曼AI评分/统一端口代理/教师成绩入口/安全加固/错误码统一
+10783bc feat: LumiLearn竞赛优化 - 费曼AI评分/统一端口代理/教师成绩入口/安全加固/错误码统一
 76d507d Merge branch 'master' of https://github.com/k3234/lumilearn
-02d5b11 docs: 新增 GOAI 无界赛道差距分析与落地优化清单
+02d5b11 docs: 新增 LumiLearn 无界赛道差距分析与落地优化清单
 83e6cd4 docs: 新增零基础用户配置指南（Windows）
 ac5b713 完成复赛任务⑥⑦⑧⑨⑩⑪：日志开关/业务Bug测试/故障手册/RAG分片/三层记忆可视化
 0092605 docs: 补充彻底脱敏 - 移除admin等敏感凭证
@@ -91,7 +91,7 @@ aa0205d 删除 USER_TEST_REPORT.md AI生成数据不可信
 | 文件 | 变更行数 | 内容 |
 |---|---|---|
 | `framework/api/routes/student_learn.py` | +56/-19 | 费曼测试 AI 语义评分 |
-| `goai_web.py` | +58 | 统一端口反向代理路由 |
+| `lumilearn_web.py` | +58 | 统一端口反向代理路由 |
 | `remote/templates/teacher.html` | +25 | 教师端成绩查看入口 |
 | `framework/api/routes/admin.py` | +12/-3 | 密码复杂度强制校验 |
 | `framework/admin/auth.py` | +6/-2 | 密码复杂度强制校验 |
@@ -147,7 +147,7 @@ aa0205d 删除 USER_TEST_REPORT.md AI生成数据不可信
 
 | 门户 | 端口 | 状态 | 说明 |
 |---|---|---|---|
-| GOAI Web | 5000 | ✅ 稳定 | 竞赛 Demo，四阶段进度动画 + 学习报告 |
+| 学习平台 Web | 5000 | ✅ 稳定 | 竞赛 Demo，四阶段进度动画 + 学习报告 |
 | 统一代理入口 | 5000 | ✅ 新增 | `/proxy/terminal/` `/proxy/api-gateway/` `/proxy/model-manager/` |
 | 学生门户 | — | ✅ 稳定 | 学习/答题/查看报告 |
 | 教师门户 | 5001 | ✅ 优化后 | 班级管理+成绩查看（新增蓝色成绩按钮） |
@@ -201,7 +201,7 @@ aa0205d 删除 USER_TEST_REPORT.md AI生成数据不可信
 
 ---
 
-## 六、GOAI 竞赛对标
+## 六、竞赛对标
 
 ### 6.1 五大评审维度得分（优化后）
 
@@ -215,9 +215,9 @@ aa0205d 删除 USER_TEST_REPORT.md AI生成数据不可信
 | 开源创新 | 5% | 5 | 5 | 0 | 全开源 MIT + 单高中生 |
 | **总分** | **100%** | **70-73** | **82-87** | **+12~14** |
 
-### 6.2 GOAI 四阶段闭环实现
+### 6.2 LumiLearn 四阶段闭环实现
 
-| GOAI 要求 | LumiLearn 实现 | 匹配度 |
+| LumiLearn 要求 | LumiLearn 实现 | 匹配度 |
 |---|---|---|
 | 任务理解 | TaskUnderstanding：学科/主题/难度/学习类型识别 | ✅ |
 | 流程编排 | FlowOrchestrator：费曼五步教学法自动生成 | ✅ |

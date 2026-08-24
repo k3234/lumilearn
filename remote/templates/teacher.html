@@ -320,7 +320,7 @@
       <div class="between">
         <div>
           <div class="page-title">🧠 推理记录</div>
-          <div class="page-sub">查看学生模型推理过程（费曼引导 / GOAI 学习），点击行可展开输出详情</div>
+          <div class="page-sub">查看学生模型推理过程（费曼引导 / 五步学习），点击行可展开输出详情</div>
         </div>
         <div class="flex">
           <select id="reasoningStudentSelect" onchange="onReasoningStudentChange()" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
@@ -1031,7 +1031,7 @@ async function loadReasoningLogs() {
 
 function renderReasoningTable() {
   const items = REASONING.items;
-  const modeMap = { feynman: ['费曼引导', 'badge-blue'], goai: ['GOAI 学习', 'badge-green'], chat: ['对话', 'badge-gray'] };
+  const modeMap = { feynman: ['费曼引导', 'badge-blue'], chat: ['对话', 'badge-gray'] };
   const statusMap = { success: ['成功', 'badge-green'], error: ['失败', 'badge-red'] };
   if (!items.length) {
     $('reasoningTable').innerHTML = '<tr><td colspan="7"><div class="empty"><div class="e-icon">🧠</div>暂无推理记录</div></td></tr>';

@@ -1,4 +1,4 @@
-# LumiLearn V2.5 竞赛版本 · 技术总结报告
+﻿# LumiLearn V2.5 竞赛版本 · 技术总结报告
 
 > **版本**：V2.5 竞赛版  
 > **日期**：2026-08-21  
@@ -32,7 +32,7 @@ LumiLearn 是一款面向 AI+教育场景的开源多 Agent 学习平台，核�
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  Web 层（4 个独立入口）                                          │
-│  goai_web.py (5000) │ student_portal.py (5010)                   │
+│  lumilearn_web.py (5000) │ student_portal.py (5010)                   │
 │  teacher_portal.py (5001) │ analytics_dashboard.py (18090)       │
 ├──────────────────────────────────────────────────────────────────┤
 │  API 层（framework/api）                                         │
@@ -245,7 +245,7 @@ faulthandler_timeout: 240s
 
 4 个入口脚本统一通过 `--mode lite` 解析：
 ```
-goai_web.py --mode lite
+lumilearn_web.py --mode lite
 student_portal.py --mode lite
 teacher_portal.py --mode lite
 analytics_dashboard.py --mode lite
@@ -263,8 +263,8 @@ analytics_dashboard.py --mode lite
 | 位置 | 声明内容 |
 |---|---|
 | `README.md` | AI 辅助边界 / 幻觉风险 / 本地存储 / 凭据配置 |
-| `docs/GOAI_TECHNICAL.md` | 同 README，补充技术细节 |
-| `remote/templates/goai_dashboard.html` | 页面底部 footer 展示 |
+| `docs/LumiLearn_TECHNICAL.md` | 同 README，补充技术细节 |
+| `remote/templates/dashboard.html` | 页面底部 footer 展示 |
 
 ---
 
@@ -296,7 +296,7 @@ lumilearn/
 │   └── admin_traces.html         # Trace 可视化面板
 ├── docs/
 │   ├── ARCHITECTURE.md           # 五层架构图 + 模块接口表
-│   └── GOAI_TECHNICAL.md         # 技术报告（含安全声明）
+│   └── LumiLearn_TECHNICAL.md         # 技术报告（含安全声明）
 ├── reports/
 │   └── eval_report_*.html/.json  # 自动生成，不入库（.gitignore）
 └── tests/

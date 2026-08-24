@@ -1,4 +1,4 @@
-# LumiLearn 更新记录（2026-08-10）
+﻿# LumiLearn 更新记录（2026-08-10）
 
 > 本文档整理 2026-08-10 前后所有新增与修改内容，供维护与发布参考。
 > 说明：不包含测试脚本、本地验收过程与任何敏感凭据；服务器地址一律使用占位符。
@@ -11,7 +11,7 @@
 
 **新增文件**：`teacher_portal.py`（独立 Flask 应用，端口 5001）、`remote/templates/teacher.html`（明亮简洁风单页前端）
 
-教师端为教师角色提供完整的教学管理工作台，复用 `users` 表认证（仅 `role=teacher` 可登录），与主框架、GOAI Web 共享同一数据库。
+教师端为教师角色提供完整的教学管理工作台，复用 `users` 表认证（仅 `role=teacher` 可登录），与主框架、学习平台 Web 共享同一数据库。
 
 | 模块 | 功能 |
 |---|---|
@@ -19,7 +19,7 @@
 | 总览 | 班级数 / 学生数 / 任务数 / 学习报告数统计 |
 | 班级管理 | 学校库 → 年级库 → 班级库三级组织，学生入班 / 出班 |
 | 学生管理 | 查看学生、创建学生账号、重置密码、搜索 |
-| 学习监控 | 每位学生的 GOAI 学习报告（列表/详情）、知识图谱掌握度、答题正确率、薄弱知识点 |
+| 学习监控 | 每位学生的 学习报告（列表/详情）、知识图谱掌握度、答题正确率、薄弱知识点 |
 | 任务管理 | 创建任务、从知识点自动生成任务、按全班 / 个人分配、完成情况跟踪 |
 | 教学资源 | 已发布教学内容库、知识点库（点击知识点可生成任务） |
 
@@ -63,11 +63,11 @@
 
 ## 二、功能增强
 
-### 1. GOAI Web 用户认证与数据库共享
+### 1. 学习平台 Web 用户认证与数据库共享
 
-**修改文件**：`goai_web.py`
+**修改文件**：`lumilearn_web.py`
 
-GOAI Web（端口 5000）从"仅演示"升级为完整学习平台：
+学习平台 Web（端口 5000）从"仅演示"升级为完整学习平台：
 
 - 用户登录 / 退出（复用 `users` 表，werkzeug 密码哈希校验）
 - 直接共享框架数据库 `lumilearn.db`（与 18080 / 5001 一致）
@@ -90,15 +90,15 @@ GOAI Web（端口 5000）从"仅演示"升级为完整学习平台：
 
 **修改文件**：`framework/services/provider_service.py`、`framework/api/routes/chat.py`、`remote/templates/lumiterm.html`
 
-- 新增 `port_model_mapping` 配置：为终端（18080）、REST API（18081）、模型管理（18082）、GOAI Web（5000）分别指定模型
+- 新增 `port_model_mapping` 配置：为终端（18080）、REST API（18081）、模型管理（18082）、学习平台 Web（5000）分别指定模型
 - `chat.py` 新增端口感知解析：根据请求端口自动选择该端口配置的模型
 - `ProviderService` 改为全局单例，Admin 面板修改后即时生效
 - 终端页面加载时读取端口配置并更新模型徽标（本地 / 云端）
-- `goai_agent.py` 支持调用端口配置的云端模型
+- `lumilearn_agent.py` 支持调用端口配置的云端模型
 
 ### 4. 端口选择性配置（端口管理）
 
-**修改文件**：`framework/services/provider_service.py`、`framework/api/routes/admin.py`、`remote/templates/admin.html`、`config/framework.yaml`、`scripts/remote_start_all.sh`、`goai_web.py`、`teacher_portal.py`、`framework/api/server.py`
+**修改文件**：`framework/services/provider_service.py`、`framework/api/routes/admin.py`、`remote/templates/admin.html`、`config/framework.yaml`、`scripts/remote_start_all.sh`、`lumilearn_web.py`、`teacher_portal.py`、`framework/api/server.py`
 
 Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁用各端口服务并自定义端口号**：
 
@@ -107,14 +107,14 @@ Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁
 | terminal | 框架终端 + Admin 面板 | 18080 |
 | api | REST API 纯接口服务 | 18081 |
 | models | 模型管理服务 | 18082 |
-| goai_web | GOAI Web 学习平台（学生端） | 5000 |
+| lumilearn_web | 学习平台 Web 学习平台（学生端） | 5000 |
 | teacher_portal | 教师端 Teacher Portal | 5001 |
 
 - 每个服务独立开关 + 端口号输入框，实时显示运行状态（● 运行中 / ○ 未运行）
 - 保存时校验：端口号范围（1-65535）、端口冲突检测
 - 配置写入 `config/framework.yaml` 的 `port_settings` 节
 - 生效机制：保存后运行 `bash remote_start_all.sh`，脚本按配置选择性启停服务（禁用则杀进程，启用则启动）
-- `goai_web.py` / `teacher_portal.py` / `server.py` 启动时自动读取 `port_settings` 确定端口（支持环境变量覆盖）
+- `lumilearn_web.py` / `teacher_portal.py` / `server.py` 启动时自动读取 `port_settings` 确定端口（支持环境变量覆盖）
 
 ---
 
@@ -145,7 +145,7 @@ Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁
 
 - `docs/MODEL_COMPARISON.md` + `docs/model_comparison_chart.html`：模型对比分析文档与可视化图表
 - `demo_lumilearn_20260809.mp4`：系统演示视频
-- `goai_output/demo_report.json`：演示学习报告数据
+- `output/demo_report.json`：演示学习报告数据
 
 ---
 
@@ -155,7 +155,7 @@ Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁
 
 **修改文件**：`scripts/remote_start_all.sh`（远程服务器服务器）、`start_services.bat`（Windows 本地）
 
-- 远程服务器脚本：初始化数据库 → 确认/启动 Ollama → 启动框架三端口（18080/18081/18082）→ 启动 GOAI Web（5000），带幂等检查（已运行则跳过）与最终状态汇总
+- 远程服务器脚本：初始化数据库 → 确认/启动 Ollama → 启动框架三端口（18080/18081/18082）→ 启动 学习平台 Web（5000），带幂等检查（已运行则跳过）与最终状态汇总
 - Windows 脚本：启动框架服务并指向远程服务器 Ollama
 
 ### 2. 环境变量
@@ -165,7 +165,7 @@ Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁
 - `OLLAMA_URL` / `OLLAMA_BASE_URL`：Ollama 服务地址
 - `REMOTE_HOST` / `REMOTE_USER` / `REMOTE_PASSWORD`：远程部署 SSH 连接（必填，不提交真实值）
 - `LUMILEARN_DB_PATH`：数据库文件路径（可自定义）
-- `GOAI_SECRET_KEY` / `TEACHER_SECRET_KEY`：Web 会话密钥
+- `LumiLearn_SECRET_KEY` / `TEACHER_SECRET_KEY`：Web 会话密钥
 
 ### 3. 教师端部署脚本
 
@@ -183,7 +183,7 @@ Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁
 | 18080 | 框架终端 + Admin 面板（/admin） | 终端、管理 |
 | 18081 | REST API（纯接口） | 第三方集成 |
 | 18082 | 模型管理 | 模型配置 |
-| 5000 | GOAI Web 学习平台 | 学生端 |
+| 5000 | 学习平台 Web 学习平台 | 学生端 |
 | 5001 | 教师端 Teacher Portal | 教师端 |
 
 ---
@@ -191,6 +191,6 @@ Admin 面板新增「🔌 端口管理」面板，用户可**选择性启用/禁
 ## 六、数据模型变化
 
 - `users` 表新增 `username`、`password_hash` 列（登录用）
-- 新增 `learning_reports` 表（GOAI 学习报告持久化）
+- 新增 `learning_reports` 表（学习报告持久化）
 - 新增 `schools`、`grades`、`classes`、`class_students` 表（组织架构）
 - 全部为增量建表，旧库无需迁移脚本

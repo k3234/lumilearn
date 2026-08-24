@@ -1,4 +1,4 @@
-# LumiLearn 科创研究报告（research-report.md）
+﻿# LumiLearn 科创研究报告（research-report.md）
 
 > 面向国内高中数理化学科自学场景的本地优先 AI 教育系统
 > 基于 OpenMAIC 的 MAIC 多智能体课堂范式完成应用层工程改良
@@ -44,14 +44,14 @@ OpenMAIC 提出 MAIC 范式，用 AI 教师、AI 同学等多 Agent 组成虚拟
 | 层 | 职责 | 主要模块 |
 |---|---|---|
 | 模型适配层 | 统一抽象模型调用，屏蔽本地/云端差异，捕获异常与限流 | `framework/models/` |
-| Agent 调度层 | 固定三角色（Teacher/Peer/Director）编排，职责不可混淆 | `goai_multi_agent.py` |
-| 业务课堂层 | 文档导入、知识点拆分、会话管理、测验生成 | `goai_web.py` 等 |
+| Agent 调度层 | 固定三角色（Teacher/Peer/Director）编排，职责不可混淆 | `lumilearn_multi_agent.py` |
+| 业务课堂层 | 文档导入、知识点拆分、会话管理、测验生成 | `lumilearn_web.py` 等 |
 | 持久存储层 | 会话/测验/错题/学情标签本地持久化并回流 | `framework/database.py` |
 
 ### 3.2 三项工程改良
 
 1. **改良① 双模式适配**：Ollama 本地 / 云端 API 一键切换，低配 CPU 设备可完整演示（Ollama 默认推荐）。
-2. **改良② 数理化业务适配**：覆盖"教—学—评—导"闭环，支持多端口服务（GOAI 学习 / 教师端 / 学生端 / Admin / 分析仪表盘）。
+2. **改良② 数理化业务适配**：覆盖"教—学—评—导"闭环，支持多端口服务（学习 / 教师端 / 学生端 / Admin / 分析仪表盘）。
 3. **改良③ 学情闭环**：学习记录、错题、答题标签写入本地知识库，后续课程动态调整难度，形成自进化闭环。
 
 ### 3.3 幻觉风险与安全设计

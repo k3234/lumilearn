@@ -2,7 +2,7 @@
  * api.js — 双模式 API 层
  * 真实后端模式（window.__LUMILEARN_REAL__ = true，由 Student Portal 注入）：
  *   直接 fetch 同源真实接口，函数签名/返回 {code,data} 契约与 mock 完全一致。
- * 离线演示模式（无真实后端，如双击打开 / GOAI Web /proto/）：
+ * 离线演示模式（无真实后端，如双击打开 / 学习平台 /proto/）：
  *   使用下方 mock 桩，带模拟延迟，保留 loading 态。
  * 集成点：真实后端实现见 student_portal.py，替换 mock 无需改动页面。
  * ============================================================ */

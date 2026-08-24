@@ -1,4 +1,4 @@
-# LumiLearn 零基础配置指南
+﻿# LumiLearn 零基础配置指南
 
 > **适用人群**：完全没有 Linux/Docker/Python 经验的用户  
 > **预估耗时**：15–30 分钟  
@@ -60,7 +60,7 @@ dir
 
 你应该能看到以下目录/文件：
 ```
-goai_web.py     framework/     docs/      scripts/     deploy/      tests/
+lumilearn_web.py     framework/     docs/      scripts/     deploy/      tests/
 requirements.txt  .env.example  README.md  config/
 ```
 
@@ -75,7 +75,7 @@ LumiLearn 有两种安装模式，请根据你电脑的配置选择：
 适合：只是想体验前端界面、无需 AI 生成功能。
 
 ```powershell
-pip install -r goai_requirements.txt
+pip install -r lumilearn_requirements.txt
 ```
 
 ### 3.2 完整模式（含 AI 教学、模型推理）
@@ -92,7 +92,7 @@ pip install -r requirements.txt
 
 ```powershell
 python -m pip install --upgrade pip
-pip install -r goai_requirements.txt
+pip install -r lumilearn_requirements.txt
 ```
 
 ---
@@ -116,7 +116,7 @@ notepad .env
 
 ```
 # 端口配置（默认即可，一般不需要改）
-GOAI_PORT=5000
+LumiLearn_PORT=5000
 API_PORT=5010
 TEACHER_PORT=5001
 LUMILEARN_PORT=18080
@@ -178,21 +178,21 @@ python deploy/start.py
 ============================================================
   🔗 Ollama 地址: http://localhost:11434
   📄 配置文件: ...\config\framework.yaml
-  ▶ 启动 GOAI 学习 Web (端口 5000): python goai_web.py
-      ✓ GOAI 学习 Web 已就绪 (PID 12345)
+  ▶ 启动 学习平台 Web (端口 5000): python lumilearn_web.py
+      ✓ 学习平台 Web 已就绪 (PID 12345)
   ▶ 启动框架终端 (端口 18080): python -m framework.api.server --multi-port
       ✓ Framework API 已就绪 (PID 12346)
   ...
 ```
 
-**浏览器会自动打开**，进入 GOAI 学习界面。
+**浏览器会自动打开**，进入 学习界面。
 
 ### 5.2 方式二：快速演示模式（无 AI 也能跑）
 
 如果只想快速看界面，无需配置任何模型：
 
 ```powershell
-python goai_web.py
+python lumilearn_web.py
 ```
 
 服务在 `http://localhost:5000` 启动。
@@ -202,7 +202,7 @@ python goai_web.py
 内存不足或只想用核心学习功能时：
 
 ```powershell
-python goai_web.py --mode lite
+python lumilearn_web.py --mode lite
 ```
 
 Lite 模式：
@@ -214,7 +214,7 @@ Lite 模式：
 
 | 端口 | 服务 | 用途 |
 |---|---|---|
-| 5000 | GOAI 学习 Web | 主要入口，学生登录/学习/答题 |
+| 5000 | 学习平台 Web | 主要入口，学生登录/学习/答题 |
 | 18080 | 框架终端 | Admin 管理面板 |
 | 18081 | REST API | 纯 API 接口（供第三方调用） |
 | 18082 | 模型管理 | 模型列表与切换 |
@@ -226,7 +226,7 @@ Lite 模式：
 
 ## 六、首次使用：创建账号并学习
 
-### 6.1 打开 GOAI 学习界面
+### 6.1 打开 学习界面
 
 浏览器访问 `http://localhost:5000`
 
@@ -289,7 +289,7 @@ pip install flask requests python-dotenv pyyaml
   ```powershell
   netstat -ano | findstr ":5000"
   ```
-- 如端口被占用，修改 `.env` 中的 `GOAI_PORT=5000` 为其他端口（如 `5020`）
+- 如端口被占用，修改 `.env` 中的 `LumiLearn_PORT=5000` 为其他端口（如 `5020`）
 
 ### Q3：AI 学习功能返回空内容或 100%
 
@@ -317,7 +317,7 @@ pip install flask requests python-dotenv pyyaml
 | `config/framework.yaml` | 端口与服务配置 | 通常不需要 |
 | `python deploy/start.py` | 启动全部服务 | 日常启动 |
 | `python deploy/stop.py` | 停止全部服务 | 日常停止 |
-| `python goai_web.py --mode lite` | Lite 模式启动 | 低配电脑 |
+| `python lumilearn_web.py --mode lite` | Lite 模式启动 | 低配电脑 |
 | `pip install -r requirements.txt` | 安装完整依赖 | 首次安装 |
 
 ---

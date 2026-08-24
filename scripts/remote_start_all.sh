@@ -19,7 +19,7 @@ cfg = yaml.safe_load(open('config/framework.yaml')) or {}
 ps = cfg.get('port_settings', {})
 defaults = {
     'terminal': (1, 18080), 'api': (1, 18081), 'models': (1, 18082),
-    'goai_web': (1, 5000), 'teacher_portal': (1, 5001),
+    'lumilearn_web': (1, 5000), 'teacher_portal': (1, 5001),
     'student_portal': (1, 5010), 'analytics_dashboard': (1, 18090),
 }
 for k, (de, dp) in defaults.items():
@@ -69,21 +69,21 @@ else
   pkill -f "framework/api/server.py" 2>/dev/null || true
 fi
 
-# 3. GOAI Web（学生端）
-if is_enabled goai_web; then
-  GP=$(get_port goai_web)
+# 3. 学习平台（学生端）
+if is_enabled lumilearn_web; then
+  GP=$(get_port lumilearn_web)
   [ -z "$GP" ] && GP=5000
   if curl -s http://localhost:$GP/api/status > /dev/null 2>&1; then
-    echo "[OK] GOAI Web 已在 $GP 运行"
+    echo "[OK] 学习平台已在 $GP 运行"
   else
-    echo "[启动] GOAI Web ($GP) ..."
-    nohup python3 goai_web.py > logs/goai_web.log 2>&1 &
-    echo $! > logs/goai_web.pid
+    echo "[启动] 学习平台 ($GP) ..."
+    nohup python3 lumilearn_web.py > logs/lumilearn_web.log 2>&1 &
+    echo $! > logs/lumilearn_web.pid
     sleep 3
   fi
 else
-  echo "[跳过] GOAI Web（端口未启用）"
-  pkill -f "goai_web.py" 2>/dev/null || true
+  echo "[跳过] 学习平台（端口未启用）"
+  pkill -f "lumilearn_web.py" 2>/dev/null || true
 fi
 
 # 4. 教师端（Teacher Portal）
@@ -143,7 +143,7 @@ echo "Ollama: http://localhost:11434"
 health_path() {
   case "$1" in
     terminal|api|models) echo "/health";;
-    goai_web) echo "/api/status";;
+    lumilearn_web) echo "/api/status";;
     teacher_portal) echo "/api/me";;
     student_portal) echo "/api/status";;
     analytics_dashboard) echo "/api/dashboard/overview";;

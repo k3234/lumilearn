@@ -10,7 +10,7 @@ from unittest import mock
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-import goai_web  # noqa: E402
+import lumilearn_web  # noqa: E402
 
 
 class _FakeUser:
@@ -27,36 +27,36 @@ class _FakeUser:
 # ---------- 主题 → 知识节点匹配 ----------
 class TestMatchKnowledgeNode:
     def test_match_monotonicity(self):
-        assert goai_web._match_knowledge_node("我想理解函数的单调性") == "function_monotonicity"
+        assert lumilearn_web._match_knowledge_node("我想理解函数的单调性") == "function_monotonicity"
 
     def test_match_newton_second_law(self):
-        assert goai_web._match_knowledge_node("牛顿第二定律 F=ma") == "newton_second_law"
+        assert lumilearn_web._match_knowledge_node("牛顿第二定律 F=ma") == "newton_second_law"
 
     def test_match_chemical_equilibrium(self):
-        assert goai_web._match_knowledge_node("化学平衡移动原理") == "chemical_equilibrium"
+        assert lumilearn_web._match_knowledge_node("化学平衡移动原理") == "chemical_equilibrium"
 
     def test_match_pythagorean(self):
-        assert goai_web._match_knowledge_node("勾股定理") == "pythagorean"
+        assert lumilearn_web._match_knowledge_node("勾股定理") == "pythagorean"
 
     def test_match_derivative(self):
-        assert goai_web._match_knowledge_node("导数的概念") == "derivative"
+        assert lumilearn_web._match_knowledge_node("导数的概念") == "derivative"
 
     def test_no_match_unknown(self):
-        assert goai_web._match_knowledge_node("自定义冷门主题XYZ") is None
+        assert lumilearn_web._match_knowledge_node("自定义冷门主题XYZ") is None
 
     def test_no_match_empty(self):
-        assert goai_web._match_knowledge_node("") is None
+        assert lumilearn_web._match_knowledge_node("") is None
 
     def test_fallback_to_node_name(self):
         # 兜底：整词包含节点名
-        assert goai_web._match_knowledge_node("请讲讲正态分布的应用") == "normal_distribution"
+        assert lumilearn_web._match_knowledge_node("请讲讲正态分布的应用") == "normal_distribution"
 
 
 # ---------- 学习进度记录 /api/learning/progress ----------
 class TestLearningProgress:
     def setup_method(self):
-        goai_web.app.config["TESTING"] = True
-        self.client = goai_web.app.test_client()
+        lumilearn_web.app.config["TESTING"] = True
+        self.client = lumilearn_web.app.test_client()
 
     def _login(self):
         with self.client.session_transaction() as s:
@@ -75,7 +75,7 @@ class TestLearningProgress:
     def test_record_score_100_scale(self):
         self._login()
         engine = mock.Mock()
-        with mock.patch.object(goai_web, "_get_adaptive_engine", return_value=engine):
+        with mock.patch.object(lumilearn_web, "_get_adaptive_engine", return_value=engine):
             resp = self.client.post("/api/learning/progress",
                                     json={"topic": "勾股定理", "score": 80})
         data = resp.get_json()
@@ -90,7 +90,7 @@ class TestLearningProgress:
     def test_record_score_01_scale(self):
         self._login()
         engine = mock.Mock()
-        with mock.patch.object(goai_web, "_get_adaptive_engine", return_value=engine):
+        with mock.patch.object(lumilearn_web, "_get_adaptive_engine", return_value=engine):
             resp = self.client.post("/api/learning/progress",
                                     json={"topic": "牛顿第二定律", "score": 0.65})
         data = resp.get_json()
@@ -100,7 +100,7 @@ class TestLearningProgress:
     def test_record_unmatched_topic(self):
         self._login()
         engine = mock.Mock()
-        with mock.patch.object(goai_web, "_get_adaptive_engine", return_value=engine):
+        with mock.patch.object(lumilearn_web, "_get_adaptive_engine", return_value=engine):
             resp = self.client.post("/api/learning/progress",
                                     json={"topic": "冷门主题", "score": 90})
         data = resp.get_json()
@@ -111,7 +111,7 @@ class TestLearningProgress:
 
     def test_engine_unavailable(self):
         self._login()
-        with mock.patch.object(goai_web, "_get_adaptive_engine", return_value=None):
+        with mock.patch.object(lumilearn_web, "_get_adaptive_engine", return_value=None):
             resp = self.client.post("/api/learning/progress",
                                     json={"topic": "勾股定理", "score": 80})
         assert resp.status_code == 500
@@ -119,7 +119,7 @@ class TestLearningProgress:
     def test_score_clamped(self):
         self._login()
         engine = mock.Mock()
-        with mock.patch.object(goai_web, "_get_adaptive_engine", return_value=engine):
+        with mock.patch.object(lumilearn_web, "_get_adaptive_engine", return_value=engine):
             resp = self.client.post("/api/learning/progress",
                                     json={"topic": "勾股定理", "score": 200})
         assert resp.get_json()["data"]["score"] == 1.0
@@ -128,8 +128,8 @@ class TestLearningProgress:
 # ---------- 学习首页聚合 /api/learning/dashboard ----------
 class TestLearningDashboard:
     def setup_method(self):
-        goai_web.app.config["TESTING"] = True
-        self.client = goai_web.app.test_client()
+        lumilearn_web.app.config["TESTING"] = True
+        self.client = lumilearn_web.app.test_client()
 
     def _login(self):
         with self.client.session_transaction() as s:
@@ -153,7 +153,7 @@ class TestLearningDashboard:
         engine.recommend_next.return_value = [
             {"node_id": "cosine_rule", "name": "余弦定理", "recommendation_score": 0.9},
         ]
-        with mock.patch.object(goai_web, "_get_adaptive_engine", return_value=engine):
+        with mock.patch.object(lumilearn_web, "_get_adaptive_engine", return_value=engine):
             resp = self.client.get("/api/learning/dashboard")
         data = resp.get_json()
         assert data["success"] is True
@@ -174,8 +174,8 @@ class TestLearningDashboard:
         }
         engine.analyze_weaknesses.return_value = []
         engine.recommend_next.return_value = []
-        with mock.patch.object(goai_web, "_get_adaptive_engine", return_value=engine), \
-             mock.patch.object(goai_web.db, "get_learning_reports",
+        with mock.patch.object(lumilearn_web, "_get_adaptive_engine", return_value=engine), \
+             mock.patch.object(lumilearn_web.db, "get_learning_reports",
                                return_value=[{"topic": "勾股定理", "report": {
                                    "task_understanding": {"subject": "数学"},
                                    "mastery_assessment": {"score": 85},
@@ -189,6 +189,6 @@ class TestLearningDashboard:
 
     def test_dashboard_engine_unavailable(self):
         self._login()
-        with mock.patch.object(goai_web, "_get_adaptive_engine", return_value=None):
+        with mock.patch.object(lumilearn_web, "_get_adaptive_engine", return_value=None):
             resp = self.client.get("/api/learning/dashboard")
         assert resp.status_code == 500

@@ -1,4 +1,4 @@
-# LumiLearn 全量开发任务清单
+﻿# LumiLearn 全量开发任务清单
 
 > 更新时间：2026-08-20
 > 全量测试：475 passed / 0 failed / 2 skipped（torch/tokenizers 依赖缺失，importorskip 正确跳过）
@@ -59,7 +59,7 @@
 | 时间 | 修复内容 |
 |------|---------|
 | 2026-08-20 | **pytest 收集修复**：新增 `pytest.ini`（`testpaths=tests` + `norecursedirs`），避免 `scripts/_full_e2e_test.py` 等独立脚本被误收集导致 SystemExit（全量 475 passed / 2 skipped，19 分钟）；新增 faulthandler_timeout 防护 |
-| 2026-08-20 | **仓库整理与隐私脱敏**：`git rm --cached` 根目录 6 个临时调试脚本 + `goai_output/*.json` + `push_git.ps1`（本地 token 工具）；移除 7 个含远程主机用户名的历史 `_deploy_*`/`_check_remote*` 脚本；`.gitignore` 增加对应规则与 `goai_output/`、`test_migration.py`；`docs/CHANGELOG_*.md` 中 `/home/kai/` 脱敏为 `/home/<user>/` |
+| 2026-08-20 | **仓库整理与隐私脱敏**：`git rm --cached` 根目录 6 个临时调试脚本 + `output/*.json` + `push_git.ps1`（本地 token 工具）；移除 7 个含远程主机用户名的历史 `_deploy_*`/`_check_remote*` 脚本；`.gitignore` 增加对应规则与 `output/`、`test_migration.py`；`docs/CHANGELOG_*.md` 中 `/home/kai/` 脱敏为 `/home/<user>/` |
 | 2026-08-20 | **天虹实操缺陷修复**：`framework/api/routes/admin.py` `_task_to_api` 使用 `Dict` 注解但未导入（Python 3.14 延迟注解掩盖、3.10 启动即崩），已补 `from typing import Dict`；天虹主机导入与 28080-28082 独立实例验证通过 |
 | 2026-08-19 | **P2-12 分布式任务队列**：新建 `agent_core/task_queue.py` + `task_queue` 表（39 张表）+ admin API 5 端点 + admin.html 任务面板（15 tests），全量 475 passed |
 | 2026-08-19 | **P2-11 集成测试**：新建 `tests/test_integration.py`（8 tests），端到端覆盖 Router → Feynman → Verifier → FactChecker → KnowledgeCache 完整链路 |

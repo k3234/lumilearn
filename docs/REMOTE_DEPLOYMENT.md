@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # ============================================================
 # LumiLearn 服务器部署说明
 # ============================================================
@@ -9,11 +9,11 @@
 #   18080  Framework Terminal (HTML 终端 + 全部 API)
 #   18081  Framework REST API
 #   18082  Framework 模型管理
-#   5000   GOAI Web (费曼五步教学 Demo)
+#   5000   学习平台 Web (费曼五步教学 Demo)
 #
 # 启动/停止/查看状态:
 #   systemctl --user status lumilearn-api    # 18080/18081/18082
-#   systemctl --user status lumilearn-goai   # 5000
+#   systemctl --user status lumilearn-lumilearn   # 5000
 #   systemctl --user restart lumilearn-api
 #   journalctl --user -u lumilearn-api -f
 #
@@ -23,7 +23,7 @@
 #   聊天:   http://<server-ip>:18080/chat
 #   管理:   http://<server-ip>:18080/admin  (admin / <your-password>)
 #   API:    http://<server-ip>:18081/health
-#   GOAI:   http://<server-ip>:5000/
+#   LumiLearn:   http://<server-ip>:5000/
 #
 # 一键启动 (非 systemd 环境):
 #   bash scripts/remote_start_all.sh
@@ -41,7 +41,7 @@
 #   1. 上传: 3131 个文件到 <remote-dir>（默认 ~/lumilearn），跳过 .git/.env/
 #      pid/缓存/虚拟环境/大文件（>5MB，67 个）
 #   2. 配置: `python3 deploy/setup.py --quick --skip-deps` 成功
-#      - 端口: terminal 18080 / api 18081 / models 18082 / goai 5000 /
+#      - 端口: terminal 18080 / api 18081 / models 18082 / lumilearn 5000 /
 #              teacher 5001 全部 enabled
 #      - 模型: Ollama http://localhost:11434 探测成功（8 个模型，
 #              默认 lumilearn-v2:latest），OLLAMA_MODEL 已写入 .env

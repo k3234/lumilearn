@@ -1,4 +1,4 @@
-# LumiLearn 开源路线图（Open Source Plan）
+﻿# LumiLearn 开源路线图（Open Source Plan）
 
 > 日期：2026-08-12 · 初赛提交前
 > 目标：从"参赛作品"走向"开放教育基础设施"，让每个学校都能在普通电脑上部署自己的 AI 教官。
@@ -40,7 +40,7 @@
 
 | 开源内容 | 说明 |
 |---|---|
-| ✅ 核心引擎 | feynman_engine、goai_multi_agent、goai_agent、adaptive_learning |
+| ✅ 核心引擎 | feynman_engine、lumilearn_multi_agent、lumilearn_agent、adaptive_learning |
 | ✅ 服务框架 | framework/api、database、teacher_portal、admin |
 | ✅ 模型工具 | 训练脚本、数据构建、GGUF 转换 |
 | ✅ 教学数据规范 | 数据 schema、构建流程（真实数据由社区提供） |

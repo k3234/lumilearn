@@ -56,7 +56,7 @@ class UnifiedOrchestrator:
         · node=verifier ：生成内容验证未通过（低置信度/内容质量异常）触发（P0-1 扩展）
 
     与 Phase 0 的兼容性：
-      - 提供与 goai_multi_agent.py 相同的输出格式
+      - 提供与 lumilearn_multi_agent.py 相同的输出格式
       - 保留原有的 agent_trace 追踪
     """
 
@@ -137,7 +137,7 @@ class UnifiedOrchestrator:
             route: 强制路由（可选: simple/standard/complex_parallel）
 
         Returns:
-            与 goai_multi_agent.py 兼容的聚合报告
+            与 lumilearn_multi_agent.py 兼容的聚合报告
         """
         t0 = time.time()
         topic = (payload.get("topic") or "").strip()
@@ -728,7 +728,7 @@ class UnifiedOrchestrator:
         except ImportError:
             # 降级：使用旧版串行编排（兼容）
             try:
-                from goai_multi_agent import MultiAgentOrchestrator
+                from lumilearn_multi_agent import MultiAgentOrchestrator
                 orchestrator = MultiAgentOrchestrator()
                 result = orchestrator.run(payload)
                 elapsed = time.time() - t0
@@ -747,7 +747,7 @@ class UnifiedOrchestrator:
         )
         elapsed = time.time() - t0
 
-        # 转换为与 goai_multi_agent.py 兼容的格式
+        # 转换为与 lumilearn_multi_agent.py 兼容的格式
         quality = result.get("quality_report", {})
         ret = {
             "success": True,

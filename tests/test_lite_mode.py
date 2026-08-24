@@ -14,15 +14,15 @@ from framework.lite_mode import LiteModeManager
 
 # ------------------------------------------------------------
 # 学生端学习平台 lite 模式渲染测试准备（保持完全离线）
-# 1) 先把数据库指向系统临时目录，避免 import goai_web 时在项目根创建 lumilearn.db
-# 2) goai_web 模块顶层会实例化 LumiLearnAgent 并探测 Ollama（requests.get），
+# 1) 先把数据库指向系统临时目录，避免 import lumilearn_web 时在项目根创建 lumilearn.db
+# 2) lumilearn_web 模块顶层会实例化 LumiLearnAgent 并探测 Ollama（requests.get），
 #    用 mock 阻断外部网络调用
 if "LUMILEARN_DB_PATH" not in os.environ:
     os.environ["LUMILEARN_DB_PATH"] = os.path.join(
         tempfile.gettempdir(), "lumilearn_test_lite_mode.db")
 
 with mock.patch("requests.get", side_effect=ConnectionError("offline")):
-    from goai_web import app  # noqa: E402
+    from lumilearn_web import app  # noqa: E402
 
 
 class TestLiteMode(unittest.TestCase):
@@ -50,7 +50,7 @@ class TestLiteMode(unittest.TestCase):
             "terminal": {"enabled": True, "port": 18080},
             "api": {"enabled": True, "port": 18081},
             "models": {"enabled": True, "port": 18082},
-            "goai_web": {"enabled": True, "port": 5000},
+            "lumilearn_web": {"enabled": True, "port": 5000},
             "teacher_portal": {"enabled": True, "port": 5001},
             "student_portal": {"enabled": True, "port": 5010},
             "analytics_dashboard": {"enabled": True, "port": 18090},
@@ -71,7 +71,7 @@ class TestLiteMode(unittest.TestCase):
             "terminal": {"enabled": True, "port": 18080},
             "api": {"enabled": True, "port": 18081},
             "models": {"enabled": True, "port": 18082},
-            "goai_web": {"enabled": True, "port": 5000},
+            "lumilearn_web": {"enabled": True, "port": 5000},
             "teacher_portal": {"enabled": True, "port": 5001},
             "student_portal": {"enabled": True, "port": 5010},
             "analytics_dashboard": {"enabled": True, "port": 18090},
@@ -98,7 +98,7 @@ class TestLiteModeDashboard(unittest.TestCase):
     def test_dashboard_lite_hides_quick_links(self):
         """LITE_MODE=True：隐藏「快速参考」，显示「轻量自学模式」"""
         app.config["LITE_MODE"] = True
-        with mock.patch("goai_web.check_port", return_value=False):
+        with mock.patch("lumilearn_web.check_port", return_value=False):
             resp = self.client.get("/")
         self.assertEqual(resp.status_code, 200)
         body = resp.get_data(as_text=True)
@@ -108,7 +108,7 @@ class TestLiteModeDashboard(unittest.TestCase):
     def test_dashboard_full_shows_quick_links(self):
         """LITE_MODE=False（或未设置）：显示「快速参考」"""
         app.config.pop("LITE_MODE", None)
-        with mock.patch("goai_web.check_port", return_value=False):
+        with mock.patch("lumilearn_web.check_port", return_value=False):
             resp = self.client.get("/")
         self.assertEqual(resp.status_code, 200)
         body = resp.get_data(as_text=True)

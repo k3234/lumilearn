@@ -1,4 +1,4 @@
-# LumiLearn V2 训练方法指南（脱敏版）
+﻿# LumiLearn V2 训练方法指南（脱敏版）
 
 > 本文档完整记录 LumiLearn-V2（Qwen2.5-1.5B-Instruct + LoRA）的训练方法与过程，供复现与学习。
 > **已脱敏**：不含服务器 IP、账号密码、本地路径等敏感信息。所有部署/训练命令均使用环境变量注入。
@@ -171,7 +171,7 @@ python scripts/_deploy_ollama_remote.py  # 注册到 Ollama
 ### 5.6 应用侧配置
 
 ```bash
-# goai_agent / goai_web 通过环境变量指定 Ollama 地址
+# lumilearn_agent / lumilearn_web 通过环境变量指定 Ollama 地址
 $env:OLLAMA_URL='http://<ollama_host>:11434'
 ```
 

@@ -260,7 +260,7 @@ class OrchestrationEngine:
     与 Phase 0 的区别：
       - 使用 agent_core.models.AgentState 统一状态
       - 增加 cost_trace 和 latency_trace
-      - 输出格式与现有 goai_multi_agent.py 兼容
+      - 输出格式与现有 lumilearn_multi_agent.py 兼容
     """
 
     def __init__(self, max_workers: int = 6):

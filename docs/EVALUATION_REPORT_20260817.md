@@ -1,4 +1,4 @@
-# LumiLearn 综合测评报告
+﻿# LumiLearn 综合测评报告
 
 > 测评日期：2026-08-17  
 > 测评维度：用户视角 + 专业开发者视角  
@@ -33,7 +33,7 @@
 
 | 步骤 | 接口 | 状态 | 备注 |
 |------|------|------|------|
-| 登录 | `POST /api/auth/login` | ✅ | session-based，与 GoAI 统一账号 |
+| 登录 | `POST /api/auth/login` | ✅ | session-based，与 LumiLearn 统一账号 |
 | 发起学习 | `POST /api/learn/start` | ✅ | 创建会话，返回 5 步流程 |
 | 步骤教学 | `POST /api/learn/step` | ✅ | 调用实际模型生成教学内容 |
 | 引导式学习 | `POST /api/learn/guide` | ✅ | 苏格拉底式交互，RAG 注入 |
@@ -47,7 +47,7 @@
 1. **费曼测试评分过于简单**：当前按文本长度 3 档打分（<20字=62分，<60字=78分，>=60字=88分），无法真正评估学生是否理解。建议后续接入 `coach` Agent 做语义理解评分。
 
 2. **前端 mock 与后端 API 有 4 处不一致**：
-   - 前端 `api.js` 部分接口用 `goai_web.js` 的 mock 数据，部分调真实 API
+   - 前端 `api.js` 部分接口用 `lumilearn_web.js` 的 mock 数据，部分调真实 API
    - `/api/agent/status` 前端请求 `status` 字段，后端响应 `status`，但缺少 `agents` 列表
    - `/api/agent/route` 前端未调用，后端已实现
 
@@ -101,7 +101,7 @@
 ```
 ┌──────────────────────────────────────────────────────┐
 │  UI 层                                               │
-│  goai_web.py (5000) / teacher_portal.py (5010)        │
+│  lumilearn_web.py (5000) / teacher_portal.py (5010)        │
 │  student_portal.py (5008)                              │
 ├──────────────────────────────────────────────────────┤
 │  API 路由层 (flask.Blueprint)                         │
@@ -143,10 +143,10 @@
 
 **发现 3 处明显重复：**
 
-1. **学科关键词重复**：`goai_agent.py` 和 `agent_core/router.py` 各有独立的 `SUBJECT_KEYWORDS` 字典，需要保持同步。
+1. **学科关键词重复**：`lumilearn_agent.py` 和 `agent_core/router.py` 各有独立的 `SUBJECT_KEYWORDS` 字典，需要保持同步。
    - 建议：统一到 `agent_core/models.py` 或 `framework/config.py`
 
-2. **路由关键词重复**：`goai_multi_agent.py` 的 `_extract_topic()` 和 `agent_core/router.py` 的 `_detect_topic()` 逻辑相似。
+2. **路由关键词重复**：`lumilearn_multi_agent.py` 的 `_extract_topic()` 和 `agent_core/router.py` 的 `_detect_topic()` 逻辑相似。
    - 建议：Router 的 topic 检测应复用已有逻辑
 
 3. **Agent 定义重复**：`student_learn.py` 的 `AGENT_DEFS` 与 `agents.py` 的 BUILTIN_AGENTS 各有一版。
@@ -216,7 +216,7 @@ test_config.py              ✅ 12 个用例
 
 | 瓶颈 | 位置 | 影响 |
 |------|------|------|
-| 串行 3-Agent 链 | `goai_multi_agent.py` | 延迟叠加，总延迟 = T1+T2+T3 |
+| 串行 3-Agent 链 | `lumilearn_multi_agent.py` | 延迟叠加，总延迟 = T1+T2+T3 |
 | 无响应缓存 | `feynman_engine.py` | 相同题目重复计算 |
 | DB 惰性连接 | `database.py` | 高并发下连接创建开销 |
 
@@ -260,10 +260,10 @@ test_config.py              ✅ 12 个用例
 
 | 问题 | 位置 | 建议 |
 |------|------|------|
-| 5套Agent系统分散 | `goai_agent.py`, `goai_multi_agent.py`, `langgraph_engine.py`, `agents.py`, `agent_core/` | Phase 2 统一调度 |
-| 学科关键词重复定义 | `goai_agent.py` + `agent_core/router.py` | 统一到 `agent_core/models.py` |
+| 5套Agent系统分散 | `lumilearn_agent.py`, `lumilearn_multi_agent.py`, `langgraph_engine.py`, `agents.py`, `agent_core/` | Phase 2 统一调度 |
+| 学科关键词重复定义 | `lumilearn_agent.py` + `agent_core/router.py` | 统一到 `agent_core/models.py` |
 | 混合端口模式 | 5000(含前端)+18080+18081+18082 | 考虑统一为单一入口+反向代理 |
-| 前端 mock 与 API 不一致 | `goai_web.js` 部分接口走 mock | 全量切换真实 API |
+| 前端 mock 与 API 不一致 | `lumilearn_web.js` 部分接口走 mock | 全量切换真实 API |
 | 费曼测试评分启发式 | `student_learn.py:300` | 接入 coach Agent |
 
 ---

@@ -92,7 +92,7 @@ class RouterAgent:
         "simple": None,
     }
 
-    # 学科关键词映射（与 goai_agent.py 保持一致）
+    # 学科关键词映射（与 lumilearn_agent.py 保持一致）
     SUBJECT_KEYWORDS = {
         "数学": ["数学", "代数", "几何", "函数", "方程", "概率", "数列", "三角",
                  "向量", "矩阵", "导数", "积分", "不等式", "圆", "椭圆", "勾股",

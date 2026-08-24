@@ -1,4 +1,4 @@
-# LumiLearn 安全审计报告（本地代码分析）
+﻿# LumiLearn 安全审计报告（本地代码分析）
 > 生成时间：2026-08-17  
 > 审计方式：静态代码扫描 + 手动审查  
 > 范围：framework/、routes/、services/、模板、安全模块
@@ -24,15 +24,15 @@
 ## 二、已修复的严重/高危问题
 
 ### H-1: SECRET_KEY 硬编码（CRITICAL）
-- **问题**：`goai_web.py` / `student_portal.py` / `teacher_portal.py` 中存在硬编码密钥
+- **问题**：`lumilearn_web.py` / `student_portal.py` / `teacher_portal.py` 中存在硬编码密钥
 - **修复**：统一通过 `get_app_secret_key(env_var, app_name)` 从环境变量读取
-- **文件**：[goai_web.py:47](file:///e:/学习LLM/lumilearn/goai_web.py#L47), [student_portal.py:43](file:///e:/学习LLM/lumilearn/student_portal.py#L43), [teacher_portal.py:42](file:///e:/学习LLM/lumilearn/teacher_portal.py#L42)
+- **文件**：[lumilearn_web.py:47](file:///e:/学习LLM/lumilearn/lumilearn_web.py#L47), [student_portal.py:43](file:///e:/学习LLM/lumilearn/student_portal.py#L43), [teacher_portal.py:42](file:///e:/学习LLM/lumilearn/teacher_portal.py#L42)
 - **状态**：✅ 已修复
 
 ### H-2: 前端 XSS（CRITICAL）
 - **问题**：6 个 HTML 模板使用 `{{ ... }}` 直接输出未转义内容
 - **修复**：所有用户输入通过 `esc()` 函数转义后输出
-- **文件**：[admin.html](file:///e:/学习LLM/lumilearn/remote/templates/admin.html), [goai_dashboard.html](file:///e:/学习LLM/lumilearn/remote/templates/goai_dashboard.html) 等
+- **文件**：[admin.html](file:///e:/学习LLM/lumilearn/remote/templates/admin.html), [dashboard.html](file:///e:/学习LLM/lumilearn/remote/templates/dashboard.html) 等
 - **状态**：✅ 已修复
 
 ### H-3: CORS 通配符（CRITICAL）
@@ -91,14 +91,14 @@
 - **状态**：✅ 已修复
 
 ### MEDIUM-1: HTTP 安全响应头缺失
-- **问题**：`goai_web.py` / `student_portal.py` / `teacher_portal.py` 未设置安全响应头
+- **问题**：`lumilearn_web.py` / `student_portal.py` / `teacher_portal.py` 未设置安全响应头
 - **修复**：三个入口均添加 `after_request` 钩子，设置：
   - `X-Content-Type-Options: nosniff`
   - `X-Frame-Options: DENY`
   - `Referrer-Policy: no-referrer-when-downgrade`
   - `Content-Security-Policy`（HTML 页面）
   - `Cache-Control: no-store`（HTML 页面）
-- **文件**：[goai_web.py:56-74](file:///e:/学习LLM/lumilearn/goai_web.py#L56-L74), [student_portal.py:52-70](file:///e:/学习LLM/lumilearn/student_portal.py#L52-L70), [teacher_portal.py:52-70](file:///e:/学习LLM/lumilearn/teacher_portal.py#L52-L70)
+- **文件**：[lumilearn_web.py:56-74](file:///e:/学习LLM/lumilearn/lumilearn_web.py#L56-L74), [student_portal.py:52-70](file:///e:/学习LLM/lumilearn/student_portal.py#L52-L70), [teacher_portal.py:52-70](file:///e:/学习LLM/lumilearn/teacher_portal.py#L52-L70)
 - **状态**：✅ 已修复
 
 ### MEDIUM-2: 字幕路径命令注入
@@ -193,7 +193,7 @@
 - `framework/services/ocr_service.py` — 接入 validate_upload_file
 - `framework/services/speech_service.py` — 接入 validate_upload_file
 - `framework/services/video_compiler.py` — 字幕路径校验
-- `goai_web.py` — 添加安全响应头
+- `lumilearn_web.py` — 添加安全响应头
 - `student_portal.py` — 添加安全响应头
 - `teacher_portal.py` — 添加安全响应头
 - `tests/test_security_gateway.py` — 修复 mock 路径

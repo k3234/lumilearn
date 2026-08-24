@@ -33,8 +33,8 @@ def _reset_conv_store():
 
 
 @pytest.fixture(scope="module")
-def goai_client():
-    """goai_web 应用 test client。
+def client():
+    """lumilearn_web 应用 test client。
 
     - 导入前把 DB 指向临时目录，避免在项目根创建 lumilearn.db
     - 阻断 requests.get（LumiLearnAgent 构造时会探测 Ollama 可用性）
@@ -43,14 +43,14 @@ def goai_client():
     os.environ["LUMILEARN_DB_PATH"] = os.path.join(tmp_dir, "lumilearn.db")
     try:
         with mock.patch("requests.get", side_effect=ConnectionError("offline")):
-            import goai_web
-            goai_web.app.config["TESTING"] = True
-        yield goai_web.app.test_client()
+            import lumilearn_web
+            lumilearn_web.app.config["TESTING"] = True
+        yield lumilearn_web.app.test_client()
     finally:
         os.environ.pop("LUMILEARN_DB_PATH", None)
 
 
-def _login_goai(client):
+def _login_client(client):
     """创建测试学生并登录（session 认证，供 learn/search 接口使用）。"""
     db.add_user("接口测试学生", role="student", username="stu_api", password="Test1234")
     resp = client.post("/api/auth/login",
@@ -61,22 +61,22 @@ def _login_goai(client):
 class TestLearnStartValidation:
     """POST /api/learn/start：topic 必填且长度 ≤ 200"""
 
-    def test_topic_too_long(self, goai_client):
-        _login_goai(goai_client)
-        resp = goai_client.post("/api/learn/start", json={"topic": "学" * (MAX_TOPIC + 1)})
+    def test_topic_too_long(self, client):
+        _login_client(client)
+        resp = client.post("/api/learn/start", json={"topic": "学" * (MAX_TOPIC + 1)})
         assert resp.status_code == 400
         body = resp.get_json()
         assert body["code"] == 400
         assert "200" in body["message"]
 
-    def test_topic_missing(self, goai_client):
-        _login_goai(goai_client)
-        resp = goai_client.post("/api/learn/start", json={})
+    def test_topic_missing(self, client):
+        _login_client(client)
+        resp = client.post("/api/learn/start", json={})
         assert resp.status_code == 400
 
-    def test_valid_topic_passes(self, goai_client):
-        _login_goai(goai_client)
-        resp = goai_client.post("/api/learn/start", json={"topic": "函数的单调性"})
+    def test_valid_topic_passes(self, client):
+        _login_client(client)
+        resp = client.post("/api/learn/start", json={"topic": "函数的单调性"})
         assert resp.status_code == 200
         assert resp.get_json()["code"] == 0
 
@@ -84,21 +84,21 @@ class TestLearnStartValidation:
 class TestKnowledgeSearchValidation:
     """GET/POST /api/knowledge/search：query 必填且长度 ≤ 100"""
 
-    def test_query_too_long(self, goai_client):
-        _login_goai(goai_client)
-        resp = goai_client.post("/api/knowledge/search",
+    def test_query_too_long(self, client):
+        _login_client(client)
+        resp = client.post("/api/knowledge/search",
                                 json={"query": "查" * (MAX_QUERY + 1)})
         assert resp.status_code == 400
         assert resp.get_json()["success"] is False
 
-    def test_query_missing(self, goai_client):
-        _login_goai(goai_client)
-        resp = goai_client.post("/api/knowledge/search", json={})
+    def test_query_missing(self, client):
+        _login_client(client)
+        resp = client.post("/api/knowledge/search", json={})
         assert resp.status_code == 400
 
-    def test_valid_query_passes(self, goai_client):
-        _login_goai(goai_client)
-        resp = goai_client.post("/api/knowledge/search", json={"query": "函数的单调性"})
+    def test_valid_query_passes(self, client):
+        _login_client(client)
+        resp = client.post("/api/knowledge/search", json={"query": "函数的单调性"})
         assert resp.status_code == 200
         assert resp.get_json()["success"] is True
 
@@ -143,13 +143,13 @@ class TestDocumentImportValidation:
 class TestUnifiedErrorPage:
     """6.2 统一异常页面：API 404 返回友好 JSON"""
 
-    def test_api_404_friendly_json(self, goai_client):
-        resp = goai_client.get("/api/does-not-exist-xyz")
+    def test_api_404_friendly_json(self, client):
+        resp = client.get("/api/does-not-exist-xyz")
         assert resp.status_code == 404
         body = resp.get_json()
         assert body["error"] == "资源不存在"
         assert body["code"] == 404
 
-    def test_api_404_json_not_html(self, goai_client):
-        resp = goai_client.get("/api/does-not-exist-xyz")
+    def test_api_404_json_not_html(self, client):
+        resp = client.get("/api/does-not-exist-xyz")
         assert "text/html" not in resp.content_type

@@ -1,7 +1,7 @@
-# LumiLearn vs GOAI 无界应用 TOP 30 对标分析报告
+﻿# LumiLearn vs LumiLearn 无界应用 TOP 30 对标分析报告
 
 > 生成时间：2026-08-24  
-> 数据来源：GOAI 无界应用赛道 TOP 30 最终榜单（图片）+ LumiLearn 仓库现状  
+> 数据来源：LumiLearn 无界应用赛道 TOP 30 最终榜单（图片）+ LumiLearn 仓库现状  
 > 分析目标：找出差距、定位差异化优势、明确冲刺方向
 
 ---
@@ -93,7 +93,7 @@
 | **P0-1** | 修复 S-1（lesson_engine.py CORS `*`） | +1 分 | 当前安全合规唯一扣分点 |
 | **P0-2** | 制作 3 分钟精简版 README | +2 分 | 现有文档过重，评委/新用户 3 分钟内无法感知核心价值 |
 | **P0-3** | 强化"单高中生独立开发"叙事 | +2 分 | 这是最强的记忆点和差异化标签 |
-| **P0-4** | 补充"500 用户完整分析报告"到 GOAI 提交材料 | +2 分 | 已有 `500-user-complete-analysis-report.md`，但需提炼到 submission |
+| **P0-4** | 补充"500 用户完整分析报告"到 LumiLearn 提交材料 | +2 分 | 已有 `500-user-complete-analysis-report.md`，但需提炼到 submission |
 
 ### 4.2 中优先级（有时间和余力）
 
@@ -140,4 +140,4 @@ Village of Shadows / I Learn / Inno-Agent / 灵犀智学 / MuseVibe / FireOps AI
 
 ---
 
-*本报告由 LumiLearn 分析生成，可作为 GOAI 决赛冲刺材料参考。*
+*本报告由 LumiLearn 分析生成，可作为 LumiLearn 决赛冲刺材料参考。*

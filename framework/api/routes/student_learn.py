@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirna
 from framework.database import db
 from framework.services.conversation_store import conversation_store as conv_store
 from framework.api.validation import validate_text_field
-from goai_agent import FlowOrchestrator, TaskUnderstanding
+from lumilearn_agent import FlowOrchestrator, TaskUnderstanding
 
 # 与原型 mock.js 保持一致的 Agent 定义
 AGENT_DEFS = [
@@ -245,7 +245,7 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
         # 费曼交互式单步引导（每次只生成一步，等待学生回答后再推进）
         from framework.engines.feynman_engine import FeynmanEngine
         try:
-            from goai_multi_agent import _map_level
+            from lumilearn_multi_agent import _map_level
         except Exception:
             def _map_level(diff):
                 return {"初中": "junior", "高中": "senior",

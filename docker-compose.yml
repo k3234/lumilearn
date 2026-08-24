@@ -14,7 +14,6 @@ services:
       - OLLAMA_HOST=http://ollama:11434
       # 生产环境请在 .env 中配置强随机密钥（python -c "import secrets;print(secrets.token_hex(32))"）
       - SECRET_KEY=${SECRET_KEY:-}
-      - GOAI_SECRET_KEY=${GOAI_SECRET_KEY:-}
       - STUDENT_SECRET_KEY=${STUDENT_SECRET_KEY:-}
       - TEACHER_SECRET_KEY=${TEACHER_SECRET_KEY:-}
       - DATABASE_URL=sqlite:////data/lumilearn.db

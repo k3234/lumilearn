@@ -1,8 +1,8 @@
-# LumiLearn 仓库全面测评报告
+﻿# LumiLearn 仓库全面测评报告
 
 > 生成时间：2026-08-23 12:00 (Beijing time)
 > 分析范围：e:\学习LLM\lumilearn（含本地 master）
-> 评审基准：GOAI 无界应用赛道五大维度
+> 评审基准：LumiLearn 无界应用赛道五大维度
 
 ---
 
@@ -65,7 +65,7 @@ lumilearn/
 ├── scripts/            # 运维脚本
 ├── config/             # YAML 配置
 ├── skills/             # AI 辅助技能（19 文件）
-└── goai_output/        # GOAI 输出产物
+└── output/        # LumiLearn 输出产物
 ```
 
 ---
@@ -110,7 +110,7 @@ lumilearn/
 | 维度 | 等级 | 说明 |
 |---|---|---|
 | **测试覆盖** | **A-** | 639 个测试函数，覆盖 Agent/安全/费曼/配置全链路 |
-| **文档完整性** | **A** | GOAI 文档链完整，含技术方案/差距分析/合规清单 |
+| **文档完整性** | **A** | LumiLearn 文档链完整，含技术方案/差距分析/合规清单 |
 | **代码规范** | **B+** | ruff.toml + 类型标注 + conftest.py fixtures |
 | **可复现性** | **B+** | 一键部署脚本 + DOCKER.md + ZERO_BASE_SETUP_GUIDE.md |
 | **架构清晰度** | **A** | 分层清晰：agent_core → framework → api/routes → templates |
@@ -153,7 +153,7 @@ lumilearn/
 
 ---
 
-## 四、GOAI 竞赛评审对标分析
+## 四、竞赛评审对标分析
 
 ### 4.1 五大评审维度得分预测（优化后）
 
@@ -167,9 +167,9 @@ lumilearn/
 | **开源创新** | 5% | 5 | 5 | 0 | 全开源 MIT + 单高中生 |
 | **总分预估** | **100%** | **70-73** | **82-87** | **+12~14** |
 
-### 4.2 GOAI 四阶段闭环实现对照
+### 4.2 LumiLearn 四阶段闭环实现对照
 
-| GOAI 要求 | LumiLearn 实现 | 匹配度 |
+| LumiLearn 要求 | LumiLearn 实现 | 匹配度 |
 |---|---|---|
 | 任务理解 | `TaskUnderstanding`：学科/主题/难度/学习类型识别，置信度计算 | ✅ 完全匹配 |
 | 流程编排 | `FlowOrchestrator`：费曼五步教学法自动生成教学流程 | ✅ 完全匹配 |
@@ -205,7 +205,7 @@ lumilearn/
 |---|---|---|---|
 | P0-1 费曼 AI 评分 | `student_learn.py` | 替换启发式长度为 OutputDetector 语义评分+增强降级 | ✅ |
 | P0-2 Mock 清理 | 无变更 | 验证生产前端已直接用真实 API | ✅ |
-| P1-1 统一端口入口 | `goai_web.py` | 新增 `/proxy/terminal/`、`/proxy/api-gateway/`、`/proxy/model-manager/` | ✅ |
+| P1-1 统一端口入口 | `lumilearn_web.py` | 新增 `/proxy/terminal/`、`/proxy/api-gateway/`、`/proxy/model-manager/` | ✅ |
 | P1-2 教师成绩入口 | `teacher.html` | 学生表格新增蓝色"成绩"按钮 + `viewStudentScores()` | ✅ |
 | P1-3 README 量化指标 | `README.md` | 新增"核心能力指标"表格（RAG 5/5、26+ tok/s、639+ 测试） | ✅ |
 | P2-1 CORS 锁定 | `config.py`（2处） | `cors_origins` 从 `["*"]` → `["http://localhost:5000", ...]` | ✅ |
@@ -246,7 +246,7 @@ LumiLearn 是一个**架构完整、安全合规意识强、工程化程度高**
 2. **安全基线扎实**：密码策略（bcrypt + 随机密码 + 强制改密 + 暴力破解防护）、CORS 白名单、文件上传四层校验均已落地
 3. **合规对标 EU AI Act**：风险管理体系、日志审计、人工监督均有对应实现
 4. **测试覆盖充分**：639 个测试用例，安全专项测试完善
-5. **竞赛文档齐全**：GOAI 技术方案、差距分析、合规清单、评测报告完整
+5. **竞赛文档齐全**：LumiLearn 技术方案、差距分析、合规清单、评测报告完整
 6. **本轮优化见效**：费曼 AI 评分 + 统一端口入口 + 教师成绩入口 + 5项安全加固 + 104个测试全通过
 
 **优化后预估得分：82-87/100**（原 70-73/100），目标冲刺 90+ 分。

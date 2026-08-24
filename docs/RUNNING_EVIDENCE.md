@@ -1,4 +1,4 @@
-# LumiLearn 运行证据
+﻿# LumiLearn 运行证据
 
 > 本文档提供"系统确实能跑起来"的可核查证据：部署环境、服务状态、API 实测、数据落库、运行日志摘要。服务器地址一律以占位符展示。
 
@@ -21,7 +21,7 @@ $ ss -tlnp | grep -E '18080|18081|18082|5000|5001|5010|18090'
 LISTEN 0.0.0.0:18080  (Framework API · 课堂/终端)
 LISTEN 0.0.0.0:18081  (Framework API · REST)
 LISTEN 0.0.0.0:18082  (Framework API · 管理面板)
-LISTEN 0.0.0.0:5000   (GOAI 学习 Web)
+LISTEN 0.0.0.0:5000   (学习平台 Web)
 LISTEN 0.0.0.0:5001   (教师端)
 LISTEN 0.0.0.0:5010   (学生端学习平台)
 LISTEN 0.0.0.0:18090  (学习分析仪表盘)
@@ -38,7 +38,7 @@ LumiLearn 健康检查 (host=127.0.0.1)
   ✅ 端口 18080  课堂/终端/管理 (Framework API)   OK
   ✅ 端口 18081  REST API                          OK
   ✅ 端口 18082  管理面板 API                      OK
-  ✅ 端口 5000   GOAI 学习 Web                     OK
+  ✅ 端口 5000   学习平台 Web                     OK
   ✅ 端口 5001   教师端                            OK
   ✅ 端口 5010   学生端学习平台                    OK
   ✅ 端口 18090  学习分析仪表盘                    OK
@@ -83,7 +83,7 @@ $ curl -X POST http://localhost:5010/api/learn/guide -H 'Content-Type: applicati
   "content":"你可能觉得面积就是长乘以宽，但如果是奇怪形状的房间呢？...","is_last":false}}
 ```
 
-### 3.3 多 Agent 学习（GOAI Web 5000）
+### 3.3 多 Agent 学习（学习平台 Web 5000）
 
 ```bash
 $ curl -X POST http://localhost:5000/api/multi-agent -H 'Content-Type: application/json' \
@@ -116,7 +116,7 @@ $ curl -H "X-Admin-Token: ***" http://localhost:18082/api/admin/activity-logs?so
 | 数据表 | 记录数 | 说明 |
 |---|---|---|
 | `system_logs` | 50 | 管理操作审计 |
-| `reasoning_logs` | 83 | 学生推理过程（费曼引导每步 / GOAI 学习 / 课堂聊天） |
+| `reasoning_logs` | 83 | 学生推理过程（费曼引导每步 / 学习 / 课堂聊天） |
 | `learning_reports` | 20 | 学习报告（含掌握度/薄弱点/建议） |
 | `chat_sessions` / `chat_history` | 多会话 | 引导式学习对话持久化 |
 
@@ -160,7 +160,7 @@ $ tail -n 20 logs/framework_api.log
 | 11 | Admin 学习记录 / 数据可视化 | ✅ |
 | 12 | 学生端登录 + 引导式学习第 1 步提问 | ✅ |
 | 13 | 学生回答后 AI 调整引导推进第 2 步 | ✅ |
-| 14-16 | GOAI Web / 教师端 / 分析仪表盘打开 | ✅ |
+| 14-16 | 学习平台 Web / 教师端 / 分析仪表盘打开 | ✅ |
 
 **截图**：全部保存在 `docs/evidence/`（01_classroom_home.png … 14_port_5001.png，共 16 张）。
 **复现**：`python3 scripts/_browser_walkthrough.py`（需 selenium + 本机 Edge/Chrome）。

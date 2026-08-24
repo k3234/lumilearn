@@ -94,7 +94,7 @@ done
 
 # 启动主服务
 if ! curl -s http://localhost:5010/health &> /dev/null; then
-    nohup python3 goai_web.py --mode lite > logs/demo_server.log 2>&1 &
+    nohup python3 lumilearn_web.py --mode lite > logs/demo_server.log 2>&1 &
     echo "  服务已启动，等待 3 秒..."
     sleep 3
 fi

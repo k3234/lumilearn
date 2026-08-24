@@ -524,13 +524,13 @@ class TestAgentRegistryWithNewAgents(unittest.TestCase):
 class TestBackwardCompatibility(unittest.TestCase):
     """与 Phase 0 的兼容性测试"""
 
-    def test_goai_multi_agent_still_works(self):
-        """兼容性 shim goai_multi_agent.py 仍可导入 _map_level"""
+    def test_lumilearn_multi_agent_still_works(self):
+        """兼容性 shim lumilearn_multi_agent.py 仍可导入 _map_level"""
         try:
-            from goai_multi_agent import _map_level
+            from lumilearn_multi_agent import _map_level
             self.assertEqual(_map_level("高中"), "senior")
         except ImportError as e:
-            self.fail(f"导入 goai_multi_agent 兼容性 shim 失败: {e}")
+            self.fail(f"导入 lumilearn_multi_agent 兼容性 shim 失败: {e}")
 
     def test_langgraph_engine_still_works(self):
         """langgraph_engine 兼容层可导入（统一走 agent_core 版本）"""

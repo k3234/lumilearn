@@ -1,4 +1,4 @@
-# LumiLearn RAG 知识库设计说明
+﻿# LumiLearn RAG 知识库设计说明
 
 > 日期：2026-08-12 · Day 3 开发
 > 目标：让教学内容"有据可查"，从纯模型生成升级为"知识库检索增强 + 模型生成"。
@@ -44,7 +44,7 @@ knowledge_nodes 表            ├─→ 文档集合 ─→ 关键词倒排索�
 
 ## 四、与多 Agent 系统集成
 
-`goai_multi_agent.py` 的 **FeynmanTeacher.run()**：
+`lumilearn_multi_agent.py` 的 **FeynmanTeacher.run()**：
 
 ```
 1. retriever.search(topic, top_k=3)   → rag_sources（含 source/id/title/subject/score）
@@ -61,7 +61,7 @@ knowledge_nodes 表            ├─→ 文档集合 ─→ 关键词倒排索�
 
 ## 五、检索 API
 
-`goai_web.py` 新增（需登录）：
+`lumilearn_web.py` 新增（需登录）：
 
 | 端点 | 说明 |
 |---|---|

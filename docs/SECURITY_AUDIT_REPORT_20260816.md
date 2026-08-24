@@ -1,4 +1,4 @@
-# LumiLearn 安全审计报告
+﻿# LumiLearn 安全审计报告
 
 > **审计日期**: 2026-08-16
 > **审计范围**: 全项目 Python/Flask/HTML 代码（排除 venv/、archive/、docs/、测试数据目录）
@@ -26,14 +26,14 @@ LumiLearn 是一个功能丰富的教育智能体系统，后端能力扎实（�
 | H-2 | 前端 XSS | High | ✅ 已修复 | 6 个模板统一 `esc()`（含单引号转义）；innerHTML 动态插值全部包裹；animation_learn 的 onclick 字符串注入改 data-* + addEventListener；修复遗漏的 err.message 反射路径 |
 | H-3 | CORS 全通配 | High | ✅ 已修复 | `Access-Control-Allow-Origin` 由 `*` 改为白名单回显（环境变量 `CORS_ALLOWED_ORIGINS`）；server.py/lesson_engine/配置默认值同步 |
 | H-4 | Manim 动画代码注入 | High | ✅ 已修复 | 新增 `sanitize_for_code` 字符白名单；formula/geometry 默认动画的 topic 拼入源码前清洗 |
-| M-1 | 无 CSRF 防护 | Medium | ✅ 已修复 | 新增 `register_csrf_guard`（Origin/Referer 校验），注册到 goai_web/teacher/student 三入口 |
+| M-1 | 无 CSRF 防护 | Medium | ✅ 已修复 | 新增 `register_csrf_guard`（Origin/Referer 校验），注册到 lumilearn_web/teacher/student 三入口 |
 | M-2 | Cookie 安全属性未配置 | Medium | ✅ 已修复 | 三入口设置 `SESSION_COOKIE_HTTPONLY/SAMESITE=Lax`，SECURE 由环境变量控制 |
 | M-3 | 请求体/Host/ProxyFix 缺失 | Medium | ✅ 已修复 | 全入口 `MAX_CONTENT_LENGTH=10MB`；server.py `TRUSTED_HOSTS` + 可选 ProxyFix（`LUMILEARN_PROXY_ENABLED`） |
 | M-4 | X-API-Key 只校验存在性 | Medium | ✅ 已修复 | 安全写操作端点已全部改为 `@require_admin`（C-1 连带），无仅查非空的 X-API-Key 路径 |
 | M-5 | CSP `'unsafe-inline'` 弱化 | Medium | ⏳ 设计取舍 | 单文件 HTML + 内联 JS 架构依赖 inline 脚本；已配合 H-2 全量转义降低风险，彻底收紧需拆分静态资源 |
 | M-6 | 管理员登录无暴力破解防护 | Medium | ✅ 已修复 | 同 IP+用户名 5 次失败锁定 15 分钟（内存态），成功登录清零 |
 | M-7 | 文件上传链路缺校验 | Medium | ✅ 已修复（防御代码已落地，路由仍为桩） | 新增 [framework/security/uploads.py](file:///e:/学习LLM/lumilearn/framework/security/uploads.py)：secure_filename 清洗、扩展名白名单、大小上限（图 5MB/音 10MB）、魔数真实性校验；`recognize_file`/`transcribe_file` 接入全部校验；路由接线上传端点时直接复用 |
-| M-8 | 主题进入文件名未过滤 `..` | Medium | ✅ 已修复 | goai_agent/langgraph_engine 文件名清洗追加 `..` 过滤 |
+| M-8 | 主题进入文件名未过滤 `..` | Medium | ✅ 已修复 | lumilearn_agent/langgraph_engine 文件名清洗追加 `..` 过滤 |
 | L-1 | SSTI 反模式 | Low | ⏳ 待处理 | `render_template_string` 渲染原型 HTML，当前无载荷；低危 |
 | L-6 | torch.load 未用 weights_only | Low | ✅ 已修复 | 新增 `torch_load_safe`（weights_only=True + 旧版兼容）；model/trainer 均切换 |
 | L-7 | 安全网关未接入请求链 | Low | ⏳ 设计取舍 | IP 白名单/限流组件存在但未挂接；后续如需可接入 before_request |
@@ -105,10 +105,10 @@ LumiLearn 是一个功能丰富的教育智能体系统，后端能力扎实（�
 
 | 项目 | 内容 |
 |:---|:---|
-| **位置** | [goai_web.py:46](file:///e:/学习LLM/lumilearn/goai_web.py#L46)、[teacher_portal.py:41](file:///e:/学习LLM/lumilearn/teacher_portal.py#L41)、[student_portal.py:42](file:///e:/学习LLM/lumilearn/student_portal.py#L42) |
+| **位置** | [lumilearn_web.py:46](file:///e:/学习LLM/lumilearn/lumilearn_web.py#L46)、[teacher_portal.py:41](file:///e:/学习LLM/lumilearn/teacher_portal.py#L41)、[student_portal.py:42](file:///e:/学习LLM/lumilearn/student_portal.py#L42) |
 | **严重性** | High |
 
-**证据**：三处入口使用公开硬编码密钥作为 fallback（`lumilearn-goai-web-secret` 等），`.env.example` 未列出这三个变量，实际部署大概率使用默认值。三个端口共享同一数据库，session 只存 `user_id`。
+**证据**：三处入口使用公开硬编码密钥作为 fallback（`lumilearn-lumilearn-web-secret` 等），`.env.example` 未列出这三个变量，实际部署大概率使用默认值。三个端口共享同一数据库，session 只存 `user_id`。
 
 **影响**：知晓密钥者可离线伪造任意 `user_id` 的 session cookie，直接以任意用户（含教师）身份登录。
 
@@ -127,7 +127,7 @@ LumiLearn 是一个功能丰富的教育智能体系统，后端能力扎实（�
 
 | 文件 | 行号 | 风险点 |
 |:---|:---|:---|
-| [goai_learn.html](file:///e:/学习LLM/lumilearn/remote/templates/goai_learn.html#L517-L565) | 517-565 | 学习历史/报告/薄弱点/建议 `innerHTML` 拼接 |
+| [learn.html](file:///e:/学习LLM/lumilearn/remote/templates/learn.html#L517-L565) | 517-565 | 学习历史/报告/薄弱点/建议 `innerHTML` 拼接 |
 | [lumiterm.html](file:///e:/学习LLM/lumilearn/remote/templates/lumiterm.html#L1543-L1546) | 1543-1546 | 图表块 `title` 未转义 |
 | [classroom.html](file:///e:/学习LLM/lumilearn/remote/templates/classroom.html#L2683-L2692) | 2683/2692/3363/3380 | 题目解释/幻灯片标题未转义 |
 | [animation_learn.html](file:///e:/学习LLM/lumilearn/remote/templates/animation_learn.html#L1077-L1088) | 1077-1088 | 属性/JS 字符串注入（`onclick="selectNode('${node.name}')"`） |
@@ -174,7 +174,7 @@ LumiLearn 是一个功能丰富的教育智能体系统，后端能力扎实（�
 
 ### M-1 无 CSRF 防护
 
-**位置**: 全项目 cookie 认证的 POST/PUT/DELETE 路由（goai_web.py、teacher_portal.py、student_learn.py）
+**位置**: 全项目 cookie 认证的 POST/PUT/DELETE 路由（lumilearn_web.py、teacher_portal.py、student_learn.py）
 **证据**: 未发现 CSRFProtect/Flask-WTF/Origin 校验；`request.get_json(force=True)` 使 `text/plain` 跨站请求也能携带合法 JSON。**影响**: 跨站可触发 logout 等操作。**修复**: 加 CSRFProtect 或要求自定义 header + SameSite。
 
 ### M-2 会话 Cookie 安全属性未配置
@@ -209,7 +209,7 @@ LumiLearn 是一个功能丰富的教育智能体系统，后端能力扎实（�
 
 ### M-8 主题进入文件名未过滤 `..`
 
-**位置**: [goai_agent.py:645-648](file:///e:/学习LLM/lumilearn/goai_agent.py#L645-L648)、[langgraph_engine.py:616-619](file:///e:/学习LLM/lumilearn/langgraph_engine.py#L616-L619)
+**位置**: [lumilearn_agent.py:645-648](file:///e:/学习LLM/lumilearn/lumilearn_agent.py#L645-L648)、[langgraph_engine.py:616-619](file:///e:/学习LLM/lumilearn/langgraph_engine.py#L616-L619)
 **证据**: `re.sub(r'[\\/:*?"<>|]', '_', topic)` 已拦截路径分隔符，`../` 无法构成，但 `..` 未单独拦截。**修复**: 追加 `..` 过滤或直接用 `secure_filename`。
 
 ---

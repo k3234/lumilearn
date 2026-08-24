@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-LumiLearn 兼容性 shim — 替代已删除的 goai_agent.py
+LumiLearn 兼容性 shim — 提供模型调用与任务解析能力
 
 提供 LumiLearnAgent / ToolCaller / FlowOrchestrator / TaskUnderstanding
 以便 student_portal.py 和旧测试脚本无缝运行。
@@ -10,12 +10,11 @@ import requests
 
 
 # ============================================================
-# ToolCaller（兼容旧 goai_agent.py 接口）
+# ToolCaller
 # ============================================================
 class ToolCaller:
     """
     封装 Ollama / 云端模型调用。
-    接口与旧 goai_agent.py ToolCaller 兼容。
     """
 
     def __init__(self, ollama_url: str = None):
@@ -65,7 +64,6 @@ class ToolCaller:
 class TaskUnderstanding:
     """
     识别学习主题的学科与类型。
-    接口与旧 goai_agent.py TaskUnderstanding 兼容。
     """
 
     SUBJECT_KEYWORDS = {
@@ -101,7 +99,6 @@ class TaskUnderstanding:
 class FlowOrchestrator:
     """
     编排费曼五步学习流程。
-    接口与旧 goai_agent.py FlowOrchestrator 兼容。
     """
 
     STEPS = [
@@ -127,7 +124,6 @@ class FlowOrchestrator:
 class LumiLearnAgent:
     """
     面向 student_portal.py 的 Agent 包装。
-    接口与旧 goai_agent.py LumiLearnAgent 兼容。
     """
 
     def __init__(self, ollama_url: str = None):

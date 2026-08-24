@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from flask import (Flask, abort, jsonify, render_template_string,
                    request, send_from_directory)
 
-from goai_agent import LumiLearnAgent
+from lumilearn_agent import LumiLearnAgent
 from framework.api.routes.student_learn import create_student_learn_bp
 from framework.core.config import get_app_secret_key, register_csrf_guard
 from framework.database import db

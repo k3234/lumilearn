@@ -17,7 +17,7 @@ SERVICES = [
     ("课堂/终端/管理 (Framework API)", 18080, "/health"),
     ("REST API", 18081, "/health"),
     ("管理面板 API", 18082, "/api/admin/me"),
-    ("GOAI 学习 Web", 5000, "/api/status"),
+    ("学习平台 Web", 5000, "/api/status"),
     ("教师端", 5001, "/api/me"),
     ("学生端学习平台", 5010, "/api/status"),
     ("学习分析仪表盘", 18090, "/api/dashboard/overview"),

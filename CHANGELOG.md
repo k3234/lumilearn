@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 所有重要变更将记录在此文件中。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)。
 
@@ -39,7 +39,7 @@
 
 ### Added
 - **测试框架搭建**（`89a8816`）
-  - tests/test_goai_agent.py（902行，覆盖完整 GOAI 流程）
+  - tests/test_lumilearn_agent.py（902行，覆盖完整 LumiLearn 流程）
   - tests/test_database.py（核心 CRUD 测试）
   - tests/test_workflow_engine.py（工作流引擎测试）
 - **chat_history 多轮对话持久化**

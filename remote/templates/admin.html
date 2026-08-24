@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -228,7 +228,7 @@ async function loadOverview() {
       const _tag = {system: '⚙️ 系统', reasoning: '🧠 推理', report: '📚 报告'}[l.source] || l.source;
       const _c = {system: '#58a6ff', reasoning: '#3fb950', report: '#d29922'}[l.source] || '#8b949e';
       return `[${esc(l.created_at)}] [<b style="color:${esc(_c)}">${esc(_tag)}</b>] [${esc(l.module)}] ${esc(l.message)}`;
-    }).join('\n') || '（暂无活动，快去课堂/GOAI 学习吧）'}</pre>`;
+    }).join('\n') || '（暂无活动，快去课堂/五步学习吧）'}</pre>`;
 }
 
 // ---------- 用户管理 ----------
@@ -247,7 +247,7 @@ async function loadUsers() {
       </select>
       <button class="act" onclick="createUser()">添加用户</button>
     </div>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在 GOAI Web (端口5000)、教师端(端口5001)、学生端(端口5010) 登录；管理员可在此为账号绑定班级、启停用账号、变更角色。</div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在学习平台(端口5000)、教师端(端口5001)、学生端(端口5010) 登录；管理员可在此为账号绑定班级、启停用账号、变更角色。</div>
     <table>
       <tr><th>ID</th><th>姓名</th><th>用户名</th><th>角色</th><th>状态</th><th>班级</th><th>密码</th><th>创建时间</th><th>操作</th></tr>
       ${data.users.map(u => `
@@ -805,13 +805,13 @@ async function loadLogs() {
       <span style="flex:1"></span>
       <button class="act" onclick="clearLogs()" title="仅清理系统操作日志">清理系统日志</button>
     </div>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">统一活动日志：系统操作 + 学生推理（课堂聊天/五步学习）+ 学习报告（GOAI）。展示学生实际使用产生的数据。</div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">统一活动日志：系统操作 + 学生推理（课堂聊天/五步学习）+ 学习报告。展示学生实际使用产生的数据。</div>
     <pre class="log-box">${(data.logs || []).map(l => {
       const tag = badge[l.source] || l.source;
       const c = colors[l.source] || '#8b949e';
       const err = l.level === 'error' ? '#f85149' : '#8b949e';
       return `<span style="color:${esc(err)}">[${esc(l.created_at)}] [<b style="color:${esc(c)}">${esc(tag)}</b>] [${esc(l.module)}] ${esc(l.message)}</span>`;
-    }).join('\n') || '（暂无活动记录，快去使用课堂/GOAI 学习吧）'}</pre>`;
+    }).join('\n') || '（暂无活动记录，快去使用课堂/学习吧）'}</pre>`;
 }
 
 function setActivitySource(src) { activitySource = src; loadLogs(); }
@@ -872,7 +872,7 @@ async function loadReports() {
     const data = await api('/learning-reports?limit=100');
     const reports = data.reports || [];
     let html = `
-      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">所有学生在 GOAI Web (端口5000) 生成的学习报告。</div>
+      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">所有学生在学习平台 Web（端口5000）生成的学习报告。</div>
       <table>
         <tr><th>ID</th><th>学生</th><th>主题</th><th>学科</th><th>掌握度</th><th>等级</th><th>生成时间</th><th>操作</th></tr>`;
     if (!reports.length) {
@@ -984,7 +984,7 @@ async function renderReasoning() {
     const items = data.items || [];
     const total = data.total || 0;
     const s = stats || {};
-    const modeNames = { feynman: '费曼', chat: '对话', goai: 'GOAI' };
+    const modeNames = { feynman: '费曼', chat: '对话', five: '五步' };
 
     // 统计卡片：按模型 / 按步骤分布以标签形式展示
     const byModelChips = Object.entries(s.by_model || {})
@@ -1007,7 +1007,7 @@ async function renderReasoning() {
             <option value="">全部模式</option>
             <option value="feynman" ${f.mode === 'feynman' ? 'selected' : ''}>费曼</option>
             <option value="chat" ${f.mode === 'chat' ? 'selected' : ''}>对话</option>
-            <option value="goai" ${f.mode === 'goai' ? 'selected' : ''}>GOAI</option>
+            <option value="five" ${f.mode === 'five' ? 'selected' : ''}>五步</option>
           </select>
           <input type="date" id="rfStart" value="${f.start_date || ''}" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;color-scheme:dark;">
           <input type="date" id="rfEnd" value="${f.end_date || ''}" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;color-scheme:dark;">
@@ -1060,7 +1060,7 @@ async function renderReasoning() {
       </div>`;
 
     document.getElementById('content').innerHTML = `
-      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">模型推理过程日志：费曼引导每步、GOAI 学习过程等。点击行可展开查看输入输出详情。</div>
+      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">模型推理过程日志：费曼引导每步、学习过程各步骤等。点击行可展开查看输入输出详情。</div>
       <div class="cards">
         <div class="card"><div class="num">${s.total ?? 0}</div><div class="label">总记录数</div></div>
         <div class="card"><div class="num">${s.avg_latency_ms ?? 0}ms</div><div class="label">平均耗时</div></div>

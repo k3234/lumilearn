@@ -1,4 +1,4 @@
-# LumiLearn 更新记录（2026-08-11）
+﻿# LumiLearn 更新记录（2026-08-11）
 
 > 本文档整理 2026-08-11 前后所有新增与修改内容，供维护与发布参考。
 > 说明：不包含测试脚本、本地验收过程与任何敏感凭据；服务器地址一律使用占位符。
@@ -50,7 +50,7 @@
 
 **发现**：远程 `server` 由 **systemd user 服务**（`~/.config/systemd/user/lumilearn-api.service`，`Restart=always`）托管，手动 `pkill` 后会被自动拉起，导致旧代码长时间无法替换、端口冲突。
 
-**正确操作**：使用 `systemctl --user restart lumilearn-api` 重启，`systemctl --user stop/start` 控制启停。GOAI Web 由 `lumilearn-goai.service` 托管。教师端目前为手动 `nohup` 启动，如需开机自启可仿照添加 systemd 单元。
+**正确操作**：使用 `systemctl --user restart lumilearn-api` 重启，`systemctl --user stop/start` 控制启停。学习平台 Web 由 `lumilearn-lumilearn.service` 托管。教师端目前为手动 `nohup` 启动，如需开机自启可仿照添加 systemd 单元。
 
 **附加发现**：教师端（5001）页面无 `/api/status` 路由属正常设计；其 `/` 需返回 teacher.html（见修复 1）。
 
@@ -66,18 +66,18 @@
 
 ## 四、Agent 能力强化
 
-**修改文件**：`framework/admin/agents.py`、`goai_agent.py`
+**修改文件**：`framework/admin/agents.py`、`lumilearn_agent.py`
 
 | 改动 | 说明 |
 |---|---|
 | 费曼教学 Agent | 传入 `dialogue` 对话历史时自动切换为**交互式单步引导**（`explain_step`），上下文连贯逐步推进；并优先使用配置的 `feynman_model`（默认 qwen2.5:7b） |
-| GOAI 教育智能体 | `ToolCaller` 默认模型改为从 `.env` 的 `OLLAMA_MODEL` 读取（其次环境变量，最后内置兜底），并支持加载 `.env` 配置 |
+| LumiLearn 学习智能体 | `ToolCaller` 默认模型改为从 `.env` 的 `OLLAMA_MODEL` 读取（其次环境变量，最后内置兜底），并支持加载 `.env` 配置 |
 
 ## 五、文档整理（README 重构）
 
 **修改文件**：`README.md`
 
-- 新增「🤖 Agent 智能体」章节（快速导航之后优先展示）：列出 5 个 Agent（费曼教学/输出检测/自适应学习/对话助手/GOAI 教育智能体）及其能力、统一生命周期、推理记录三方查看。
+- 新增「🤖 Agent 智能体」章节（快速导航之后优先展示）：列出 5 个 Agent（费曼教学/输出检测/自适应学习/对话助手/LumiLearn 学习智能体）及其能力、统一生命周期、推理记录三方查看。
 - 新增「🧠 模型与模型容器」章节：Ollama（推荐）/ 其他本地 OpenAI 兼容容器 / 云端 API 三类来源与模型发现机制、主要模型资产表、端口模型配置说明。
 - 「接入模型」表补充"其他本地容器"接入方式。
 
@@ -86,7 +86,7 @@
 **背景**：`deploy/setup.py` 可注册 vLLM / LM Studio / LocalAI / llama.cpp 等 OpenAI 兼容容器到 `config/providers.yaml`，
 但原模型发现与调用链路要求提供者必须有 API Key，导致**无 Key 的本地容器注册后不显示、不可用**。
 
-**修改文件**：`framework/services/provider_service.py`、`framework/api/routes/chat.py`、`goai_agent.py`、`deploy/setup.py`、`deploy/README.md`
+**修改文件**：`framework/services/provider_service.py`、`framework/api/routes/chat.py`、`lumilearn_agent.py`、`deploy/setup.py`、`deploy/README.md`
 
 | 改动 | 说明 |
 |---|---|
@@ -96,7 +96,7 @@
 | `provider_service.get_ollama_models` | Ollama 地址改为优先读取 `OLLAMA_BASE_URL` 环境变量（不再硬编码 localhost:11434） |
 | `chat.py _resolve_cloud_model` | 本地容器（local=true）无需 API Key 也可被解析路由 |
 | `chat.py _cloud_chat_stream/_cloud_chat_sync` | API Key 为空时发送占位 `Bearer not-needed`，兼容不校验 Key 的本地容器 |
-| `goai_agent.py ToolCaller` | 同上：GOAI 教育智能体也能使用 goai_web 端口配置的本地容器模型 |
+| `lumilearn_agent.py ToolCaller` | 同上：LumiLearn 学习智能体也能使用 lumilearn_web 端口配置的本地容器模型 |
 | `deploy/README.md` | 新增「5.3 其他本地模型容器」章节（vLLM/LM Studio/LocalAI/llama.cpp 默认地址与接入说明） |
 
 **验证结果**：本地容器（无 Key）模型出现在 `get_all_available_models`、可被 `_resolve_cloud_model` 解析并走 OpenAI 兼容接口；Ollama 仍为默认推荐容器。
@@ -107,15 +107,15 @@
 
 ---
 
-## 七、Day 1 基础加固（GOAI 行动规划）
+## 七、Day 1 基础加固（LumiLearn 行动规划）
 
-**背景**：按 `docs/GOAI_ACTION_PLAN.md` Day 1 清单执行，全程遵守核心设备压力约束（无重型依赖、测试不触网不调模型、DB 惰性连接）。
+**背景**：按 `docs/LumiLearn_ACTION_PLAN.md` Day 1 清单执行，全程遵守核心设备压力约束（无重型依赖、测试不触网不调模型、DB 惰性连接）。
 
 ### 1. bare except 清理（代码质量，零行为变更）
 
 | 文件 | 行 | 修改 |
 |---|---|---|
-| `goai_agent.py` | _check_availability | `except:` → `except Exception:` |
+| `lumilearn_agent.py` | _check_availability | `except:` → `except Exception:` |
 | `langgraph_engine.py` | _call_helper / _fmt_cards / 格式合并 | `except:` → `except Exception:`（3 处） |
 
 ### 2. langgraph_engine 可导入验证
@@ -124,7 +124,7 @@
 
 ### 3. 测试骨架（轻量，mock 化）
 
-- **新增 `tests/test_goai_agent.py`**（13 用例）：任务理解（学科/难度/学习类型/核心主题）、费曼五步编排、ToolCaller（全部 mock `requests.get/post`，**零真实网络**）、ResultDelivery 报告结构、主引擎 run（mock 模型调用 + 落盘重定向 tmp + 写库 no-op）。
+- **新增 `tests/test_lumilearn_agent.py`**（13 用例）：任务理解（学科/难度/学习类型/核心主题）、费曼五步编排、ToolCaller（全部 mock `requests.get/post`，**零真实网络**）、ResultDelivery 报告结构、主引擎 run（mock 模型调用 + 落盘重定向 tmp + 写库 no-op）。
 - **新增 `tests/test_conversation_store.py`**（6 用例）：会话创建/隔离/删除、消息顺序/限长/清空、级联删除。
 - 全套 `tests/` 共 **150 通过**（原 131 + 新 19），耗时约 7 分钟（含 torch 导入）。
 
@@ -135,7 +135,7 @@
   - **惰性连接**：首次调用方法才打开数据库，空闲零连接零内存占用（核心设备压力友好）。
   - 表：`chat_sessions`（会话头）+ `chat_history`（消息，`session_id` 外键 **ON DELETE CASCADE**，并开启 `PRAGMA foreign_keys`）。
   - 方法：create_session / list_sessions（含消息数与末条预览）/ get_session / delete_session（级联）/ add_message / get_messages（可限长取尾部）/ clear_session；全局单例 `conversation_store`。
-  - 用途：GOAI / 费曼 / 通用对话的多轮上下文持久化，后续接入对话接口。
+  - 用途：LumiLearn / 费曼 / 通用对话的多轮上下文持久化，后续接入对话接口。
 
 ---
 
@@ -143,11 +143,11 @@
 
 ---
 
-## 八、GOAI Web 接入天虹服务（chat_history + 学生端原型）
+## 八、学习平台 Web 接入天虹服务（chat_history + 学生端原型）
 
-**目标**：将 Day 1 的 chat_history 多轮对话持久化能力 + 学生端原型完整接入天虹（内网服务器）运行的 GOAI Web 服务（5000 端口）。
+**目标**：将 Day 1 的 chat_history 多轮对话持久化能力 + 学生端原型完整接入天虹（内网服务器）运行的 学习平台 Web 服务（5000 端口）。
 
-### 1. goai_web.py 新增（本地 12 项冒烟测试通过）
+### 1. lumilearn_web.py 新增（本地 12 项冒烟测试通过）
 
 | 接入点 | 说明 |
 |---|---|
@@ -157,10 +157,10 @@
 | `GET /api/conversations/<id>` | 某会话完整多轮消息（校验归属，越权 404） |
 | `/proto/` + `/proto/<file>` | 内嵌访问学生端静态原型（send_from_directory，防路径穿越） |
 
-### 2. 部署到天虹（scripts/_deploy_goai_integration.py）
+### 2. 部署到天虹（scripts/_deploy_lumilearn_integration.py）
 
-- 上传 5 个后端文件（goai_web/goai_agent/langgraph_engine/lumilearn_config/conversation_store）+ 9 个原型文件到 `/home/<user>/lumilearn`。
-- 重启 `systemctl --user restart lumilearn-goai`（RC=0），无需重启 framework（18080 未改动）。
+- 上传 5 个后端文件（lumilearn_web/lumilearn_agent/langgraph_engine/lumilearn_config/conversation_store）+ 9 个原型文件到 `/home/<user>/lumilearn`。
+- 重启 `systemctl --user restart lumilearn-lumilearn`（RC=0），无需重启 framework（18080 未改动）。
 - **坑**：paramiko SFTP 不展开 `~`，远程路径必须用绝对路径 `/home/<user>/lumilearn`。
 
 ### 3. 远程验证结果（真实服务）
@@ -172,7 +172,7 @@
 
 ---
 
-**未提交事项**：goai_web 接入已提交（9ad4c76）；部署脚本路径修正与本文档待提交；GitHub 推送因网络间歇性失败待重试。
+**未提交事项**：lumilearn_web 接入已提交（9ad4c76）；部署脚本路径修正与本文档待提交；GitHub 推送因网络间歇性失败待重试。
 
 ---
 
@@ -183,7 +183,7 @@
 ### 1. 学生端学习平台（student_portal.py，端口 5010）
 
 - 独立 Flask 应用，前端即学生端原型（`prototypes/student-learning-platform/`），服务时向 HTML 注入 `window.__LUMILEARN_REAL__` 标志切换为真实 API 模式。
-- **原型 api.js 升级为双模式**：真实后端（fetch 同构接口）+ 离线 mock 兜底（双击打开 / GOAI Web /proto/ 仍可演示）。
+- **原型 api.js 升级为双模式**：真实后端（fetch 同构接口）+ 离线 mock 兜底（双击打开 / 学习平台 Web /proto/ 仍可演示）。
 - 真实后端接口（与原型契约一致）：
   | 接口 | 说明 |
   |---|---|
@@ -248,7 +248,7 @@
 
 - 新增 `framework/api/routes/auth.py`：users 表 token 登录 `POST /api/auth/login` / `GET /api/auth/me` / `POST /api/auth/logout`（内存 token，12h 有效，`X-Auth-Token` 或 `Authorization: Bearer`），注册到 server.py 与 `__init__.py`。
 - 18080 终端 lumiterm.html 新增登录门（头部登录按钮 + 弹窗，登录后显示账号徽章，点击可退出/切换）。
-- 至此**全部 7 个端口均支持账号登录**：5000 GOAI Web、5001 教师端、5010 学生端（users 表）、18080 终端 / 18081 REST API / 18082 模型管理（新增 auth 路由）。
+- 至此**全部 7 个端口均支持账号登录**：5000 学习平台 Web、5001 教师端、5010 学生端（users 表）、18080 终端 / 18081 REST API / 18082 模型管理（新增 auth 路由）。
 
 ### 5. 管理员管理账号与班级绑定（Admin 面板）
 
@@ -291,21 +291,21 @@
 
 - **新增 `framework/api/routes/student_learn.py`**：把「登录 → 发起学习(start) → 费曼五步(step) → 30秒讲解评分(feynman-test) → 学习报告(report) → 历史(history) → 我的档案(profile)」抽成可复用 Blueprint（`create_student_learn_bp(agent, session_key)`），单 Agent 实例注入。
 - **student_portal.py（5010）**：删除全部重复路由（认证/学习/档案约 280 行），改为注册共享 Blueprint——只保留静态页服务与启动逻辑。
-- **goai_web.py（5000）**：同样注册共享 Blueprint，使 `/proto/` 学生端原型走真实 API；`_send_proto` 对 HTML 注入 `__LUMILEARN_REAL__ = true` 真实后端标志（此前未注入，页面只能展示 mock 学习过程——正是"其他端口内容只能展示学习过程"的根因）。
+- **lumilearn_web.py（5000）**：同样注册共享 Blueprint，使 `/proto/` 学生端原型走真实 API；`_send_proto` 对 HTML 注入 `__LUMILEARN_REAL__ = true` 真实后端标志（此前未注入，页面只能展示 mock 学习过程——正是"其他端口内容只能展示学习过程"的根因）。
 - **效果**：5000 与 5010 共用同一套费曼五步学习 API 契约，任一端口登录后即可完整走完学习全流程，学习数据落同一 `lumilearn.db`。
 
 ### 3. Admin 端口同步（端口管理 vs 模型管理）
 
-- **根因**：`DEFAULT_PORT_MODEL_MAP`（provider_service.py）只有 4 个端口（terminal/api/models/goai_web），而 `PORT_SETTINGS_DEFAULTS` 有 7 个端口（多了 teacher_portal/student_portal/analytics_dashboard）→ Admin「端口管理」显示 7 个、「模型管理→端口模型配置」只显示 4 个，不同步。
+- **根因**：`DEFAULT_PORT_MODEL_MAP`（provider_service.py）只有 4 个端口（terminal/api/models/lumilearn_web），而 `PORT_SETTINGS_DEFAULTS` 有 7 个端口（多了 teacher_portal/student_portal/analytics_dashboard）→ Admin「端口管理」显示 7 个、「模型管理→端口模型配置」只显示 4 个，不同步。
 - **修复**：`DEFAULT_PORT_MODEL_MAP` 补齐 3 个端口至 7 个，与 `PORT_SETTINGS_DEFAULTS` 完全对齐；`get_port_model_map` / `set_port_model` 自动覆盖新端口。
 
 ### 4. 验证结果
 
-- 本地冒烟 17 项全通过：student_portal 登录/start/step(s-前缀)/feynman-test/report/history/profile/401、goai_web 登录/start/step/profile、/proto/ 真实标志注入、port_model_map 7 键。
+- 本地冒烟 17 项全通过：student_portal 登录/start/step(s-前缀)/feynman-test/report/history/profile/401、lumilearn_web 登录/start/step/profile、/proto/ 真实标志注入、port_model_map 7 键。
 - 天虹真实服务：
   - 5010 `POST /api/learn/step` 传 `s-7` 返回 200（不再 500），五步流程完整可用 ✅
   - 5000 `/proto/` 注入 `__LUMILEARN_REAL__ = true`，登录 + start 走共享 API ✅
-  - 18082 `GET /api/admin/port-models` 返回 **7 个端口**（terminal/api/models/goai_web/teacher_portal/student_portal/analytics_dashboard）✅
+  - 18082 `GET /api/admin/port-models` 返回 **7 个端口**（terminal/api/models/lumilearn_web/teacher_portal/student_portal/analytics_dashboard）✅
 
 ---
 

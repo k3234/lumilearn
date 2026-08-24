@@ -128,7 +128,6 @@ ${BOLD}选项:${NC}
 ${BOLD}访问入口:${NC}
     课堂/终端     - http://localhost:18080/classroom
     管理面板      - http://localhost:18082/admin
-    GOAI 学习     - http://localhost:5000
     学生端        - http://localhost:5010
     教师端        - http://localhost:5001
     分析仪表盘    - http://localhost:18090

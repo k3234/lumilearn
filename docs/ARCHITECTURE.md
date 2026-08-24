@@ -1,4 +1,4 @@
-# LumiLearn 架构文档
+﻿# LumiLearn 架构文档
 
 > 版本：1.0 · 适用代码基线：2026-08 · 用途：项目整体架构说明（分层、模块接口、自研/第三方边界、安全与隐私）
 
@@ -15,7 +15,7 @@ graph TD
     subgraph WEB["Web 层（浏览器入口）"]
         SP["student_portal.py<br/>学生端门户 (5010)"]
         TP["teacher_portal.py<br/>教师端门户 (5001)"]
-        GW["goai_web.py<br/>GOAI 竞赛平台 (5000)"]
+        GW["lumilearn_web.py<br/>竞赛平台 (5000)"]
         AD["analytics_dashboard.py<br/>学习分析仪表盘 (18090)"]
         RT["remote/templates/*<br/>远程部署模板"]
     end
@@ -91,7 +91,7 @@ graph TD
 
 | 层级 | 构成 | 职责 |
 | --- | --- | --- |
-| **Web 层** | `student_portal.py`、`teacher_portal.py`、`goai_web.py`、`analytics_dashboard.py` + `remote/templates/*` | 面向学生、教师、管理员、竞赛评审的浏览器端入口；远程部署时通过模板页面（admin / teacher / goai_dashboard / analytics_dashboard 等）提供服务 |
+| **Web 层** | `student_portal.py`、`teacher_portal.py`、`lumilearn_web.py`、`analytics_dashboard.py` + `remote/templates/*` | 面向学生、教师、管理员、竞赛评审的浏览器端入口；远程部署时通过模板页面（admin / teacher / dashboard / analytics_dashboard 等）提供服务 |
 | **API 层** | `framework/api/server.py`（FastAPI）、`framework/api/routes/*`（18 个业务路由）、`framework/security/*` 中间件 | 统一 HTTP 网关：认证鉴权、参数校验、限流、CORS、上传安全、沙箱隔离，将前端请求转化为 Agent 层调用 |
 | **Agent 层** | `agent_core/*`：统一编排、路由、知识流水线、多 Agent、双路校验、事实核查、可观测性、自省批判 | 核心智能调度：按任务复杂度路由到不同 Agent 组合，执行教学生成、校验、修正的完整回路 |
 | **框架层** | `framework/*`：费曼引擎、RAG 检索、降级兜底、分层记忆、安全网关、数据库访问、轻量模式、模型接入 | 平台能力底座：为 Agent 层提供可复用的教学引擎、检索、存储、安全、容错基础设施 |
@@ -140,7 +140,7 @@ graph TD
 | RAG 检索 | `framework/services/knowledge_retrieval.py` | 倒排索引 + TF-IDF 检索 + 上下文格式化 |
 | 记忆系统 | `framework/storage/layered_memory.py`、`framework/storage/file_compat.py` | 三层记忆存取、文件兼容层 |
 | 评测体系 | `agent_core/verifier.py`、`agent_core/fact_checker.py`、`framework/output_detector.py`、`tests/*` | 双路校验、事实核查、学习产出检测与全量测试套件 |
-| Web 平台 | `student_portal.py`、`teacher_portal.py`、`goai_web.py`、`analytics_dashboard.py`、`framework/api/*`、`remote/templates/*` | 多端门户、API 服务、远程部署模板 |
+| Web 平台 | `student_portal.py`、`teacher_portal.py`、`lumilearn_web.py`、`analytics_dashboard.py`、`framework/api/*`、`remote/templates/*` | 多端门户、API 服务、远程部署模板 |
 | 安全体系 | `framework/security/*`、`agent_core/safety.py`、`agent_core/prompt_guard.py` | 安全网关、防火墙、沙箱、上传安全、调用检查、注入防护 |
 | 运维与扩展 | `framework/lite_mode.py`、`framework/workflow_engine.py`、`framework/log_retention.py`、`data_management/*`、`deploy/*`、`scripts/*` | 轻量模式、流程引擎、日志留存、数据管理、部署脚本 |
 | 模型训练/推理代码 | `framework/model.py`、`framework/tokenizer.py`、`framework/trainer.py`、`inference.py`、`inference_server.py` | 自研训练/推理管线（含自研 BPE tokenizer） |

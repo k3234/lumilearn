@@ -1,4 +1,4 @@
-# LumiLearn 项目进度
+﻿# LumiLearn 项目进度
 
 > 最后更新: 2026-08-10
 >
@@ -8,11 +8,11 @@
 
 | 模块 | 功能说明 | 完成度 | 运行端口 | 状态 |
 |------|---------|--------|---------|------|
-| GOAI 学习智能体 | 教育智能体核心引擎：任务理解（学科/难度/类型识别）、流程编排（费曼五步教学法）、Agent 工具调用（多模型并行 + AI 评分）、学习报告交付（掌握度+薄弱点+建议）；另有 LangGraph 多模型编排引擎（12 个模型并行调用→汇总投票） | ✅ | 5000（经 GOAI Web 调用） | 运行中 |
+| 学习智能体 | 教育智能体核心引擎：任务理解（学科/难度/类型识别）、流程编排（费曼五步教学法）、Agent 工具调用（多模型并行 + AI 评分）、学习报告交付（掌握度+薄弱点+建议）；另有 LangGraph 多模型编排引擎（12 个模型并行调用→汇总投票） | ✅ | 5000（经 学习平台 Web 调用） | 运行中 |
 | 框架终端（LumiTerminal） | 轻量聊天界面，支持多轮对话，非流式 Ollama 代理；随 Admin 面板共享 | ✅ | 18080 | 运行中 |
 | REST API | Flask 多端口服务器，15 个蓝图路由：chat / slides / mindmap / feynman / ocr / speech / voicebox / review / resources / animation / providers / payment / security / admin 等 | ✅ | 18081 | 运行中 |
 | 模型管理（Admin 面板） | 管理员认证、用户/Agent/模型管理、系统监控；模型管理拆分为「本地模型 / 云端提供者 / 端口模型配置」三个子标签页，支持端口选择性配置（启停/改端口） | ✅ | 18082 | 运行中 |
-| GOAI Web（学习 Web + 服务仪表盘） | Flask 后端 + 单页前端，用户登录、提交学习目标生成学习报告（持久化到 learning_reports 表）、学习历史查看、服务仪表盘 | ✅ | 5000 | 运行中 |
+| 学习平台 Web（学习 Web + 服务仪表盘） | Flask 后端 + 单页前端，用户登录、提交学习目标生成学习报告（持久化到 learning_reports 表）、学习历史查看、服务仪表盘 | ✅ | 5000 | 运行中 |
 | 教师门户 | 独立 Flask 应用（共享 lumilearn.db，教师账号登录）：班级管理（学校/年级/班级三级）、学生管理、学习监控（报告/掌握度/薄弱点）、任务管理、教学资源 | ✅ | 5001 | 运行中 |
 | 费曼引擎 | 费曼五步学习法（现象引入→认知冲突→思维模型→自主推导→30 秒测试），配套模板库；另集成学习工作流引擎（五步编排+数据库持久化）与输出检测系统（五维评分+引导式强化） | ✅ | —（随框架 API 18080） | 运行中 |
 | 手写识别 / OCR | PaddleOCR 图片文字识别服务（支持 .png/.jpg/.jpeg/.webp，懒加载），路由 `/api/ocr` | ✅ | —（经 REST API 18081） | 完成 |
@@ -29,15 +29,15 @@
 | 框架终端 + Admin 面板 | 18080 | `python -m framework.api.server --multi-port` | http://localhost:18080（/admin） | ✅ 启用 |
 | REST API（纯接口） | 18081 | 同上（随 --multi-port 一起启动） | http://localhost:18081/health | ✅ 启用 |
 | 模型管理服务 | 18082 | 同上（随 --multi-port 一起启动） | http://localhost:18082 | ✅ 启用 |
-| GOAI Web 学习平台（学生端） | 5000 | `python goai_web.py` | http://localhost:5000 | ✅ 启用 |
+| 学习平台 Web 学习平台（学生端） | 5000 | `python lumilearn_web.py` | http://localhost:5000 | ✅ 启用 |
 | 教师门户 Teacher Portal | 5001 | `python teacher_portal.py` | http://localhost:5001 | ✅ 启用 |
 | 学生端学习平台 Student Portal | 5010 | `python student_portal.py` | http://localhost:5010 | ✅ 启用 |
 | 学习分析仪表盘 Analytics | 18090 | `python analytics_dashboard.py` | http://localhost:18090 | ✅ 启用 |
 
 - **Windows 一键启动**：`start_services.bat`（检查 Python → 委托 `deploy/start.py` 按 `config/framework.yaml` 的 `port_settings` 与 `.env` 启动启用的服务 → 自动打开浏览器）
-- **停止服务**：`stop_services.bat`（按进程名查杀 goai_web / framework.api.server）
+- **停止服务**：`stop_services.bat`（按进程名查杀 lumilearn_web / framework.api.server）
 - **远程服务器一键启动**：`bash scripts/remote_start_all.sh`（初始化数据库 → 确认/启动 Ollama → 按 framework.yaml 的 port_settings 选择性启动各端口服务，带幂等检查与状态汇总）
-- **端口配置**：`config/framework.yaml` 的 `port_settings` 节（terminal/api/models/goai_web/teacher_portal 各含 enabled + port），Admin 面板「端口管理」可在线修改；Ollama 地址通过环境变量 `OLLAMA_URL` / `OLLAMA_BASE_URL` 覆盖（默认 localhost:11434），避免硬编码内网地址
+- **端口配置**：`config/framework.yaml` 的 `port_settings` 节（terminal/api/models/lumilearn_web/teacher_portal 各含 enabled + port），Admin 面板「端口管理」可在线修改；Ollama 地址通过环境变量 `OLLAMA_URL` / `OLLAMA_BASE_URL` 覆盖（默认 localhost:11434），避免硬编码内网地址
 
 ## 三、模型资产清单
 
@@ -76,9 +76,9 @@
 | 2026-06-06 | Distil 蒸馏模型首次训练 | Qwen2.5-3B LoRA CPU 训练（远程服务器），攻克 OOM（自定义训练循环，内存 13.5GB→7.2GB） |
 | 2026-06-15 | 项目聚焦冻结 | 归档支付/语音/冗余脚本，聚焦 CPU 微型模型 V1.0 核心 |
 | 2026-08-03~04 | 服务层与开源整理 | 15 个 API 蓝图 + 模型服务层（注册表/Ollama 提供者/路由）；CI（ruff + pytest）、单元测试、README、MIT 许可证 |
-| 2026-08-05 | DeepSeek 1B + GOAI Agent | DeepSeek 1B 训练完成；GOAI 教育智能体核心引擎（任务理解/流程编排/工具调用） |
+| 2026-08-05 | DeepSeek 1B + LumiLearn Agent | DeepSeek 1B 训练完成；LumiLearn 学习智能体核心引擎（任务理解/流程编排/工具调用） |
 | 2026-08-07 | 综合数据 LoRA 训练 + 评估 | 综合数据 LoRA 训练（远程服务器 CPU）；模型开发现状评估（整体 ~80%）；管理员管理系统 + Agent 注册表；学习工作流引擎 + 输出检测系统；学生学习输出检测分析 |
-| 2026-08-08 | V2 高质量数据训练 + Ollama 部署 | 真实教学问答 LoRA 训练完成，GGUF Q8_0 转换并部署远程服务器 Ollama（lumilearn-v2:latest 主力上线）；GOAI 演示 + CPU/GPU 训练脚本 |
+| 2026-08-08 | V2 高质量数据训练 + Ollama 部署 | 真实教学问答 LoRA 训练完成，GGUF Q8_0 转换并部署远程服务器 Ollama（lumilearn-v2:latest 主力上线）；LumiLearn 演示 + CPU/GPU 训练脚本 |
 | 2026-08-09 | 服务仪表盘 + 一键启动 | 服务仪表盘与一键启动/停止脚本（Windows start_services.bat / 远程 remote_start_all.sh）；教师端部署脚本；移除硬编码内网 IP（改用环境变量） |
 | 2026-08-10 | 隐私脱敏与仓库整理 | 敏感字样全面脱敏（统一为"远程服务器/remote"，清理 IP / GitHub 用户名 / 服务器路径 / 录屏脚本）；新增教师门户、学校-年级-班级组织架构、AI 思维导图与幻灯片生成、云端提供者接入（7 家模板 + API Key 安全存储）、端口选择性配置；模型对照表 + 全面评估（Choice LoRA 71.27%） |
 

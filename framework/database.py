@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS users (
     created_at  TEXT DEFAULT (datetime('now','localtime'))
 );
 
--- 学习报告（GOAI Web 生成）
+-- 学习报告（学习平台 Web 生成）
 CREATE TABLE IF NOT EXISTS learning_reports (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id     INTEGER NOT NULL,
@@ -1279,7 +1279,7 @@ class DatabaseManager:
             name:  用户名
             role:  角色（teacher / student）
             avatar: 头像标识
-            username: 登录用户名（GOAI Web 登录用）
+            username: 登录用户名（学习平台 Web 登录用）
             password: 登录密码明文（自动哈希存储）
 
         返回：
@@ -1384,7 +1384,7 @@ class DatabaseManager:
 
     def add_learning_report(self, user_id: int, topic: str,
                             report: Dict, score: float = 0.0) -> Dict:
-        """保存一份 GOAI 学习报告"""
+        """保存一份学习报告"""
         cur = self._execute(
             "INSERT INTO learning_reports (user_id, topic, report_json, score) VALUES (?, ?, ?, ?)",
             (user_id, topic, json.dumps(report, ensure_ascii=False), score)

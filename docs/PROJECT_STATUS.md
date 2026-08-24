@@ -1,4 +1,4 @@
-# LumiLearn 项目现状总结
+﻿# LumiLearn 项目现状总结
 
 > 更新日期：2026-08-17
 
@@ -192,7 +192,7 @@ LumiLearn 是一款基于 AI Agent 的高中全科学习辅导平台，采用费
 
 ```bash
 # 主应用（含前端）
-python goai_web.py          # http://localhost:5000
+python lumilearn_web.py          # http://localhost:5000
 
 # 教师端
 python teacher_portal.py    # http://localhost:5010

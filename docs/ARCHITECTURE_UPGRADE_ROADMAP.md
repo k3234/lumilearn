@@ -1,4 +1,4 @@
-# LumiLearn 多 Agent 架构升级实施路线图
+﻿# LumiLearn 多 Agent 架构升级实施路线图
 
 > 基于《全球 AI Agent 行业研究报告》结论制定
 > 版本：v1.0 | 日期：2026-08-17
@@ -17,7 +17,7 @@ LumiLearn 当前存在 **5 套并行但孤立的 Agent 系统**，缺乏统一�
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌──────────────┐   ┌──────────────┐   ┌──────────────────┐   │
-│  │goai_agent.py │   │goai_multi_   │   │langgraph_engine  │   │
+│  │lumilearn_agent.py │   │lumilearn_multi_   │   │langgraph_engine  │   │
 │  │单Agent 演示  │   │agent.py      │   │.py 12模型并行    │   │
 │  │(关键词路由)  │   │(串行3-Agent) │   │(投票聚合)        │   │
 │  └──────────────┘   └──────────────┘   └──────────────────┘   │
@@ -45,7 +45,7 @@ LumiLearn 当前存在 **5 套并行但孤立的 Agent 系统**，缺乏统一�
 | # | 问题 | 严重性 | 研究报告对应 |
 |---|------|--------|-------------|
 | P1 | 3套独立Agent系统未整合，存在重复实现和接口不一致 | 高 | §6.2 架构选择风险 |
-| P2 | `goai_multi_agent.py` 为纯串行执行，延迟叠加 | 高 | §5.1 串行→并行趋势 |
+| P2 | `lumilearn_multi_agent.py` 为纯串行执行，延迟叠加 | 高 | §5.1 串行→并行趋势 |
 | P3 | 缺少反馈回路（Verifier/Critic），无法区分"合理但错误"与"已确认" | 高 | §5.1 反馈回路模式 |
 | P4 | 安全沙箱仅覆盖代码执行，未扩展到Agent API调用级 | 中 | §6.3 OWASP Top 10 |
 | P5 | 无统一可观测性，无法追踪Agent调用链和成本 | 中 | §5.2 可观测性 |
@@ -58,8 +58,8 @@ LumiLearn 当前存在 **5 套并行但孤立的 Agent 系统**，缺乏统一�
 ```
 当前代码库 Agent 相关模块：
 
-goai_agent.py         ~850行  单Agent串行流水线（关键词路由）
-goai_multi_agent.py   ~516行  3-Agent串行链
+lumilearn_agent.py         ~850行  单Agent串行流水线（关键词路由）
+lumilearn_multi_agent.py   ~516行  3-Agent串行链
 langgraph_engine.py   ~750行  12模型并行（已有LangGraph基础）
 framework/admin/agents.py ~311行 Agent注册表（BaseAgent抽象）
 framework/workflow_engine.py ~521行 费曼5步工作流
@@ -166,7 +166,7 @@ agent_core/
 ```
 
 **关键变更**：
-- 将 `goai_multi_agent.py` 中的 3 个 Agent（FeynmanTeacher, ScoreAgent, CoachAgent）迁移到统一注册表
+- 将 `lumilearn_multi_agent.py` 中的 3 个 Agent（FeynmanTeacher, ScoreAgent, CoachAgent）迁移到统一注册表
 - 复用 `framework/admin/agents.py` 的 BaseAgent 抽象
 - 建立 AgentState TypedDict 统一状态管理
 
@@ -207,7 +207,7 @@ agent_core/
 
 #### 2.1 改造 MultiAgentOrchestrator
 
-**修改**：`goai_multi_agent.py` → 迁移到 `agent_core/multi_agent.py`
+**修改**：`lumilearn_multi_agent.py` → 迁移到 `agent_core/multi_agent.py`
 
 **架构升级**：
 
@@ -469,8 +469,8 @@ class CostTracker:
 
 | 现有文件 | 处理方式 | 说明 |
 |---------|---------|------|
-| `goai_agent.py` | **废弃** | 单Agent演示，功能已被Phase 1整合 |
-| `goai_multi_agent.py` | **迁移** | 3-Agent逻辑迁移到 `agent_core/multi_agent.py` |
+| `lumilearn_agent.py` | **废弃** | 单Agent演示，功能已被Phase 1整合 |
+| `lumilearn_multi_agent.py` | **迁移** | 3-Agent逻辑迁移到 `agent_core/multi_agent.py` |
 | `langgraph_engine.py` | **重构** | 拆分到 `agent_core/langgraph_engine.py` + `model_registry.py` |
 | `framework/admin/agents.py` | **扩展** | 新增 `agent_core` 模块的Agent注册 |
 | `framework/workflow_engine.py` | **保留** | 费曼5步工作流保持不变，作为上层业务逻辑 |
@@ -489,7 +489,7 @@ opentelemetry-sdk>=1.25.0
 
 ### 4.3 兼容性保证
 
-- 所有现有 API 端点保持兼容（`/goai/web`, `/goai/multi-agent`, `/goai/web/langgraph`）
+- 所有现有 API 端点保持兼容（`/lumilearn/web`, `/lumilearn/multi-agent`, `/lumilearn/web/langgraph`）
 - 新增统一端点 `/agent/v1/run` 作为未来主入口
 - 旧端点通过 Router Agent 内部路由到新架构
 
@@ -505,7 +505,7 @@ opentelemetry-sdk>=1.25.0
 |------|---------|-------------------|--------|
 | 1 | LLM基础 | 已有 FeynmanEngine 理解 | 全员 |
 | 2 | RAG入门 | 已有 `knowledge_retrieval.py` | 全员 |
-| 3 | 单Agent模式 | `goai_agent.py` 已有基础 | 后端 |
+| 3 | 单Agent模式 | `lumilearn_agent.py` 已有基础 | 后端 |
 | 4 | 进阶工具使用 | `ToolCaller` 模块 | 后端 |
 | 5 | 多Agent基础 | **Phase 1 实施过程** | 架构组 |
 | 6 | LangGraph深入 | **Phase 1-2 实施过程** | 架构组 |
@@ -590,8 +590,8 @@ Week 7-8:  [M4] 成本优化与生态集成完成
 ```
 当前结构                          目标结构
 ─────────────────────────────────────────────────────
-goai_agent.py          →        (废弃，功能整合)
-goai_multi_agent.py    →        agent_core/multi_agent.py
+lumilearn_agent.py          →        (废弃，功能整合)
+lumilearn_multi_agent.py    →        agent_core/multi_agent.py
 langgraph_engine.py    →        agent_core/langgraph_engine.py
                            →        agent_core/model_registry.py
 framework/admin/agents.py →     framework/admin/agents.py (扩展)

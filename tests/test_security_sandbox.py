@@ -106,7 +106,7 @@ class TestSandboxTimeout:
 # ---------- 端点认证 ----------
 class TestSandboxEndpointAuth:
     def setup_method(self):
-        import goai_web  # noqa: F401
+        import lumilearn_web  # noqa: F401
         # security blueprint 挂在 framework/api/server 中；此处直接验证 require_admin 装饰器
         from framework.api.routes import security
         self.mod = security

@@ -253,7 +253,7 @@ def main():
         sess["steps"].append({"step": "model_list", "model_count": mc,
                                "latency_ms": round((time.time()-t0)*1000,1), "error": err})
 
-        # Step 4: 用户登录（GOAI端口5000）
+        # Step 4: 用户登录（学习平台端口5000）
         t0 = time.time()
         _, lbody, err = post_json(op, f"{BASE_URL}:5000/api/login",
                                    {"username": uname, "password": pwd})
@@ -304,11 +304,11 @@ def main():
         sess["steps"].append({"step": "history", "record_count": hcnt,
                                "latency_ms": round((time.time()-t0)*1000,1), "error": err})
 
-        # Step 9: GOAI状态
+        # Step 9: 学习状态
         t0 = time.time()
         _, sbody, err = get_json(op, f"{BASE_URL}:5000/api/status")
         ollama_ok = (sbody or {}).get("ollama_available", False) if err is None else False
-        sess["steps"].append({"step": "goai_status", "ollama_available": ollama_ok,
+        sess["steps"].append({"step": "learn_status", "ollama_available": ollama_ok,
                                "latency_ms": round((time.time()-t0)*1000,1), "error": err})
 
         # Step 10: 聊天
@@ -337,7 +337,7 @@ def main():
     print("\n[5/5] 统计分析...")
     all_lat = []
     cnt = {"health":0, "login":0, "learn":0, "multi_agent":0,
-           "history":0, "chat":0, "goai":0}
+           "history":0, "chat":0, "learn_status":0}
     mastery_scores = []
     subj_dist = {}
     topic_dist = {}
@@ -369,8 +369,8 @@ def main():
                 cnt["history"] += 1
             if sn == "chat" and not err:
                 cnt["chat"] += 1
-            if sn == "goai_status" and not err:
-                cnt["goai"] += 1
+            if sn == "learn_status" and not err:
+                cnt["learn_status"] += 1
         subj = r.get("subject", "未知")
         subj_dist[subj] = subj_dist.get(subj, 0) + 1
         for s in r["steps"]:
@@ -413,8 +413,8 @@ def main():
                                 "rate": f"{cnt['history']/len(final_users)*100:.1f}%"},
             "chat":           {"total": len(final_users), "ok": cnt["chat"],
                                 "rate": f"{cnt['chat']/len(final_users)*100:.1f}%"},
-            "goai_status":    {"total": len(final_users), "ok": cnt["goai"],
-                                "rate": f"{cnt['goai']/len(final_users)*100:.1f}%"}
+            "learn_status":    {"total": len(final_users), "ok": cnt["learn_status"],
+                                "rate": f"{cnt['learn_status']/len(final_users)*100:.1f}%"}
         },
         "latency_stats": {
             "avg_ms": round(avg_lat,1), "p50_ms": round(p50,1),

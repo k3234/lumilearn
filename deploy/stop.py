@@ -4,7 +4,7 @@
 LumiLearn 一键停止脚本（跨平台统一入口）
 ============================================
 1. 读取 deploy/.pids.json，逐个终止对应 PID 进程；
-2. 残留进程兜底：按命令行含 goai_web / teacher_portal / framework.api.server
+2. 残留进程兜底：按命令行含 lumilearn_web / teacher_portal / framework.api.server
    的 python 进程清理（优先 psutil；缺省 Windows 用 PowerShell 枚举 + taskkill，
    Linux/macOS 用 pgrep + SIGTERM）；
 3. 删除 deploy/.pids.json。
@@ -120,7 +120,7 @@ def find_leftover_pids():
         # PowerShell 枚举 python 进程命令行（wmic 已弃用）
         script = (
             "Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%'\" | "
-            "Where-Object { $_.CommandLine -match 'goai_web|teacher_portal|framework\\.api\\.server' } | "
+            "Where-Object { $_.CommandLine -match 'lumilearn_web|teacher_portal|framework\\.api\\.server' } | "
             "ForEach-Object { $_.ProcessId }"
         )
         try:

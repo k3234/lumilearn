@@ -1,4 +1,4 @@
-# LumiLearn — 在 CPU 上从零训练的微型 AI 教育模型
+﻿# LumiLearn — 在 CPU 上从零训练的微型 AI 教育模型
 
 输入学科和章节，自动生成知识点讲解、练习题和解析。
 
@@ -18,10 +18,10 @@
 - **数据本地存储**：学习数据默认存储在本机 **SQLite 数据库**，**不上传云端**；如需调用云端模型，仅按需发送请求文本，请勿提交含个人敏感信息的资料。
 - **密钥走环境变量**：所有密钥（API Key、SECRET_KEY、管理员密码等）一律通过环境变量（`.env`）注入，不写入代码或配置文件，且 `.env` 已被 `.gitignore` 忽略、不进入公开仓库。
 
-## 📋 GOAI 2026 参赛材料
+## 📋 LumiLearn 2026 参赛材料
 
-- [作品简介](docs/GOAI_SUBMISSION.md) — 可直接复制到 GOAI 作品提交页面「作品简介」字段
-- [参赛技术方案](docs/GOAI_TECHNICAL.md) — 项目定位 / 架构 / 技术路线 / 创新点
+- [作品简介](docs/LumiLearn_SUBMISSION.md) — 可直接复制到 LumiLearn 作品提交页面「作品简介」字段
+- [参赛技术方案](docs/LumiLearn_TECHNICAL.md) — 项目定位 / 架构 / 技术路线 / 创新点
 - [部署指南](docs/DEPLOYMENT_GUIDE.md) — 一键部署与手动部署（含健康检查）
 - [评测结果](docs/EVALUATION_RESULTS.md) — 全量测试与真实环境测评数据
 - [CPU 低配测评](docs/CPU_LOWMEM_EVALUATION.md) — CPU/低内存运行能力实测（34 tok/s、峰值内存 1.77GB）
@@ -122,7 +122,7 @@ python teacher_portal.py
 
 ## 🤖 Agent 智能体
 
-LumiLearn 内置一套可独立启停、统一生命周期的 Agent 框架（`framework/admin/agents.py`），并在 Admin 面板「Agent 管理」中可视化运行；另有一个面向完整学习闭环的 GOAI 教育智能体（`goai_agent.py`）。
+LumiLearn 内置一套可独立启停、统一生命周期的 Agent 框架（`framework/admin/agents.py`），并在 Admin 面板「Agent 管理」中可视化运行；另有一个面向完整学习闭环的 LumiLearn 学习智能体（`lumilearn_agent.py`）。
 
 | Agent | ID | 能力 |
 |---|---|---|
@@ -130,7 +130,7 @@ LumiLearn 内置一套可独立启停、统一生命周期的 Agent 框架（`fr
 | **输出检测 Agent** | `output_detector` | 检测学生学习输出质量（简洁/准确/比喻/完整/术语五维评分），给出改进建议 |
 | **自适应学习 Agent** | `adaptive_path` | 根据学生学习进度与掌握度推荐个性化学习路径 |
 | **对话助手 Agent** | `chat_assistant` | 通用多轮对话，自动路由到当前端口配置的模型 |
-| **GOAI 教育智能体** | `goai_agent.py` | 任务理解 → 流程编排（费曼五步） → 多模型工具调用 → 完整学习报告（掌握度 + 薄弱点 + 建议），推理过程写入本地推理记录库，供管理员/教师/模型自查 |
+| **LumiLearn 学习智能体** | `lumilearn_agent.py` | 任务理解 → 流程编排（费曼五步） → 多模型工具调用 → 完整学习报告（掌握度 + 薄弱点 + 建议），推理过程写入本地推理记录库，供管理员/教师/模型自查 |
 
 所有 Agent 支持 `start / stop / status / run` 统一生命周期，Agent 运行状态持久化到数据库；推理过程（费曼每步、对话学习）自动写入 `reasoning_logs` 推理记录库，可通过 Admin「推理记录」、教师端「推理记录」、API `/api/reasoning-logs` 三方查看。
 
@@ -194,7 +194,7 @@ LumiLearn 支持**本地模型容器** 与**云端 API**  两类推理来源，�
 | 微调 Transformer（8M） | 从零训练 | 课堂演示、教学编排 |
 | 云端模型（可选） | 各厂商 API | 高质量生成场景 |
 
-**端口模型配置** ：每个端口（终端/API/模型管理/GOAI Web/教师端）可独立指定使用哪个提供商的哪个模型，配置实时生效，无需重启。
+**端口模型配置** ：每个端口（终端/API/模型管理/学习平台 Web/教师端）可独立指定使用哪个提供商的哪个模型，配置实时生效，无需重启。
 
 ## 💡 技术创新
 

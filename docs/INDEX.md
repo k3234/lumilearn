@@ -1,4 +1,4 @@
-# LumiLearn 文档索引
+﻿# LumiLearn 文档索引
 
 > 本文件整理仓库文档结构，方便评审和贡献者快速找到所需内容。
 
@@ -8,8 +8,8 @@
 
 | 文档 | 路径 | 说明 |
 |---|---|---|
-| GOAI 提交材料 | [GOAI_SUBMISSION.md](GOAI_SUBMISSION.md) | 参赛项目完整提交文档 |
-| 技术方案 | [GOAI_TECHNICAL.md](GOAI_TECHNICAL.md) | 系统架构、Agent 设计、技术细节 |
+| LumiLearn 提交材料 | [LumiLearn_SUBMISSION.md](LumiLearn_SUBMISSION.md) | 参赛项目完整提交文档 |
+| 技术方案 | [LumiLearn_TECHNICAL.md](LumiLearn_TECHNICAL.md) | 系统架构、Agent 设计、技术细节 |
 | V2.5 技术总结 | [V25_COMPETITION_TECHNICAL_REPORT.md](V25_COMPETITION_TECHNICAL_REPORT.md) | 竞赛版本核心能力与测试数据 |
 | 风险评估 | [../RISK-STATEMENT.md](../RISK-STATEMENT.md) | AI 幻觉风险、教育边界、隐私声明 |
 | 评测报告 | [evaluation-report.md](evaluation-report.md) | 自动化测试 + 学科评测数据 |
@@ -60,8 +60,8 @@
 ```
 docs/
 ├── 竞赛材料（必读）
-│   ├── GOAI_SUBMISSION.md        ← 参赛提交主文档
-│   ├── GOAI_TECHNICAL.md          ← 技术方案详情
+│   ├── LumiLearn_SUBMISSION.md        ← 参赛提交主文档
+│   ├── LumiLearn_TECHNICAL.md          ← 技术方案详情
 │   ├── V25_COMPETITION_TECHNICAL_REPORT.md ← 竞赛版本总结
 │   ├── evaluation-report.md       ← 自动化评测报告
 │   ├── PRESS_RELEASE.md           ← 项目发布说明

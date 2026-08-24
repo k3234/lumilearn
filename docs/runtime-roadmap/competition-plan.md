@@ -1,8 +1,8 @@
-# LumiLearn 竞赛版本（V2.5）开发规划
+﻿# LumiLearn 竞赛版本（V2.5）开发规划
 
 > **版本**：v2.5 竞赛版本
 > **日期**：2026-08-21
-> **目标**：在 V2 基础上补齐评测、稳定性、文档，完成 GOAI 复赛参赛版本定型
+> **目标**：在 V2 基础上补齐评测、稳定性、文档，完成 LumiLearn 复赛参赛版本定型
 > **适用**：单人开发，3-6 个月迭代周期
 
 ---
@@ -16,7 +16,7 @@
 | **自研 8M Transformer** | ✅ | `framework/model.py` | 需 torch |
 | **Qwen2.5 LoRA 微调** | ✅ | `lumilearn-v2`（671 条真实教学问答） | - |
 | **费曼五步教学引擎** | ✅ | `framework/engines/feynman_engine.py` | 29 tests |
-| **多 Agent 协作系统** | ✅ 三 Agent 串行 | `goai_multi_agent.py` + `framework/admin/agents.py` | 26 tests |
+| **多 Agent 协作系统** | ✅ 三 Agent 串行 | `lumilearn_multi_agent.py` + `framework/admin/agents.py` | 26 tests |
 | **知识流水线** | ✅ 新增 | `agent_core/knowledge_pipeline.py` | 6 tests |
 | **RAG 知识库检索** | ✅ 关键词倒排索引 | `framework/services/knowledge_retrieval.py` | 18 tests |
 | **自适应路由** | ✅ 任务类型路由 | `framework/core/router.py` | 4 tests |
@@ -65,7 +65,7 @@
 | 创建 Orchestrator Agent | `agent_core/orchestrator.py`（扩展） | 任务分发 + 动态路由 | P0 |
 | 创建 Self-Critique Agent | `agent_core/self_critique.py` | 对输出质量评估，不达标触发重试 | P0 |
 | 添加 Agent trace 记录 | `agent_core/observability.py`（扩展） | 记录每个 Agent 输入/输出/耗时/token | P0 |
-| 升级多 Agent 流水线 | `goai_multi_agent.py` + `orchestrator.py` | 支持反馈回路 + 超时控制 + token 预算限制 | P0 |
+| 升级多 Agent 流水线 | `lumilearn_multi_agent.py` + `orchestrator.py` | 支持反馈回路 + 超时控制 + token 预算限制 | P0 |
 
 **关键设计**：
 - 反馈阈值：Self-Critique 评分 < 70 分时，触发 FeynmanTeacher 重试（最多 2 次）
@@ -103,7 +103,7 @@
 | 构建标准化学科测试集 | `tests/test_evaluation_dataset.py` | 数学/物理/化学各 50 题标准题库 | P0 |
 | 知识点召回率评测 | `agent_core/observability.py`（扩展） | 统计知识点覆盖度 | P0 |
 | 幻觉频次统计 | `agent_core/fact_checker.py`（扩展） | 检测输出与知识库矛盾的内容 | P0 |
-| 评测报表可视化 | `remote/templates/goai_dashboard.html`（扩展） | ECharts 图表展示评测结果 | P0 |
+| 评测报表可视化 | `remote/templates/dashboard.html`（扩展） | ECharts 图表展示评测结果 | P0 |
 | 评测数据持久化 | `framework/database.py`（扩展） | 评测结果写入 `eval_reports` 表 | P0 |
 
 **评测指标**：

@@ -1,4 +1,4 @@
-# LumiLearn 故障排查手册
+﻿# LumiLearn 故障排查手册
 
 > **适用版本**：V2.5 竞赛版（2026-08）
 > **说明**：本手册记录常见故障、排查步骤与解决方案，覆盖部署、运行、演示三个阶段。
@@ -23,7 +23,7 @@
 ```bash
 # 1. 进程状态
 curl -s http://localhost:5010/health || echo "API 端口不通"
-curl -s http://localhost:5000/health || echo "GOAI 端口不通"
+curl -s http://localhost:5000/health || echo "LumiLearn 端口不通"
 curl -s http://localhost:18080/api/admin/health || echo "Admin 端口不通"
 
 # 2. 模型状态
@@ -79,7 +79,7 @@ lsof -i :5010
 - 修改 `.env` 中的端口映射：
   ```
   API_PORT=5020
-  GOAI_PORT=5010
+  LumiLearn_PORT=5010
   ```
 - 或终止占用进程
 
@@ -221,7 +221,7 @@ for m in mistakes[:3]:
 **解决**：
 - 演示前预装 Ollama 模型：`docker exec lumilearn-ollama ollama pull qwen2.5:1.5b`
 - 切换到本地模型模式：`.env` 中设置 `OLLAMA_HOST=http://localhost:11434`
-- 使用 Lite 模式启动：`python goai_web.py --mode lite`
+- 使用 Lite 模式启动：`python lumilearn_web.py --mode lite`
 
 ---
 
@@ -246,7 +246,7 @@ for m in mistakes[:3]:
 **排查**：
 ```bash
 # 查看进程资源
-top -p $(pgrep -f "goai_web.py" | head -1)
+top -p $(pgrep -f "lumilearn_web.py" | head -1)
 
 # 查看 Ollama 推理耗时
 curl -s http://localhost:11434/api/ps | python3 -m json.tool
@@ -313,7 +313,7 @@ python3 check_status.py
 输出示例：
 ```
 [API]      OK    http://localhost:5010
-[GOAI]     OK    http://localhost:5000
+[LumiLearn]     OK    http://localhost:5000
 [Teacher]  OK    http://localhost:5001
 [Admin]    OK    http://localhost:18080
 [Ollama]   OK    qwen2.5:1.5b

@@ -182,7 +182,7 @@ chmod +x deploy/setup.sh
 ./start.sh
 ```
 
-> 根目录 `start.sh` **仅**启动框架三端口；需要同时启动 GOAI Web（5000）/ 教师门户（5001）时，
+> 根目录 `start.sh` **仅**启动框架三端口；需要同时启动学习平台（5000）/ 教师门户（5001）时，
 > Windows 请运行 `start_services.bat`，Linux / macOS 请运行 `deploy/start.sh`。
 
 > 根目录 `start.sh` 会探测本机 Ollama（`localhost:11434`）；若配置了**远程 Ollama**，
@@ -201,14 +201,14 @@ chmod +x deploy/setup.sh
 | `terminal` | 18080 | 框架终端（HTML 界面） |
 | `api` | 18081 | REST API |
 | `models` | 18082 | 模型管理 |
-| `goai_web` | 5000 | GOAI 学习 Web |
+| `lumilearn_web` | 5000 | 学习平台 Web |
 | `teacher_portal` | 5001 | 教师门户 |
 
 每个服务可独立设置 `enabled`（是否启用）与 `port`（端口号，1-65535 整数）。
 设置后需重启对应服务生效。也可在 Admin 面板「端口管理」中修改。
 
 > **已知限制**：框架三端口（terminal/api/models）由 `framework.api.server --multi-port` 统一拉起，
-> `enabled` 开关对框架三端口暂不生效（仅对 `goai_web` / `teacher_portal` 生效），后续版本改进。
+> `enabled` 开关对框架三端口暂不生效（仅对 `lumilearn_web` / `teacher_portal` 生效），后续版本改进。
 
 ---
 

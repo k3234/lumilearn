@@ -2,7 +2,7 @@
 """
 LumiLearn Agent Core — 并行化多 Agent 编排器
 
-迁移自 goai_multi_agent.py，架构从串行升级为 并行+反馈回路：
+迁移自 lumilearn_multi_agent.py，架构从串行升级为 并行+反馈回路：
 
 旧架构（串行）：
   FeynmanTeacher → ScoreAgent → CoachAgent
@@ -18,7 +18,7 @@ LumiLearn Agent Core — 并行化多 Agent 编排器
   - 反馈轮次上限：max_retries（默认3），防止无限循环
   - 生成完成后运行 FactChecker Agent（P0-2：与 RAG 来源核对，防语义幻觉）
 
-与 goai_multi_agent.py 的兼容性：
+与 lumilearn_multi_agent.py 的兼容性：
   - 保留 FeynmanTeacher / ScoreAgent / CoachAgent 类名与 run() 接口
   - MultiAgentOrchestrator.run(payload) 输出格式完全兼容
   - 新增 MultiAgentPipeline 提供并行+反馈能力
@@ -89,7 +89,7 @@ class FeynmanTeacher:
     """
     教学 Agent：基于费曼五步学习法讲解知识点。
 
-    相比 goai_multi_agent.py 的增强：
+    相比 lumilearn_multi_agent.py 的增强：
       - 支持 parallel_models 参数：多模型并行生成，投票聚合
       - 保持单模型模式兼容（不传 parallel_models 时行为一致）
     """
@@ -350,7 +350,7 @@ class ScoreAgent:
         self.timeout = timeout
 
     def run(self, payload: Dict) -> Dict:
-        """评估学生的解释，返回五维评分（接口与 goai_multi_agent.py 一致）"""
+        """评估学生的解释，返回五维评分（接口与 lumilearn_multi_agent.py 一致）"""
         concept = (payload.get("topic") or "").strip()
         student_output = (payload.get("student_explanation") or "").strip()
         if not concept:
@@ -405,7 +405,7 @@ class CoachAgent:
         return "待加强", "需要从基础概念重新学习，建议先掌握前置知识点。"
 
     def run(self, payload: Dict) -> Dict:
-        """生成学习建议与下一步推荐（接口与 goai_multi_agent.py 一致）"""
+        """生成学习建议与下一步推荐（接口与 lumilearn_multi_agent.py 一致）"""
         user_id = payload.get("user_id", 0)
         score = payload.get("score", 0) or 0
         topic = (payload.get("topic") or "").strip()
@@ -514,7 +514,7 @@ class MultiAgentPipeline:
             max_retries: 反馈轮次上限（可选，覆盖实例默认）
 
         返回：
-            与 goai_multi_agent.py 兼容的聚合报告 + 新增字段：
+            与 lumilearn_multi_agent.py 兼容的聚合报告 + 新增字段：
               verifier: 验证结果
               fact_check: 事实核查结果（P0-2）
               feedback_rounds: 反馈轮次
@@ -909,7 +909,7 @@ class MultiAgentPipeline:
 # ============================================================
 class MultiAgentOrchestrator:
     """
-    兼容 goai_multi_agent.py 的编排器。
+    兼容 lumilearn_multi_agent.py 的编排器。
     Phase 2 起：内部走 MultiAgentPipeline（并行+反馈），输出格式保持兼容。
     """
 

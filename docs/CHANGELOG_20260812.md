@@ -1,13 +1,13 @@
-# LumiLearn 更新记录（2026-08-12 · Day 2）
+﻿# LumiLearn 更新记录（2026-08-12 · Day 2）
 
-> 本文档记录 2026-08-12（GOAI 行动规划 Day 2）的开发内容。
+> 本文档记录 2026-08-12（LumiLearn 行动规划 Day 2）的开发内容。
 > 说明：不包含测试脚本细节、本地验收过程与任何敏感凭据；服务器地址一律使用占位符。
 
 ---
 
-## 一、多 Agent 协作系统（goai_multi_agent.py）⭐
+## 一、多 Agent 协作系统（lumilearn_multi_agent.py）⭐
 
-**目标**：从"单 Agent 四模块串行"升级为"多 Agent 协作"，契合 GOAI 评审对 Agent 协作的核心要求。
+**目标**：从"单 Agent 四模块串行"升级为"多 Agent 协作"，契合 LumiLearn 评审对 Agent 协作的核心要求。
 
 ### 架构
 
@@ -56,19 +56,19 @@
 
 ---
 
-## 二、GOAI Web 前端分离重构（goai_web.py）⭐
+## 二、学习平台 Web 前端分离重构（lumilearn_web.py）⭐
 
-**目标**：解决"前端代码混在 goai_web.py 中"的可维护性问题（GOAI 报告指出的高优先级技术债）。
+**目标**：解决"前端代码混在 lumilearn_web.py 中"的可维护性问题（LumiLearn 报告指出的高优先级技术债）。
 
 ### 改动
 
 | 项 | 改动前 | 改动后 |
 |---|---|---|
-| 学习智能体页 | `HTML_TEMPLATE` 常量（700 行内嵌在 .py） | 独立模板 `remote/templates/goai_learn.html` |
-| 仪表盘首页 | `dashboard_html` 字符串拼接（100+ 行） | Jinja2 模板 `remote/templates/goai_dashboard.html` |
+| 学习智能体页 | `HTML_TEMPLATE` 常量（700 行内嵌在 .py） | 独立模板 `remote/templates/learn.html` |
+| 仪表盘首页 | `dashboard_html` 字符串拼接（100+ 行） | Jinja2 模板 `remote/templates/dashboard.html` |
 | 渲染方式 | `render_template_string` | `render_template`（模板化，易维护） |
 | 模板目录 | 无 | `remote/templates`（本地）→ `tianhong/templates`（远程）双目录兼容 |
-| 文件体积 | goai_web.py 1172 行 | goai_web.py 402 行（减 66%） |
+| 文件体积 | lumilearn_web.py 1172 行 | lumilearn_web.py 402 行（减 66%） |
 
 ### 新增：`POST /api/multi-agent` 路由
 
@@ -79,16 +79,16 @@
 
 ---
 
-## 三、修复：GOAI Web 旧进程占用端口导致服务无法更新
+## 三、修复：学习平台 Web 旧进程占用端口导致服务无法更新
 
 **现象**：部署后 `/api/multi-agent` 返回 404（路由未注册），仪表盘/学习页却正常。
 
-**根因**：天虹服务器上存在一个 **8月11日手动 nohup 启动的旧 goai_web 进程**（不归 systemd 管理），持续占用 5000 端口。`systemctl --user restart lumilearn-goai` 启动的新代码进程绑定端口失败 → exit 1 → systemd auto-restart 死循环；实际请求全被旧进程处理。
+**根因**：天虹服务器上存在一个 **8月11日手动 nohup 启动的旧 lumilearn_web 进程**（不归 systemd 管理），持续占用 5000 端口。`systemctl --user restart lumilearn-lumilearn` 启动的新代码进程绑定端口失败 → exit 1 → systemd auto-restart 死循环；实际请求全被旧进程处理。
 
 **修复**：
-1. `systemctl --user stop lumilearn-goai`（避免 auto-restart 干扰）
-2. `pkill -9 -f goai_web.py` 清理全部旧进程（含 nohup 遗留）
-3. `systemctl --user start lumilearn-goai` 重新拉起新代码
+1. `systemctl --user stop lumilearn-lumilearn`（避免 auto-restart 干扰）
+2. `pkill -9 -f lumilearn_web.py` 清理全部旧进程（含 nohup 遗留）
+3. `systemctl --user start lumilearn-lumilearn` 重新拉起新代码
 
 **经验**：手动 nohup 启动的进程与 systemd 服务并存时，端口冲突会让 systemd 服务"看起来没生效"。部署后须验证目标端口进程的 PID 是否为 systemd 托管实例（`systemctl --user status` 的 Main PID 应等于 `ss -tlnp` 的 PID）。
 
@@ -99,7 +99,7 @@
 ### 本地（mock 模型，零网络）26 项全通过
 - 各 Agent 单元：FeynmanTeacher 五步/交互/缺参、ScoreAgent 评分/缺解释、CoachAgent 建议+推荐
 - 编排器：完整流程、5 步教学、评分、建议、状态追踪、耗时
-- goai_web：仪表盘/学习页 200、multi-agent 401/200/评分跳过/报告落库
+- lumilearn_web：仪表盘/学习页 200、multi-agent 401/200/评分跳过/报告落库
 
 ### 天虹真实服务（真实模型推理）
 - `POST /api/multi-agent`（牛顿第二定律 + 学生解释）：HTTP 200，5 步教学（真实生成，质量良好）、评分 90（优秀）、五维评分、建议 1 条、推荐 4 个知识点、三 Agent 全 ok、耗时 47.5s ✅
@@ -111,7 +111,7 @@
 
 ## 五、学习分析仪表盘前端分离重构（analytics_dashboard.py）⭐ 任务二
 
-**目标**：延续 GOAI Web 前端分离经验，消除最后一个内嵌前端的端口服务（18090）。
+**目标**：延续 学习平台 Web 前端分离经验，消除最后一个内嵌前端的端口服务（18090）。
 
 ### 改动
 
@@ -138,7 +138,7 @@
 ### Day2 多 Agent 专项（26 项全通过）
 - Agent 单元：FeynmanTeacher 五步/交互/缺参、ScoreAgent 评分/缺解释、CoachAgent 建议+推荐
 - 编排器：完整流程、5 步教学、评分、建议、状态追踪、耗时
-- goai_web：仪表盘/学习页 200、multi-agent 401/200/评分跳过/报告落库
+- lumilearn_web：仪表盘/学习页 200、multi-agent 401/200/评分跳过/报告落库
 
 ---
 
@@ -199,10 +199,10 @@
 
 | 位置 | 改动 |
 |---|---|
-| `goai_multi_agent.py` | FeynmanTeacher.run() 生成前 `retriever.search(topic, top_k=3)` → 聚合报告 `teaching.rag_sources` |
+| `lumilearn_multi_agent.py` | FeynmanTeacher.run() 生成前 `retriever.search(topic, top_k=3)` → 聚合报告 `teaching.rag_sources` |
 | `feynman_engine.py` | `_build_feynman_prompt` / `explain` / `explain_step` 新增 `extra_context` 注入（默认空，向后兼容） |
-| `goai_web.py` | 新增 `GET/POST /api/knowledge/search`、`GET /api/knowledge/status`（需登录） |
-| `goai_learn.html` | 报告新增「知识库参考来源（RAG）」+「多 Agent 协作状态」区块 |
+| `lumilearn_web.py` | 新增 `GET/POST /api/knowledge/search`、`GET /api/knowledge/status`（需登录） |
+| `learn.html` | 报告新增「知识库参考来源（RAG）」+「多 Agent 协作状态」区块 |
 
 ### 8.3 验证
 
@@ -217,7 +217,7 @@
 
 - 14 个文件（代码 9 + 模板 5）上传至 `/home/<user>/lumilearn`，覆盖前自动备份 `*.bak_时间戳`
 - 合并 `port_settings`（补齐 terminal/teacher_portal/student_portal，保留远程其他配置）
-- 重启全部服务：`lumilearn-api`(18080/81/82) + `lumilearn-goai`(5000)（systemd）+ `teacher_portal`(5001) + `analytics_dashboard`(18090) + `student_portal`(5010)（nohup）
+- 重启全部服务：`lumilearn-api`(18080/81/82) + `lumilearn-lumilearn`(5000)（systemd）+ `teacher_portal`(5001) + `analytics_dashboard`(18090) + `student_portal`(5010)（nohup）
 - 7 端口全部 HTTP 200/302 ✅
 
 ### 9.2 在线测评结果
@@ -319,6 +319,6 @@
 
 ---
 
-**待提交**：goai_multi_agent.py、goai_web.py、analytics_dashboard.py、admin.py、teacher_portal.py、database.py、feynman_engine.py、output_detector.py、lumilearn_shared.py、knowledge_retrieval.py（新增）、5 个前端模板、README、AI-DECLARATION.md、3 篇 docs、验证/部署/测评脚本、本文档。
+**待提交**：lumilearn_multi_agent.py、lumilearn_web.py、analytics_dashboard.py、admin.py、teacher_portal.py、database.py、feynman_engine.py、output_detector.py、lumilearn_shared.py、knowledge_retrieval.py（新增）、5 个前端模板、README、AI-DECLARATION.md、3 篇 docs、验证/部署/测评脚本、本文档。
 
 **遗留**：演示视频与 PPT（用户指定另行完成）；`qwen2.5:7b` 已从费曼默认路径中规避（端口模型配置 lumilearn-v2，CPU 推理 6s/次）。

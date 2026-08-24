@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-LumiLearn 兼容性 shim — 替代已删除的 goai_web.py
+LumiLearn 兼容性 shim — 替代已删除的旧版 Web 入口
 
 提供 Flask app 实例以便 test_learning_dashboard.py 和 test_input_validation.py 导入。
 """

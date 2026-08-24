@@ -1,4 +1,4 @@
-# LumiLearn 部署指南
+﻿# LumiLearn 部署指南
 
 > 本指南帮助你在任意 CPU 设备上复现 LumiLearn 全套系统。全部服务本地运行、无云依赖。
 
@@ -59,8 +59,8 @@ bash scripts/remote_start_all.sh
 # Framework API（课堂/终端/管理，端口 18080/18081/18082）
 nohup python3 framework/api/server.py --multi-port --host 0.0.0.0 > logs/framework_api.log 2>&1 &
 
-# GOAI 学习 Web（5000）
-nohup python3 goai_web.py > logs/goai_web.log 2>&1 &
+# 学习平台 Web（5000）
+nohup python3 lumilearn_web.py > logs/lumilearn_web.log 2>&1 &
 
 # 教师端（5001）
 nohup python3 teacher_portal.py > logs/teacher_portal.log 2>&1 &
@@ -81,7 +81,7 @@ nohup python3 analytics_dashboard.py > logs/analytics_dashboard.log 2>&1 &
 | 课堂模式 | http://localhost:18080/classroom | 费曼五步学习 + AI 聊天 + 幻灯片演示 + 思维导图 |
 | 对话终端 | http://localhost:18080/chat | 多角色 AI 对话（老师/助教/同学） |
 | 管理面板 | http://localhost:18082/admin | 用户/模型/端口/Agent/日志/数据可视化（默认管理员 admin，登录后请立即改密） |
-| GOAI 学习 Web | http://localhost:5000 | 多 Agent 协作学习 + RAG + 学习报告 |
+| 学习平台 Web | http://localhost:5000 | 多 Agent 协作学习 + RAG + 学习报告 |
 | 学生端学习平台 | http://localhost:5010 | 引导式学习（苏格拉底式交互） |
 | 教师端 | http://localhost:5001 | 班级管理 / 学习监控 / 任务分配 / 导出申请 |
 | 学习分析仪表盘 | http://localhost:18090 | 掌握度趋势 / 学科对比 / 薄弱点排行 |
@@ -101,7 +101,7 @@ LumiLearn 健康检查 (host=127.0.0.1)
   ✅ 端口 18080  课堂/终端/管理 (Framework API)   OK
   ✅ 端口 18081  REST API                          OK
   ✅ 端口 18082  管理面板 API                      OK
-  ✅ 端口 5000   GOAI 学习 Web                     OK
+  ✅ 端口 5000   学习平台 Web                     OK
   ✅ 端口 5001   教师端                            OK
   ✅ 端口 5010   学生端学习平台                    OK
   ✅ 端口 18090  学习分析仪表盘                    OK

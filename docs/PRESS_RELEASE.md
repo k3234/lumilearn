@@ -1,4 +1,4 @@
-# LumiLearn 发布说明
+﻿# LumiLearn 发布说明
 
 > **发布日期**：2026-08-21
 > **版本**：V2.5（竞赛版）
@@ -71,7 +71,7 @@ pip install -r requirements.txt
 ollama pull lumilearn-v2:latest
 
 # 启动
-python goai_web.py --mode lite
+python lumilearn_web.py --mode lite
 ```
 
 详细部署指南见 [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)。
@@ -85,4 +85,4 @@ python goai_web.py --mode lite
 
 ---
 
-*本发布说明适用于 GOAI 2026 竞赛参赛版本（V2.5）。*
+*本发布说明适用于 LumiLearn 2026 竞赛参赛版本（V2.5）。*
