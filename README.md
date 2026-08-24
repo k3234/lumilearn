@@ -1,4 +1,4 @@
-﻿# LumiLearn — 在 CPU 上从零训练的微型 AI 教育模型
+# LumiLearn — 在 CPU 上从零训练的微型 AI 教育模型
 
 输入学科和章节，自动生成知识点讲解、练习题和解析。
 
@@ -18,15 +18,14 @@
 - **数据本地存储**：学习数据默认存储在本机 **SQLite 数据库**，**不上传云端**；如需调用云端模型，仅按需发送请求文本，请勿提交含个人敏感信息的资料。
 - **密钥走环境变量**：所有密钥（API Key、SECRET_KEY、管理员密码等）一律通过环境变量（`.env`）注入，不写入代码或配置文件，且 `.env` 已被 `.gitignore` 忽略、不进入公开仓库。
 
-## 📋 LumiLearn 2026 参赛材料
+## 📋 文档索引
 
-- [作品简介](docs/LumiLearn_SUBMISSION.md) — 可直接复制到 LumiLearn 作品提交页面「作品简介」字段
-- [参赛技术方案](docs/LumiLearn_TECHNICAL.md) — 项目定位 / 架构 / 技术路线 / 创新点
 - [部署指南](docs/DEPLOYMENT_GUIDE.md) — 一键部署与手动部署（含健康检查）
 - [评测结果](docs/EVALUATION_RESULTS.md) — 全量测试与真实环境测评数据
 - [CPU 低配测评](docs/CPU_LOWMEM_EVALUATION.md) — CPU/低内存运行能力实测（34 tok/s、峰值内存 1.77GB）
 - [运行证据](docs/RUNNING_EVIDENCE.md) — 服务状态 / API 实测 / 数据落库证据
 - [模型下载](docs/MODEL_DOWNLOAD.md) — lumilearn-v2 获取与 Ollama 导入
+- [技术方案报告](docs/V25_COMPETITION_TECHNICAL_REPORT.md) — 项目定位 / 架构 / 技术路线 / 创新点
 - [AI 使用声明](AI-DECLARATION.md) — AI 参与方式与责任声明
 
 ## 10 秒看懂
