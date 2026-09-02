@@ -11,29 +11,33 @@ LumiLearn Agent Core — 单元测试
   - framework.admin.agents: 新 Agent 注册
 """
 
-import sys
 import os
+import sys
 import unittest
-from unittest.mock import patch, MagicMock
 
 # 确保能导入项目模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_core.models import AgentState, ToolCall, AgentResult, TaskProfile
-from agent_core.router import RouterAgent, route_task, get_router_agent
-from agent_core.model_registry import (
-    ModelEntry, build_model_registry, get_model_summary,
-    get_model, get_models_by_provider, get_best_models,
-    ALL_MODELS,
-)
 from agent_core.langgraph_engine import (
-    MultiFormatGenerator, WeightedVoter, OrchestrationEngine,
-    run_orchestration, run_single_model,
+    MultiFormatGenerator,
+    OrchestrationEngine,
+    WeightedVoter,
 )
+from agent_core.model_registry import (
+    ALL_MODELS,
+    get_best_models,
+    get_model,
+    get_model_summary,
+    get_models_by_provider,
+)
+from agent_core.models import AgentResult, AgentState, TaskProfile, ToolCall
 from agent_core.orchestrator import UnifiedOrchestrator, get_unified_orchestrator, run_agent
+from agent_core.router import RouterAgent, get_router_agent
 from framework.admin.agents import (
-    RouterTaskAgent, UnifiedOrchestratorAgent,
-    BUILTIN_AGENTS, AgentRegistry,
+    BUILTIN_AGENTS,
+    AgentRegistry,
+    RouterTaskAgent,
+    UnifiedOrchestratorAgent,
 )
 
 
@@ -251,8 +255,8 @@ class TestModelRegistry(unittest.TestCase):
         self.assertGreater(len(ALL_MODELS), 0)
 
     def test_registry_count(self):
-        """应该注册12个模型"""
-        self.assertEqual(len(ALL_MODELS), 12)
+        """应该注册8个模型"""
+        self.assertEqual(len(ALL_MODELS), 8)
 
     def test_provider_distribution(self):
         providers = set(m.provider for m in ALL_MODELS)
@@ -286,11 +290,6 @@ class TestModelRegistry(unittest.TestCase):
         self.assertGreater(summary["total"], 0)
         self.assertIn("by_provider", summary)
         self.assertIn("models", summary)
-
-    def test_registry_count(self):
-        """注册表应包含多个模型"""
-        self.assertGreater(len(ALL_MODELS), 0)
-        self.assertEqual(len(ALL_MODELS), 8)
 
     def test_model_call_solo(self):
         solo_models = get_models_by_provider("solo")
@@ -543,16 +542,16 @@ class TestBackwardCompatibility(unittest.TestCase):
 
     def test_agent_core_imports(self):
         """agent_core 模块可正常导入"""
-        from agent_core import AgentState, ToolCall, AgentResult, TaskProfile, RouterAgent
+        from agent_core import AgentState, RouterAgent
         self.assertIsNotNone(AgentState)
         self.assertIsNotNone(RouterAgent)
 
     def test_framework_agents_import(self):
         """framework.admin.agents 可正常导入"""
         from framework.admin.agents import (
-            BaseAgent, FeynmanAgent, DetectionAgent,
-            AdaptiveAgent, ChatAgent,
-            RouterTaskAgent, UnifiedOrchestratorAgent,
+            BaseAgent,
+            RouterTaskAgent,
+            UnifiedOrchestratorAgent,
         )
         self.assertTrue(issubclass(RouterTaskAgent, BaseAgent))
         self.assertTrue(issubclass(UnifiedOrchestratorAgent, BaseAgent))

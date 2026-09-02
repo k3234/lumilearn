@@ -35,14 +35,16 @@ from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from agent_core.fact_checker import FactCheckerAgent
 from agent_core.model_registry import (
-    ALL_MODELS, ALL_MODELS_DICT, get_model, get_best_models,
-    get_best_models_by_dynamic_weight, get_models_by_provider,
+    ALL_MODELS_DICT,
+    get_best_models,
+    get_best_models_by_dynamic_weight,
 )
 from agent_core.verifier import (
-    VerifierAgent, get_verifier_agent, evaluate_human_review,
+    evaluate_human_review,
+    get_verifier_agent,
 )
-from agent_core.fact_checker import FactCheckerAgent
 
 # 难度映射：中文难度 → 费曼引擎 level
 LEVEL_MAP = {
@@ -211,8 +213,7 @@ class FeynmanTeacher:
         rag_context = ""
         rag_sources = []
         try:
-            from framework.services.knowledge_retrieval import (
-                get_knowledge_retriever, format_rag_context)
+            from framework.services.knowledge_retrieval import format_rag_context, get_knowledge_retriever
             _retriever = get_knowledge_retriever()
             _results = _retriever.search(topic, top_k=3)
             if _results:
@@ -280,8 +281,7 @@ class FeynmanTeacher:
         rag_context = ""
         rag_sources = []
         try:
-            from framework.services.knowledge_retrieval import (
-                get_knowledge_retriever, format_rag_context)
+            from framework.services.knowledge_retrieval import format_rag_context, get_knowledge_retriever
             _retriever = get_knowledge_retriever()
             _results = _retriever.search(topic, top_k=3)
             if _results:

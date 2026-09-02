@@ -8,19 +8,19 @@
 日期：2026-06-01
 """
 
-import re
 import json
-import time
-import random
-from typing import Dict, Optional, Tuple
-from dataclasses import dataclass, field
+import os
+import re
 
 # 导入共享模块
 import sys
-import os
+import time
+from dataclasses import dataclass, field
+from typing import Dict, Tuple
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+from framework.engines.feynman_templates import FEYNMAN_TEMPLATES, get_template
 from lumilearn_shared import call_ollama as _ll_call_ollama
-from framework.engines.feynman_templates import get_template, FEYNMAN_TEMPLATES
 
 
 def call_ollama(model_name, prompt, timeout=60, **kw):
@@ -158,7 +158,7 @@ class FeynmanEngine:
     def _detect_subject_and_type(self, topic: str) -> Tuple[str, str]:
         """自动识别学科和主题类型"""
         topic_lower = topic.lower()
-        
+
         # 识别学科
         best_subject = "general"
         best_score = 0
@@ -167,7 +167,7 @@ class FeynmanEngine:
             if score > best_score:
                 best_score = score
                 best_subject = subject
-        
+
         # 识别主题类型
         topic_type = "general"
         if best_subject in TOPIC_TYPE_KEYWORDS:
@@ -177,10 +177,10 @@ class FeynmanEngine:
                 if score > best_ttype_score:
                     best_ttype_score = score
                     topic_type = ttype
-        
+
         return best_subject, topic_type
 
-    def _generate_animation_hint(self, step_name: str, topic: str, 
+    def _generate_animation_hint(self, step_name: str, topic: str,
                                   subject: str, topic_type: str) -> str:
         """
         根据步骤和主题生成动画提示
@@ -291,22 +291,22 @@ class FeynmanEngine:
                 }
             }
         }
-        
+
         # 获取对应学科的动画提示字典
         subject_hints = animation_hints.get(subject, animation_hints["general"])
-        type_hints = subject_hints.get(topic_type, subject_hints.get("default", 
+        type_hints = subject_hints.get(topic_type, subject_hints.get("default",
                                                                       subject_hints.get("default", {})))
-        
+
         # 获取对应步骤的动画提示
         hint = type_hints.get(step_name, "general_animation")
-        
+
         # 添加主题相关后缀
         if subject in ["math", "physics", "chemistry"]:
             hint = f"{subject}_{topic_type}_{hint}" if topic_type != "default" else hint
-        
+
         return hint
 
-    def _build_feynman_prompt(self, step: str, topic: str, level: str, 
+    def _build_feynman_prompt(self, step: str, topic: str, level: str,
                                context: list = None,
                                extra_context: str = None) -> str:
         """
@@ -330,7 +330,7 @@ class FeynmanEngine:
         # RAG 参考资料：显式参数优先，否则使用实例级上下文（explain 阶段注入）
         if extra_context is None:
             extra_context = getattr(self, "_rag_context", "") or ""
-        
+
         # 水平描述
         level_descriptions = {
             "junior": "初中生水平，用最简单的生活例子，不要用专业术语",
@@ -339,7 +339,7 @@ class FeynmanEngine:
             "general": "通用水平，像给12岁孩子讲解一样清晰易懂",
         }
         level_desc = level_descriptions.get(level, level_descriptions["general"])
-        
+
         # 步骤描述
         step_descriptions = {
             "phenomenon": "用生活中的具体场景引入概念，让学生觉得'哦，原来这就是...'，不要直接说出答案或概念名称",
@@ -349,7 +349,7 @@ class FeynmanEngine:
             "test": "让学生用30秒讲给一个完全不懂的人听。要求：必须用最简单的话，最少的术语",
         }
         step_desc = step_descriptions.get(step, "")
-        
+
         # 组装上下文
         context_str = ""
         if context:
@@ -364,7 +364,7 @@ class FeynmanEngine:
 参考资料（来自知识库检索，仅作内容参考，不可直接照抄，需用自己的话讲解）：
 {extra_context[:800]}
 """
-        
+
         # 构建最终Prompt
         prompt = f"""【费曼教学法 - {step}阶段】
 
@@ -389,11 +389,11 @@ class FeynmanEngine:
 7. 【重要】每一步结束时，必须以一个具体的引导性问题结尾，把思考主动权交还给学生，等待学生回答
 
 请直接写出教学内容："""
-        
+
         return prompt
 
     # ==================== 五步教学 ====================
-    
+
     def _step1_phenomenon(self, topic: str, level: str = "junior") -> FeynmanStep:
         """
         第一步：现象引入
@@ -402,11 +402,11 @@ class FeynmanEngine:
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("phenomenon", topic, level)
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
-        
+
         if not response:
             # 模型调用失败，使用模板兜底
             response = get_template(subject, topic_type, "phenomenon", topic)
-        
+
         return FeynmanStep(
             step_name="现象引入",
             step_order=1,
@@ -424,10 +424,10 @@ class FeynmanEngine:
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("conflict", topic, level, context)
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
-        
+
         if not response:
             response = get_template(subject, topic_type, "conflict", topic)
-        
+
         return FeynmanStep(
             step_name="认知冲突",
             step_order=2,
@@ -445,10 +445,10 @@ class FeynmanEngine:
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("model", topic, level, context)
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
-        
+
         if not response:
             response = get_template(subject, topic_type, "model", topic)
-        
+
         return FeynmanStep(
             step_name="思维模型",
             step_order=3,
@@ -466,10 +466,10 @@ class FeynmanEngine:
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("derive", topic, level, context)
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
-        
+
         if not response:
             response = get_template(subject, topic_type, "derive", topic)
-        
+
         return FeynmanStep(
             step_name="自主推导",
             step_order=4,
@@ -487,10 +487,10 @@ class FeynmanEngine:
         subject, topic_type = self._detect_subject_and_type(topic)
         prompt = self._build_feynman_prompt("test", topic, level, context)
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
-        
+
         if not response:
             response = get_template(subject, topic_type, "test", topic)
-        
+
         return FeynmanStep(
             step_name="费曼测试",
             step_order=5,
@@ -500,7 +500,7 @@ class FeynmanEngine:
         )
 
     # ==================== 主教学方法 ====================
-    
+
     def explain_step(self, topic: str, level: str = "junior",
                      dialogue: list = None,
                      extra_context: str = "") -> Dict:
@@ -699,46 +699,46 @@ class FeynmanEngine:
         """
         t0 = time.time()
         from datetime import datetime
-        
+
         # 识别学科和主题类型
         subject, topic_type = self._detect_subject_and_type(topic)
-        
+
         # 注入 RAG 参考资料（每步 _build_feynman_prompt 读取 self._rag_context）
         self._rag_context = extra_context or ""
-        
+
         # 执行五步教学
         context = []
         steps = []
-        
+
         # 第一步：现象引入
         step1 = self._step1_phenomenon(topic, level)
         steps.append(step1)
         context.append(step1.content)
-        
+
         # 第二步：认知冲突
         step2 = self._step2_conflict(topic, level, context)
         steps.append(step2)
         context.append(step2.content)
-        
+
         # 第三步：思维模型
         step3 = self._step3_model(topic, level, context)
         steps.append(step3)
         context.append(step3.content)
-        
+
         # 第四步：自主推导
         step4 = self._step4_derive(topic, level, context)
         steps.append(step4)
         context.append(step4.content)
-        
+
         # 第五步：30秒费曼测试
         step5 = self._step5_test(topic, level, context)
         steps.append(step5)
         context.append(step5.content)
-        
+
         # 组装结果
         total_time = round(time.time() - t0, 2)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
+
         # 合并内容
         full_content = "\n\n".join([
             f"【第一步：{steps[0].step_name}】\n{steps[0].content}",
@@ -747,7 +747,7 @@ class FeynmanEngine:
             f"【第四步：{steps[3].step_name}】\n{steps[3].content}",
             f"【第五步：{steps[4].step_name}】\n{steps[4].content}",
         ])
-        
+
         result = {
             "topic": topic,
             "level": level,
@@ -764,7 +764,7 @@ class FeynmanEngine:
             "total_time": total_time,
             "timestamp": timestamp,
         }
-        
+
         # 记录历史
         self.history.append({
             "topic": topic,
@@ -772,7 +772,7 @@ class FeynmanEngine:
             "subject": subject,
             "timestamp": timestamp,
         })
-        
+
         return result
 
     def explain_stream(self, topic: str, level: str = "junior"):
@@ -789,7 +789,7 @@ class FeynmanEngine:
         """
         subject, topic_type = self._detect_subject_and_type(topic)
         context = []
-        
+
         steps_config = [
             ("phenomenon", "现象引入", self._step1_phenomenon),
             ("conflict", "认知冲突", self._step2_conflict),
@@ -797,15 +797,15 @@ class FeynmanEngine:
             ("derive", "自主推导", self._step4_derive),
             ("test", "费曼测试", self._step5_test),
         ]
-        
+
         for i, (step_key, step_name, step_func) in enumerate(steps_config):
             if i == 0:
                 step_result = step_func(topic, level)
             else:
                 step_result = step_func(topic, level, context)
-            
+
             context.append(step_result.content)
-            
+
             yield {
                 "step": i + 1,
                 "step_name": step_name,
@@ -815,8 +815,8 @@ class FeynmanEngine:
             }
 
     # ==================== AI评分系统 ====================
-    
-    def thirty_second_test(self, concept: str, 
+
+    def thirty_second_test(self, concept: str,
                             student_explanation: str) -> Dict:
         """
         评估学生理解程度的AI评分
@@ -868,7 +868,7 @@ class FeynmanEngine:
 }}
 
 只输出JSON，不要其他内容："""
-        
+
         response = call_ollama(self.model_name, prompt, timeout=self.timeout,
                                num_predict=400)
         try:
@@ -893,7 +893,7 @@ class FeynmanEngine:
                 }
         except:
             pass
-        
+
         # 解析失败，使用规则兜底
         return self._fallback_rating(student_explanation)
 
@@ -909,13 +909,13 @@ class FeynmanEngine:
             simplicity = 12
         else:
             simplicity = 8
-        
+
         # 比喻：检查是否包含比喻性表达
         analogy_keywords = ["像", "好像", "比如", "例如", "就像", "好比", "类似",
                            "想象", "可以看作", "可以理解成"]
         analogy_count = sum(1 for kw in analogy_keywords if kw in explanation)
         analogy = min(20, analogy_count * 5 + 5)
-        
+
         # 术语规避：检查专业术语数量
         jargon_chars = set("^±×÷∑∫√π∞αβγθλμΔΩ∇∂∈∉∪∩⊂⊃⊆⊇∧∨¬→⇒↔∀∃∄≡≈≠≤≥")
         jargon_count = sum(1 for c in explanation if c in jargon_chars)
@@ -927,13 +927,13 @@ class FeynmanEngine:
             jargon_free = 10
         else:
             jargon_free = 5
-        
+
         # 准确度和完整度给基准分
         accuracy = 14
         completeness = 12
-        
+
         total = simplicity + accuracy + analogy + completeness + jargon_free
-        
+
         return {
             "score": total,
             "dimensions": {
@@ -949,8 +949,8 @@ class FeynmanEngine:
         }
 
     # ==================== 快捷回复 ====================
-    
-    def ask_guiding_question(self, topic: str, 
+
+    def ask_guiding_question(self, topic: str,
                               question: str = "") -> str:
         """
         生成引导式提问（费曼风格）
@@ -988,14 +988,14 @@ class FeynmanEngine:
 - 控制在60字以内
 
 请直接回复："""
-        
+
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
-        
+
         if not response:
             # 兜底
             subject, topic_type = self._detect_subject_and_type(topic)
             response = get_template(subject, topic_type, "phenomenon", topic)
-        
+
         return response.strip()
 
     def react_to_answer(self, concept: str, student_answer: str,
@@ -1015,17 +1015,17 @@ class FeynmanEngine:
         # 先用AI评分
         rating = self.thirty_second_test(concept, student_answer)
         score = rating.get("score", 0)
-        
+
         if score >= 80:
             return {
                 "status": "good",
                 "feedback": f"讲得真好！你已经理解了{concept}的核心。",
-                "hint": f"如果能再举个生活中的例子就更棒了～",
+                "hint": "如果能再举个生活中的例子就更棒了～",
             }
         elif score >= 60:
             return {
                 "status": "partial",
-                "feedback": f"大概意思对了！但还有一点可以更清楚。",
+                "feedback": "大概意思对了！但还有一点可以更清楚。",
                 "hint": rating.get("feedback", "试着用一个更简单的比喻再讲一次？"),
             }
         else:
@@ -1062,16 +1062,16 @@ class FeynmanEngine:
 - 控制在100字以内
 
 请直接回复："""
-        
+
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
-        
+
         if not response:
             response = f"你的理解很有意思！关于{concept}，让我们换个角度想想...你能不能先用自己的话说说，{concept}最核心的东西是什么？"
-        
+
         return response.strip()
 
     # ==================== 工具方法 ====================
-    
+
     def get_history(self) -> list:
         """获取教学历史记录"""
         return self.history
@@ -1135,41 +1135,41 @@ if __name__ == "__main__":
     print("=" * 60)
     print("🧠 费曼教学引擎 - 测试")
     print("=" * 60)
-    
+
     # 测试主题
     test_topics = [
         ("勾股定理", "junior"),
         ("英语过去式", "junior"),
         ("牛顿第一定律", "senior"),
     ]
-    
+
     engine = FeynmanEngine(model_name="qwen2.5:7b")
-    
+
     for topic, level in test_topics:
         print(f"\n{'=' * 40}")
         print(f"📚 主题: {topic} | 水平: {level}")
         print("=" * 40)
-        
+
         subject, ttype = engine._detect_subject_and_type(topic)
         print(f"   识别: 学科={subject}, 主题类型={ttype}")
-        
+
         result = engine.explain(topic, level)
         print(f"   模型: {result['model_used']}, 耗时: {result['total_time']}s")
-        
+
         for step in result["steps"]:
             print(f"\n   [{step['step_name']}]")
             content_preview = step["content"][:100].replace("\n", " ")
             print(f"   {content_preview}...")
-    
+
     print(f"\n{'=' * 40}")
     print("📊 费曼测试评分")
     print("=" * 40)
-    
+
     test_concept = "勾股定理"
     test_explanation = ("勾股定理就是说，直角三角形两个短边的平方加起来，"
                        "等于最长边的平方。就好像你盖房子，对角线就是最长的，"
                        "两个墙的长度决定了对角线。")
-    
+
     rating = engine.thirty_second_test(test_concept, test_explanation)
     print(f"   学生解释: {test_explanation}")
     print(f"   评分: {rating['score']}/100")

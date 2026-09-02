@@ -3,10 +3,11 @@
 FFmpeg 视频编译服务
 合并、剪切、添加字幕、音视频合成
 """
-import subprocess
 import json
+import re
+import subprocess
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 
 class VideoCompiler:

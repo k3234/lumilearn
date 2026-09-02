@@ -5,16 +5,17 @@ LumiLearn 500用户模拟测试脚本
 使用CookieJar保持登录会话，模拟真实用户访问各服务
 """
 
+import http.cookiejar
 import json
-import time
+import os
 import random
 import statistics
-import http.cookiejar
-import urllib.request
+import time
 import urllib.error
 import urllib.parse
-from datetime import datetime
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 
 # 目标服务主机地址：通过环境变量 LUMILEARN_BASE_URL 指定，默认本机回环地址
 # （切勿将真实内网/公网 IP 或服务器地址硬编码提交到公开仓库）

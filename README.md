@@ -28,6 +28,19 @@
 - [技术方案报告](docs/V25_COMPETITION_TECHNICAL_REPORT.md) — 项目定位 / 架构 / 技术路线 / 创新点
 - [AI 使用声明](AI-DECLARATION.md) — AI 参与方式与责任声明
 
+## 🌍 SDGs 关联
+
+本项目积极响应联合国**2030年可持续发展目标（SDGs）**，核心对齐以下目标：
+
+| SDG | 目标名称 | 本项目对齐点 |
+|:---:|---|---|
+| **SDG 4** | 优质教育（Quality Education） | 降低AI教育门槛，让AI教学工具在老旧设备、资源不足学校也能运行，促进教育公平 |
+| **SDG 9** | 产业、创新和基础设施（Industry, Innovation and Infrastructure） | 纯 Python 实现零外部依赖 RAG、8M 自研 Transformer、全栈自主可控 |
+| **SDG 10** | 减少不平等（Reduced Inequalities） | "算力平权"理念——让 4GB 内存的普通电脑也能流畅运行 AI 教学服务 |
+| **SDG 17** | 促进目标实现的伙伴关系（Partnerships for the Goals） | MIT 开源协议，欢迎全球教育者/开发者贡献与复用 |
+
+> **核心理念**：AI 教育不应是高硬件门槛的奢侈品，而应是人人可及的公共品。LumiLearn 通过自研微型模型 + 零依赖部署，让每一台老旧电脑都能成为 AI 教学终端。
+
 ## 10 秒看懂
 
 | 问题 | 答案 |
