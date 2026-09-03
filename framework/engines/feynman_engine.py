@@ -16,7 +16,7 @@ import re
 import sys
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from framework.engines.feynman_templates import FEYNMAN_TEMPLATES, get_template
@@ -129,6 +129,35 @@ TOPIC_TYPE_KEYWORDS = {
     },
 }
 
+# 数学知识点类型关键词（calc=计算推导 / concept=概念理解 / proof=逻辑证明）
+MATH_TYPE_KEYWORDS = {
+    "math_calc": [
+        "导数", "微分", "积分", "求导", "定积分", "不定积分", "极限",
+        "数列", "求和", "等差", "等比", "级数", "递推",
+        "计算", "求解", "化简", "运算", "展开", "代入",
+        "切线斜率", "变化率", "瞬时速度", "加速度", "边际成本",
+    ],
+    "math_concept": [
+        "函数", "定义域", "值域", "单调", "奇偶", "周期", "对称",
+        "向量", "数量积", "向量积", "投影", "方向",
+        "集合", "映射", "对应", "关系", "概率", "统计",
+        "对数", "指数", "三角函数", "图像", "性质",
+        "斜率", "截距", "渐近线", "极值", "拐点",
+    ],
+    "math_proof": [
+        "证明", "定理", "推论", "命题", "充分条件", "必要条件",
+        "不等式", "几何证明", "反证法", "归纳法", "同一法",
+        "全等", "相似", "平行", "垂直", "共圆", "共线",
+        "勾股", "余弦定理", "正弦定理", "面积公式", "体积公式",
+    ],
+}
+
+# 数学知识点几何关键词（用于判断是否生成几何图形 SVG）
+GEOMETRY_KEYWORDS = [
+    "几何", "三角形", "圆", "面积", "体积", "角度",
+    "勾股", "坐标系", "相似", "全等", "正弦", "余弦",
+]
+
 # ==================== FeynmanEngine ====================
 class FeynmanEngine:
     """
@@ -179,6 +208,38 @@ class FeynmanEngine:
                     topic_type = ttype
 
         return best_subject, topic_type
+
+    def detect_math_type(self, knowledge_node: dict = None, topic: str = "") -> str:
+        """根据知识节点的 category 和 description（或 topic 字符串）判断数学知识点类型。
+
+        类型：
+            math_calc   —— 计算/推导类（导数、积分、数列求和等）
+            math_concept —— 概念理解类（函数性质、向量运算等）
+            math_proof  —— 逻辑证明类（几何证明、不等式证明等）
+            general     —— 无法判断时返回默认类型
+
+        参数：
+            knowledge_node: 知识节点字典，含 'category'/'description'/'name' 等键
+            topic:          教学主题字符串（当 knowledge_node 为空时使用）
+        """
+        source = ""
+        if knowledge_node:
+            name = knowledge_node.get("name", "") or ""
+            desc = knowledge_node.get("description", "") or ""
+            category = knowledge_node.get("category", "") or ""
+            source = f"{name} {desc} {category}"
+        if not source and topic:
+            source = topic
+
+        source_lower = source.lower()
+        best_type = "general"
+        best_score = 0
+        for mtype, keywords in MATH_TYPE_KEYWORDS.items():
+            score = sum(1 for kw in keywords if kw in source_lower)
+            if score > best_score:
+                best_score = score
+                best_type = mtype
+        return best_type
 
     def _generate_animation_hint(self, step_name: str, topic: str,
                                   subject: str, topic_type: str) -> str:
@@ -308,7 +369,8 @@ class FeynmanEngine:
 
     def _build_feynman_prompt(self, step: str, topic: str, level: str,
                                context: list = None,
-                               extra_context: str = None) -> str:
+                               extra_context: str = None,
+                               knowledge_node: dict = None) -> str:
         """
         构建费曼风格的Prompt
         
@@ -394,13 +456,15 @@ class FeynmanEngine:
 
     # ==================== 五步教学 ====================
 
-    def _step1_phenomenon(self, topic: str, level: str = "junior") -> FeynmanStep:
+    def _step1_phenomenon(self, topic: str, level: str = "junior",
+                          knowledge_node: dict = None) -> FeynmanStep:
         """
         第一步：现象引入
         从生活场景切入，不使用术语，让学生觉得亲切自然
         """
         subject, topic_type = self._detect_subject_and_type(topic)
-        prompt = self._build_feynman_prompt("phenomenon", topic, level)
+        prompt = self._build_feynman_prompt("phenomenon", topic, level,
+                                            knowledge_node=knowledge_node)
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
 
         if not response:
@@ -478,14 +542,93 @@ class FeynmanEngine:
             animation_hint=self._generate_animation_hint("自主推导", topic, subject, topic_type)
         )
 
+    def _step4_derive_with_whiteboard(self, topic: str, level: str = "junior",
+                                       context: list = None,
+                                       knowledge_node: dict = None) -> Dict:
+        """
+        第四步：带白板的自主推导（数学计算/几何类知识点专用）
+
+        根据知识点的数学子类型，调用 WhiteboardEngine 生成公式推导 SVG
+        或几何图形 SVG，并结合费曼引导内容返回结构化输出。
+
+        参数：
+            topic: 教学主题
+            level: 学生水平
+            context: 前几步内容
+            knowledge_node: 知识节点字典
+
+        返回：
+            {
+                "step_name": "自主推导",
+                "step_order": 4,
+                "content": 费曼引导文本,
+                "whiteboard_svg": SVG 字符串（可选）,
+                "whiteboard_animation": 动画帧数据列表（可选）,
+                "key_points": [...],
+                "animation_hint": "..."
+            }
+        """
+        subject, topic_type = self._detect_subject_and_type(topic)
+        math_type = self.detect_math_type(knowledge_node, topic)
+        prompt = self._build_feynman_prompt("derive", topic, level, context)
+        response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
+
+        if not response:
+            response = get_template(subject, topic_type, "derive", topic)
+
+        result = {
+            "step_name": "自主推导",
+            "step_order": 4,
+            "content": response.strip(),
+            "key_points": [f"引导式推导{topic}的关键原理"],
+            "animation_hint": self._generate_animation_hint("自主推导", topic, subject, topic_type),
+            "whiteboard_svg": None,
+            "whiteboard_animation": None,
+            "math_type": math_type,
+        }
+
+        # 数学计算类：生成公式推导 SVG
+        if math_type in ("math_calc", "math_proof"):
+            from framework.services.whiteboard import WhiteboardEngine
+            wb = WhiteboardEngine()
+            # 从步骤中提取关键公式
+            steps = [line.strip() for line in response.strip().splitlines()
+                     if line.strip() and len(line.strip()) > 2]
+            formula = steps[-1] if steps else topic
+            svg = wb.generate_formula_svg(formula, steps[:-1] if len(steps) > 1 else [])
+            result["whiteboard_svg"] = svg
+            result["whiteboard_animation"] = wb.animate_derivation(formula, steps[:-1] if len(steps) > 1 else [])
+
+        # 数学几何类：生成几何图形 SVG
+        elif math_type == "math_concept":
+            desc = (knowledge_node.get("description", "") if knowledge_node else "") or ""
+            source = f"{topic} {desc}".lower()
+            shape = None
+            for kw, sh in [("勾股", "right_triangle"), ("三角形", "right_triangle"),
+                           ("圆", "circle"), ("坐标系", "coordinate_system"),
+                           ("正弦", "sine_wave"), ("余弦", "sine_wave"),
+                           ("函数图像", "sine_wave")]:
+                if kw in source:
+                    shape = sh
+                    break
+            if shape:
+                from framework.services.whiteboard import WhiteboardEngine
+                wb = WhiteboardEngine()
+                svg = wb.generate_geometry_svg(shape)
+                result["whiteboard_svg"] = svg
+
+        return result
+
     def _step5_test(self, topic: str, level: str = "junior",
-                     context: list = None) -> FeynmanStep:
+                    context: list = None,
+                    knowledge_node: dict = None) -> FeynmanStep:
         """
         第五步：30秒费曼测试
         让学生用30秒讲给完全不懂的人听，检验是否真懂
         """
         subject, topic_type = self._detect_subject_and_type(topic)
-        prompt = self._build_feynman_prompt("test", topic, level, context)
+        prompt = self._build_feynman_prompt("test", topic, level, context,
+                                            knowledge_node=knowledge_node)
         response = call_ollama_clean(self.model_name, prompt, timeout=self.timeout)
 
         if not response:
@@ -503,7 +646,8 @@ class FeynmanEngine:
 
     def explain_step(self, topic: str, level: str = "junior",
                      dialogue: list = None,
-                     extra_context: str = "") -> Dict:
+                     extra_context: str = "",
+                     knowledge_node: dict = None) -> Dict:
         """
         交互式费曼引导 - 单步生成（方案B：真正的引导对话）
 
@@ -515,6 +659,7 @@ class FeynmanEngine:
             level: 学生水平 (junior/senior/college/general)
             dialogue: 前序对话历史 [{"role": "assistant"/"user", "content": ...}]
             extra_context: RAG 检索到的参考资料（可选，注入 prompt）
+            knowledge_node: 知识节点字典（可选，用于自动识别数学子类型）
 
         返回：
             {
@@ -562,7 +707,12 @@ class FeynmanEngine:
             dialogue_str = "此前对话：\n" + "\n\n".join(parts) + "\n\n"
 
         subject, topic_type = self._detect_subject_and_type(topic)
-        template = get_template(subject, topic_type, step_key, topic)
+        # 对数学学科，按数学子类型（calc/concept/proof）选择模板
+        if subject == "math":
+            math_type = self.detect_math_type(knowledge_node, topic)
+            template = get_template(subject, math_type, step_key, topic)
+        else:
+            template = get_template(subject, topic_type, step_key, topic)
 
         level_descriptions = {
             "junior": "初中生水平，用最简单的生活例子，不要用专业术语",
@@ -672,7 +822,8 @@ class FeynmanEngine:
         }
 
     def explain(self, topic: str, level: str = "junior",
-                extra_context: str = "") -> Dict:
+                extra_context: str = "",
+                knowledge_node: dict = None) -> Dict:
         """
         五步费曼讲解流程 - 主入口
         
@@ -725,13 +876,17 @@ class FeynmanEngine:
         steps.append(step3)
         context.append(step3.content)
 
-        # 第四步：自主推导
-        step4 = self._step4_derive(topic, level, context)
+        # 第四步：自主推导（数学计算/证明类使用白板推导）
+        math_type = self.detect_math_type(knowledge_node, topic)
+        if math_type in ("math_calc", "math_proof"):
+            step4 = self._step4_derive_with_whiteboard(topic, level, context, knowledge_node)
+        else:
+            step4 = self._step4_derive(topic, level, context)
         steps.append(step4)
-        context.append(step4.content)
+        context.append(step4["content"] if isinstance(step4, dict) else step4.content)
 
         # 第五步：30秒费曼测试
-        step5 = self._step5_test(topic, level, context)
+        step5 = self._step5_test(topic, level, context, knowledge_node=knowledge_node)
         steps.append(step5)
         context.append(step5.content)
 
@@ -744,7 +899,7 @@ class FeynmanEngine:
             f"【第一步：{steps[0].step_name}】\n{steps[0].content}",
             f"【第二步：{steps[1].step_name}】\n{steps[1].content}",
             f"【第三步：{steps[2].step_name}】\n{steps[2].content}",
-            f"【第四步：{steps[3].step_name}】\n{steps[3].content}",
+            f"【第四步：{steps[3]['step_name'] if isinstance(steps[3], dict) else steps[3].step_name}】\n{steps[3]['content'] if isinstance(steps[3], dict) else steps[3].content}",
             f"【第五步：{steps[4].step_name}】\n{steps[4].content}",
         ])
 
@@ -757,6 +912,7 @@ class FeynmanEngine:
                 {"step_name": s.step_name, "step_order": s.step_order,
                  "content": s.content, "key_points": s.key_points,
                  "animation_hint": s.animation_hint}
+                if not isinstance(s, dict) else s
                 for s in steps
             ],
             "full_content": full_content,
@@ -764,6 +920,15 @@ class FeynmanEngine:
             "total_time": total_time,
             "timestamp": timestamp,
         }
+
+        # 附加白板数据（仅数学推导类知识点）
+        step4_raw = steps[3]
+        if isinstance(step4_raw, dict):
+            if step4_raw.get("whiteboard_svg"):
+                result["whiteboard_svg"] = step4_raw["whiteboard_svg"]
+            if step4_raw.get("whiteboard_animation"):
+                result["whiteboard_animation"] = step4_raw["whiteboard_animation"]
+            result["math_type"] = step4_raw.get("math_type")
 
         # 记录历史
         self.history.append({
@@ -775,7 +940,8 @@ class FeynmanEngine:
 
         return result
 
-    def explain_stream(self, topic: str, level: str = "junior"):
+    def explain_stream(self, topic: str, level: str = "junior",
+                       knowledge_node: dict = None):
         """
         流式费曼讲解 - 生成器模式
         每完成一步就yield，适合前端逐条展示
@@ -800,9 +966,9 @@ class FeynmanEngine:
 
         for i, (step_key, step_name, step_func) in enumerate(steps_config):
             if i == 0:
-                step_result = step_func(topic, level)
+                step_result = step_func(topic, level, knowledge_node=knowledge_node)
             else:
-                step_result = step_func(topic, level, context)
+                step_result = step_func(topic, level, context, knowledge_node=knowledge_node)
 
             context.append(step_result.content)
 

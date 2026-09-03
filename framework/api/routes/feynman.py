@@ -9,11 +9,13 @@
 """
 
 import logging
-from flask import Blueprint, request, jsonify
 
-from framework.engines.feynman_engine import FeynmanEngine, quick_explain, quick_test
-from framework.services.feynman_animation_bridge import get_animation_for_feynman
+from flask import Blueprint, jsonify, request
+
 from framework.database import db
+from framework.engines.feynman_engine import FeynmanEngine
+from framework.services.feynman_animation_bridge import get_animation_for_feynman
+from framework.services.agent_classroom import AgentClassroom
 
 logger = logging.getLogger("lumilearn.routes.feynman")
 
@@ -189,3 +191,92 @@ def feynman_test():
     except Exception as e:
         logger.error(f"费曼测试失败: {e}")
         return jsonify({"error": f"费曼测试失败: {str(e)}"}), 500
+
+
+@feynman_bp.route("/api/feynman/classroom", methods=["POST", "OPTIONS"])
+def feynman_classroom():
+    """
+    多智能体课堂对话端点
+
+    请求体（JSON）：
+        {
+            "topic": "勾股定理",
+            "level": "junior" | "senior" | "college" | "general",
+            "knowledge_node": {"name": "勾股定理", "category": "math", "tags": ["几何", "证明"]},
+            "max_turns": 5
+        }
+
+    响应（JSON）：
+        {
+            "topic": "勾股定理",
+            "level": "junior",
+            "dialogue": [
+                {"role": "teacher", "content": "..."},
+                {"role": "peer", "content": "..."},
+                {"role": "ta", "content": "..."},
+                ...
+            ],
+            "role_distribution": {"teacher": 3, "peer": 1, "ta": 1},
+            "math_type": "math_proof",
+            "whiteboard_svg": "...",
+            "model_used": "lumilearn-v2:latest"
+        }
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "请求体为空，请提供JSON格式数据"}), 400
+
+    topic = data.get("topic", "")
+    if not topic or not topic.strip():
+        return jsonify({"error": "缺少 topic 字段或内容为空"}), 400
+
+    level = data.get("level", "junior")
+    if level not in VALID_LEVELS:
+        return jsonify({
+            "error": f"不支持的学生水平: {level}，支持: {', '.join(sorted(VALID_LEVELS))}"
+        }), 400
+
+    knowledge_node = data.get("knowledge_node", {}) or {}
+    max_turns = data.get("max_turns", 5)
+    if not isinstance(max_turns, int) or max_turns < 1:
+        max_turns = 5
+
+    try:
+        # 生成课堂对话
+        classroom = AgentClassroom()
+        dialogue = classroom.generate_classroom_dialogue(topic.strip(), knowledge_node, max_turns)
+
+        # 计算角色分配
+        role_distribution = classroom.distribute_speaking_roles(list(range(max_turns)))
+
+        # 推断数学类型
+        engine = FeynmanEngine(model_name=data.get("model", "lumilearn-v2:latest"))
+        math_type = engine.detect_math_type(knowledge_node, topic.strip())
+
+        # 白板数据（数学推导类）
+        whiteboard_svg = None
+        if math_type in ("math_calc", "math_proof"):
+            from framework.services.whiteboard import WhiteboardEngine
+            wb = WhiteboardEngine()
+            whiteboard_svg = wb.generate_formula_svg(topic.strip(), [])
+
+        response_data = {
+            "topic": topic.strip(),
+            "level": level,
+            "dialogue": dialogue,
+            "role_distribution": role_distribution,
+            "math_type": math_type,
+            "model_used": data.get("model", "lumilearn-v2:latest"),
+        }
+
+        if whiteboard_svg:
+            response_data["whiteboard_svg"] = whiteboard_svg
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        logger.error(f"多智能体课堂生成失败: {e}")
+        return jsonify({"error": f"多智能体课堂生成失败: {str(e)}"}), 500
