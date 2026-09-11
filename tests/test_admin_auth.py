@@ -6,8 +6,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from framework.database import db
 from framework.admin.auth import get_admin_auth
+from framework.database import db
 
 
 class TestAdminAuth(unittest.TestCase):

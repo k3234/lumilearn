@@ -16,6 +16,8 @@ env/
 .env
 .env.local
 .env.*.local
+# OpenMAIC 兼容层：真实 provider Key 配置，严禁提交（示例见 server-providers.yml.example）
+config/server-providers.yml
 
 # IDE
 .vscode/
@@ -324,6 +326,7 @@ _replace_rules.txt
 # ============================================
 /_probe_api.py
 /_regression.py
+/_smoke_http.py
 /_test_parser2.py
 /_test_parsers.py
 /_test_slides_model.py

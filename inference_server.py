@@ -1,5 +1,11 @@
-import sys, os, time, uuid, json, argparse
-from flask import Flask, request, jsonify, Response, stream_with_context
+import argparse
+import json
+import os
+import sys
+import time
+import uuid
+
+from flask import Flask, Response, jsonify, request, stream_with_context
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from inference import LumiLearnInference
@@ -205,7 +211,7 @@ if __name__ == "__main__":
     os.environ["LUMILEARN_MODEL_DIR"] = args.model_dir
     DEVICE = args.device
 
-    print(f"[Server] LumiLearn Inference Server v1.0")
+    print("[Server] LumiLearn Inference Server v1.0")
     print(f"[Server] Model dir: {args.model_dir}")
     print(f"[Server] Device: {args.device}")
     print(f"[Server] Listening on {args.host}:{args.port}")

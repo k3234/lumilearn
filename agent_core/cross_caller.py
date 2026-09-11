@@ -45,8 +45,8 @@ class CrossCaller:
         返回：
             Agent 执行结果
         """
-        from framework.database import db
         from framework.admin.agents import get_agent_registry
+        from framework.database import db
 
         call_id = f"call_{uuid.uuid4().hex[:8]}"
         topic = payload.get("topic", "")

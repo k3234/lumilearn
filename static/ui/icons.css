@@ -1,0 +1,57 @@
+﻿/* LumiLearn v0.2.0 · 图标（CSS mask，源自设计包 dl_builtin_minimalist） */
+.icon{display:inline-block;width:1em;height:1em;background-color:currentColor;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;
+  -webkit-mask-size:contain;mask-size:contain;vertical-align:-0.15em;flex:none}
+.icon-14{width:14px;height:14px}.icon-16{width:16px;height:16px}.icon-20{width:20px;height:20px}.icon-24{width:24px;height:24px}
+.icon-arrow-down{-webkit-mask-image:url('/static/ui/icons/arrow-down.svg');mask-image:url('/static/ui/icons/arrow-down.svg')}
+.icon-arrow-left{-webkit-mask-image:url('/static/ui/icons/arrow-left.svg');mask-image:url('/static/ui/icons/arrow-left.svg')}
+.icon-arrow-right{-webkit-mask-image:url('/static/ui/icons/arrow-right.svg');mask-image:url('/static/ui/icons/arrow-right.svg')}
+.icon-arrow-up{-webkit-mask-image:url('/static/ui/icons/arrow-up.svg');mask-image:url('/static/ui/icons/arrow-up.svg')}
+.icon-bell{-webkit-mask-image:url('/static/ui/icons/bell.svg');mask-image:url('/static/ui/icons/bell.svg')}
+.icon-book-open{-webkit-mask-image:url('/static/ui/icons/book-open.svg');mask-image:url('/static/ui/icons/book-open.svg')}
+.icon-box{-webkit-mask-image:url('/static/ui/icons/box.svg');mask-image:url('/static/ui/icons/box.svg')}
+.icon-check{-webkit-mask-image:url('/static/ui/icons/check.svg');mask-image:url('/static/ui/icons/check.svg')}
+.icon-chevron-down{-webkit-mask-image:url('/static/ui/icons/chevron-down.svg');mask-image:url('/static/ui/icons/chevron-down.svg')}
+.icon-chevron-left{-webkit-mask-image:url('/static/ui/icons/chevron-left.svg');mask-image:url('/static/ui/icons/chevron-left.svg')}
+.icon-chevron-right{-webkit-mask-image:url('/static/ui/icons/chevron-right.svg');mask-image:url('/static/ui/icons/chevron-right.svg')}
+.icon-chevron-up{-webkit-mask-image:url('/static/ui/icons/chevron-up.svg');mask-image:url('/static/ui/icons/chevron-up.svg')}
+.icon-chevrons-down-up{-webkit-mask-image:url('/static/ui/icons/chevrons-down-up.svg');mask-image:url('/static/ui/icons/chevrons-down-up.svg')}
+.icon-chevrons-up-down{-webkit-mask-image:url('/static/ui/icons/chevrons-up-down.svg');mask-image:url('/static/ui/icons/chevrons-up-down.svg')}
+.icon-circle-alert{-webkit-mask-image:url('/static/ui/icons/circle-alert.svg');mask-image:url('/static/ui/icons/circle-alert.svg')}
+.icon-circle-check{-webkit-mask-image:url('/static/ui/icons/circle-check.svg');mask-image:url('/static/ui/icons/circle-check.svg')}
+.icon-circle-minus{-webkit-mask-image:url('/static/ui/icons/circle-minus.svg');mask-image:url('/static/ui/icons/circle-minus.svg')}
+.icon-circle-pause{-webkit-mask-image:url('/static/ui/icons/circle-pause.svg');mask-image:url('/static/ui/icons/circle-pause.svg')}
+.icon-circle-play{-webkit-mask-image:url('/static/ui/icons/circle-play.svg');mask-image:url('/static/ui/icons/circle-play.svg')}
+.icon-circle-plus{-webkit-mask-image:url('/static/ui/icons/circle-plus.svg');mask-image:url('/static/ui/icons/circle-plus.svg')}
+.icon-circle-question-mark{-webkit-mask-image:url('/static/ui/icons/circle-question-mark.svg');mask-image:url('/static/ui/icons/circle-question-mark.svg')}
+.icon-clock{-webkit-mask-image:url('/static/ui/icons/clock.svg');mask-image:url('/static/ui/icons/clock.svg')}
+.icon-external-link{-webkit-mask-image:url('/static/ui/icons/external-link.svg');mask-image:url('/static/ui/icons/external-link.svg')}
+.icon-file{-webkit-mask-image:url('/static/ui/icons/file.svg');mask-image:url('/static/ui/icons/file.svg')}
+.icon-flame{-webkit-mask-image:url('/static/ui/icons/flame.svg');mask-image:url('/static/ui/icons/flame.svg')}
+.icon-folder-open{-webkit-mask-image:url('/static/ui/icons/folder-open.svg');mask-image:url('/static/ui/icons/folder-open.svg')}
+.icon-folder{-webkit-mask-image:url('/static/ui/icons/folder.svg');mask-image:url('/static/ui/icons/folder.svg')}
+.icon-funnel{-webkit-mask-image:url('/static/ui/icons/funnel.svg');mask-image:url('/static/ui/icons/funnel.svg')}
+.icon-grip{-webkit-mask-image:url('/static/ui/icons/grip.svg');mask-image:url('/static/ui/icons/grip.svg')}
+.icon-heart{-webkit-mask-image:url('/static/ui/icons/heart.svg');mask-image:url('/static/ui/icons/heart.svg')}
+.icon-house{-webkit-mask-image:url('/static/ui/icons/house.svg');mask-image:url('/static/ui/icons/house.svg')}
+.icon-log-out{-webkit-mask-image:url('/static/ui/icons/log-out.svg');mask-image:url('/static/ui/icons/log-out.svg')}
+.icon-mail{-webkit-mask-image:url('/static/ui/icons/mail.svg');mask-image:url('/static/ui/icons/mail.svg')}
+.icon-map-pin{-webkit-mask-image:url('/static/ui/icons/map-pin.svg');mask-image:url('/static/ui/icons/map-pin.svg')}
+.icon-message-circle-more{-webkit-mask-image:url('/static/ui/icons/message-circle-more.svg');mask-image:url('/static/ui/icons/message-circle-more.svg')}
+.icon-mouse-pointer-click{-webkit-mask-image:url('/static/ui/icons/mouse-pointer-click.svg');mask-image:url('/static/ui/icons/mouse-pointer-click.svg')}
+.icon-pen-line{-webkit-mask-image:url('/static/ui/icons/pen-line.svg');mask-image:url('/static/ui/icons/pen-line.svg')}
+.icon-search{-webkit-mask-image:url('/static/ui/icons/search.svg');mask-image:url('/static/ui/icons/search.svg')}
+.icon-send-horizontal{-webkit-mask-image:url('/static/ui/icons/send-horizontal.svg');mask-image:url('/static/ui/icons/send-horizontal.svg')}
+.icon-settings{-webkit-mask-image:url('/static/ui/icons/settings.svg');mask-image:url('/static/ui/icons/settings.svg')}
+.icon-star{-webkit-mask-image:url('/static/ui/icons/star.svg');mask-image:url('/static/ui/icons/star.svg')}
+.icon-tag{-webkit-mask-image:url('/static/ui/icons/tag.svg');mask-image:url('/static/ui/icons/tag.svg')}
+.icon-target{-webkit-mask-image:url('/static/ui/icons/target.svg');mask-image:url('/static/ui/icons/target.svg')}
+.icon-thumbs-down{-webkit-mask-image:url('/static/ui/icons/thumbs-down.svg');mask-image:url('/static/ui/icons/thumbs-down.svg')}
+.icon-thumbs-up{-webkit-mask-image:url('/static/ui/icons/thumbs-up.svg');mask-image:url('/static/ui/icons/thumbs-up.svg')}
+.icon-trash-2{-webkit-mask-image:url('/static/ui/icons/trash-2.svg');mask-image:url('/static/ui/icons/trash-2.svg')}
+.icon-triangle-alert{-webkit-mask-image:url('/static/ui/icons/triangle-alert.svg');mask-image:url('/static/ui/icons/triangle-alert.svg')}
+.icon-user{-webkit-mask-image:url('/static/ui/icons/user.svg');mask-image:url('/static/ui/icons/user.svg')}
+/* 兼容设计稿中 book/chart 的别名 */
+.icon-book{-webkit-mask-image:url('/static/ui/icons/book-open.svg');mask-image:url('/static/ui/icons/book-open.svg')}
+.icon-chart{-webkit-mask-image:url('/static/ui/icons/flame.svg');mask-image:url('/static/ui/icons/flame.svg')}
+

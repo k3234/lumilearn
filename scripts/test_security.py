@@ -11,9 +11,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from framework.security.config import SecurityConfig
+from framework.security.firewall import NetworkFirewall
 from framework.security.gateway import SecurityGateway
 from framework.security.sandbox import CodeSandbox
-from framework.security.firewall import NetworkFirewall
 
 
 def test_network_config():

@@ -7,9 +7,9 @@ import ipaddress
 import logging
 import platform
 import subprocess
-from typing import Dict, List, Optional, Set
-from dataclasses import dataclass, field
 import threading
+from dataclasses import dataclass
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -199,7 +199,7 @@ class NetworkFirewall:
                 cmd = [
                     "netsh", "advfirewall", "firewall", "add", "rule",
                     f"name=LumiLearn-Allow-{network.replace('.', '-')}",
-                    f"dir=in", "action=allow", "network={network}",
+                    "dir=in", "action=allow", "network={network}",
                     "protocol=tcp", "localport=18080"
                 ]
                 subprocess.run(cmd, capture_output=True, check=False)

@@ -1,4 +1,4 @@
-﻿# LumiLearn 文档索引
+# LumiLearn 文档索引
 
 > 本文件整理仓库文档结构，方便评审和贡献者快速找到所需内容。
 
@@ -48,7 +48,6 @@
 
 | 文档 | 路径 | 说明 |
 |---|---|---|
-| 学习笔记 | [learning_journey/README.md](learning_journey/) | 模块学习记录，按主题组织 |
 | 研究文档 | [research/](research/) | 市场调研、竞品分析、技术调研 |
 | 进度记录 | [DEVELOPMENT_SUMMARY_20260818.md](DEVELOPMENT_SUMMARY_20260818.md) | 阶段性开发总结 |
 | 计划文档 | [superpowers/plans/](superpowers/plans/) | 功能开发计划（计划模式生成） |
@@ -75,6 +74,5 @@ docs/
 │   ├── CPU_LOWMEM_EVALUATION.md
 │   └── SECURITY_LOCAL_AUDIT_20260817.md
 └── 开发日志
-    ├── learning_journey/
-    └── research/
+    ├── research/
 ```

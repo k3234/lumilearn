@@ -9,15 +9,15 @@ LumiLearn Phase 4 — 性能基准与成本优化测试
   - 核心路径性能 smoke 测试（宽松阈值，避免 CI 抖动）
 """
 
-import sys
 import os
+import sys
 import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent_core.cost_tracker import CostTracker, get_cost_tracker, reset_cost_tracker
-from agent_core.mcp_client import MCPServer, MCPClient, BuiltinToolRegistry
+from agent_core.mcp_client import BuiltinToolRegistry, MCPClient, MCPServer
 from agent_core.router import RouterAgent, get_router_agent
 
 

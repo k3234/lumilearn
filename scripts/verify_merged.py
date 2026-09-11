@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """本地验证综合训练后的模型"""
-import sys, os
+import sys
+
 sys.path.insert(0, "<project-root>")
 import torch
+
 from framework.model import LumiLearnModel
 from framework.tokenizer import LumiLearnTokenizer
 

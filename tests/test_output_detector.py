@@ -6,20 +6,17 @@
 """
 import os
 import sys
-
 import unittest
-from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from framework.database import db
 from framework.output_detector import (
-    OutputDetector,
+    SCORING_DIMENSIONS,
     DetectionResult,
-    GuidingRound,
+    OutputDetector,
     detect_output,
     run_guided_reinforcement,
-    SCORING_DIMENSIONS,
 )
 
 

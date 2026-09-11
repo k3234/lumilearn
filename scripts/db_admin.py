@@ -11,14 +11,15 @@ LumiLearn 数据管理命令行工具
   python scripts/db_admin.py train --db                # 从数据库训练
   python scripts/db_admin.py stats                     # 统计概览
 """
-import sys
-import os
 import argparse
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 直接导入 database 模块，避免触发 framework/__init__.py 的完整导入链
 import importlib.util
+
 _spec = importlib.util.spec_from_file_location(
     "lumilearn_database",
     os.path.join(os.path.dirname(os.path.dirname(__file__)), "framework", "database.py")
@@ -130,7 +131,7 @@ def cmd_content(args):
         total = db.count_training_data(subject=args.subject)
         by_status = db._query("SELECT status, COUNT(*) as n FROM training_data GROUP BY status")
         print(f"\n总内容数: {total}")
-        print(f"按状态:")
+        print("按状态:")
         for r in by_status:
             print(f"  {r['status']}: {r['n']}条")
 
@@ -202,7 +203,7 @@ def cmd_review(args):
     elif args.action == "stats":
         stats = db.get_submission_stats()
         print(f"\n{'='*50}")
-        print(f"  待审核录入区统计")
+        print("  待审核录入区统计")
         print(f"{'='*50}")
         for k, v in stats.items():
             print(f"  {k}: {v}")
@@ -284,7 +285,7 @@ def cmd_stats(args):
         print(f"{'='*50}")
 
         stats = db.get_stats(user_id=args.user_id)
-        print(f"\n  答题统计:")
+        print("\n  答题统计:")
         print(f"    总答题数: {stats['total_answers']}")
         print(f"    正确: {stats['correct']} ({stats['accuracy']}%)")
         print(f"    错误: {stats['wrong']}")
@@ -298,7 +299,7 @@ def cmd_stats(args):
                 print(f"    ❌ {w['topic']}: 错误{w['wrong']}次, 总{w['total']}次, 错误率{w['error_rate']:.0%}")
 
         progress = db.get_progress(user_id=args.user_id)
-        print(f"\n  知识图谱进度:")
+        print("\n  知识图谱进度:")
         print(f"    已学习: {progress['studied']}/{progress['total_nodes']}")
         print(f"    已掌握: {progress['mastered']}")
         print(f"    学习中: {progress['learning']}")
@@ -315,7 +316,7 @@ def cmd_stats(args):
     else:
         overview = db.get_stats_overview()
         print(f"\n{'='*50}")
-        print(f"  LumiLearn 数据库总览")
+        print("  LumiLearn 数据库总览")
         print(f"{'='*50}")
         for k, v in overview.items():
             print(f"  {k}: {v}")
@@ -378,14 +379,14 @@ def cmd_export(args):
 # ============================================================
 def cmd_train(args):
     """从数据库启动训练"""
-    from framework.data import load_records_from_db
     from framework.config import get_preset_configs
-    from framework.trainer import LumiLearnTrainer
+    from framework.data import load_records_from_db
     from framework.model import LumiLearnModel
     from framework.tokenizer import LumiLearnTokenizer
+    from framework.trainer import LumiLearnTrainer
 
     print(f"\n{'='*50}")
-    print(f"  从数据库加载训练数据")
+    print("  从数据库加载训练数据")
     print(f"{'='*50}")
 
     records = load_records_from_db(db_path=args.db, status=args.status or "published")
@@ -407,7 +408,7 @@ def cmd_train(args):
 
     # 使用训练器训练
     trainer = LumiLearnTrainer(config, model, tokenizer, records)
-    print(f"\n[OK] 训练配置:")
+    print("\n[OK] 训练配置:")
     print(f"  训练步数: {config.training.max_steps}")
     print(f"  批次大小: {config.training.batch_size}")
     print(f"  学习率:   {config.training.lr}")
@@ -476,7 +477,6 @@ def cmd_workflow(args):
 # ============================================================
 def cmd_admin(args):
     """管理员管理"""
-    from framework.admin.auth import get_admin_auth
     from framework.admin.agents import get_agent_registry
 
     if args.action == "list":
@@ -884,17 +884,17 @@ def cmd_concept(args):
 
     elif args.action == "insights":
         insights = db.get_learning_insights(user_id=args.user_id or 1)
-        print(f"\n学习洞察报告:")
+        print("\n学习洞察报告:")
         print(f"  总思考数: {insights['total_thoughts']}")
         print(f"  错误比例: {insights['wrong_ratio']:.0%}")
         print(f"  提示依赖: {insights['hint_dependency']:.0%}")
         print(f"  AI会话完成: {insights['ai_sessions_completed']}次")
         if insights['recommendations']:
-            print(f"  推荐:")
+            print("  推荐:")
             for r in insights['recommendations']:
                 print(f"    → {r}")
         else:
-            print(f"  暂无推荐（学习表现良好）")
+            print("  暂无推荐（学习表现良好）")
 
 
 # ============================================================
@@ -919,14 +919,14 @@ def cmd_student(args):
 
     # 学习进度
     stats = db.get_stats(user_id=user_id)
-    print(f"\n学习统计:")
+    print("\n学习统计:")
     print(f"  答题: {stats['total_answers']}题 (正确{stats['correct']}, 错误{stats['wrong']}, 正确率{stats['accuracy']}%)")
     print(f"  学习时长: {stats['total_time_minutes']}分钟")
     print(f"  会话数: {stats['total_sessions']}次")
 
     # 概念进度
     prog = db.get_concept_progress(user_id=user_id)
-    print(f"\n知识掌握:")
+    print("\n知识掌握:")
     print(f"  进度: {prog['studied']}/{prog['total_nodes']} | 掌握: {prog['mastered']} | "
           f"学习中: {prog['learning']} | 困难: {prog['difficult']}")
 

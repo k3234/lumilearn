@@ -9,7 +9,7 @@ import json
 import logging
 import threading
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional, Callable
+from typing import Callable, Dict, List, Optional
 
 from framework.database import db
 

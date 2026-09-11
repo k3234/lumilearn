@@ -27,9 +27,9 @@ from flask import Blueprint, jsonify, request, session
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
+from framework.api.validation import validate_text_field
 from framework.database import db
 from framework.services.conversation_store import conversation_store as conv_store
-from framework.api.validation import validate_text_field
 from lumilearn_agent import FlowOrchestrator, TaskUnderstanding
 
 # 与原型 mock.js 保持一致的 Agent 定义
@@ -75,11 +75,67 @@ def _sid(value) -> int:
         return 0
 
 
-def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
+# ---------- L4 知识引擎辅助函数（BKT / 路径 / 认知状态） ----------
+def _report_mastery(user_id, topic_key, feynman_score):
+    """报告掌握度：优先知识引擎（progress 表现有节点）；无节点则费曼分估算兜底。"""
+    try:
+        from framework.knowledge import engine
+        nodes = engine.get_weak_points(user_id)
+        if nodes:
+            avg = 100 * (1 - min(1.0, len([w for w in nodes if w["mastery"] < 0.5]) / max(1, len(nodes))))
+            return min(96, max(40, avg))
+    except Exception:
+        pass
+    return min(96, int(round(80 * 0.82 + feynman_score * 0.18)))
+
+
+def _report_weak_points(user_id, topic_key):
+    """真实薄弱点：来自知识引擎薄弱知识点；兜底用主题弱项库。"""
+    try:
+        from framework.knowledge import engine
+        weak = engine.get_weak_points(user_id)
+        if weak:
+            return [{"text": "「{}」掌握度偏低（{:.0f}%）".format(w["name"], w["mastery"] * 100),
+                     "severity": "高" if w["mastery"] < 0.4 else "中" if w["mastery"] < 0.6 else "低"}
+                    for w in weak[:4]]
+    except Exception:
+        pass
+    return _WEAK_LIB.get(topic_key, [{"text": "概念理解到位，但应用场景判断可再熟练", "severity": "低"}])
+
+
+def _report_next_steps(user_id, topic_key):
+    """个性化下一步：调用路径引擎推荐；兜底固定复习建议。"""
+    try:
+        from framework.knowledge.path_engine import PathEngine
+        path = PathEngine().build(user_id)[:3]
+        if path:
+            return ["按路径补齐「{}」（掌握度 {:.0f}%）".format(p["name"], p["mastery"] * 100) for p in path]
+    except Exception:
+        pass
+    return [
+        "完成「{}」相关练习（高中难度）".format(topic_key),
+        "尝试用 30 秒向同学讲解核心概念",
+        "复习周期：1 天后 → 3 天后 → 7 天后 → 14 天后",
+    ]
+
+
+def _cognitive_state(user_id):
+    """当前认知状态（困惑/挫败/投入/分心）。"""
+    try:
+        from framework.knowledge.cognitive_state import infer
+        r = infer(user_id)
+        return r.get("state", "unknown")
+    except Exception:
+        return "engaged"
+
+
+def create_student_learn_bp(agent, session_key: str = "user_id", include_auth: bool = True) -> Blueprint:
     """创建学生端学习 Blueprint。
 
     :param agent: LumiLearnAgent 实例（费曼教学 Agent 真实生成）
     :param session_key: Flask session 中保存用户 id 的键（默认 user_id）
+    :param include_auth: 是否注册自有 /api/auth/* 认证路由；整合进统一门户时传 False，
+        复用框架统一认证（auth_bp），避免路径冲突。
     """
     bp = Blueprint("student_learn", __name__)
 
@@ -96,30 +152,32 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
         return user
 
     # ---------- 认证 ----------
-    @bp.route("/api/auth/login", methods=["POST"])
-    def api_login():
-        data = request.get_json() or {}
-        username = (data.get("username") or "").strip()
-        password = data.get("password") or ""
-        if not username or not password:
-            return jsonify({"code": 400, "message": "请输入用户名和密码"}), 400
-        user = db.verify_user_login(username, password)
-        if not user:
-            return jsonify({"code": 401, "message": "用户名或密码错误"}), 401
-        session[session_key] = user["id"]
-        return jsonify({"code": 0, "data": {"id": user["id"], "name": user["name"], "role": user["role"]}})
+    # 整合进统一门户时（include_auth=False）跳过，复用框架统一认证（auth_bp）
+    if include_auth:
+        @bp.route("/api/auth/login", methods=["POST"])
+        def api_login():
+            data = request.get_json() or {}
+            username = (data.get("username") or "").strip()
+            password = data.get("password") or ""
+            if not username or not password:
+                return jsonify({"code": 400, "message": "请输入用户名和密码"}), 400
+            user = db.verify_user_login(username, password)
+            if not user:
+                return jsonify({"code": 401, "message": "用户名或密码错误"}), 401
+            session[session_key] = user["id"]
+            return jsonify({"code": 0, "data": {"id": user["id"], "name": user["name"], "role": user["role"]}})
 
-    @bp.route("/api/auth/logout", methods=["POST"])
-    def api_logout():
-        session.clear()
-        return jsonify({"code": 0, "data": {"success": True}})
+        @bp.route("/api/auth/logout", methods=["POST"])
+        def api_logout():
+            session.clear()
+            return jsonify({"code": 0, "data": {"success": True}})
 
-    @bp.route("/api/auth/me")
-    def api_me():
-        user = _require_user()
-        if not user:
-            return jsonify({"code": 401, "message": "未登录"}), 401
-        return jsonify({"code": 0, "data": {"id": user["id"], "name": user["name"], "role": user["role"]}})
+        @bp.route("/api/auth/me")
+        def api_me():
+            user = _require_user()
+            if not user:
+                return jsonify({"code": 401, "message": "未登录"}), 401
+            return jsonify({"code": 0, "data": {"id": user["id"], "name": user["name"], "role": user["role"]}})
 
     # ---------- 学习流程 ----------
     @bp.route("/api/learn/start", methods=["POST"])
@@ -234,8 +292,7 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
         # RAG 知识库检索（失败降级为空，绝不阻塞教学）
         rag_context = ""
         try:
-            from framework.services.knowledge_retrieval import (
-                get_knowledge_retriever, format_rag_context)
+            from framework.services.knowledge_retrieval import format_rag_context, get_knowledge_retriever
             _results = get_knowledge_retriever().search(topic, top_k=3)
             if _results:
                 rag_context = format_rag_context(_results, max_chars=800)
@@ -358,7 +415,9 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
         sess = conv_store.get_session(sid) if sid else None
         topic = sess["title"] if sess else "学习主题"
         key = _normalize_topic(topic)
-        mastery = min(96, int(round(80 * 0.82 + feynman_score * 0.18)))
+
+        # L4 知识引擎：从进度表读取真实掌握度；无记录则用费曼分估算兜底
+        mastery = int(round(_report_mastery(user["id"], key, feynman_score)))
 
         report = {
             "id": sid, "topic": topic,
@@ -368,12 +427,9 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
             "status": "done", "mastery": mastery,
             "model": agent.tool_caller.preferred_model,
             "duration": "约4分钟", "toolCalls": 15,
-            "weakPoints": _WEAK_LIB.get(key, [{"text": "概念理解到位，但应用场景判断可再熟练", "severity": "低"}]),
-            "nextSteps": [
-                "完成「{}」相关练习（高中难度）".format(key),
-                "尝试用 30 秒向同学讲解核心概念",
-                "复习周期：1 天后 → 3 天后 → 7 天后 → 14 天后",
-            ],
+            "weakPoints": _report_weak_points(user["id"], key),
+            "nextSteps": _report_next_steps(user["id"], key),
+            "cognitiveState": _cognitive_state(user["id"]),
             "agents": [
                 {"id": a["id"], "name": a["name"], "model": a["model"], "status": "done",
                  "calls": 6 if a["id"] == "orchestrator" else 5 if a["id"] == "feynman" else 2}
@@ -417,6 +473,63 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
             })
         return jsonify({"code": 0, "data": items, "total": len(items)})
 
+    @bp.route("/api/learn/status")
+    def api_learn_status():
+        """个性化学习路径 + 掌握度快照（L4 知识引擎）。"""
+        user = _require_user()
+        if not user:
+            return jsonify({"code": 401, "message": "未登录"}), 401
+        subject = (request.args.get("subject") or "").strip() or None
+
+        from framework.knowledge.path_engine import PathEngine
+        pe = PathEngine()
+        try:
+            path = pe.build(user["id"], subject)
+            weak = pe.weak_points(user["id"], subject)
+            overview = pe.overall_progress(user["id"])
+            cognitive = _cognitive_state(user["id"])
+        except Exception as e:
+            path, weak, overview, cognitive = [], [], {"overall_progress": 0}, "unknown"
+        return jsonify({"code": 0, "data": {
+            "path": path,
+            "weak_points": weak,
+            "overview": {
+                "studied": overview.get("studied", 0),
+                "mastered": overview.get("mastered", 0),
+                "overall_progress": overview.get("overall_progress", 0),
+            },
+            "cognitive_state": cognitive,
+        }})
+
+    @bp.route("/api/learn/resources")
+    def api_learn_resources():
+        """学生端只读教学素材（教师已发布的 training_data），供课后复习跟进。"""
+        user = _require_user()
+        if not user:
+            return jsonify({"code": 401, "message": "未登录"}), 401
+        subject = (request.args.get("subject") or "").strip() or None
+        keyword = (request.args.get("q") or "").strip().lower()
+        try:
+            rows = db.get_training_data(subject=subject, status="published", limit=200)
+        except Exception:
+            rows = []
+        items = []
+        for r in rows:
+            hay = "%s %s %s" % (r.get("title", ""), r.get("keywords", ""), r.get("prerequisites", ""))
+            if keyword and keyword not in hay.lower():
+                continue
+            items.append({
+                "id": r.get("id"),
+                "title": r.get("title", ""),
+                "subject": r.get("subject", ""),
+                "chapter": r.get("chapter", ""),
+                "content_type": r.get("content_type", ""),
+                "difficulty": r.get("difficulty", ""),
+                "keywords": r.get("keywords", ""),
+                "excerpt": (r.get("content") or "")[:120],
+            })
+        return jsonify({"code": 0, "resources": items, "data": items, "total": len(items)})
+
     @bp.route("/api/learn/report/<int:rid>")
     def api_learn_report_detail(rid):
         user = _require_user()
@@ -453,6 +566,15 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
         conversations = conv_store.list_sessions(user_id=user["id"], limit=20)
         recent = reports[-5:][::-1]
 
+        # L4 知识引擎：个性化路径 + 认知状态
+        learning_path, cognitive = [], "engaged"
+        try:
+            from framework.knowledge.path_engine import PathEngine
+            learning_path = PathEngine().build(user["id"])[:5]
+            cognitive = _cognitive_state(user["id"])
+        except Exception:
+            pass
+
         return jsonify({"code": 0, "data": {
             "user": {"id": user["id"], "name": user["name"], "role": user["role"]},
             "total_reports": len(reports),
@@ -460,6 +582,8 @@ def create_student_learn_bp(agent, session_key: str = "user_id") -> Blueprint:
             "trend": trend[-14:],
             "weak_points": [{"text": k, "severity": v["severity"], "count": v["count"]}
                             for k, v in weak_points],
+            "learning_path": learning_path,
+            "cognitive_state": cognitive,
             "conversations": [{"id": s["id"], "title": s["title"],
                                "date": s.get("updated_at") or "", "msg_count": s.get("msg_count") or 0}
                               for s in conversations],

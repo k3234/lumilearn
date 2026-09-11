@@ -27,11 +27,11 @@ LumiLearn Agent Core — 分布式任务队列（P2-12）
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
-import time
-import logging
 import threading
+import time
 import uuid
 from typing import Callable, Dict, List, Optional
 
@@ -194,7 +194,7 @@ class TaskQueue:
             else:
                 db.fail_task(task_id, error)
             return self.get(task_id) or task
-        db.complete_task(task_id, result_box["result"] or {})
+        db.complete_queue_task(task_id, result_box["result"] or {})
         return self.get(task_id) or task
 
     def process_one(self) -> Optional[Dict]:

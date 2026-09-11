@@ -4,10 +4,9 @@
 从当前时间运行到北京时间上午7点，每小时执行一次数据采集
 """
 import os
+import subprocess
 import sys
 import time
-import json
-import subprocess
 from datetime import datetime, timedelta
 
 LUMILEARN_DIR = r"<project-root>"
@@ -53,53 +52,53 @@ def main():
     print(f"目标结束: 今日 {END_HOUR}:00 (北京时间)")
     print(f"执行间隔: 每 {INTERVAL_MINUTES} 分钟")
     print("=" * 70)
-    
+
     # 计算结束时间
     now = datetime.now()
     end_time = now.replace(hour=END_HOUR, minute=0, second=0, microsecond=0)
     if end_time <= now:
         end_time += timedelta(days=1)
-    
+
     total_seconds = (end_time - now).total_seconds()
     print(f"\n预计运行时长: {total_seconds/3600:.1f} 小时")
-    
+
     initial_count = get_current_count()
     print(f"初始数据量: {initial_count} 条")
-    
+
     cycle = 0
     total_added = 0
-    
+
     while datetime.now() < end_time:
         cycle += 1
         now_str = datetime.now().strftime("%H:%M:%S")
-        
+
         print(f"\n{'='*50}")
         print(f"[周期 {cycle}] {now_str}")
         print(f"{'='*50}")
-        
+
         # 执行数据采集
         print("  执行数据采集...")
         success = run_data_collection()
-        
+
         # 统计新增
         current_count = get_current_count()
         added = current_count - initial_count - total_added
         total_added = current_count - initial_count
-        
+
         if success:
             print(f"  ✅ 采集完成，本周期新增: {added} 条")
         else:
-            print(f"  ⚠️ 采集未产生新数据")
-        
+            print("  ⚠️ 采集未产生新数据")
+
         print(f"  当前总量: {current_count} 条，累计新增: {total_added} 条")
-        
+
         # 计算剩余时间
         remaining = (end_time - datetime.now()).total_seconds()
         if remaining <= 0:
             break
-        
+
         print(f"  剩余时间: {remaining/3600:.1f} 小时")
-        
+
         # 等待下一个周期
         if remaining > INTERVAL_MINUTES * 60:
             print(f"  等待 {INTERVAL_MINUTES} 分钟后执行下一周期...")
@@ -107,17 +106,17 @@ def main():
         else:
             print(f"  等待 {remaining/60:.0f} 分钟后结束...")
             time.sleep(remaining)
-    
+
     # 最终报告
     final_count = get_current_count()
-    
+
     print(f"\n{'='*70}")
     print("📊 持续自动化任务报告")
     print(f"{'='*70}")
     print(f"  开始时间:     {now.strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  结束时间:     {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"  执行周期:     {cycle} 次")
-    print(f"  ─────────────────────────────")
+    print("  ─────────────────────────────")
     print(f"  初始数据:     {initial_count} 条")
     print(f"  最终数据:     {final_count} 条")
     print(f"  新增数据:     {total_added} 条")

@@ -285,4 +285,92 @@ const api = {
       },
     };
   },
+
+  /* ---------- 个性化学习路径 / 资源（L4，真实模式） ---------- */
+
+  /**
+   * GET /api/learn/status?subject=
+   * 个性化学习路径 + 掌握度快照 + 认知状态（返回 {code,data} 契约）
+   */
+  async getLearnStatus({ subject } = {}) {
+    if (REAL) return fetchJson(`/api/learn/status${subject ? "?subject=" + encodeURIComponent(subject) : ""}`, "GET");
+    await delay(350);
+    const topic = SessionStore.draft?.topic || "函数的单调性";
+    const key = normalizeTopic(topic);
+    const lib = {
+      "函数的单调性": { path: ["函数定义域", "函数单调性", "复合函数单调性"], weak: ["复合函数单调性"], mastery: 68 },
+      "牛顿第二定律": { path: ["受力分析", "牛顿第二定律", "连接体问题"], weak: ["受力分析", "连接体问题"], mastery: 55 },
+    };
+    const info = lib[key] || { path: ["概念引入", "核心知识点", "进阶应用"], weak: [], mastery: 60 };
+    return {
+      code: 0,
+      data: {
+        path: info.path.map(function (n, i) { return { node_id: "n" + i, name: n, category: "", difficulty: 1 }; }),
+        weak_points: info.weak.map(function (n, i) { return { node_id: "w" + i, name: n, mastery: 0.4 }; }),
+        overview: { studied: info.path.length, mastered: 0, overall_progress: info.mastery },
+        cognitive_state: "engaged",
+      },
+    };
+  },
+
+  /**
+   * GET /api/learn/resources?subject=
+   * 教师发布的教学素材（供课后复习跟进）——学生端只读端点
+   */
+  async getResources({ subject } = {}) {
+    if (REAL) return fetchJson(`/api/learn/resources?subject=${encodeURIComponent(subject || "")}`, "GET");
+    await delay(200);
+    const topic = SessionStore.draft?.topic || "函数的单调性";
+    const pool = {
+      "函数的单调性": [{ title: "函数单调性讲义", subject: "数学", content_type: "知识总结" }],
+      "牛顿第二定律": [{ title: "受力分析专题", subject: "物理", content_type: "例题解析" }],
+    };
+    return { success: true, resources: pool[topic] || [], code: 0, data: (pool[topic] || []) };
+  },
+
+  /* ---------- L4 知识图谱 / BKT 闯关（真实模式） ---------- */
+
+  /** GET /api/learn/knowledge-graph — 知识点图谱（节点 + 边） */
+  async getKnowledgeGraph() {
+    if (REAL) return fetchJson("/api/learn/knowledge-graph", "GET");
+    await delay(250);
+    const nodes = [
+      { id: "triangle_basics", name: "三角形基础", category: "geometry", difficulty: 1 },
+      { id: "pythagorean", name: "勾股定理", category: "geometry", difficulty: 2 },
+      { id: "quadratic_formula", name: "求根公式", category: "algebra", difficulty: 2 },
+      { id: "completing_square", name: "配方法", category: "algebra", difficulty: 2 },
+    ];
+    return { code: 0, data: { nodes: nodes, edges: [{ from: "triangle_basics", to: "pythagorean" }], categories: ["geometry", "algebra"] } };
+  },
+
+  /** GET /api/learn/student/<sid>/status — 学生 BKT 汇总状态 */
+  async getStudentStatus(sid) {
+    if (REAL) return fetchJson(`/api/learn/student/${encodeURIComponent(sid)}/status`, "GET");
+    await delay(200);
+    return { code: 0, data: { student_id: sid, total_knowledge_nodes: 65, mastered_nodes: 12, learning_nodes: 8, not_started: 45, overall_mastery: 0.42, total_attempts: 30, overall_accuracy: 0.72, cognitive_state: { state: "fluent", confidence: 0.6 } } };
+  },
+
+  /** GET /api/learn/student/<sid>/path?target=&max_steps= — 个性化学习路径 */
+  async getStudentPath(sid, target, maxSteps) {
+    const q = [];
+    if (target) q.push("target=" + encodeURIComponent(target));
+    if (maxSteps) q.push("max_steps=" + encodeURIComponent(maxSteps));
+    if (REAL) return fetchJson(`/api/learn/student/${encodeURIComponent(sid)}/path${q.length ? "?" + q.join("&") : ""}`, "GET");
+    await delay(250);
+    return { code: 0, data: { student_id: sid, path: [{ node_id: "triangle_basics", name: "三角形基础", difficulty: 1, mastery: 0.4 }] } };
+  },
+
+  /** POST /api/learn/student/<sid>/attempt { node_id, correct, time_spent, question_type } */
+  async submitAttempt(sid, payload) {
+    if (REAL) return fetchJson(`/api/learn/student/${encodeURIComponent(sid)}/attempt`, "POST", payload || {});
+    await delay(200);
+    return { code: 0, data: { node_id: (payload || {}).node_id, p: 0.6, p_change: 0.1, correct: !!(payload || {}).correct, predicted_accuracy: 0.7 } };
+  },
+
+  /** POST /api/learn/student/<sid>/path/practice — 生成练习题集 */
+  async getPracticeSet(sid, payload) {
+    if (REAL) return fetchJson(`/api/learn/student/${encodeURIComponent(sid)}/path/practice`, "POST", payload || {});
+    await delay(250);
+    return { code: 0, data: { questions: [{ node_id: "pythagorean", question: "勾股定理适用于哪种三角形？", options: ["锐角", "直角", "钝角", "任意"], answer: 1 }] } };
+  },
 };

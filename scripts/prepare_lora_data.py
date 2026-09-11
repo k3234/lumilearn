@@ -78,7 +78,6 @@ def main():
     print(f"输出: {OUT} ({OUT.stat().st_size/1024:.0f}KB)")
 
     # 长度统计（用于确定 max_length）
-    import re
     lens = []
     for r in out_records:
         lens.append(len(r["instruction"]) + len(r["response"]))

@@ -11,6 +11,7 @@ PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, PROJECT_DIR)
 
 import torch
+
 from framework.model import LumiLearnModel
 from framework.tokenizer import LumiLearnTokenizer
 

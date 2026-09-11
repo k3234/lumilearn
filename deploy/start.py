@@ -50,12 +50,8 @@ except ImportError:
 
 # 兜底默认端口：仅在配置文件缺失对应字段时使用，正常端口一律来自 framework.yaml
 DEFAULT_PORTS = {
-    "teacher_portal": 5001,
-    "student_portal": 5010,
-    "analytics_dashboard": 18090,
     "terminal": 18080,
     "api": 18081,
-    "models": 18082,
 }
 
 
@@ -129,67 +125,39 @@ def _enabled_port(settings, key):
 
 
 def build_services(config):
-    """按 port_settings 的 enabled 状态组装服务列表。"""
+    """按 port_settings 的 enabled 状态组装服务列表。
+
+    端口整合后仅保留「管理门户 + REST API」两端口（均由 framework.api.server 承载），
+    教师门户 / 学生平台 / 分析仪表盘已并入统一门户，不再作为独立进程启动。
+    """
     settings = _port_settings(config)
     services = []
 
-    # --- 教师门户（teacher_portal.py 支持 TEACHER_PORT 环境变量覆盖端口）---
-    enabled, port = _enabled_port(settings, "teacher_portal")
-    if enabled:
-        services.append({
-            "key": "teacher_portal",
-            "name": "教师门户",
-            "cmd": [sys.executable, "teacher_portal.py"],
-            "ports": [port],
-            "env": {"TEACHER_PORT": str(port)},
-            "url": "http://localhost:{}".format(port),
-            "desc": "班级 / 任务 / 学情管理",
-        })
+    portal_enabled, portal_port = _enabled_port(settings, "terminal")
+    api_enabled, api_port = _enabled_port(settings, "api")
+    if not portal_enabled and not api_enabled:
+        return services
 
-    # --- 学生端学习平台（student_portal.py 支持 STUDENT_PORT 环境变量覆盖端口）---
-    enabled, port = _enabled_port(settings, "student_portal")
-    if enabled:
-        services.append({
-            "key": "student_portal",
-            "name": "学生端学习平台",
-            "cmd": [sys.executable, "student_portal.py"],
-            "ports": [port],
-            "env": {"STUDENT_PORT": str(port)},
-            "url": "http://localhost:{}".format(port),
-            "desc": "费曼学习 + 真实后端 + 对话持久化",
-        })
+    multi = portal_enabled and api_enabled
+    cmd = [sys.executable, "-m", "framework.api.server"]
+    if multi:
+        cmd.append("--multi-port")
 
-    # --- 学习分析仪表盘（analytics_dashboard.py 支持 ANALYTICS_PORT 环境变量覆盖端口）---
-    enabled, port = _enabled_port(settings, "analytics_dashboard")
-    if enabled:
-        services.append({
-            "key": "analytics_dashboard",
-            "name": "学习分析仪表盘",
-            "cmd": [sys.executable, "analytics_dashboard.py"],
-            "ports": [port],
-            "env": {"ANALYTICS_PORT": str(port)},
-            "url": "http://localhost:{}".format(port),
-            "desc": "掌握度趋势 / 学科对比 / 薄弱点",
-        })
+    ports = []
+    if portal_enabled:
+        ports.append(portal_port)
+    if api_enabled and api_port != portal_port:
+        ports.append(api_port)
 
-    # --- 框架三端口（框架自己从 framework.yaml 读取端口，--multi-port 一次启动）---
-    triples = []
-    for key, label in (("terminal", "框架终端"), ("api", "REST API"), ("models", "模型管理")):
-        enabled, port = _enabled_port(settings, key)
-        if enabled:
-            triples.append((label, port))
-    if triples:
-        ports = [p for _, p in triples]
-        services.append({
-            "key": "framework",
-            "name": "Framework API",
-            "cmd": [sys.executable, "-m", "framework.api.server", "--multi-port"],
-            "ports": ports,
-            "env": {},
-            "url": "http://localhost:{}".format(ports[0]),
-            "desc": "三端口: " + " / ".join("{}:{}".format(label, p) for label, p in triples),
-        })
-
+    services.append({
+        "key": "framework",
+        "name": "LumiLearn 统一门户",
+        "cmd": cmd,
+        "ports": ports,
+        "env": {},
+        "url": "http://localhost:{}".format(ports[0]),
+        "desc": "统一入口 + 管理/教师/学生/仪表盘 + REST API（端口整合）",
+    })
     return services
 
 
@@ -289,12 +257,20 @@ def main():
     print()
 
     if not args.no_open and pids:
-        first_url = next((s["url"] for s in services if s["key"] in pids), None)
-        if first_url:
+        # 优先打开统一入口门户（端口 18080）
+        terminal_svc = next((s for s in services if s["key"] == "framework" and s["key"] in pids), None)
+        if terminal_svc:
             try:
-                webbrowser.open(first_url)
+                webbrowser.open(terminal_svc["url"])
             except Exception:
                 pass
+        elif pids:
+            first_url = next((s["url"] for s in services if s["key"] in pids), None)
+            if first_url:
+                try:
+                    webbrowser.open(first_url)
+                except Exception:
+                    pass
     return 0
 
 

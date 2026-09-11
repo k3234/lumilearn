@@ -18,7 +18,6 @@ LumiLearn Agent Core — 可观测性基础设施（Phase 3）
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import threading
@@ -26,7 +25,7 @@ import time
 import uuid
 from collections import deque
 from datetime import datetime
-from typing import Any, Deque, Dict, List, Optional
+from typing import Deque, Dict, List, Optional
 
 logger = logging.getLogger("lumilearn.agent.telemetry")
 

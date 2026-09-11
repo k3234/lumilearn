@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn · AI 学习平台</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  [hidden]{display:none!important}
+  body{min-height:100vh;display:flex;flex-direction:column}
+  .portal-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:16px 28px;border-bottom:1px solid var(--color-border);background:var(--card)}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand-mark{width:36px;height:36px;border-radius:10px;background:var(--primary);
+    color:var(--color-primary-foreground);display:grid;place-items:center}
+  .brand h1{font-size:18px;font-weight:700;letter-spacing:-.01em}
+  .brand .sub{font-size:12px;color:var(--color-text-muted)}
+  .portal-main{flex:1;width:100%;max-width:960px;margin:0 auto;padding:36px 24px 60px}
+  .hero{text-align:center;margin-bottom:28px}
+  .hero h2{font-size:clamp(24px,4vw,34px);font-weight:700;letter-spacing:-.02em}
+  .hero p{color:var(--color-text-muted);max-width:560px;margin:10px auto 0}
+  .role-card{display:block;width:100%;text-align:left;cursor:pointer;transition:.15s}
+  .role-card:hover{border-color:var(--color-border-strong);box-shadow:var(--shadow-sm)}
+  .role-ico{width:42px;height:42px;border-radius:11px;background:var(--muted);color:var(--color-text);
+    display:grid;place-items:center;margin-bottom:12px}
+  .role-card h3{font-size:15px;font-weight:600;margin-bottom:4px}
+  .role-card p{font-size:12px;color:var(--color-text-muted)}
+  .account-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .account-bar .who{display:flex;align-items:center;gap:10px;font-size:14px}
+  .login-card{max-width:420px;margin-left:auto;margin-right:auto}
+  .login-card h3{font-size:17px;font-weight:700;margin-bottom:4px}
+  .login-card .sub{font-size:12px;color:var(--color-text-muted);margin-bottom:16px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;color:var(--color-text-muted);margin-bottom:6px}
+  .field input{width:100%;padding:10px 12px;border:1px solid var(--color-border);border-radius:8px;
+    font-size:14px;background:var(--background);color:var(--color-text)}
+  .field input:focus{outline:2px solid var(--ring);outline-offset:-1px}
+  .login-card .btn{width:100%;margin-top:4px}
+  .login-error{display:none;margin-top:12px;padding:10px 12px;border-radius:8px;font-size:13px;
+    background:var(--destructive-subtle);color:var(--destructive-text);border:1px solid var(--destructive-border)}
+  .login-error.show{display:block}
+  .quick{margin-top:28px;padding-top:20px;border-top:1px solid var(--color-border)}
+  .quick .eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-muted)}
+  .quick-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  @media (max-width:720px){
+    .portal-top{padding:14px 16px}
+    .portal-main{padding:24px 16px 44px}
+    .role-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header class="portal-top">
+  <div class="brand">
+    <div class="brand-mark"><i class="icon icon-20 icon-book-open"></i></div>
+    <div>
+      <h1>LumiLearn</h1>
+      <div class="sub">费曼学习法 · AI 驱动的中文学习平台</div>
+    </div>
+  </div>
+  <span class="pill" id="statusPill">服务状态：—</span>
+</header>
+
+<main class="portal-main">
+  <section class="hero">
+    <h2>你的 AI 学习伙伴</h2>
+    <p>基于费曼学习法，通过 AI 对话深化理解，BKT 知识追踪全程记录学习轨迹。选择你的角色并登录。</p>
+  </section>
+
+  <section class="grid cols-3 role-grid" id="roleGrid">
+    <button class="card role-card" type="button" data-role="student">
+      <div class="role-ico"><i class="icon icon-24 icon-book-open"></i></div>
+      <h3>学生</h3>
+      <p>互动课堂、AI 对话与费曼学习练习</p>
+    </button>
+    <button class="card role-card" type="button" data-role="teacher">
+      <div class="role-ico"><i class="icon icon-24 icon-user"></i></div>
+      <h3>教师</h3>
+      <p>班级管理、学情监控与任务分配</p>
+    </button>
+    <button class="card role-card" type="button" data-role="admin">
+      <div class="role-ico"><i class="icon icon-24 icon-settings"></i></div>
+      <h3>管理员</h3>
+      <p>系统配置、模型与用户管理</p>
+    </button>
+  </section>
+
+  <!-- 已登录态 -->
+  <section class="card account-bar mt-3" id="accountBar" hidden>
+    <div class="who">
+      <i class="icon icon-20 icon-user"></i>
+      <span id="accountText"></span>
+    </div>
+    <div class="flex">
+      <a class="btn sm primary" id="goWorkspace" href="#"><i class="icon icon-16 icon-arrow-right"></i> 进入工作台</a>
+      <button class="btn sm" id="logoutBtn" type="button"><i class="icon icon-16 icon-log-out"></i> 退出登录</button>
+    </div>
+  </section>
+
+  <!-- 登录区 -->
+  <section class="card login-card mt-3" id="loginCard">
+    <h3>账号登录</h3>
+    <div class="sub" id="loginHint">请输入用户名和密码，登录后自动进入对应角色工作台。</div>
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="username">用户名</label>
+        <input id="username" name="username" type="text" autocomplete="username" placeholder="请输入用户名" required>
+      </div>
+      <div class="field">
+        <label for="password">密码</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="请输入密码" required>
+      </div>
+      <button class="btn primary" id="loginSubmit" type="submit">登录</button>
+      <div class="login-error" id="loginError" role="alert"></div>
+    </form>
+  </section>
+
+  <section class="quick">
+    <div class="eyebrow">快捷入口</div>
+    <div class="quick-links">
+      <a class="btn sm" href="/learn"><i class="icon icon-16 icon-book-open"></i> 互动课堂</a>
+      <a class="btn sm" href="/chat"><i class="icon icon-16 icon-message-circle-more"></i> AI 对话</a>
+      <a class="btn sm" href="/student/"><i class="icon icon-16 icon-user"></i> 学生门户</a>
+      <a class="btn sm" href="/teacher">教师门户</a>
+      <a class="btn sm" href="/analytics">学习分析</a>
+      <a class="btn sm" href="/admin"><i class="icon icon-16 icon-settings"></i> 管理面板</a>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  var ROLE = {
+    student:     { name: "学生",   path: "/student/" },
+    teacher:     { name: "教师",   path: "/teacher" },
+    admin:       { name: "管理员", path: "/admin" },
+    super_admin: { name: "管理员", path: "/admin" }
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function entryFor(role) { return ROLE[role] || null; }
+
+  function toast(msg) {
+    var t = $("toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+
+  // ── 服务状态：GET /api/status ──
+  function loadStatus() {
+    var pill = $("statusPill");
+    fetch("/api/status", { headers: { "Accept": "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j) { throw new Error("empty"); }
+        var online = j.gateway === "online";
+        pill.className = "pill " + (online ? "green" : "red");
+        pill.textContent = "服务状态：" + (online ? "在线" : "离线");
+      })
+      .catch(function () {
+        pill.className = "pill";
+        pill.textContent = "服务状态：—";
+      });
+  }
+
+  // ── 登录态渲染 ──
+  function renderAccount(user) {
+    var bar = $("accountBar"), card = $("loginCard");
+    if (user) {
+      var entry = entryFor(user.role);
+      $("accountText").textContent = "当前用户：" + (user.name || user.username || "—") +
+        "（" + (entry ? entry.name : (user.role || "—")) + "）";
+      var go = $("goWorkspace");
+      if (entry) { go.style.display = ""; go.setAttribute("href", entry.path); }
+      else { go.style.display = "none"; go.removeAttribute("href"); }
+      bar.hidden = false;
+      card.hidden = true;
+    } else {
+      bar.hidden = true;
+      card.hidden = false;
+    }
+  }
+
+  function showError(msg) {
+    var box = $("loginError");
+    box.textContent = msg || "登录失败，请重试";
+    box.classList.add("show");
+  }
+  function clearError() { $("loginError").classList.remove("show"); }
+
+  // ── 登录：POST /api/auth/login，按 role 分流 ──
+  function doLogin(e) {
+    e.preventDefault();
+    clearError();
+    var username = ($("username").value || "").trim();
+    var password = $("password").value || "";
+    if (!username || !password) { showError("请输入用户名和密码"); return; }
+
+    var btn = $("loginSubmit");
+    btn.disabled = true;
+    btn.textContent = "登录中…";
+
+    fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username, password: password })
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, body: j || {} }; })
+                      .catch(function () { return { ok: r.ok, body: {} }; });
+    }).then(function (res) {
+      var j = res.body;
+      if (res.ok && (j.code === 0 || j.success)) {
+        var user = j.user || j.data || null;
+        var entry = entryFor(user && user.role);
+        if (entry) { location.href = entry.path; return; }
+        renderAccount(user);
+        toast("登录成功");
+      } else {
+        showError(j.error || j.message || "用户名或密码错误");
+      }
+    }).catch(function () {
+      showError("网络错误，无法连接服务器");
+    }).then(function () {
+      btn.disabled = false;
+      btn.textContent = "登录";
+    });
+  }
+
+  // ── 角色卡：未登录聚焦登录区，已登录直接进入 ──
+  function bindRoleCards() {
+    Array.prototype.forEach.call(document.querySelectorAll(".role-card"), function (card) {
+      card.addEventListener("click", function () {
+        var entry = entryFor(card.getAttribute("data-role"));
+        if (!$("accountBar").hidden) {
+          if (entry) location.href = entry.path;
+          return;
+        }
+        $("loginCard").scrollIntoView({ behavior: "smooth", block: "center" });
+        $("loginHint").textContent = "以「" + (entry ? entry.name : "该角色") + "」身份登录，请输入用户名和密码。";
+        var u = $("username");
+        if (u) u.focus();
+      });
+    });
+  }
+
+  // ── 登出：POST /api/auth/logout ──
+  function bindLogout() {
+    $("logoutBtn").addEventListener("click", function () {
+      fetch("/api/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" } })
+        .catch(function () {})
+        .then(function () { location.reload(); });
+    });
+  }
+
+  $("loginForm").addEventListener("submit", doLogin);
+  bindRoleCards();
+  bindLogout();
+  loadStatus();
+  setInterval(loadStatus, 30000);
+
+  // 会话探测：GET /api/auth/me
+  fetch("/api/auth/me", { headers: { "Accept": "application/json" } })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (j && (j.code === 0 || j.success || j.user) && j.user) { renderAccount(j.user); }
+      else { renderAccount(null); }
+    })
+    .catch(function () { renderAccount(null); });
+})();
+</script>
+</body>
+</html>

@@ -3,15 +3,14 @@
 LumiLearn 数据管理流水线
 串联: 加载 → 格式转换 → 清洗 → 验证 → 版本快照 → 输出训练集
 """
-import os
 import csv
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
-from .schema import DataSchema, TrainingRecord
-from .cleaner import DataCleaner, CleaningReport
+from .cleaner import CleaningReport, DataCleaner
+from .schema import DataSchema
 from .validator import DataValidator, ValidationReport
 from .versioner import DataVersioner
 
@@ -80,7 +79,7 @@ class DataPipeline:
             legacy_records = self.load_legacy_master()
 
         print(f"\n{'='*70}")
-        print(f"📋 LumiLearn 数据管理流水线")
+        print("📋 LumiLearn 数据管理流水线")
         print(f"{'='*70}")
         print(f"  输入: {len(legacy_records)} 条旧格式记录")
 

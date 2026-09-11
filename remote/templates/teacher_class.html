@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn 教师端 · 班级与学生</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px}
+  .content-layout{display:grid;grid-template-columns:288px 1fr;gap:16px;margin-top:16px;align-items:start}
+  .class-sidebar{border:1px solid var(--color-border);border-radius:var(--radius);background:var(--card);overflow:hidden}
+  .class-sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--color-border)}
+  .class-sidebar-header b{font-size:13px}
+  .class-list{max-height:560px;overflow-y:auto;padding:8px}
+  .class-item{display:block;width:100%;text-align:left;border:1px solid transparent;background:transparent;
+    border-radius:10px;padding:10px 12px;margin-bottom:4px}
+  .class-item:hover{background:var(--muted)}
+  .class-item.active{background:var(--muted);border-color:var(--color-border)}
+  .class-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .class-row .class-name{font-size:13px;font-weight:600}
+  .class-row .class-count{font-size:12px;color:var(--color-text-muted)}
+  .class-progress-wrap{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .class-progress-wrap .progress{flex:1}
+  .class-progress-wrap span{font-size:11px;color:var(--color-text-muted);font-variant-numeric:tabular-nums;width:40px;text-align:right}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .panel-head h3{font-size:15px;font-weight:600}
+  .panel-head .support{font-size:12px;color:var(--color-text-muted)}
+  .empty{text-align:center;color:var(--color-text-muted);font-size:13px;padding:30px 0}
+  .student-cell{display:flex;align-items:center;gap:10px}
+  .student-avatar{width:26px;height:26px;border-radius:8px;background:var(--muted);display:grid;place-items:center;font-size:12px;font-weight:600;flex:none}
+  .progress-cell{display:flex;align-items:center;gap:8px;min-width:110px}
+  .progress-cell .progress{flex:1}
+  .progress-cell span{font-size:12px;color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+  @media(max-width:1080px){.content-layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">教学管理</div>
+        <h1>班级与学生管理</h1>
+        <p class="muted small mt-1">查看你名下班级的学生名册、学习活跃度与答题正确率。</p>
+      </div>
+      <div class="tools"><span class="pill" id="userPill">—</span></div>
+    </div>
+
+    <section class="metrics-grid">
+      <div class="metric-card"><div class="eyebrow">班级总数</div><div class="metric-value" id="mClass">—</div><div class="delta muted small">我名下班级</div></div>
+      <div class="metric-card"><div class="eyebrow">学生总数</div><div class="metric-value" id="mStudent">—</div><div class="delta muted small">跨班去重</div></div>
+      <div class="metric-card"><div class="eyebrow">平均正确率</div><div class="metric-value" id="mAcc">—</div><div class="delta muted small">有答题记录的学生</div></div>
+    </section>
+
+    <section class="content-layout">
+      <aside class="class-sidebar">
+        <div class="class-sidebar-header">
+          <b>班级列表</b><span class="muted small" id="classCount">—</span>
+        </div>
+        <div class="class-list" id="classList"><div class="empty">加载中…</div></div>
+      </aside>
+
+      <div>
+        <div class="card flush">
+          <div class="panel-head" style="padding:14px 16px 0">
+            <div><h3 id="rosterTitle">学生名册</h3><div class="support" id="rosterSub">请选择左侧班级</div></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>姓名</th><th>学号</th><th>班级</th><th>加入时间</th><th>报告数</th><th>正确率</th><th>状态</th>
+              </tr></thead>
+              <tbody id="rosterBody"><tr><td colspan="7" class="muted" style="padding:26px;text-align:center">加载中…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/ui/teacher.js"></script>
+<script>
+(function () {
+  var esc = LLT.esc, pct = LLT.pct;
+  var CLASSES = [];          // /api/classes 返回
+  var STUDENTS = {};         // class_id -> students[]
+  var activeId = null;
+
+  function avgAcc(students) {
+    var withAns = students.filter(function (s) { return LLT.num((s.stats || {}).total_answers) > 0; });
+    if (!withAns.length) return null;
+    var sum = withAns.reduce(function (a, s) { return a + LLT.num((s.stats || {}).accuracy); }, 0);
+    return sum / withAns.length;
+  }
+
+  function renderClassList() {
+    var host = document.getElementById("classList");
+    document.getElementById("classCount").textContent = CLASSES.length + " 个";
+    if (!CLASSES.length) {
+      host.innerHTML = '<div class="empty">暂无班级</div>';
+      return;
+    }
+    host.innerHTML = CLASSES.map(function (c) {
+      var st = STUDENTS[c.id] || [];
+      var avg = avgAcc(st);
+      var cnt = st.length || LLT.num(c.student_count);
+      var active = c.id === activeId ? " active" : "";
+      return '<button class="class-item' + active + '" data-id="' + c.id + '" type="button">' +
+        '<div class="class-row"><span class="class-name">' + esc(c.name || ("班级#" + c.id)) + '</span>' +
+        '<span class="class-count">' + cnt + '人</span></div>' +
+        '<div class="class-progress-wrap"><span class="progress"><i style="width:' +
+        (avg == null ? 0 : Math.max(0, Math.min(100, avg))) + '%"></i></span>' +
+        '<span>' + (avg == null ? "—" : pct(avg)) + '</span></div>' +
+      '</button>';
+    }).join("");
+    Array.prototype.forEach.call(host.querySelectorAll(".class-item"), function (btn) {
+      btn.addEventListener("click", function () { selectClass(LLT.num(btn.getAttribute("data-id"))); });
+    });
+  }
+
+  function renderRoster() {
+    var c = null;
+    for (var i = 0; i < CLASSES.length; i++) if (CLASSES[i].id === activeId) c = CLASSES[i];
+    var body = document.getElementById("rosterBody");
+    if (!c) {
+      document.getElementById("rosterTitle").textContent = "学生名册";
+      document.getElementById("rosterSub").textContent = "请选择左侧班级";
+      body.innerHTML = '<tr><td colspan="7" class="muted" style="padding:26px;text-align:center">请选择左侧班级</td></tr>';
+      return;
+    }
+    var students = STUDENTS[c.id] || [];
+    document.getElementById("rosterTitle").textContent = c.name || ("班级#" + c.id);
+    document.getElementById("rosterSub").textContent =
+      (c.grade_name ? c.grade_name + " · " : "") + students.length + " 名学生" +
+      (c.teacher_name ? " · 班主任：" + c.teacher_name : "");
+    if (!students.length) {
+      body.innerHTML = '<tr><td colspan="7" class="muted" style="padding:26px;text-align:center">该班级暂无学生</td></tr>';
+      return;
+    }
+    body.innerHTML = students.map(function (s) {
+      var st = s.stats || {};
+      var ans = LLT.num(st.total_answers), acc = LLT.num(st.accuracy), rc = LLT.num(s.report_count);
+      var active = (ans > 0 || rc > 0);
+      var clsName = (s.classes && s.classes[0] && s.classes[0].class_name) || c.name || "—";
+      return '<tr>' +
+        '<td><div class="student-cell"><span class="student-avatar">' + esc(String(s.name || "?").slice(0, 1)) + '</span>' +
+          '<span>' + esc(s.name || "—") + '</span></div></td>' +
+        '<td class="muted">' + esc(s.username || "—") + '</td>' +
+        '<td>' + esc(clsName) + '</td>' +
+        '<td class="muted">' + esc(LLT.fmtDate(s.joined_at || s.created_at)) + '</td>' +
+        '<td>' + rc + '</td>' +
+        '<td><div class="progress-cell"><span class="progress"><i style="width:' + Math.max(0, Math.min(100, acc)) + '%"></i></span>' +
+          '<span>' + pct(acc) + '</span></div></td>' +
+        '<td>' + (active ? '<span class="pill green">活跃</span>' : '<span class="pill amber">未开始</span>') + '</td>' +
+      '</tr>';
+    }).join("");
+  }
+
+  function selectClass(id) {
+    activeId = id;
+    renderClassList();
+    renderRoster();
+  }
+
+  function renderMetrics() {
+    document.getElementById("mClass").textContent = CLASSES.length;
+    var ids = {}, accs = [];
+    CLASSES.forEach(function (c) {
+      (STUDENTS[c.id] || []).forEach(function (s) { ids[s.id] = 1; });
+      var a = avgAcc(STUDENTS[c.id] || []);
+      if (a != null) accs.push(a);
+    });
+    document.getElementById("mStudent").textContent = Object.keys(ids).length;
+    document.getElementById("mAcc").textContent = accs.length
+      ? pct(accs.reduce(function (a, b) { return a + b; }, 0) / accs.length)
+      : "—";
+  }
+
+  LLT.boot({ nav: "class" }).then(function (user) {
+    document.getElementById("userPill").textContent = user
+      ? ((user.role === "admin" ? "管理员" : "教师") + "：" + (user.name || "")) : "教师";
+
+    LLT.get("/api/classes").then(function (j) {
+      if (!LLT.ok(j)) { LLT.toast(LLT.errMsg(j)); CLASSES = []; renderClassList(); renderRoster(); return; }
+      CLASSES = LLT.list(j, "classes");
+      if (!CLASSES.length) { renderMetrics(); renderClassList(); renderRoster(); return; }
+      Promise.all(CLASSES.map(function (c) {
+        return LLT.get("/api/classes/" + c.id + "/students").then(function (rj) {
+          STUDENTS[c.id] = LLT.ok(rj) ? LLT.list(rj, "students") : [];
+        }).catch(function () { STUDENTS[c.id] = []; });
+      })).then(function () {
+        renderMetrics();
+        selectClass(CLASSES[0].id);
+      });
+    }).catch(function () { LLT.toast("班级数据加载失败"); renderClassList(); renderRoster(); });
+  });
+})();
+</script>
+</body>
+</html>

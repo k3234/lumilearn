@@ -172,13 +172,13 @@ class FeynmanEngine:
     5. 30秒测试：必须能用极简语言讲给完全不懂的人听
     """
 
-    def __init__(self, model_name: str = "lumilearn-v2:latest", timeout: int = 60):
+    def __init__(self, model_name: str = "lumilearn-v2:latest", timeout: int = 8):
         """
         初始化费曼引擎
-        
+
         参数：
             model_name: Ollama模型名称
-            timeout: 调用超时(秒)
+            timeout: 调用超时(秒)，默认8秒以快速降级到模板模式
         """
         self.model_name = model_name
         self.timeout = timeout

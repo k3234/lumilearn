@@ -1,227 +1,177 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LumiLearn · 学习过程</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="pages.css">
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .learn-head .topic-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .learn-head h1{font-size:22px;font-weight:700}
+  .learn-head .hint{font-size:13px;color:var(--color-text-muted);margin-top:8px;max-width:78ch}
+  .stepper{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0}
+  .stepper .sp{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid var(--color-border);
+    border-radius:99px;font-size:12px;color:var(--color-text-muted);background:var(--card)}
+  .stepper .sp .num{width:18px;height:18px;border-radius:50%;background:var(--muted);display:grid;place-items:center;font-size:10px;font-weight:600}
+  .stepper .sp.current{border-color:var(--primary);color:var(--color-text)}
+  .stepper .sp.current .num{background:var(--primary);color:var(--color-primary-foreground)}
+  .stepper .sp.done .num{background:var(--success);color:#fff}
+  .learn-grid{display:grid;grid-template-columns:1.35fr .65fr;gap:16px;align-items:start}
+  .step-card{border:1px solid var(--color-border);border-radius:var(--radius);background:var(--card);padding:18px;margin-bottom:14px}
+  .step-card .sc-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .step-card .snum{width:24px;height:24px;border-radius:50%;background:var(--muted);display:grid;place-items:center;font-size:12px;font-weight:600;flex:none}
+  .step-card.current{border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+  .step-card.current .snum{background:var(--primary);color:var(--color-primary-foreground)}
+  .step-card.done .snum{background:var(--success);color:#fff}
+  .step-card .sc-head .purpose{margin-left:auto;font-size:12px;color:var(--color-text-muted)}
+  .s-content{font-size:14px;line-height:1.8;white-space:pre-wrap;color:var(--color-text)}
+  .s-content.typing::after{content:"▌";animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  .answer-box{margin-top:14px}
+  .answer-box textarea{width:100%;min-height:76px;padding:10px 12px;border:1px solid var(--color-border);
+    border-radius:10px;font-size:14px;resize:vertical;background:var(--background)}
+  .answer-box textarea:focus{outline:2px solid var(--ring);outline-offset:-1px}
+  .agent-card{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--color-border)}
+  .agent-card:last-child{border-bottom:none}
+  .agent-ico{width:26px;height:26px;border-radius:8px;background:var(--muted);display:grid;place-items:center;flex:none}
+  .agent-card .ag-body{flex:1;min-width:0}
+  .agent-card .ag-body b{font-size:13px;display:block}
+  .agent-card .ag-body span{font-size:11px;color:var(--color-text-muted)}
+  .log-box{max-height:200px;overflow-y:auto;font-family:var(--font-mono);font-size:11.5px;line-height:1.9}
+  .log-line{color:var(--color-text-secondary)}
+  .log-line .lt{color:var(--color-text-muted)}
+  .log-line.ll-done{color:var(--success-text)}
+  .log-line.ll-user{color:var(--info-text)}
+  .spin{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (max-width:1000px){.learn-grid{grid-template-columns:1fr}}
+</style>
 </head>
-<body data-page="learn">
+<body>
 <div class="shell">
-  <aside class="app-nav">
-    <a class="brand" href="index.html">
-      <span class="brand-mark" aria-hidden="true">L</span>
-      <span class="brand-text"><b>LumiLearn</b><em>学生端 · AI 教官</em></span>
-    </a>
-    <nav class="nav-list" aria-label="主导航">
-      <a class="nav-item" data-nav="index" href="index.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>发起学习</span>
-      </a>
-      <a class="nav-item" data-nav="learn" href="learn.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-        <span>学习过程</span>
-      </a>
-      <a class="nav-item" data-nav="report" href="report.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-        <span>学习报告</span>
-      </a>
-      <a class="nav-item" data-nav="history" href="history.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-        <span>学习历史</span>
-      </a>
-      <a class="nav-item" data-nav="profile" href="profile.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>我的档案</span>
-      </a>
-    </nav>
-    <div class="nav-foot">
-      <div class="user-box" id="userBox" style="display:none">
-        <span class="dot"></span>
-        <span class="uname" id="userName">—</span>
-        <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">退出</button>
-      </div>
-      <span class="dev-badge">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
-        CPU 本地推理 · 无云依赖
-      </span>
-      <span class="model-status"><span class="dot"></span><code>lumilearn-v2</code> 在线</span>
-    </div>
-  </aside>
-  <main class="app-content" id="app">
-
-    <section class="learn-head reveal r1">
-      <p class="page-kicker">MULTI-AGENT ORCHESTRATION · FEYNMAN 5-STEP</p>
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="learn-head">
+      <div class="eyebrow">MULTI-AGENT ORCHESTRATION · FEYNMAN 5-STEP</div>
       <div class="topic-row">
         <h1 id="headTopic">—</h1>
-        <span class="tag tag-sky" id="headSubject">数学</span>
-        <span class="tag tag-amber" id="headLevel">高中</span>
-        <span class="tag tag-faint" id="headElapsed">00:00</span>
+        <span class="pill" id="headSubject">—</span>
+        <span class="pill" id="headLevel">—</span>
+        <span class="pill" id="headElapsed">00:00</span>
       </div>
       <p class="hint">苏格拉底式引导学习：老师逐步提问，你按自己的理解回答，老师根据你的回答调整接下来的引导。全程由你主导推导，右侧可实时观察每位 AI 教官的工作。</p>
-    </section>
+    </div>
 
-    <div class="progress-strip reveal r2" id="progressStrip"></div>
+    <div class="stepper" id="progressStrip"></div>
 
     <div class="learn-grid">
-      <div class="steps-col">
+      <div>
         <div id="stepList"></div>
-        <div class="learn-actions" id="learnActions" style="display:none">
-          <button class="btn btn-primary btn-lg" id="reportBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-            生成学习报告
-          </button>
-          <button class="btn btn-ghost btn-lg" id="restartBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-            再学一遍
-          </button>
+        <div class="flex mt-2" id="learnActions" style="display:none;gap:10px">
+          <button class="btn primary lg" id="reportBtn"><i class="icon icon-16 icon-file"></i> 生成学习报告</button>
+          <button class="btn lg" id="restartBtn"><i class="icon icon-16 icon-chevron-left"></i> 再学一遍</button>
         </div>
       </div>
 
-      <aside class="agent-panel reveal r3">
+      <aside>
         <div class="card">
-          <div class="agent-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
-            Agent 协作面板
-          </div>
+          <div class="between" style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:600">Agent 协作面板</h3></div>
           <div id="agentList"></div>
         </div>
-        <div class="card">
-          <div class="agent-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            调用日志
-          </div>
-          <div class="log-box" id="logBox">
-            <div class="log-line"><span class="lt">[system]</span> 等待编排调度…</div>
-          </div>
+        <div class="card mt-2">
+          <div class="between" style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:600">调用日志</h3></div>
+          <div class="log-box" id="logBox"><div class="log-line"><span class="lt">[system]</span> 等待编排调度…</div></div>
+        </div>
+        <div class="card mt-2" id="pathPanel" style="display:none">
+          <div class="between" style="margin-bottom:10px"><h3 style="font-size:14px;font-weight:600">个性化路径</h3></div>
+          <div id="pathList"></div>
+          <div class="mt-2" style="margin-top:12px;font-size:13px;font-weight:600">课后复习素材</div>
+          <div id="reviewMaterials" class="muted small"></div>
         </div>
       </aside>
     </div>
-
   </main>
 </div>
-<div class="toast" id="toast"></div>
-<script src="nav.js"></script>
+
 <script src="mock.js"></script>
 <script src="api.js"></script>
-<script src="auth.js"></script>
+<script src="app.js"></script>
 <script>
 (function () {
-  var toastEl = document.getElementById("toast");
-  var toastTimer = null;
-  function toast(msg) {
-    toastEl.textContent = msg;
-    toastEl.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
-  }
+  var esc = LL.esc;
 
-  /* HTML 转义，防止用户/AI 输出中的特殊字符破坏页面结构 */
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-  }
-
-  /* 读取会话草稿；非学习态则回首页 */
   var draft = SessionStore.draft;
   if (!draft || draft.mode !== "learning" || !draft.session) {
-    toast("请先发起一次学习");
-    setTimeout(function () { location.href = "index.html"; }, 900);
+    LL.toast("请先发起一次学习");
+    setTimeout(function () { location.href = "start.html"; }, 900);
     return;
   }
   var session = draft.session;
 
-  /* 头部信息 */
-  document.getElementById("headTopic").textContent = session.topic;
-  document.getElementById("headSubject").textContent = session.subject;
-  document.getElementById("headLevel").textContent = session.difficulty;
+  document.getElementById("headTopic").textContent = session.topic || "学习";
+  document.getElementById("headSubject").textContent = session.subject || "综合";
+  document.getElementById("headLevel").textContent = session.difficulty || "高中";
 
-  /* 计时器 */
+  LL.boot({ nav: "learn" }).then(function (user) {
+    if (user) loadPathPanel(session);
+  });
+
   var t0 = Date.now();
   setInterval(function () {
     var s = Math.floor((Date.now() - t0) / 1000);
-    var mm = String(Math.floor(s / 60)).padStart(2, "0");
-    var ss = String(s % 60).padStart(2, "0");
-    document.getElementById("headElapsed").textContent = mm + ":" + ss;
+    document.getElementById("headElapsed").textContent =
+      String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
   }, 1000);
 
-  /* 进度条 + 步骤卡片骨架 */
+  var flow = session.flow || [];
   var strip = document.getElementById("progressStrip");
-  session.flow.forEach(function (st, i) {
-    var p = document.createElement("div");
-    p.className = "progress-step";
-    p.dataset.pstep = i + 1;
-    p.innerHTML =
-      '<span class="pdot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>' +
-      '<span>' + esc(st.name) + '</span>';
-    if (i < session.flow.length - 1) p.insertAdjacentHTML("beforeend", '<span class="psep"></span>');
-    strip.appendChild(p);
-  });
+  strip.innerHTML = flow.map(function (st, i) {
+    return '<div class="sp" data-pstep="' + (i + 1) + '"><span class="num">' + (i + 1) + '</span>' + esc(st.name) + '</div>';
+  }).join("");
 
   var stepList = document.getElementById("stepList");
-  session.flow.forEach(function (st, i) {
-    var card = document.createElement("div");
-    card.className = "step-card";
-    card.dataset.step = i + 1;
-    card.innerHTML =
-      '<div class="step-card-head">' +
-        '<span class="snum">' + (i + 1) + '</span>' +
-        '<b>' + esc(st.name) + '</b>' +
-        '<span class="purpose">' + esc(st.purpose) + '</span>' +
-        '<span class="state" data-state></span>' +
-      '</div>' +
+  stepList.innerHTML = flow.map(function (st, i) {
+    return '<div class="step-card" data-step="' + (i + 1) + '">' +
+      '<div class="sc-head"><span class="snum">' + (i + 1) + '</span><b>' + esc(st.name) + '</b>' +
+      '<span class="purpose">' + esc(st.purpose || "") + '</span>' +
+      '<span data-state class="pill">待开始</span></div>' +
       '<div class="s-content" data-content></div>' +
       '<div class="knowledge-row" data-knowledge style="display:none"></div>' +
-      '<div class="feynman-input" data-test style="display:none"></div>' +
-      '<div class="feynman-result" data-result style="display:none"></div>';
-    stepList.appendChild(card);
-  });
+      '<div class="answer-box" data-test style="display:none"></div>' +
+      '<div class="mt-1" data-result style="display:none"></div></div>';
+  }).join("");
 
   /* Agent 面板 */
+  var agentDefs = (window.DB && DB.agentDefs) || [
+    { id: "orchestrator", name: "编排调度", role: "任务分发 · 流程编排 · 结果聚合", color: "sky" },
+    { id: "feynman", name: "费曼教学", role: "五步教学法生成教学内容", color: "amber" },
+    { id: "knowledge", name: "知识检索", role: "检索知识点 · 注入上下文", color: "mint" },
+    { id: "coach", name: "评测与路径", role: "输出评分 · 个性化学习路径", color: "violet" }
+  ];
   var agentList = document.getElementById("agentList");
-  var agentEls = {};
-  DB.agentDefs.forEach(function (a) {
-    var el = document.createElement("div");
-    el.className = "agent-card";
-    el.innerHTML =
-      '<span class="agent-ico c-' + a.color + '"></span>' +
-      '<div class="ag-body"><b>' + esc(a.name) + '</b><span class="ag-role">' + esc(a.role) + '</span></div>' +
-      '<span class="ag-status idle" data-ag="' + a.id + '"><span class="sdot"></span>idle</span>';
-    agentList.appendChild(el);
-    agentEls[a.id] = el;
-  });
+  agentList.innerHTML = agentDefs.map(function (a) {
+    return '<div class="agent-card"><span class="agent-ico"><i class="icon icon-16 icon-settings"></i></span>' +
+      '<span class="ag-body"><b>' + esc(a.name) + '</b><span>' + esc(a.role) + '</span></span>' +
+      '<span class="pill" data-ag="' + a.id + '">空闲</span></div>';
+  }).join("");
   function setAgent(id, status, calls) {
-    var span = agentList.querySelector('[data-ag="' + id + '"]');
-    span.className = "ag-status " + status;
-    span.lastChild.textContent = " " + (status === "running" ? "运行中" : status === "done" ? "完成 · " + (calls || 1) + " 次" : "空闲");
+    var el = agentList.querySelector('[data-ag="' + id + '"]');
+    if (!el) return;
+    el.className = "pill" + (status === "running" ? " amber" : status === "done" ? " green" : "");
+    el.textContent = status === "running" ? "运行中" : status === "done" ? ("完成 · " + (calls || 1) + " 次") : "空闲";
   }
-  /* Agent 图标（Lucide 内联，按契约配色） */
-  var agentIcons = {
-    orchestrator: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-    feynman: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
-    knowledge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
-    coach: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M22 2 12 12"/><path d="M22 2v6"/><path d="M22 8h-6"/></svg>',
-  };
-  Object.keys(agentEls).forEach(function (id) {
-    agentEls[id].querySelector(".agent-ico").innerHTML = agentIcons[id] || "";
-  });
 
-  /* 调用日志 */
   var logBox = document.getElementById("logBox");
-  var logCount = 0;
   function log(text, cls) {
+    var t = new Date();
     var line = document.createElement("div");
     line.className = "log-line" + (cls ? " " + cls : "");
-    var t = new Date();
-    var mm = String(t.getMinutes()).padStart(2, "0");
-    var ss = String(t.getSeconds()).padStart(2, "0");
-    line.innerHTML = '<span class="lt">[' + mm + ":" + ss + ']</span> ' + text;
+    line.innerHTML = '<span class="lt">[' + String(t.getMinutes()).padStart(2, "0") + ":" + String(t.getSeconds()).padStart(2, "0") + ']</span> ' + text;
     logBox.appendChild(line);
     logBox.scrollTop = logBox.scrollHeight;
-    logCount++;
   }
 
-  /* 打字机展示 */
   function typewrite(el, text) {
     return new Promise(function (resolve) {
       el.classList.add("typing");
@@ -235,203 +185,201 @@
     });
   }
 
-  /* ---------- 主流程：引导式交互学习（苏格拉底式：提问→学生自主回答→根据回答调整引导） ---------- */
-  var feynmanScore = 80;
-  var currentGuideStep = 1;
-  var guideBusy = false;
-
   function setStepState(n, state) {
     var card = stepList.querySelector('[data-step="' + n + '"]');
+    if (!card) return;
     card.classList.remove("current", "done");
     if (state === "current") card.classList.add("current");
     if (state === "done") card.classList.add("done");
     var tag = card.querySelector("[data-state]");
-    if (state === "current") tag.innerHTML = '<span class="tag tag-amber">进行中</span>';
-    else if (state === "done") tag.innerHTML = '<span class="tag tag-mint">已完成</span>';
-    else tag.innerHTML = '<span class="tag tag-faint">待开始</span>';
-    var p = document.querySelector('[data-pstep="' + n + '"]');
-    if (p) {
-      p.classList.remove("current", "done");
-      if (state === "current") p.classList.add("current");
-      if (state === "done") p.classList.add("done");
-    }
+    if (tag) tag.textContent = state === "current" ? "进行中" : state === "done" ? "已完成" : "待开始";
+    var p = strip.querySelector('[data-pstep="' + n + '"]');
+    if (p) { p.classList.remove("current", "done"); if (state) p.classList.add(state); }
   }
 
-  /* ---------- 主流程：引导式交互学习（苏格拉底式：提问→学生自主回答→根据回答调整引导） ---------- */
-  var feynmanScore = 80;
-  var currentGuideStep = 1;
-  var guideBusy = false;
+  var feynmanScore = 80, currentGuideStep = 1, guideBusy = false;
 
-  /* 第一次引导：老师提问，等待学生回答 */
-  async function startGuide() {
-    if (guideBusy) return;
-    guideBusy = true;
-    log('<span class="la">费曼教学</span> → 老师正在准备第一个引导问题…');
-    setAgent("feynman", "running");
-    try {
-      var res = await api.guideStep({ sessionId: session.id, level: session.difficulty });
-      if (!res || !res.data) throw new Error("empty");
-      setAgent("feynman", "done", 1);
-      log('第 1 步「' + esc(res.data.step_name || "现象引入") + '」引导提问', "ll-done");
-      await renderGuide(res.data);
-    } catch (e) {
-      /* 引导服务暂不可用：降级为自动讲解（保持学习可用） */
-      log('引导服务暂不可用，切换为自动讲解', "ll-done");
-      setAgent("feynman", "done", 1);
-      await runLegacy();
-    }
-    guideBusy = false;
+  function loadPathPanel(session) {
+    Promise.all([
+      api.getLearnStatus({ subject: session.subject }).catch(function () { return { code: 1 }; }),
+      api.getResources({ subject: session.subject }).catch(function () { return { code: 1 }; })
+    ]).then(function (r) {
+      var st = (r[0] && r[0].data) || {};
+      var res = r[1] || {};
+      var path = st.path || [], weak = st.weak_points || [], ov = st.overview || {};
+      document.getElementById("pathList").innerHTML =
+        '<div class="muted small" style="margin-bottom:6px">整体进度 ' + (ov.overall_progress || 0) + '% · 待巩固 ' + weak.length + ' 项</div>' +
+        (path.map(function (n, i) {
+          var isWeak = weak.some(function (w) { return w.node_id === n.node_id || w.name === n.name; });
+          return '<div class="flex" style="gap:8px;padding:4px 0"><span class="snum" style="width:20px;height:20px;border-radius:50%;background:var(--muted);display:grid;place-items:center;font-size:10px">' + (i + 1) + '</span>' +
+            '<span style="font-size:13px">' + esc(n.name || n.node_id) + '</span>' +
+            (isWeak ? '<span class="pill red" style="font-size:10px">待巩固</span>' : '') + '</div>';
+        }).join("") || '<div class="muted small">暂无个性化路径（答题后生成）</div>');
+      var mats = res.resources || res.data || [];
+      document.getElementById("reviewMaterials").innerHTML = mats.length
+        ? mats.slice(0, 5).map(function (m) { return "· " + esc(m.title || m.name || "素材"); }).join("<br>")
+        : "暂无教师发布的复习素材";
+      document.getElementById("pathPanel").style.display = "block";
+    });
   }
 
-  /* 展示引导内容 + 回答输入框 */
-  async function renderGuide(d) {
+  function renderGuide(d) {
     var n = d.step;
     for (var i = currentGuideStep; i < n; i++) setStepState(i, "done");
     currentGuideStep = n;
     setStepState(n, "current");
     var card = stepList.querySelector('[data-step="' + n + '"]');
     var contentEl = card.querySelector("[data-content]");
-    contentEl.innerHTML = "";
-    await typewrite(contentEl, d.content);
-    if (d.is_last || n === 5) {
-      showFinalTest(card);
-    } else {
-      showAnswerInput(n, card);
-    }
+    contentEl.textContent = "";
+    return typewrite(contentEl, d.content || "").then(function () {
+      if (d.is_last || n === 5) showFinalTest(card); else showAnswerInput(n, card);
+    });
   }
 
-  /* 步骤卡片内的回答输入框（每步都需要学生先思考、先回答） */
   function showAnswerInput(n, card) {
     var box = card.querySelector("[data-test]");
     box.style.display = "block";
     box.innerHTML =
-      '<div class="guide-tip" style="font-size:12px;color:#8b949e;margin-bottom:10px;">💡 按你的理解说出想法，不必担心对错——老师会根据你的回答调整接下来的引导。</div>' +
-      '<label class="field"><span class="field-label">你的回答</span>' +
-      '<textarea id="guideAnswer' + n + '" placeholder="大胆说出你的理解…"></textarea></label>' +
-      '<div style="display:flex;gap:10px;margin-top:12px">' +
-      '<button type="button" class="btn btn-primary" id="guideSubmit' + n + '">提交回答</button>' +
-      '<button type="button" class="btn btn-ghost" id="guideSkip' + n + '">答不上来，请老师提示</button></div>';
+      '<div class="muted small" style="margin-bottom:8px">按你的理解说出想法，不必担心对错——老师会根据你的回答调整引导。</div>' +
+      '<textarea id="guideAnswer' + n + '" placeholder="大胆说出你的理解…"></textarea>' +
+      '<div class="flex" style="gap:10px;margin-top:10px">' +
+      '<button class="btn primary" id="guideSubmit' + n + '">提交回答</button>' +
+      '<button class="btn" id="guideSkip' + n + '">答不上来，请提示</button></div>';
     document.getElementById("guideSubmit" + n).addEventListener("click", function () { submitAnswer(n, false); });
     document.getElementById("guideSkip" + n).addEventListener("click", function () { submitAnswer(n, true); });
     var ta = document.getElementById("guideAnswer" + n);
-    ta.focus();
-    ta.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submitAnswer(n, false);
-    });
+    if (ta) {
+      ta.focus();
+      ta.addEventListener("keydown", function (e) { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) submitAnswer(n, false); });
+    }
   }
 
-  /* 学生回答提交：AI 具体回应学生回答，并生成下一步引导 */
-  async function submitAnswer(n, skip) {
+  function submitAnswer(n, skip) {
     var card = stepList.querySelector('[data-step="' + n + '"]');
     var box = card.querySelector("[data-test]");
     var ta = document.getElementById("guideAnswer" + n);
     var text = skip ? "（我暂时想不出来，请给我提示）" : ((ta && ta.value) || "").trim();
-    if (!skip && !text) { toast("先说出你的想法，老师才能帮你"); return; }
-    var btns = box.querySelectorAll("button");
-    btns.forEach(function (b) { b.disabled = true; });
+    if (!skip && !text) { LL.toast("先说出你的想法，老师才能帮你"); return; }
+    Array.prototype.forEach.call(box.querySelectorAll("button"), function (b) { b.disabled = true; });
     setAgent("feynman", "running");
-    log('<span class="la">你</span> → ' + esc(text.slice(0, 40)), "ll-user");
-    try {
-      var res = await api.guideStep({ sessionId: session.id, answer: text, level: session.difficulty });
-      if (!res || !res.data) throw new Error("empty");
-      setAgent("feynman", "done", 1);
-      var d = res.data;
-      var nextN = d.step;
-      /* 若 AI 推进到下一步，标记前一步完成 */
-      if (nextN > currentGuideStep) {
-        for (var i = currentGuideStep; i < nextN; i++) setStepState(i, "done");
-        currentGuideStep = nextN;
-      }
-      log('费曼教学 → 第 ' + nextN + ' 步「' + esc(d.step_name || "") + '」', "ll-done");
-      await renderGuide(d);
-    } catch (e) {
-      toast("回答提交失败，请重试");
-      btns.forEach(function (b) { b.disabled = false; });
-      setAgent("feynman", "done", 1);
-    }
+    log('<span class="lt">你</span> → ' + esc(text.slice(0, 40)), "ll-user");
+    api.guideStep({ sessionId: session.id, answer: text, level: session.difficulty })
+      .then(function (res) {
+        if (!res || !res.data) throw new Error("empty");
+        setAgent("feynman", "done", 1);
+        var d = res.data;
+        if (d.step > currentGuideStep) { for (var i = currentGuideStep; i < d.step; i++) setStepState(i, "done"); currentGuideStep = d.step; }
+        log('费曼教学 → 第 ' + d.step + ' 步「' + esc(d.step_name || "") + '」', "ll-done");
+        box.style.display = "none";
+        return renderGuide(d);
+      })
+      .catch(function () {
+        LL.toast("回答提交失败，请重试");
+        Array.prototype.forEach.call(box.querySelectorAll("button"), function (b) { b.disabled = false; });
+        setAgent("feynman", "done", 1);
+      });
   }
 
-  /* 第 5 步：费曼 30 秒测试 */
   function showFinalTest(card) {
     var testBox = card.querySelector("[data-test]");
     testBox.style.display = "block";
     testBox.innerHTML =
-      '<label class="field"><span class="field-label">你的 30 秒讲解（费曼测试）</span>' +
-      '<textarea id="feynmanText" placeholder="用最简单的话，把刚才学到的讲给一个完全不懂的人听…"></textarea></label>' +
-      '<div style="display:flex;gap:10px;margin-top:12px">' +
-      '<button type="button" class="btn btn-primary" id="testSubmit">提交讲解</button>' +
-      '<button type="button" class="btn btn-ghost" id="testSkip">跳过测试</button></div>';
+      '<div style="font-size:13px;font-weight:600;margin-bottom:8px">你的 30 秒讲解（费曼测试）</div>' +
+      '<textarea id="feynmanText" placeholder="用最简单的话，把刚才学到的讲给一个完全不懂的人听…"></textarea>' +
+      '<div class="flex" style="gap:10px;margin-top:10px">' +
+      '<button class="btn primary" id="testSubmit">提交讲解</button>' +
+      '<button class="btn" id="testSkip">跳过测试</button></div>';
     var resultBox = card.querySelector("[data-result]");
     function finish() {
       testBox.style.display = "none";
       setStepState(5, "done");
-      document.getElementById("learnActions").style.display = "flex";
-      document.getElementById("reportBtn").disabled = false;
+      var acts = document.getElementById("learnActions");
+      acts.style.display = "flex";
     }
     document.getElementById("testSubmit").addEventListener("click", function () {
       var text = (document.getElementById("feynmanText") || {}).value || "";
-      document.getElementById("testSubmit").disabled = true;
+      this.disabled = true;
       setAgent("coach", "running");
-      log('<span class="la">评测与路径</span> → 对费曼测试五维评分');
-      api.submitFeynmanTest({ sessionId: session.id, text: text })
-        .then(function (r) {
-          feynmanScore = r.data.score;
-          setAgent("coach", "done", 1);
-          log('费曼测试得分 ' + feynmanScore, "ll-done");
-          resultBox.style.display = "block";
-          resultBox.innerHTML = '<b>' + feynmanScore + ' 分</b> ' + esc(r.data.verdict) +
-            '<br><span class="faint">' + esc(r.data.feedback && r.data.feedback.accuracy ? r.data.feedback.accuracy.comment : "") + ' · ' + esc(r.data.feedback && r.data.feedback.simplicity ? r.data.feedback.simplicity.comment : "") + '</span>';
-          finish();
-        });
+      log('评测与路径 → 对费曼测试五维评分');
+      api.submitFeynmanTest({ sessionId: session.id, text: text }).then(function (r) {
+        var d = (r && r.data) || {};
+        feynmanScore = d.score != null ? d.score : 80;
+        setAgent("coach", "done", 1);
+        log('费曼测试得分 ' + feynmanScore, "ll-done");
+        resultBox.style.display = "block";
+        var fb = d.feedback || {};
+        resultBox.innerHTML = '<div class="card" style="padding:14px"><b style="font-size:18px">' + feynmanScore + ' 分</b> ' + esc(d.verdict || "") +
+          '<div class="muted small" style="margin-top:6px">' +
+          esc((fb.accuracy && fb.accuracy.comment) || "") + (fb.accuracy ? " · " : "") + esc((fb.simplicity && fb.simplicity.comment) || "") + '</div></div>';
+        finish();
+      }).catch(function () { this.disabled = false; LL.toast("评分失败，请重试"); });
     });
     document.getElementById("testSkip").addEventListener("click", function () {
-      setAgent("coach", "done", 1);
       feynmanScore = 80;
+      setAgent("coach", "done", 1);
       resultBox.style.display = "block";
-      resultBox.innerHTML = '<b>80 分</b> 已按默认成绩跳过测试';
+      resultBox.innerHTML = '<div class="card" style="padding:14px"><b>80 分</b> 已按默认成绩跳过测试</div>';
       finish();
     });
   }
 
-  /* 降级：引导服务不可用时自动播放五步（原逻辑精简） */
-  async function runLegacy() {
+  /* 降级：引导服务不可用时自动播放五步 */
+  function runLegacy() {
+    var p = Promise.resolve();
     for (var i = 1; i <= 5; i++) {
-      var res = await api.runStep({ sessionId: session.id, step: i });
-      if (res && res.data) {
-        setStepState(i, "current");
-        var card = stepList.querySelector('[data-step="' + i + '"]');
-        await typewrite(card.querySelector("[data-content]"), res.data.content);
-        if (i === 5) { showFinalTest(card); }
-      } else {
-        setStepState(i, "done");
-      }
+      (function (i) {
+        p = p.then(function () {
+          return api.runStep({ sessionId: session.id, step: i }).then(function (res) {
+            var card = stepList.querySelector('[data-step="' + i + '"]');
+            setStepState(i, "current");
+            if (res && res.data) {
+              return typewrite(card.querySelector("[data-content]"), res.data.content || "").then(function () {
+                if (i === 5) showFinalTest(card);
+              });
+            }
+            setStepState(i, "done");
+          });
+        });
+      })(i);
     }
   }
 
-  /* 启动引导式学习 */
+  function startGuide() {
+    if (guideBusy) return;
+    guideBusy = true;
+    log('费曼教学 → 老师正在准备第一个引导问题…');
+    setAgent("feynman", "running");
+    api.guideStep({ sessionId: session.id, level: session.difficulty })
+      .then(function (res) {
+        if (!res || !res.data) throw new Error("empty");
+        setAgent("feynman", "done", 1);
+        log('第 1 步「' + esc(res.data.step_name || "现象引入") + '」引导提问', "ll-done");
+        return renderGuide(res.data);
+      })
+      .catch(function () {
+        log("引导服务暂不可用，切换为自动讲解", "ll-done");
+        setAgent("feynman", "done", 1);
+        runLegacy();
+      })
+      .then(function () { guideBusy = false; });
+  }
   startGuide();
 
-  /* 生成报告 */
   document.getElementById("reportBtn").addEventListener("click", function () {
     var btn = this;
     btn.disabled = true;
-    btn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>评测与路径 Agent 汇总中…';
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<i class="icon icon-16 icon-clock spin"></i> 评测与路径 Agent 汇总中…';
     api.generateReport({ sessionId: session.id, feynmanScore: feynmanScore })
       .then(function (res) {
         SessionStore.save({ mode: "report", report: res.data });
         location.href = "report.html";
       })
-      .catch(function () {
-        toast("生成失败，请重试");
-        btn.disabled = false;
-        btn.innerHTML = "生成学习报告";
-      });
+      .catch(function () { LL.toast("生成失败，请重试"); btn.disabled = false; btn.innerHTML = orig; });
   });
-
-  /* 再学一遍 */
   document.getElementById("restartBtn").addEventListener("click", function () {
     SessionStore.clear();
-    location.href = "index.html";
+    location.href = "start.html";
   });
 })();
 </script>

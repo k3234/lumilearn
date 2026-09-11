@@ -60,8 +60,9 @@ EXCLUDE_DIRS = {
 }
 # 上传排除清单：文件名（精确）
 EXCLUDE_FILES = {".env", ".DS_Store"}
-# 上传排除清单：文件名后缀
-EXCLUDE_FILES_SUFFIX = (".pyc", ".pids.json")
+# 上传排除清单：文件名后缀（数据库是远端运行时数据，覆盖上传会导致远端数据丢失）
+EXCLUDE_FILES_SUFFIX = (".pyc", ".pids.json", ".db", ".db-shm", ".db-wal",
+                        ".sqlite", ".sqlite3")
 
 # 健康检查端点（远端本机回环地址，不涉及真实公网信息）
 HEALTH_ENDPOINTS = [

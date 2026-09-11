@@ -25,11 +25,11 @@ import json
 import os
 import sys
 import time
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_core.model_registry import ALL_MODELS_DICT, get_model
+from agent_core.model_registry import get_model
 
 
 class VerifierAgent:

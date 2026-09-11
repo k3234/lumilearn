@@ -3,23 +3,66 @@
 LumiLearn 模型提供者管理服务
 管理 providers.yaml 中所有云端大模型提供者的 API Key 和模型配置
 """
-import os
-import json
-import yaml
 import logging
+import os
 from pathlib import Path
-from typing import List, Dict, Optional, Any
+from typing import Dict, List, Optional
+
+import yaml
 
 logger = logging.getLogger("lumilearn.provider_service")
 
 PROVIDERS_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "providers.yaml"
 FRAMEWORK_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "framework.yaml"
+# OpenMAIC 兼容层：可选的 camelCase 提供者配置（结构见 server-providers.yml.example）。
+# 该文件通常保存真实 Key，应加入 .gitignore，不要提交到仓库。
+SERVER_PROVIDERS_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "server-providers.yml"
 
-# 标准提供者模板（预设名称、默认地址、已知模型列表）
+# 协议取值：openai / anthropic / gemini / ollama（默认 openai）
+DEFAULT_PROTOCOL = "openai"
+VALID_PROTOCOLS = ("openai", "anthropic", "gemini", "ollama")
+
+# server-providers.yml 段名 → 内部 protocol 推断（对齐 OpenMAIC 的 camelCase 结构）
+SECTION_PROTOCOL_MAP = {
+    "openai": "openai",
+    "anthropic": "anthropic",
+    "google": "gemini",   # OpenMAIC 中 google 段即 Gemini
+    "gemini": "gemini",
+    "azure": "openai",    # Azure OpenAI 走 OpenAI 兼容协议
+    "deepseek": "openai",
+}
+
+
+def parse_default_model(value: str):
+    """解析 DEFAULT_MODEL 的 `provider:model` 约定。
+
+    只按**第一个冒号**切分，因此模型名中的冒号会被完整保留，例如：
+        "google:gemini-3-flash-preview" -> ("google", "gemini-3-flash-preview")
+        "ollama:lumilearn-v2:latest"    -> ("ollama", "lumilearn-v2:latest")
+
+    参数:
+        value: 形如 "provider:model" 的字符串
+    返回:
+        (provider, model)；无法解析时返回 (None, None)
+    """
+    if not value or not isinstance(value, str):
+        return None, None
+    value = value.strip()
+    if ":" not in value:
+        return None, None
+    provider, model = value.split(":", 1)
+    provider, model = provider.strip(), model.strip()
+    if not provider or not model:
+        return None, None
+    return provider, model
+
+
+# 标准提供者模板（预设名称、默认地址、协议、已知模型列表）
 PROVIDER_TEMPLATES = {
     "deepseek": {
         "name": "DeepSeek",
         "base_url": "https://api.deepseek.com/v1",
+        "protocol": "openai",
         "models": [
             {"id": "deepseek-chat", "name": "DeepSeek Chat"},
             {"id": "deepseek-reasoner", "name": "DeepSeek Reasoner"},
@@ -28,15 +71,36 @@ PROVIDER_TEMPLATES = {
     "openai": {
         "name": "OpenAI",
         "base_url": "https://api.openai.com/v1",
+        "protocol": "openai",
         "models": [
             {"id": "gpt-4o", "name": "GPT-4o"},
             {"id": "gpt-4o-mini", "name": "GPT-4o Mini"},
             {"id": "gpt-4-turbo", "name": "GPT-4 Turbo"},
         ]
     },
+    "anthropic": {
+        "name": "Anthropic Claude",
+        "base_url": "https://api.anthropic.com",
+        "protocol": "anthropic",
+        "models": [
+            {"id": "claude-3-5-sonnet-20241022", "name": "Claude 3.5 Sonnet"},
+            {"id": "claude-3-5-haiku-20241022", "name": "Claude 3.5 Haiku"},
+        ]
+    },
+    "google": {
+        "name": "Google Gemini",
+        "base_url": "https://generativelanguage.googleapis.com",
+        "protocol": "gemini",
+        "models": [
+            {"id": "gemini-1.5-pro", "name": "Gemini 1.5 Pro"},
+            {"id": "gemini-1.5-flash", "name": "Gemini 1.5 Flash"},
+            {"id": "gemini-2.0-flash", "name": "Gemini 2.0 Flash"},
+        ]
+    },
     "zhipu": {
         "name": "智谱清言",
         "base_url": "https://open.bigmodel.cn/api/paas/v4",
+        "protocol": "openai",
         "models": [
             {"id": "glm-4-flash", "name": "GLM-4 Flash"},
             {"id": "glm-4", "name": "GLM-4"},
@@ -46,6 +110,7 @@ PROVIDER_TEMPLATES = {
     "moonshot": {
         "name": "Moonshot",
         "base_url": "https://api.moonshot.cn/v1",
+        "protocol": "openai",
         "models": [
             {"id": "moonshot-v1-8k", "name": "Moonshot v1 8K"},
             {"id": "moonshot-v1-32k", "name": "Moonshot v1 32K"},
@@ -54,6 +119,7 @@ PROVIDER_TEMPLATES = {
     "qwen": {
         "name": "通义千问",
         "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "protocol": "openai",
         "models": [
             {"id": "qwen-turbo", "name": "Qwen Turbo"},
             {"id": "qwen-plus", "name": "Qwen Plus"},
@@ -63,6 +129,7 @@ PROVIDER_TEMPLATES = {
     "siliconflow": {
         "name": "SiliconFlow",
         "base_url": "https://api.siliconflow.cn/v1",
+        "protocol": "openai",
         "models": [
             {"id": "Qwen/Qwen2.5-7B-Instruct", "name": "Qwen2.5-7B-Instruct"},
             {"id": "Qwen/Qwen2.5-14B-Instruct", "name": "Qwen2.5-14B-Instruct"},
@@ -104,30 +171,119 @@ PORT_SETTINGS_DEFAULTS = {
 class ProviderService:
     """模型提供者配置管理服务"""
 
-    def __init__(self):
+    def __init__(self, providers_path=None, server_providers_path=None):
+        # 允许注入自定义配置路径（便于单元测试；默认使用仓库内 config/ 下的文件）
+        self._providers_path = Path(providers_path) if providers_path else PROVIDERS_CONFIG_PATH
+        self._server_providers_path = (
+            Path(server_providers_path) if server_providers_path else SERVER_PROVIDERS_CONFIG_PATH
+        )
         self._providers: Dict[str, Dict] = {}
+        # providers.yaml 顶层 default_model（provider:model），env DEFAULT_MODEL 优先级更高
+        self._config_default_model: str = ""
+        # 仅这些 key 会被写回 providers.yaml；server-providers.yml 派生的条目默认不落盘，
+        # 避免把 server-providers.yml 中的真实 Key 意外写入可提交的 providers.yaml。
+        self._persisted_keys: set = set()
         self._load_providers()
 
     def _load_providers(self):
-        """从 providers.yaml 加载提供者配置"""
-        path = PROVIDERS_CONFIG_PATH
+        """加载提供者配置。
+
+        合并优先级（高 → 低）：
+            1. providers.yaml（显式配置，最高优先级）
+            2. server-providers.yml（OpenMAIC 兼容层，camelCase，不覆盖同名项）
+            3. 内置 PROVIDER_TEMPLATES（仅用于 UI 模板，不在加载阶段参与合并）
+        """
+        providers: Dict[str, Dict] = {}
+        default_model = ""
+        path = self._providers_path
         if path.exists():
             try:
                 with open(path, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f) or {}
-                self._providers = data.get("providers", {})
-                logger.info(f"已加载 {len(self._providers)} 个提供者配置")
+                providers = data.get("providers", {}) or {}
+                default_model = str(data.get("default_model", "") or "")
+                logger.info(f"已加载 {len(providers)} 个提供者配置")
             except Exception as e:
                 logger.error(f"加载提供者配置失败: {e}")
-                self._providers = {}
-        else:
-            self._providers = {}
+                providers = {}
+        # 归一化：补齐 protocol（缺省 openai）
+        for cfg in providers.values():
+            if isinstance(cfg, dict) and not cfg.get("protocol"):
+                cfg["protocol"] = DEFAULT_PROTOCOL
+
+        # 合并 server-providers.yml（不覆盖 providers.yaml 中已显式配置的同名项）
+        server_providers = self._load_server_providers()
+        merged_keys = set()
+        for key, cfg in server_providers.items():
+            if key in providers:
+                continue
+            providers[key] = cfg
+            merged_keys.add(key)
+        if merged_keys:
+            logger.info(f"已从 server-providers.yml 合并 {len(merged_keys)} 个提供者")
+
+        self._providers = providers
+        self._config_default_model = default_model
+        # 仅 server 派生项不落盘；providers.yaml 中已有的同名项仍需持久化
+        self._persisted_keys = set(providers.keys()) - merged_keys
+
+    def _load_server_providers(self) -> Dict[str, Dict]:
+        """读取 config/server-providers.yml（OpenMAIC 兼容格式，camelCase）。
+
+        将 camelCase 的 apiKey/baseUrl/models 映射为内部 snake_case 条目，
+        protocol 由段名推断（openai→openai、anthropic→anthropic、
+        google→gemini、azure→openai）。
+        """
+        result: Dict[str, Dict] = {}
+        path = self._server_providers_path
+        if not path.exists():
+            return result
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+        except Exception as e:
+            logger.error(f"加载 server-providers.yml 失败: {e}")
+            return result
+
+        raw = data.get("providers", {}) or {}
+        for section, cfg in raw.items():
+            if not isinstance(cfg, dict):
+                continue
+            protocol = SECTION_PROTOCOL_MAP.get(str(section).lower(), DEFAULT_PROTOCOL)
+            result[section] = {
+                "name": cfg.get("name") or section,
+                "base_url": cfg.get("baseUrl") or cfg.get("base_url") or "",
+                "api_key": cfg.get("apiKey") or cfg.get("api_key") or "",
+                "enabled": bool(cfg.get("enabled", True)),
+                "models": self._normalize_server_models(cfg.get("models")),
+                "protocol": protocol,
+            }
+        return result
+
+    @staticmethod
+    def _normalize_server_models(models) -> List[Dict]:
+        """把 server-providers.yml 的 models 归一化为 [{"id","name"}] 结构。
+
+        支持字符串数组（OpenMAIC 的 azure.models: [deployment-name]）与对象数组。
+        """
+        normalized: List[Dict] = []
+        for m in models or []:
+            if isinstance(m, str):
+                normalized.append({"id": m, "name": m})
+            elif isinstance(m, dict):
+                mid = m.get("id") or m.get("name") or m.get("model") or ""
+                if mid:
+                    normalized.append({"id": mid, "name": m.get("name") or mid})
+        return normalized
 
     def _save_providers(self):
-        """保存提供者配置到 providers.yaml"""
-        path = PROVIDERS_CONFIG_PATH
+        """保存提供者配置到 providers.yaml（仅落盘显式配置项，不含 server 派生项）"""
+        path = self._providers_path
         path.parent.mkdir(parents=True, exist_ok=True)
-        data = {"providers": self._providers}
+        persisted = {k: self._providers[k] for k in self._persisted_keys if k in self._providers}
+        data = {"providers": persisted}
+        if self._config_default_model:
+            data["default_model"] = self._config_default_model
         try:
             with open(path, "w", encoding="utf-8") as f:
                 yaml.dump(data, f, allow_unicode=True, default_flow_style=False)
@@ -146,6 +302,7 @@ class ProviderService:
                 "enabled": cfg.get("enabled", False),
                 "has_api_key": bool(cfg.get("api_key", "")),
                 "local": bool(cfg.get("local", False)),   # 本地 OpenAI 兼容容器（无需 API Key）
+                "protocol": cfg.get("protocol", DEFAULT_PROTOCOL),
                 "models": cfg.get("models", []),
             })
         return result
@@ -154,16 +311,21 @@ class ProviderService:
         """获取可用的提供者模板列表"""
         return [
             {"key": key, "name": info["name"], "base_url": info["base_url"],
+             "protocol": info.get("protocol", DEFAULT_PROTOCOL),
              "models": info["models"]}
             for key, info in PROVIDER_TEMPLATES.items()
         ]
 
     def add_or_update_provider(self, key: str, name: str, base_url: str,
                                 api_key: str, enabled: bool = True,
-                                models: Optional[List[Dict]] = None) -> Dict:
+                                models: Optional[List[Dict]] = None,
+                                protocol: str = DEFAULT_PROTOCOL) -> Dict:
         """添加或更新提供者配置"""
         if not key or not name:
             return {"success": False, "error": "提供者标识和名称不能为空"}
+        if protocol not in VALID_PROTOCOLS:
+            return {"success": False,
+                    "error": f"无效协议，可选: {', '.join(VALID_PROTOCOLS)}"}
 
         # 如果传入了 models，使用传入的；否则使用模板默认
         if models is None:
@@ -176,7 +338,10 @@ class ProviderService:
             "api_key": api_key,
             "enabled": enabled,
             "models": models,
+            "protocol": protocol,
         }
+        # 显式配置项需落盘
+        self._persisted_keys.add(key)
         self._save_providers()
         return {"success": True, "message": f"提供者 {name} 已保存"}
 
@@ -186,6 +351,7 @@ class ProviderService:
             return {"success": False, "error": "提供者不存在"}
         name = self._providers[key].get("name", key)
         del self._providers[key]
+        self._persisted_keys.discard(key)
         self._save_providers()
         return {"success": True, "message": f"提供者 {name} 已删除"}
 
@@ -201,8 +367,26 @@ class ProviderService:
             "has_api_key": bool(cfg.get("api_key", "")),
             "enabled": cfg.get("enabled", False),
             "local": bool(cfg.get("local", False)),
+            "protocol": cfg.get("protocol", DEFAULT_PROTOCOL),
             "models": cfg.get("models", []),
         }
+
+    def get_default_model(self):
+        """解析默认模型（`provider:model` 约定）。
+
+        优先级（高 → 低）：
+            1. 环境变量 DEFAULT_MODEL
+            2. providers.yaml 顶层 default_model 字段
+        两者均未配置时返回 (None, None)，调用方应回退到既有逻辑：
+            framework.yaml 的 ollama.default_model / port_model_mapping（按请求端口解析）。
+        只按第一个冒号切分，模型名中的冒号会被保留。
+        """
+        for raw in (os.environ.get("DEFAULT_MODEL", ""), self._config_default_model):
+            if raw and str(raw).strip():
+                provider, model = parse_default_model(str(raw))
+                if provider and model:
+                    return provider, model
+        return None, None
 
     def get_provider_api_key(self, key: str) -> str:
         """获取指定提供者的 API Key（内部使用）"""

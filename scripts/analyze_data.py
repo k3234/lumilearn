@@ -8,16 +8,13 @@ import csv
 import json
 import os
 import sys
-from collections import defaultdict, Counter
+from collections import Counter, defaultdict
 from datetime import datetime
 
 # 添加项目路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from lumilearn_shared import (
-    MASTER_CSV, read_existing_master, ANIMATION_OUTPUT_DIR,
-    FLASHCARDS_CSV, LEARNING_SESSIONS_CSV
-)
+from lumilearn_shared import ANIMATION_OUTPUT_DIR, FLASHCARDS_CSV, LEARNING_SESSIONS_CSV, read_existing_master
 
 
 def analyze_master_data() -> dict:
@@ -25,18 +22,18 @@ def analyze_master_data() -> dict:
     data = read_existing_master()
     if not data:
         return {"error": "No data found"}
-    
+
     subject_count = Counter(row["subject"] for row in data)
     grade_count = Counter(row["grade"] for row in data)
     difficulty_count = Counter(row["difficulty"] for row in data)
     type_count = Counter(row["type"] for row in data)
-    
+
     # 按学科统计章节
     subjects_chapters = defaultdict(set)
     for row in data:
         if row["subject"] and row["chapter"]:
             subjects_chapters[row["subject"]].add(row["chapter"])
-    
+
     return {
         "total_records": len(data),
         "subject_distribution": dict(subject_count),
@@ -50,14 +47,14 @@ def analyze_master_data() -> dict:
 def analyze_other_data() -> dict:
     """分析其他数据文件"""
     results = {}
-    
+
     # 动画文件
     if os.path.exists(ANIMATION_OUTPUT_DIR):
-        anim_files = [f for f in os.listdir(ANIMATION_OUTPUT_DIR) 
+        anim_files = [f for f in os.listdir(ANIMATION_OUTPUT_DIR)
                      if f.endswith('.py')]
         results["animation_count"] = len(anim_files)
         results["animation_files"] = anim_files[:10]  # 前10个
-    
+
     # 记忆卡片
     if os.path.exists(FLASHCARDS_CSV):
         try:
@@ -66,7 +63,7 @@ def analyze_other_data() -> dict:
                 results["flashcard_count"] = len(cards)
         except:
             results["flashcard_count"] = 0
-    
+
     # 学习会话
     if os.path.exists(LEARNING_SESSIONS_CSV):
         try:
@@ -75,17 +72,17 @@ def analyze_other_data() -> dict:
                 results["session_count"] = len(sessions)
         except:
             results["session_count"] = 0
-    
+
     return results
 
 
 def generate_html_report(analysis: dict, other_data: dict) -> str:
     """生成HTML格式的报告"""
-    
+
     subject_html = ""
     for subject, count in analysis.get("subject_distribution", {}).items():
         subject_html += f"<tr><td>{subject}</td><td>{count}</td></tr>"
-    
+
     html = f"""
 <!DOCTYPE html>
 <html>
@@ -157,26 +154,26 @@ def main():
     print("=" * 60)
     print("📊 LumiLearn 数据分析")
     print("=" * 60)
-    
+
     print("\n📝 分析主数据库...")
     analysis = analyze_master_data()
-    
+
     print(f"   总记录数: {analysis.get('total_records', 0)}")
     print(f"   学科分布: {analysis.get('subject_distribution', {})}")
-    
+
     print("\n📝 分析其他数据...")
     other_data = analyze_other_data()
-    
+
     # 生成HTML报告
     print("\n📄 生成HTML报告...")
     html_report = generate_html_report(analysis, other_data)
-    
+
     report_file = "project_status_report.html"
     with open(report_file, "w", encoding="utf-8") as f:
         f.write(html_report)
-    
+
     print(f"   ✓ 报告已保存到: {report_file}")
-    
+
     # 保存JSON数据
     json_data = {
         "generated_at": datetime.now().isoformat(),
@@ -185,7 +182,7 @@ def main():
     }
     with open("project_status.json", "w", encoding="utf-8") as f:
         json.dump(json_data, f, ensure_ascii=False, indent=2)
-    
+
     print("\n🎉 分析完成！")
     print("=" * 60)
 

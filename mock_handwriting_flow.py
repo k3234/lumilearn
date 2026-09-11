@@ -13,7 +13,8 @@
 运行：
   python mock_handwriting_flow.py
 """
-import sys, os, json, random, time
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 

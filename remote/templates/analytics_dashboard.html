@@ -1,166 +1,332 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LumiLearn · 学习分析</title>
+<title>LumiLearn · 学情分析</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
 <style>
-  :root {
-    --bg:#0C1015; --surface:#151B24; --surface2:#1C2431; --border:#26303F;
-    --text:#EDF1F6; --sub:#9AA6B7; --faint:#66717F;
-    --accent:#E8A33D; --mint:#46C08A; --sky:#5BA8E8; --danger:#EF6C6C;
+  .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  .content-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .content-grid.wide{grid-template-columns:1.15fr .85fr}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .panel-head h3{font-size:15px;font-weight:600}
+  .panel-head .support{font-size:12px;color:var(--color-text-muted)}
+  .empty{text-align:center;color:var(--color-text-muted);font-size:13px;padding:26px 0}
+  .topbar .tools{display:flex;align-items:center;gap:10px}
+  select,input[type=text]{height:34px;border-radius:8px;border:1px solid var(--color-border);
+    background:var(--card);color:var(--color-text);padding:0 10px;font-size:13px}
+  /* 纯 CSS 横向条形（趋势） */
+  .bar-list{display:flex;flex-direction:column}
+  .bar-row{display:flex;align-items:center;gap:10px;padding:7px 0}
+  .bar-row .bar-date{width:52px;flex:none;color:var(--color-text-muted)}
+  .bar-row .bar{flex:1;height:8px;background:var(--muted);border-radius:99px;overflow:hidden}
+  .bar-row .bar>i{display:block;height:100%;background:var(--primary);border-radius:99px}
+  .bar-row .bar-val{width:104px;text-align:right;font-size:12px;color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+  /* 知识点掌握度分布 */
+  .heat{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px}
+  .cell{border-radius:var(--radius-sm);padding:12px 10px;text-align:center;
+    border:1px solid var(--color-border);background:var(--muted)}
+  .cell b{display:block;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .cell span{display:block;font-size:11px;color:var(--color-text-muted);margin-top:3px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cell.hi{background:var(--success-subtle);border-color:var(--success-border)}
+  .cell.hi b{color:var(--success-text)}
+  .cell.mid{background:var(--warning-subtle);border-color:var(--warning-border)}
+  .cell.mid b{color:var(--warning-text)}
+  .cell.lo{background:var(--destructive-subtle);border-color:var(--destructive-border)}
+  .cell.lo b{color:var(--destructive-text)}
+  @media (max-width:1080px){
+    .metrics-grid{grid-template-columns:repeat(2,1fr)}
+    .content-grid,.content-grid.wide{grid-template-columns:1fr}
   }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--bg); color:var(--text); font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif; min-height:100vh; }
-  body::before { content:""; position:fixed; inset:0; z-index:-1; background:radial-gradient(720px 420px at 88% -4%, rgba(232,163,61,.10), transparent 62%), var(--bg); }
-  .wrap { max-width:1180px; margin:0 auto; padding:32px 28px 64px; }
-  .kicker { font-family:"SF Mono",Consolas,monospace; font-size:12px; color:var(--accent); letter-spacing:.12em; margin-bottom:6px; }
-  h1 { font-size:32px; font-weight:600; font-family:"Noto Serif SC","Songti SC",serif; }
-  .sub { color:var(--sub); margin-top:8px; font-size:14px; }
-  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:26px; }
-  .stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
-  .stat b { display:block; font-size:28px; color:var(--accent); font-family:"SF Mono",Consolas,monospace; }
-  .stat span { font-size:12px; color:var(--faint); }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }
-  .card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px; box-shadow:0 8px 24px rgba(0,0,0,.35); }
-  .card h2 { font-size:16px; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
-  .card h2 .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
-  .faint { color:var(--faint); }
-  .empty { padding:32px; text-align:center; color:var(--faint); }
-  svg text { fill:var(--sub); font-size:11px; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  th { text-align:left; color:var(--faint); font-weight:500; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12px; }
-  td { padding:9px 10px; border-bottom:1px solid rgba(38,48,63,.6); }
-  tr:hover td { background:var(--surface2); }
-  .tag { display:inline-block; padding:2px 9px; border-radius:999px; font-size:11px; }
-  .tag.good { background:rgba(70,192,138,.12); color:var(--mint); }
-  .tag.mid { background:rgba(232,163,61,.13); color:var(--accent); }
-  .tag.bad { background:rgba(239,108,108,.12); color:var(--danger); }
-  .weak { display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid rgba(38,48,63,.6); font-size:13px; color:var(--sub); }
-  .weak:last-child { border-bottom:none; }
-  .weak .c { margin-left:auto; font-family:"SF Mono",Consolas,monospace; color:var(--accent); }
-  .heat { display:grid; grid-template-columns:repeat(auto-fill,minmax(118px,1fr)); gap:10px; }
-  .cell { border-radius:10px; padding:12px 10px; text-align:center; border:1px solid var(--border); }
-  .cell b { font-size:18px; font-family:"SF Mono",Consolas,monospace; }
-  .cell span { display:block; font-size:11px; color:var(--sub); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  @media (max-width:900px){ .grid{grid-template-columns:1fr;} .stats{grid-template-columns:repeat(2,1fr);} }
-  @media (max-width:480px){ .stats{grid-template-columns:repeat(2,1fr);} }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <p class="kicker">LEARNING ANALYTICS · LOCAL-FIRST</p>
-  <h1>学习分析仪表盘</h1>
-  <p class="sub">基于共享数据库实时统计：掌握度趋势、学科对比、薄弱点与知识点掌握情况。</p>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow" id="todayLine">学习分析 · 本地数据</div>
+        <h1>学情分析</h1>
+        <p class="muted small mt-1">基于共享数据库实时统计：掌握度趋势、学科对比、薄弱点与知识点掌握情况。</p>
+      </div>
+      <div class="tools">
+        <span class="pill" id="accPill">答题正确率：—</span>
+        <button class="btn sm" id="refreshBtn" type="button"><i class="icon icon-16 icon-chevrons-down-up"></i> 刷新</button>
+      </div>
+    </div>
 
-  <div class="stats" id="stats"></div>
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="eyebrow">学生数</div>
+        <div class="metric-value" id="mStudents">—</div>
+        <div class="delta muted small">role = student</div>
+      </div>
+      <div class="metric-card">
+        <div class="eyebrow">学习报告</div>
+        <div class="metric-value" id="mReports">—</div>
+        <div class="delta muted small" id="mReportsSub">平均报告分 —</div>
+      </div>
+      <div class="metric-card">
+        <div class="eyebrow">总答题量</div>
+        <div class="metric-value" id="mAnswers">—</div>
+        <div class="delta muted small" id="mAnswersSub">错题 —</div>
+      </div>
+      <div class="metric-card">
+        <div class="eyebrow">平均掌握度</div>
+        <div class="metric-value" id="mMastery">—</div>
+        <div class="delta muted small">progress 平均掌握度</div>
+      </div>
+    </section>
 
-  <div class="grid">
-    <div class="card"><h2><span class="dot"></span>掌握度趋势</h2><div id="trend"></div></div>
-    <div class="card"><h2><span class="dot"></span>学科掌握度</h2><div id="subjects"></div></div>
-    <div class="card"><h2><span class="dot"></span>薄弱点排行</h2><div id="weak"></div></div>
-    <div class="card"><h2><span class="dot"></span>知识点掌握度</h2><div id="concepts"></div></div>
-  </div>
+    <section class="content-grid wide">
+      <div class="card">
+        <div class="panel-head">
+          <div><h3>掌握度趋势</h3><div class="support">近 14 天学习报告平均分</div></div>
+          <span class="pill" id="trendHint">—</span>
+        </div>
+        <div class="bar-list" id="trendList"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="panel-head">
+          <div><h3>学科分布</h3><div class="support">按报告数排序的平均分</div></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>学科</th><th>平均分</th><th style="width:72px">报告数</th></tr></thead>
+            <tbody id="subjectBody"><tr><td colspan="3"><div class="empty">加载中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-  <div class="card" style="margin-top:18px">
-    <h2><span class="dot"></span>最近学习报告</h2>
-    <div style="overflow-x:auto"><table>
-      <thead><tr><th>主题</th><th>学生</th><th>时间</th><th>掌握度</th></tr></thead>
-      <tbody id="recent"></tbody>
-    </table></div>
-  </div>
+    <section class="content-grid">
+      <div class="card">
+        <div class="panel-head">
+          <div><h3>薄弱知识点</h3><div class="support">平均掌握度 &lt; 60%</div></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>知识点</th><th>掌握度</th><th style="width:88px">涉及学生</th></tr></thead>
+            <tbody id="weaknodeBody"><tr><td colspan="3"><div class="empty">加载中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="panel-head">
+          <div><h3>薄弱点排行</h3><div class="support">报告薄弱点与错题专题</div></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th style="width:72px">等级</th><th>薄弱点</th><th style="width:64px">次数</th></tr></thead>
+            <tbody id="weakpointBody"><tr><td colspan="3"><div class="empty">加载中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card mt-2">
+      <div class="panel-head">
+        <div><h3>知识点掌握度分布</h3><div class="support">按平均掌握度升序（来自 progress）</div></div>
+        <span class="pill" id="masteryHint">—</span>
+      </div>
+      <div class="heat" id="masteryGrid"><div class="empty">加载中…</div></div>
+    </section>
+
+    <section class="card mt-2">
+      <div class="panel-head">
+        <div><h3>最近学习报告</h3><div class="support">最新生成的报告记录</div></div>
+        <span class="pill" id="recentHint">—</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>主题</th><th>学生</th><th>时间</th><th>掌握度</th></tr></thead>
+          <tbody id="recentBody"><tr><td colspan="4"><div class="empty">加载中…</div></td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
 </div>
 
+<script src="/static/ui/teacher.js"></script>
 <script>
-function $(id){return document.getElementById(id);}
-async function get(p){const r=await fetch(p);const j=await r.json();return j.data||[];}
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+(function () {
+  var esc = LLT.esc, num = LLT.num;
 
-async function loadStats(){
-  const d=await get('/api/dashboard/overview');
-  const acc=d.answers?Math.round((d.answers-d.wrongAnswers)/d.answers*100):0;
-  $('stats').innerHTML=[
-    ['学生数',d.students],['学习报告',d.reports],['平均掌握度',d.avgMastery+'%'],['答题正确率',acc+'%']
-  ].map(function(x){return '<div class="stat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>';}).join('');
-}
+  function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  function fmtPct(v, digits) {
+    var n = Number(v);
+    if (!isFinite(n)) return "—";
+    return n.toFixed(digits == null ? 0 : digits) + "%";
+  }
+  /* progress.mastery 为 0~1 比率，展示前归一为百分数；>1 视为已是百分数 */
+  function ratioPct(v) {
+    var n = Number(v);
+    if (!isFinite(n)) return null;
+    return (n > 0 && n <= 1) ? n * 100 : n;
+  }
+  function scorePill(v) {
+    var n = Number(v) || 0;
+    var cls = n >= 80 ? "green" : (n >= 60 ? "amber" : "red");
+    return '<span class="pill ' + cls + '">' + fmtPct(n) + '</span>';
+  }
+  function emptyRow(colspan, text) {
+    return '<tr><td colspan="' + colspan + '"><div class="empty">' + text + '</div></td></tr>';
+  }
 
-async function loadTrend(){
-  const d=await get('/api/dashboard/trend?limit=14');
-  const box=$('trend');
-  if(!d.length){box.innerHTML='<div class="empty">暂无报告数据</div>';return;}
-  const W=520,H=170,pad=30;
-  const max=Math.max.apply(null,d.map(function(x){return x.avg;}))||100;
-  const min=Math.min.apply(null,d.map(function(x){return x.avg;}))||0;
-  const span=(max-min)||1;
-  const x=function(i){return pad+(W-pad*2)*i/(d.length-1);};
-  const y=function(v){return H-pad-((v-min)/span)*(H-pad*2);};
-  const pts=d.map(function(p,i){return x(i)+','+y(p.avg);}).join(' ');
-  let poly='<svg viewBox="0 0 '+W+' '+H+'" width="100%" style="max-width:520px">';
-  poly+='<polyline fill="none" stroke="#E8A33D" stroke-width="2.5" points="'+pts+'"/>';
-  d.forEach(function(p,i){
-    if(i%Math.ceil(d.length/7)===0||i===d.length-1){
-      poly+='<circle cx="'+x(i)+'" cy="'+y(p.avg)+'" r="3.5" fill="#E8A33D"/>';
-      poly+='<text x="'+x(i)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(String(p.date).slice(5))+'</text>';
-    }
+  function placeholders() {
+    ["mStudents", "mReports", "mAnswers", "mMastery"].forEach(function (id) { setText(id, "—"); });
+    setText("mReportsSub", "平均报告分 —");
+    setText("mAnswersSub", "错题 —");
+    setText("accPill", "答题正确率：—");
+    document.getElementById("trendList").innerHTML = '<div class="empty">未登录或无数据</div>';
+    document.getElementById("subjectBody").innerHTML = emptyRow(3, "未登录或无数据");
+    document.getElementById("weaknodeBody").innerHTML = emptyRow(3, "未登录或无数据");
+    document.getElementById("weakpointBody").innerHTML = emptyRow(3, "未登录或无数据");
+    document.getElementById("masteryGrid").innerHTML = '<div class="empty">未登录或无数据</div>';
+    document.getElementById("recentBody").innerHTML = emptyRow(4, "未登录或无数据");
+    setText("trendHint", "—"); setText("masteryHint", "—"); setText("recentHint", "—");
+  }
+
+  /* ---- 概览指标 ---- */
+  function loadOverview() {
+    return LLT.get("/api/dashboard/overview").then(function (j) {
+      var d = LLT.ok(j) ? (LLT.val(j) || {}) : {};
+      setText("mStudents", d.students == null ? "—" : d.students);
+      setText("mReports", d.reports == null ? "—" : d.reports);
+      setText("mReportsSub", "平均报告分 " + (d.avgReportScore == null ? "—" : d.avgReportScore));
+      setText("mAnswers", d.answers == null ? "—" : d.answers);
+      setText("mAnswersSub", "错题 " + (d.wrongAnswers == null ? "—" : d.wrongAnswers) + " 题");
+
+      var m = ratioPct(d.avgMastery);
+      setText("mMastery", m == null ? "—" : fmtPct(m));
+
+      var acc = null;
+      if (d.answers) acc = Math.round((d.answers - d.wrongAnswers) / d.answers * 100);
+      setText("accPill", "答题正确率：" + (acc == null ? "—" : acc + "%"));
+    });
+  }
+
+  /* ---- 掌握度趋势（纯 CSS 横向条形） ---- */
+  function loadTrend() {
+    return LLT.get("/api/dashboard/trend?limit=14").then(function (j) {
+      var rows = LLT.list(j);
+      var box = document.getElementById("trendList");
+      if (!rows.length) { box.innerHTML = '<div class="empty">暂无报告数据</div>'; setText("trendHint", "—"); return; }
+      box.innerHTML = rows.map(function (p) {
+        var v = num(p.avg);
+        var w = Math.max(0, Math.min(100, v));
+        return '<div class="bar-row"><span class="bar-date mono small">' + esc(String(p.date || "").slice(5) || "—") + '</span>' +
+          '<span class="bar"><i style="width:' + w.toFixed(1) + '%"></i></span>' +
+          '<span class="bar-val">' + fmtPct(v) + ' · ' + num(p.count) + ' 份</span></div>';
+      }).join("");
+      setText("trendHint", rows.length + " 天");
+    });
+  }
+
+  /* ---- 学科分布 ---- */
+  function loadSubjects() {
+    return LLT.get("/api/dashboard/subjects").then(function (j) {
+      var rows = LLT.list(j);
+      var body = document.getElementById("subjectBody");
+      if (!rows.length) { body.innerHTML = emptyRow(3, "暂无学科数据"); return; }
+      body.innerHTML = rows.map(function (s) {
+        return '<tr><td><b style="font-size:13px">' + esc(s.subject || "综合") + '</b></td>' +
+          '<td>' + scorePill(s.avg) + '</td>' +
+          '<td class="muted">' + num(s.count) + '</td></tr>';
+      }).join("");
+    });
+  }
+
+  /* ---- 薄弱知识点（weaknodes，avg 为 0~1） ---- */
+  function loadWeakNodes() {
+    return LLT.get("/api/dashboard/weaknodes?limit=10").then(function (j) {
+      var rows = LLT.list(j);
+      var body = document.getElementById("weaknodeBody");
+      if (!rows.length) { body.innerHTML = emptyRow(3, "暂无薄弱知识点（掌握度均 ≥ 60%）"); return; }
+      body.innerHTML = rows.map(function (w) {
+        var v = ratioPct(w.avg);
+        var cls = (v != null && v >= 45) ? "amber" : "red";
+        return '<tr><td>' + esc(w.name || w.node || "—") + '</td>' +
+          '<td><span class="pill ' + cls + '">' + (v == null ? "—" : fmtPct(v)) + '</span></td>' +
+          '<td class="muted">' + num(w.students) + ' 人</td></tr>';
+      }).join("");
+    });
+  }
+
+  /* ---- 薄弱点排行 ---- */
+  function loadWeakPoints() {
+    return LLT.get("/api/dashboard/weakpoints?limit=8").then(function (j) {
+      var rows = LLT.list(j);
+      var body = document.getElementById("weakpointBody");
+      if (!rows.length) { body.innerHTML = emptyRow(3, "暂无薄弱点数据"); return; }
+      body.innerHTML = rows.map(function (w) {
+        var sev = String(w.severity || "低");
+        var cls = sev === "高" ? "red" : (sev === "中" ? "amber" : "");
+        return '<tr><td><span class="pill ' + cls + '">' + esc(sev) + '</span></td>' +
+          '<td>' + esc(w.text || "—") + '</td>' +
+          '<td class="muted">×' + num(w.count) + '</td></tr>';
+      }).join("");
+    });
+  }
+
+  /* ---- 知识点掌握度分布（mastery，avg 为 0~1） ---- */
+  function loadMastery() {
+    return LLT.get("/api/dashboard/mastery").then(function (j) {
+      var rows = LLT.list(j);
+      var box = document.getElementById("masteryGrid");
+      if (!rows.length) { box.innerHTML = '<div class="empty">暂无知识点掌握数据（学习后生成）</div>'; setText("masteryHint", "—"); return; }
+      box.innerHTML = rows.map(function (c) {
+        var v = ratioPct(c.avg);
+        var cls = (v != null && v >= 70) ? "hi" : (v != null && v >= 45 ? "mid" : "lo");
+        return '<div class="cell ' + cls + '" title="尝试 ' + num(c.attempts) + ' 次">' +
+          '<b>' + (v == null ? "—" : fmtPct(v)) + '</b>' +
+          '<span>' + esc(c.name || c.node || "—") + '</span></div>';
+      }).join("");
+      setText("masteryHint", rows.length + " 个知识点");
+    });
+  }
+
+  /* ---- 最近学习报告 ---- */
+  function loadRecent() {
+    return LLT.get("/api/dashboard/recent?limit=10").then(function (j) {
+      var rows = LLT.list(j);
+      var body = document.getElementById("recentBody");
+      if (!rows.length) { body.innerHTML = emptyRow(4, "暂无学习报告"); setText("recentHint", "—"); return; }
+      body.innerHTML = rows.map(function (r) {
+        return '<tr><td>' + esc(r.topic || "—") + '</td>' +
+          '<td>' + esc(r.user || "—") + '</td>' +
+          '<td class="mono small muted">' + esc(LLT.fmtDate(r.date)) + '</td>' +
+          '<td>' + scorePill(r.score) + '</td></tr>';
+      }).join("");
+      setText("recentHint", rows.length + " 条");
+    });
+  }
+
+  function loadAll() {
+    return Promise.all([
+      loadOverview(), loadTrend(), loadSubjects(), loadWeakNodes(),
+      loadWeakPoints(), loadMastery(), loadRecent()
+    ].map(function (p) { return p.catch(function () { return null; }); }));
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", function () {
+    loadAll(); LLT.toast("已刷新");
   });
-  poly+='<text x="8" y="'+y(d[d.length-1].avg)+'" fill="#46C08A">'+d[d.length-1].avg+'%</text>';
-  poly+='</svg>';
-  box.innerHTML=poly;
-}
 
-async function loadSubjects(){
-  const d=await get('/api/dashboard/subjects');
-  const box=$('subjects');
-  if(!d.length){box.innerHTML='<div class="empty">暂无数据</div>';return;}
-  const max=Math.max.apply(null,d.map(function(x){return x.avg;}))||100;
-  let html='<svg viewBox="0 0 520 180" width="100%" style="max-width:520px">';
-  const bw=Math.min(64,(520-60)/d.length);
-  d.forEach(function(s,i){
-    const h=Math.max(4,(s.avg/max)*110);
-    const x=40+i*(bw+18), y=150-h;
-    html+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="6" fill="#E8A33D" opacity="'+(0.55+0.45*i/d.length)+'"/>';
-    html+='<text x="'+(x+bw/2)+'" y="'+(y-6)+'" text-anchor="middle" fill="#46C08A">'+s.avg+'%</text>';
-    html+='<text x="'+(x+bw/2)+'" y="172" text-anchor="middle">'+esc(s.subject)+'</text>';
-    html+='<text x="'+(x+bw/2)+'" y="166" text-anchor="middle" font-size="9" fill="#66717F">'+s.count+'次</text>';
-  });
-  html+='</svg>';
-  box.innerHTML=html;
-}
+  LLT.boot({ nav: "analytics" }).then(function (user) {
+    var now = new Date();
+    var wd = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][now.getDay()];
+    setText("todayLine", "学习分析 · " + (now.getMonth() + 1) + "月" + now.getDate() + "日 " + wd);
+    if (!user) { placeholders(); return; }
+    loadAll();
+  }).catch(function () { placeholders(); });
 
-async function loadWeak(){
-  const d=await get('/api/dashboard/weakpoints?limit=8');
-  const box=$('weak');
-  if(!d.length){box.innerHTML='<div class="empty">暂无薄弱点数据</div>';return;}
-  box.innerHTML=d.map(function(w){
-    const cls=w.severity==='高'?'bad':w.severity==='中'?'mid':'good';
-    return '<div class="weak"><span class="tag '+cls+'">'+esc(w.severity)+'</span><span>'+esc(w.text)+'</span><span class="c">×'+w.count+'</span></div>';
-  }).join('');
-}
-
-async function loadConcepts(){
-  const d=await get('/api/dashboard/concepts');
-  const box=$('concepts');
-  if(!d.length){box.innerHTML='<div class="empty">暂无知识点数据（学习后生成）</div>';return;}
-  box.innerHTML='<div class="heat">'+d.map(function(c){
-    const col=c.value>=70?'rgba(70,192,138,.16)':c.value>=45?'rgba(232,163,61,.15)':'rgba(239,108,108,.14)';
-    const tx=c.value>=70?'#46C08A':c.value>=45?'#E8A33D':'#EF6C6C';
-    return '<div class="cell" style="background:'+col+'"><b style="color:'+tx+'">'+c.value+'%</b><span>'+esc(c.name)+'</span></div>';
-  }).join('')+'</div>';
-}
-
-async function loadRecent(){
-  const d=await get('/api/dashboard/recent?limit=10');
-  const box=$('recent');
-  if(!d.length){box.innerHTML='<tr><td colspan="4" class="empty">暂无学习报告</td></tr>';return;}
-  box.innerHTML=d.map(function(r){
-    const cls=r.score>=80?'good':r.score>=60?'mid':'bad';
-    return '<tr><td>'+esc(r.topic)+'</td><td>'+esc(r.user)+'</td><td class="faint">'+esc(r.date)+'</td>'+
-           '<td><span class="tag '+cls+'">'+r.score+'%</span></td></tr>';
-  }).join('');
-}
-
-loadStats(); loadTrend(); loadSubjects(); loadWeak(); loadConcepts(); loadRecent();
-setInterval(function(){loadStats();loadTrend();},30000);
+  setInterval(function () { loadOverview(); loadTrend(); }, 30000);
+})();
 </script>
 </body>
 </html>

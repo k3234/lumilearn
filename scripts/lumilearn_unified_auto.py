@@ -4,9 +4,15 @@
 整合：每日训练优化 + 题库补充 + AI数据优化 + 高标准入库
 每条数据：联网验证 + 多模型投票 + 推理过程记录
 """
-import os, sys, json, time, csv, requests, re, random
-from datetime import datetime, timedelta
+import csv
+import json
+import os
+import random
+import re
+from datetime import datetime
 from difflib import SequenceMatcher
+
+import requests
 
 OLLAMA_BASE = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 LL_DIR = r"<project-root>"
@@ -56,7 +62,7 @@ def call_ollama(model, prompt, timeout=90):
             json={"model":model,"prompt":prompt,"stream":False,"options":{"temperature":0.7}},timeout=timeout)
         if r.status_code == 200:
             return r.json().get("response","").strip()
-    except Exception as e:
+    except Exception:
         pass
     return None
 
@@ -67,7 +73,7 @@ def get_chapter_coverage():
     if os.path.exists(MASTER_CSV):
         with open(MASTER_CSV, "r", encoding="utf-8") as f:
             existing = list(csv.DictReader(f))
-    
+
     coverage = {}
     for ch in CHAPTER_POOL:
         key = f"{ch['subject']}_{ch['chapter']}"
@@ -77,7 +83,7 @@ def get_chapter_coverage():
             sec_count = sum(1 for r in existing if r.get("section","") == sec)
             if sec_count > 0:
                 coverage[key]["sections_done"].append(sec)
-    
+
     # 按数量排序，优先补充少的
     missing = sorted(coverage.items(), key=lambda x: x[1]["count"])
     return missing, len(existing)
@@ -109,7 +115,7 @@ def generate_question(chapter_info, section):
     raw = call_ollama("qwen2.5:7b", prompt, timeout=120)
     if not raw:
         return None
-    
+
     # 解析JSON
     for attempt in [raw, re.sub(r'```(?:json)?\s*([\s\S]*?)\s*```', r'\1', raw)]:
         try:
@@ -118,14 +124,14 @@ def generate_question(chapter_info, section):
                 return data
         except:
             pass
-    
+
     # 正则提取
     rec = {}
     for field in ["subject","grade","version","chapter","section","title","content","type","difficulty","tags","reasoning"]:
         m = re.search(rf'"{field}"\s*:\s*"((?:[^"\\]|\\.)*)"?', raw, re.DOTALL)
         if m:
             rec[field] = m.group(1).strip()
-    
+
     if rec.get("title") and rec.get("content") and len(rec["content"]) >= 100:
         return rec
     return None
@@ -181,7 +187,7 @@ def multi_model_vote(content, title):
         ("MiniMax-M2.5", "solo"),
         ("Kimi-K2.5", "solo"),
     ]
-    
+
     votes = {}
     for name, mtype in models:
         if mtype == "ollama":
@@ -196,9 +202,9 @@ def multi_model_vote(content, title):
             h = int(hashlib.md5((name + content[:50]).encode()).hexdigest(), 16)
             vote = "PASS" if (h % 10) < 7 else "FAIL"
             reasoning = f"{name}云端校验"
-        
+
         votes[name] = {"vote": vote, "reasoning": reasoning}
-    
+
     pass_count = sum(1 for v in votes.values() if v["vote"] == "PASS")
     passed = pass_count >= CFG["vote_threshold"]
     return votes, pass_count, len(votes), passed
@@ -208,11 +214,11 @@ def high_standard_pipeline(batch_size=5):
     """高标准入库流水线"""
     # 分析章节覆盖
     missing, total_existing = get_chapter_coverage()
-    
+
     print(f"\n  当前数据库: {total_existing} 条")
     print(f"  第一阶段目标: {CFG['phase1_target']:,} 条")
     print(f"  今日上限: {CFG['max_daily']} 条")
-    
+
     # 选择待补充章节（优先缺失多的）
     targets = []
     for key, info in missing[:batch_size * 2]:
@@ -224,29 +230,29 @@ def high_standard_pipeline(batch_size=5):
                     break
         if len(targets) >= batch_size:
             break
-    
+
     # 补充随机章节
     while len(targets) < batch_size:
         ch = random.choice(CHAPTER_POOL)
         sec = random.choice(ch["sections"])
         targets.append((ch, sec))
-    
+
     # 读取现有数据
     existing = []
     if os.path.exists(MASTER_CSV):
         with open(MASTER_CSV, "r", encoding="utf-8") as f:
             existing = list(csv.DictReader(f))
     existing_ids = set(r.get("id", "") for r in existing)
-    
+
     new_records = []
     reasoning_log = []
     stats = {"generated": 0, "cleaned": 0, "verified": 0, "voted": 0, "deduped": 0, "saved": 0}
-    
+
     for i, (ch, sec) in enumerate(targets):
         print(f"\n  [{i+1}/{batch_size}] {ch['chapter']} > {sec}")
-        
+
         # 1. 生成
-        print(f"    [1/5] 生成...", end=" ")
+        print("    [1/5] 生成...", end=" ")
         record = generate_question(ch, sec)
         stats["generated"] += 1
         if not record:
@@ -257,18 +263,18 @@ def high_standard_pipeline(batch_size=5):
         print(f"✅ {len(content)}字")
         reasoning_log.append({"step":"generate","status":"ok","title":record.get("title",""),
             "reasoning":record.get("reasoning",""),"length":len(content)})
-        
+
         # 2. 清洗
-        print(f"    [2/5] 清洗...", end=" ")
+        print("    [2/5] 清洗...", end=" ")
         if len(content) < CFG["min_content_len"]:
             print(f"❌ 过短({len(content)}字)")
             reasoning_log.append({"step":"clean","status":"fail","reason":f"过短{len(content)}字"})
             continue
         stats["cleaned"] += 1
-        print(f"✅")
-        
+        print("✅")
+
         # 3. 联网验证
-        print(f"    [3/5] 联网验证...", end=" ")
+        print("    [3/5] 联网验证...", end=" ")
         verify = web_verify(content, record.get("title", ""))
         if not verify.get("accurate", True):
             print(f"❌ {verify.get('issues',[])}")
@@ -278,9 +284,9 @@ def high_standard_pipeline(batch_size=5):
         print(f"✅ 置信度{verify.get('confidence',0):.0%}")
         reasoning_log.append({"step":"verify","status":"ok","confidence":verify.get("confidence",0),
             "reasoning":verify.get("reasoning","")})
-        
+
         # 4. 多模型投票
-        print(f"    [4/5] 多模型投票...", end=" ")
+        print("    [4/5] 多模型投票...", end=" ")
         votes, pass_n, total_n, passed = multi_model_vote(content, record.get("title", ""))
         if not passed:
             print(f"❌ {pass_n}/{total_n}")
@@ -289,16 +295,16 @@ def high_standard_pipeline(batch_size=5):
         stats["voted"] += 1
         print(f"✅ {pass_n}/{total_n}")
         reasoning_log.append({"step":"vote","status":"ok","summary":f"{pass_n}/{total_n}","detail":votes})
-        
+
         # 5. 去重
-        print(f"    [5/5] 去重...", end=" ")
+        print("    [5/5] 去重...", end=" ")
         is_dup = any(SequenceMatcher(None, content, r.get("content","")).ratio() >= CFG["dedup_threshold"] for r in existing)
         if is_dup:
             stats["deduped"] += 1
             print("❌ 重复")
             continue
         print("✅")
-        
+
         # 入库
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         base = f"LL{TODAY.replace('-','')}"
@@ -306,7 +312,7 @@ def high_standard_pipeline(batch_size=5):
         while f"{base}{idx:04d}" in existing_ids:
             idx += 1
         rid = f"{base}{idx:04d}"
-        
+
         rec = {
             "id": rid, "subject": record.get("subject", ch["subject"]),
             "grade": record.get("grade", ch["grade"]), "version": record.get("version", ch["version"]),
@@ -322,14 +328,14 @@ def high_standard_pipeline(batch_size=5):
         new_records.append(rec)
         stats["saved"] += 1
         print(f"    ✅ 入库: {rid}")
-    
+
     # 写入
     if new_records:
         with open(MASTER_CSV, "w", encoding="utf-8", newline="") as f:
             w = csv.DictWriter(f, fieldnames=FIELDS)
             w.writeheader()
             w.writerows(existing + new_records)
-    
+
     return stats, reasoning_log, new_records
 
 
@@ -338,14 +344,14 @@ def run_full_pipeline():
     print("=" * 70)
     print("灵学 LumiLearn - 统一全流程自动化（整合版）")
     print(f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"功能: 训练优化 + 题库补充 + AI数据优化")
-    print(f"标准: 联网验证 + 多模型投票 + 推理记录")
+    print("功能: 训练优化 + 题库补充 + AI数据优化")
+    print("标准: 联网验证 + 多模型投票 + 推理记录")
     print("=" * 70)
-    
+
     os.makedirs(REPORTS_DIR, exist_ok=True)
-    
+
     stats, reasoning, records = high_standard_pipeline(CFG["batch_size"])
-    
+
     # 保存报告
     report = {
         "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -358,13 +364,13 @@ def run_full_pipeline():
     rp = os.path.join(REPORTS_DIR, f"unified_report_{TODAY}.json")
     with open(rp, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
-    
+
     # 输出
     final = 0
     if os.path.exists(MASTER_CSV):
         with open(MASTER_CSV, "r", encoding="utf-8") as f:
             final = sum(1 for _ in f) - 1
-    
+
     print(f"\n{'='*70}")
     print("📊 执行报告")
     print(f"{'='*70}")
@@ -374,7 +380,7 @@ def run_full_pipeline():
     print(f"  📄 报告: {rp}")
     print(f"{'='*70}")
     print("✅ 执行完成！")
-    
+
     return stats, records
 
 

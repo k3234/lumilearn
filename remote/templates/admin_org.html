@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn Admin · 用户与组织</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:16px;margin-top:16px;align-items:start}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .panel-head h3{font-size:15px;font-weight:600}
+  .tree{max-height:560px;overflow:auto;font-size:13px}
+  .tree .node{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;user-select:none}
+  .tree .node:hover{background:var(--muted)}
+  .tree .node.active{background:var(--muted);font-weight:600}
+  .tree .school{margin-bottom:2px}
+  .tree .grade{margin-left:14px}
+  .tree .klass{margin-left:28px}
+  .tree .count{margin-left:auto;color:var(--color-text-muted);font-size:11px}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .toolbar input{height:34px;border-radius:8px;border:1px solid var(--color-border);background:var(--card);
+    color:var(--color-text);padding:0 10px;font-size:13px;min-width:180px}
+  .toolbar select{height:34px;border-radius:8px;border:1px solid var(--color-border);background:var(--card);
+    color:var(--color-text);padding:0 8px;font-size:13px}
+  .empty{text-align:center;color:var(--color-text-muted);font-size:13px;padding:26px 0}
+  .role-tag{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--muted);border:1px solid var(--color-border)}
+  .row-actions{display:flex;gap:6px;flex-wrap:wrap}
+  @media (max-width:1100px){.layout{grid-template-columns:1fr}.metrics-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">管理控制台 · 组织与账号</div>
+        <h1>用户与组织管理</h1>
+      </div>
+      <div class="toolbar">
+        <span class="pill" id="scopePill">范围：全部</span>
+        <button class="btn sm" id="refreshBtn" type="button"><i class="icon icon-16 icon-chevrons-down-up"></i> 刷新</button>
+      </div>
+    </div>
+
+    <div id="alertHost"></div>
+
+    <section class="metrics-grid">
+      <div class="metric-card"><div class="eyebrow">学校数</div><div class="metric-value" id="mSchools">—</div></div>
+      <div class="metric-card"><div class="eyebrow">年级数</div><div class="metric-value" id="mGrades">—</div></div>
+      <div class="metric-card"><div class="eyebrow">班级数</div><div class="metric-value" id="mClasses">—</div></div>
+      <div class="metric-card"><div class="eyebrow">用户数</div><div class="metric-value" id="mUsers">—</div><div class="delta muted small" id="mUsersSub">学生 — · 教师 —</div></div>
+    </section>
+
+    <div class="layout">
+      <section class="card">
+        <div class="panel-head">
+          <h3>组织架构</h3>
+          <button class="btn ghost sm" id="clearFilter" type="button">清除筛选</button>
+        </div>
+        <div class="tree" id="tree"><div class="empty">加载中…</div></div>
+      </section>
+
+      <section class="card">
+        <div class="panel-head">
+          <h3>用户列表</h3>
+          <div class="toolbar">
+            <input id="searchInput" type="search" placeholder="搜索姓名或账号…">
+            <select id="roleFilter">
+              <option value="">全部角色</option>
+              <option value="student">学生</option>
+              <option value="teacher">教师</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>姓名</th><th>账号</th><th>角色</th><th>所属组织</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody id="userBody"><tr><td colspan="6"><div class="empty">加载中…</div></td></tr></tbody>
+          </table>
+        </div>
+        <div class="muted small mt-1" id="userSummary">—</div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="/static/ui/admin.js"></script>
+<script>
+(function () {
+  var E = LLA.esc, I = LLA.icon;
+  var STATE = { users: [], classes: [], roleFilter: "", keyword: "", classId: null };
+
+  function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+
+  function placeholders() {
+    ["mSchools", "mGrades", "mClasses", "mUsers"].forEach(function (id) { setText(id, "—"); });
+    setText("mUsersSub", "学生 — · 教师 —"); setText("userSummary", "未登录或无数据");
+    document.getElementById("tree").innerHTML = '<div class="empty">未登录或无数据</div>';
+    document.getElementById("userBody").innerHTML = '<tr><td colspan="6"><div class="empty">未登录或无数据</div></td></tr>';
+  }
+
+  /* -------- 组织树 -------- */
+  function buildTree() {
+    var host = document.getElementById("tree");
+    var list = STATE.classes || [];
+    if (!list.length) { host.innerHTML = '<div class="empty">暂无组织数据（未创建学校/年级/班级）</div>'; return; }
+    var schools = {};
+    list.forEach(function (c) {
+      var skey = String(c.school_id || c.school_name || "?");
+      schools[skey] = schools[skey] || { name: c.school_name || "未知学校", grades: {} };
+      var gkey = String(c.grade_id || c.grade_name || "?");
+      var g = schools[skey].grades;
+      g[gkey] = g[gkey] || { name: c.grade_name || "未知年级", classes: [] };
+      g[gkey].classes.push(c);
+    });
+    var html = "";
+    Object.keys(schools).forEach(function (sk) {
+      var sc = schools[sk];
+      html += '<div class="node school">' + I("house") + '<span>' + E(sc.name) + '</span></div>';
+      Object.keys(sc.grades).forEach(function (gk) {
+        var gr = sc.grades[gk];
+        html += '<div class="node grade">' + I("folder") + '<span>' + E(gr.name) + '</span>' +
+                '<span class="count">' + gr.classes.length + ' 班</span></div>';
+        gr.classes.forEach(function (c) {
+          var act = STATE.classId === c.id ? " active" : "";
+          html += '<div class="node klass' + act + '" data-class="' + E(c.id) + '">' + I("folder-open") +
+                  '<span>' + E(c.name || ("班级 #" + c.id)) + '</span>' +
+                  '<span class="count">' + (c.student_count == null ? "—" : c.student_count) + ' 人</span></div>';
+        });
+      });
+    });
+    host.innerHTML = html;
+    host.querySelectorAll("[data-class]").forEach(function (n) {
+      n.addEventListener("click", function () {
+        var id = parseInt(n.getAttribute("data-class"), 10);
+        STATE.classId = (STATE.classId === id) ? null : id;
+        renderTreeActive();
+        renderUsers();
+      });
+    });
+  }
+  function renderTreeActive() {
+    document.querySelectorAll("#tree [data-class]").forEach(function (n) {
+      n.classList.toggle("active", parseInt(n.getAttribute("data-class"), 10) === STATE.classId);
+    });
+    var cls = STATE.classes.filter(function (c) { return c.id === STATE.classId; })[0];
+    setText("scopePill", "范围：" + (cls ? ([cls.school_name, cls.grade_name, cls.name].filter(Boolean).join(" / ")) : "全部"));
+  }
+
+  function computeStats() {
+    var list = STATE.classes || [];
+    var schools = {}, grades = {};
+    list.forEach(function (c) {
+      schools[c.school_id || c.school_name] = 1;
+      grades[(c.school_id || c.school_name) + "|" + (c.grade_id || c.grade_name)] = 1;
+    });
+    setText("mSchools", Object.keys(schools).length);
+    setText("mGrades", Object.keys(grades).length);
+    setText("mClasses", list.length);
+    var us = STATE.users || [];
+    setText("mUsers", us.length);
+    setText("mUsersSub", "学生 " + us.filter(function (u) { return u.role === "student"; }).length +
+                         " · 教师 " + us.filter(function (u) { return u.role === "teacher"; }).length);
+  }
+
+  /* -------- 用户表 -------- */
+  function orgText(u) {
+    var cs = u.classes || [];
+    if (!cs.length) return "—";
+    return cs.map(function (c) {
+      return [c.school_name, c.grade_name, c.class_name].filter(Boolean).join(" / ");
+    }).join("；");
+  }
+  function filteredUsers() {
+    var kw = (STATE.keyword || "").toLowerCase();
+    return (STATE.users || []).filter(function (u) {
+      if (STATE.roleFilter && u.role !== STATE.roleFilter) return false;
+      if (STATE.classId != null) {
+        var has = (u.classes || []).some(function (c) { return c.id === STATE.classId; });
+        if (!has) return false;
+      }
+      if (kw) {
+        var hay = ((u.name || "") + " " + (u.username || "")).toLowerCase();
+        if (hay.indexOf(kw) === -1) return false;
+      }
+      return true;
+    });
+  }
+  function renderUsers() {
+    var body = document.getElementById("userBody");
+    var list = filteredUsers();
+    var total = (STATE.users || []).length;
+    setText("userSummary", "显示 " + list.length + " / " + total + " 个账号");
+    if (!list.length) { body.innerHTML = '<tr><td colspan="6"><div class="empty">没有符合条件的用户</div></td></tr>'; return; }
+    body.innerHTML = list.map(function (u) {
+      var active = Number(u.is_active) === 1;
+      var roleSel = '<select data-role="' + E(u.id) + '" style="height:28px;font-size:12px">' +
+        '<option value="student"' + (u.role === "student" ? " selected" : "") + '>学生</option>' +
+        '<option value="teacher"' + (u.role === "teacher" ? " selected" : "") + '>教师</option></select>';
+      return '<tr>' +
+        '<td><b>' + E(u.name || "—") + '</b></td>' +
+        '<td class="mono small">' + E(u.username || "—") + '</td>' +
+        '<td><span class="role-tag">' + E(u.role || "—") + '</span></td>' +
+        '<td class="small">' + E(orgText(u)) + '</td>' +
+        '<td>' + (active ? '<span class="pill green">启用</span>' : '<span class="pill red">停用</span>') + '</td>' +
+        '<td><div class="row-actions">' + roleSel +
+          '<button class="btn sm" data-toggle="' + E(u.id) + '" data-active="' + (active ? "0" : "1") + '">' +
+            (active ? "停用" : "启用") + '</button>' +
+        '</div></td></tr>';
+    }).join("");
+
+    body.querySelectorAll("[data-role]").forEach(function (sel) {
+      sel.addEventListener("change", function () {
+        var id = sel.getAttribute("data-role"), role = sel.value;
+        LLA.post("/users/" + id + "/role", { role: role })
+          .then(function () { LLA.toast("角色已更新"); loadUsers(); })
+          .catch(function (e) { LLA.toast(e.message || "更新失败"); });
+      });
+    });
+    body.querySelectorAll("[data-toggle]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.getAttribute("data-toggle");
+        var isActive = btn.getAttribute("data-active") === "1";
+        LLA.post("/users/" + id + "/active", { is_active: isActive })
+          .then(function () { LLA.toast(isActive ? "已启用" : "已停用"); loadUsers(); })
+          .catch(function (e) { LLA.toast(e.message || "操作失败"); });
+      });
+    });
+  }
+
+  /* -------- 加载 -------- */
+  function loadClasses() {
+    return LLA.get("/classes").then(function (r) {
+      STATE.classes = (r && r.classes) || [];
+      buildTree(); renderTreeActive();
+    });
+  }
+  function loadUsers() {
+    var q = STATE.roleFilter ? ("?role=" + encodeURIComponent(STATE.roleFilter)) : "";
+    return LLA.get("/users" + q).then(function (r) {
+      STATE.users = (r && r.users) || [];
+      computeStats(); renderUsers();
+    });
+  }
+  function loadAll() {
+    return Promise.all([
+      loadClasses().catch(function () { STATE.classes = []; buildTree(); }),
+      loadUsers().catch(function () { STATE.users = []; computeStats(); renderUsers(); })
+    ]);
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", function () { if (!LLA.isNoAuth()) loadAll(); });
+  document.getElementById("clearFilter").addEventListener("click", function () {
+    STATE.classId = null; STATE.keyword = ""; STATE.roleFilter = "";
+    document.getElementById("searchInput").value = "";
+    document.getElementById("roleFilter").value = "";
+    renderTreeActive(); renderUsers();
+  });
+  document.getElementById("searchInput").addEventListener("input", function (e) {
+    STATE.keyword = e.target.value.trim(); renderUsers();
+  });
+  document.getElementById("roleFilter").addEventListener("change", function (e) {
+    STATE.roleFilter = e.target.value;
+    if (!LLA.isNoAuth()) loadUsers().catch(function () {});
+  });
+
+  LLA.boot({ nav: "org" }).then(function (admin) {
+    if (!admin) { placeholders(); document.getElementById("alertHost").innerHTML = LLA.noAuthBanner(); LLA.bindLoginButton(); return; }
+    loadAll();
+  }).catch(function () { placeholders(); });
+})();
+</script>
+</body>
+</html>

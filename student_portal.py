@@ -26,13 +26,12 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import (Flask, abort, jsonify, render_template_string,
-                   request, send_from_directory)
+from flask import Flask, abort, jsonify, render_template_string, send_from_directory
 
-from lumilearn_agent import LumiLearnAgent
 from framework.api.routes.student_learn import create_student_learn_bp
 from framework.core.config import get_app_secret_key, register_csrf_guard
 from framework.database import db
+from lumilearn_agent import LumiLearnAgent
 
 db.init()
 
@@ -52,6 +51,7 @@ register_csrf_guard(app)
 
 # 统一 404 / 500 错误处理
 from framework.api.errors import register_error_handlers
+
 register_error_handlers(app)
 
 

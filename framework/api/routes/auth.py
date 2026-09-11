@@ -15,8 +15,9 @@ import logging
 import secrets
 import threading
 from datetime import datetime
+from functools import wraps
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, session
 
 from framework.database import db
 
@@ -54,13 +55,47 @@ def get_user_by_token(token: str):
 
 
 def require_user_token():
-    """从请求头解析当前用户（X-Auth-Token / Authorization: Bearer）"""
+    """从请求头解析当前用户（X-Auth-Token / Authorization: Bearer），回退 cookie 会话"""
     token = request.headers.get("X-Auth-Token", "")
     if not token:
         auth = request.headers.get("Authorization", "")
         if auth.startswith("Bearer "):
             token = auth[len("Bearer "):]
-    return get_user_by_token(token)
+    user = get_user_by_token(token)
+    if user:
+        return user
+    # 回退：cookie 会话（teacher/student 门户复用同一 session）
+    uid = session.get("user_id")
+    if uid:
+        return db.get_user(uid)
+    return None
+
+
+def require_role(*roles):
+    """角色守卫装饰器：需登录且角色在 roles 中。
+
+    - 未登录 → 返回 401（统一契约 {code: 401, error, message}）
+    - 角色不符 → 返回 403（统一契约 {code: 403, error, message}）
+    内部调用 require_user_token()，支持 token / cookie 会话双凭据。
+    用法：@auth_bp.route(...); @require_role("teacher", "admin")。
+    """
+    def decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            user = require_user_token()
+            if not user:
+                return jsonify({"error": "未登录", "code": 401, "message": "未登录"}), 401
+            role = user.get("role", "user")
+            if role not in roles:
+                return jsonify({"error": "无权限访问", "code": 403, "message": "无权限访问"}), 403
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def current_user():
+    """便捷返回当前登录用户（未登录返回 None），供控制器内直接使用。"""
+    return require_user_token()
 
 
 @auth_bp.route("/api/auth/login", methods=["POST", "OPTIONS"])
@@ -76,15 +111,21 @@ def api_auth_login():
     if not user:
         return jsonify({"error": "用户名或密码错误"}), 401
     token = _issue_token(user)
+    # 同时写入 cookie 会话，供 teacher/student 门户（session 认证）复用同一登录态
+    session["user_id"] = user["id"]
+    session["role"] = user.get("role", "user")
+    public = {
+        "id": user["id"],
+        "name": user["name"],
+        "username": user.get("username") or user["name"],
+        "role": user.get("role", "user"),
+    }
     return jsonify({
         "success": True,
-        "token": token,
-        "user": {
-            "id": user["id"],
-            "name": user["name"],
-            "username": user.get("username") or user["name"],
-            "role": user.get("role", "user"),
-        },
+        "code": 0,  # 学生端前端 {code,data} 契约
+        "token": token,  # 框架/管理端 {success,token} 契约
+        "user": public,
+        "data": {"id": public["id"], "name": public["name"], "role": public["role"]},
     })
 
 
@@ -94,15 +135,18 @@ def api_auth_me():
         return jsonify({"status": "ok"})
     user = require_user_token()
     if not user:
-        return jsonify({"error": "未登录"}), 401
+        return jsonify({"error": "未登录", "code": 401, "message": "未登录"}), 401
+    public = {
+        "id": user["id"],
+        "name": user["name"],
+        "username": user.get("username") or user["name"],
+        "role": user.get("role", "user"),
+    }
     return jsonify({
         "success": True,
-        "user": {
-            "id": user["id"],
-            "name": user["name"],
-            "username": user.get("username") or user["name"],
-            "role": user.get("role", "user"),
-        },
+        "code": 0,
+        "user": public,
+        "data": {"id": public["id"], "name": public["name"], "role": public["role"]},
     })
 
 
@@ -117,4 +161,7 @@ def api_auth_logout():
             token = auth[len("Bearer "):]
     with _TOKENS_LOCK:
         _TOKENS.pop(token, None)
+    # 统一认证：教师/学生门户复用同一 cookie 会话登出时一并清空，
+    # 避免「登出后刷新仍为登录态」（session 认证接管后必需）。
+    session.clear()
     return jsonify({"success": True, "message": "已退出登录"})

@@ -3,6 +3,7 @@
 覆盖模型初始化、前向传播、生成
 """
 import pytest
+
 torch = pytest.importorskip("torch", reason="torch 未安装，跳过模型测试")
 import os
 import sys

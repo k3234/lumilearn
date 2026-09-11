@@ -13,7 +13,10 @@
 import unittest
 
 from framework.services.knowledge_retrieval import (
-    chunk_text, clean_text, KnowledgeRetriever, DEFAULT_CHUNK_CHARS,
+    DEFAULT_CHUNK_CHARS,
+    KnowledgeRetriever,
+    chunk_text,
+    clean_text,
 )
 
 

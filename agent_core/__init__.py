@@ -27,57 +27,92 @@ agent_core — LumiLearn Agent 核心模块
     from agent_core import ExternalMCPRegistry, get_external_mcp_registry
 """
 
-from agent_core.models import AgentState, ToolCall, AgentResult, TaskProfile
-from agent_core.router import RouterAgent, get_router_agent, route_task
-from agent_core.model_registry import (
-    ModelEntry, build_model_registry, ALL_MODELS, ALL_MODELS_DICT,
-    get_model, get_models_by_provider, get_models_by_weight,
-    get_best_models, get_model_summary,
+from agent_core.cost_tracker import (
+    CostTracker,
+    get_cost_tracker,
+    reset_cost_tracker,
 )
-from agent_core.langgraph_engine import (
-    MultiFormatGenerator, WeightedVoter, OrchestrationEngine,
-    run_orchestration, run_single_model,
-)
-from agent_core.orchestrator import (
-    UnifiedOrchestrator, get_unified_orchestrator, run_agent,
-)
-from agent_core.weight_manager import WeightManager, get_weight_manager
-from agent_core.knowledge_cache import KnowledgeCache, get_knowledge_cache
 from agent_core.cross_caller import CrossCaller, get_cross_caller
-from agent_core.verifier import (
-    VerifierAgent, get_verifier_agent, verify_teaching,
-    evaluate_human_review,
-)
 from agent_core.fact_checker import (
-    FactCheckerAgent, get_fact_checker_agent, fact_check,
-)
-from agent_core.multi_agent import (
-    FeynmanTeacher, ScoreAgent, CoachAgent, MultiAgentPipeline,
-    MultiAgentOrchestrator, get_multi_agent_pipeline,
-    get_multi_agent_orchestrator, run_multi_agent,
+    FactCheckerAgent,
+    fact_check,
+    get_fact_checker_agent,
 )
 from agent_core.graph import (
-    StateGraph, CompiledGraph, build_feedback_graph,
-    get_feedback_graph, run_graph,
+    CompiledGraph,
+    StateGraph,
+    build_feedback_graph,
+    get_feedback_graph,
+    run_graph,
 )
-from agent_core.cost_tracker import (
-    CostTracker, get_cost_tracker, reset_cost_tracker,
-)
-from agent_core.safety import (
-    AgentSafetyGuard, get_safety_guard, reset_safety_guard,
-    check_agent_call,
-)
-from agent_core.observability import (
-    AgentTelemetry, get_telemetry, reset_telemetry,
+from agent_core.knowledge_cache import KnowledgeCache, get_knowledge_cache
+from agent_core.langgraph_engine import (
+    MultiFormatGenerator,
+    OrchestrationEngine,
+    WeightedVoter,
+    run_orchestration,
+    run_single_model,
 )
 from agent_core.mcp_client import (
-    MCPClient, BuiltinToolRegistry, MCPServer,
-    get_mcp_client, get_tool_registry, reset_mcp_client,
+    BuiltinToolRegistry,
+    MCPClient,
+    MCPServer,
+    get_mcp_client,
+    get_tool_registry,
+    reset_mcp_client,
 )
 from agent_core.mcp_external import (
-    ExternalMCPRegistry, ExternalMCPServerConfig,
-    get_external_mcp_registry, reset_external_mcp_registry,
+    ExternalMCPRegistry,
+    ExternalMCPServerConfig,
+    get_external_mcp_registry,
+    reset_external_mcp_registry,
 )
+from agent_core.model_registry import (
+    ALL_MODELS,
+    ALL_MODELS_DICT,
+    ModelEntry,
+    build_model_registry,
+    get_best_models,
+    get_model,
+    get_model_summary,
+    get_models_by_provider,
+    get_models_by_weight,
+)
+from agent_core.models import AgentResult, AgentState, TaskProfile, ToolCall
+from agent_core.multi_agent import (
+    CoachAgent,
+    FeynmanTeacher,
+    MultiAgentOrchestrator,
+    MultiAgentPipeline,
+    ScoreAgent,
+    get_multi_agent_orchestrator,
+    get_multi_agent_pipeline,
+    run_multi_agent,
+)
+from agent_core.observability import (
+    AgentTelemetry,
+    get_telemetry,
+    reset_telemetry,
+)
+from agent_core.orchestrator import (
+    UnifiedOrchestrator,
+    get_unified_orchestrator,
+    run_agent,
+)
+from agent_core.router import RouterAgent, get_router_agent, route_task
+from agent_core.safety import (
+    AgentSafetyGuard,
+    check_agent_call,
+    get_safety_guard,
+    reset_safety_guard,
+)
+from agent_core.verifier import (
+    VerifierAgent,
+    evaluate_human_review,
+    get_verifier_agent,
+    verify_teaching,
+)
+from agent_core.weight_manager import WeightManager, get_weight_manager
 
 __all__ = [
     # models

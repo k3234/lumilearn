@@ -4,7 +4,6 @@ LumiLearn 训练数据生成器
 从内置模板生成教育领域语料，支持多学科、多难度
 """
 import json
-import os
 import random
 from pathlib import Path
 
@@ -169,7 +168,7 @@ def main():
     subjects_count = {}
     for rec in records:
         subjects_count[rec["subject"]] = subjects_count.get(rec["subject"], 0) + 1
-    print(f"\n各学科数据量:")
+    print("\n各学科数据量:")
     for subj, count in subjects_count.items():
         print(f"  {subj}: {count} 条")
 

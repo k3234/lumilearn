@@ -4,12 +4,16 @@
 使用 703 条综合数据训练 Qwen2.5-3B LoRA adapter
 用法: HSA_OVERRIDE_GFX_VERSION=11.0.0 python3 -u scripts/train_lora_gpu.py
 """
-import sys, os, json, time
+import json
+import os
+import time
+
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 # 强制纯 CPU：避免 AMD 核显 ROCm 初始化导致崩溃
 os.environ["HIP_VISIBLE_DEVICES"] = "-1"
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 import torch
+
 
 def log(msg):
     print(msg, flush=True)
@@ -38,6 +42,7 @@ else:
     torch.set_num_threads(16)
     log("使用 CPU (16线程)")
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
 t0 = time.time()
 model = AutoModelForCausalLM.from_pretrained(
     BASE_MODEL, torch_dtype=torch.bfloat16, device_map=None,
@@ -48,6 +53,7 @@ tokenizer.pad_token = tokenizer.eos_token
 log(f"mem={mem():.2f}GB model loaded ({time.time()-t0:.0f}s)")
 
 from peft import LoraConfig, get_peft_model
+
 lora_config = LoraConfig(
     r=16, lora_alpha=32, lora_dropout=0.05, bias="none",
     task_type="CAUSAL_LM",
@@ -79,9 +85,10 @@ for text in texts:
 log(f"mem={mem():.2f}GB data tokenized: {len(tokenized)} items")
 
 # 组装 DataLoader（batch_size=1 节省显存，梯度累积）
-from torch.utils.data import DataLoader
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.data import DataLoader
+
 
 def collate_fn(batch):
     """自定义 collate：tokenizer 返回 [1, seq]，这里合并为 [B, seq]"""

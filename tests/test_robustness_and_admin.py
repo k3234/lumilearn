@@ -4,13 +4,18 @@
 - 随机提问含错别字、语法错误、不完整问题
 - 测试管理员 API（登录、用户管理、模型管理、Agent 管理）
 """
-import sys, os, time, json, requests, urllib3
+import os
+import sys
+import time
+
+import requests
+import urllib3
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from framework.database import db
 from framework.api.server import create_app
 
 print("=" * 70)

@@ -51,15 +51,14 @@ LumiLearn 本地数据库管理模块
     db.add_checkpoint(exp_id, step=100, tag="best", val_loss=1.73)
     db.finish_experiment(exp_id, best_val_loss=1.73, total_steps=500)
 """
-import os
 import json
+import os
+import re
 import sqlite3
 import threading
 import time
-import re
-from typing import List, Dict, Optional, Any, Tuple
 from pathlib import Path
-
+from typing import Any, Dict, List, Optional
 
 # ============================================================
 # SQL 标识符校验（防注入）
@@ -4964,8 +4963,12 @@ class DatabaseManager:
             result["payload"] = self._deserialize_json(result.get("payload"), {})
             return result
 
-    def complete_task(self, task_id: str, result: dict) -> bool:
-        """标记任务完成并写入结果（终态）"""
+    def complete_queue_task(self, task_id: str, result: dict) -> bool:
+        """标记异步队列任务完成并写入结果（终态）
+
+        注意：方法名不能叫 complete_task —— 上方已有 complete_task（task_assignments，int 主键），
+        同名会被此处覆盖。
+        """
         cur = self._execute(
             """UPDATE task_queue SET status = 'completed', result = ?,
                finished_at = datetime('now','localtime')

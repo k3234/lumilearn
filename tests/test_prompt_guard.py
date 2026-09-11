@@ -11,12 +11,13 @@ LumiLearn — P1-6 提示注入加固测试
   - UnifiedOrchestrator 接线 : 注入请求在入口被拦截（success=False）
 """
 
-import sys
 import os
+import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from agent_core.orchestrator import UnifiedOrchestrator
 from agent_core.prompt_guard import (
     MAX_INPUT_LEN,
     MAX_INPUT_LINES,
@@ -26,7 +27,6 @@ from agent_core.prompt_guard import (
     validate_input_structure,
     validate_model_output,
 )
-from agent_core.orchestrator import UnifiedOrchestrator
 
 
 # ================================================================

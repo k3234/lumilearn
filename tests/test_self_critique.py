@@ -11,13 +11,12 @@ LumiLearn — SelfCritique Agent（自我批判）测试
   - 空输出 → 低分失败
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent_core.self_critique import SelfCritiqueAgent
-
 
 GOOD_OUTPUT = (
     "自由落体运动是初速度为零、只受重力作用的运动。重力加速度约为9.8米每二次方秒，"

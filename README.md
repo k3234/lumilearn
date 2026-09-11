@@ -16,7 +16,7 @@
 - **AI 辅助教育工具边界**：LumiLearn 是 AI 辅助教学工具，**不替代教师**。AI 生成的知识讲解、练习题与学习报告仅供参考，请由教师/家长/学习者**人工校验后使用**。
 - **幻觉风险提示**：大语言模型可能生成看似合理但错误的"幻觉"内容，涉及考试、升学等关键决策时务必以权威教材和教师意见为准。
 - **数据本地存储**：学习数据默认存储在本机 **SQLite 数据库**，**不上传云端**；如需调用云端模型，仅按需发送请求文本，请勿提交含个人敏感信息的资料。
-- **密钥走环境变量**：所有密钥（API Key、SECRET_KEY、管理员密码等）一律通过环境变量（`.env`）注入，不写入代码或配置文件，且 `.env` 已被 `.gitignore` 忽略、不进入公开仓库。
+- **密钥走环境变量**：所有密钥（API Key、SECRET\_KEY、管理员密码等）一律通过环境变量（`.env`）注入，不写入代码或配置文件，且 `.env` 已被 `.gitignore` 忽略、不进入公开仓库。
 
 ## 📋 文档索引
 
@@ -32,23 +32,23 @@
 
 本项目积极响应联合国**2030年可持续发展目标（SDGs）**，核心对齐以下目标：
 
-| SDG | 目标名称 | 本项目对齐点 |
-|:---:|---|---|
-| **SDG 4** | 优质教育（Quality Education） | 降低AI教育门槛，让AI教学工具在老旧设备、资源不足学校也能运行，促进教育公平 |
-| **SDG 9** | 产业、创新和基础设施（Industry, Innovation and Infrastructure） | 纯 Python 实现零外部依赖 RAG、8M 自研 Transformer、全栈自主可控 |
-| **SDG 10** | 减少不平等（Reduced Inequalities） | "算力平权"理念——让 4GB 内存的普通电脑也能流畅运行 AI 教学服务 |
-| **SDG 17** | 促进目标实现的伙伴关系（Partnerships for the Goals） | MIT 开源协议，欢迎全球教育者/开发者贡献与复用 |
+|     SDG    | 目标名称                                                | 本项目对齐点                                        |
+| :--------: | --------------------------------------------------- | --------------------------------------------- |
+|  **SDG 4** | 优质教育（Quality Education）                             | 降低AI教育门槛，让AI教学工具在老旧设备、资源不足学校也能运行，促进教育公平       |
+|  **SDG 9** | 产业、创新和基础设施（Industry, Innovation and Infrastructure） | 纯 Python 实现零外部依赖 RAG、8M 自研 Transformer、全栈自主可控 |
+| **SDG 10** | 减少不平等（Reduced Inequalities）                         | "算力平权"理念——让 4GB 内存的普通电脑也能流畅运行 AI 教学服务         |
+| **SDG 17** | 促进目标实现的伙伴关系（Partnerships for the Goals）             | MIT 开源协议，欢迎全球教育者/开发者贡献与复用                     |
 
 > **核心理念**：AI 教育不应是高硬件门槛的奢侈品，而应是人人可及的公共品。LumiLearn 通过自研微型模型 + 零依赖部署，让每一台老旧电脑都能成为 AI 教学终端。
 
 ## 10 秒看懂
 
-| 问题 | 答案 |
-|---|---|
-| **做什么？** | 自研微型 Transformer 模型 + 前端教学演示系统，自动生成数学/物理/化学的讲解内容 |
-| **为什么特别？** | 全部在 CPU 上训练（8M 参数），从 tokenizer 到推理全部自己实现 |
-| **适合谁？** | 想学习"从数据到模型到部署"完整流程的学生开发者 |
-| **教育价值** | 让老旧设备也能跑 AI 教学演示，推动"算力平权"，让资源不足的学校也能接触 AI 教育 |
+| 问题         | 答案                                               |
+| ---------- | ------------------------------------------------ |
+| **做什么？**   | 自研微型 Transformer 模型 + 前端教学演示系统，自动生成数学/物理/化学的讲解内容 |
+| **为什么特别？** | 全部在 CPU 上训练（8M 参数），从 tokenizer 到推理全部自己实现         |
+| **适合谁？**   | 想学习"从数据到模型到部署"完整流程的学生开发者                         |
+| **教育价值**   | 让老旧设备也能跑 AI 教学演示，推动"算力平权"，让资源不足的学校也能接触 AI 教育     |
 
 ## ⚡ 快速开始
 
@@ -110,39 +110,38 @@ python teacher_portal.py
 
 ## 📊 核心能力指标（竞赛亮点）
 
-| 指标 | 数值 | 说明 |
-|---|---|---|
-| RAG 知识点召回率 | **5/5** | 纯 Python BM25，零外部依赖，1166 条知识库 |
-| CPU 推理速度 | **26+ tok/s** | 8M 自研模型，老电脑流畅运行 |
-| 测试用例数 | **387+** | 覆盖 Agent / 安全 / 费曼 / 配置 / 存储全链路 |
-| 峰值内存占用 | **1.77 GB** | 完整训练流程实测（见 [CPU_LOWMEM_EVALUATION.md](docs/CPU_LOWMEM_EVALUATION.md)） |
-| 安全脱敏 | **100%** | 全部历史重写，零 IP/密码泄露 |
-| 一键部署 | **1 条命令** | `pip install -r requirements.txt && python -m framework.api.server --multi-port` |
+| 指标         | 数值            | 说明                                                                               |
+| ---------- | ------------- | -------------------------------------------------------------------------------- |
+| RAG 知识点召回率 | **5/5**       | 纯 Python BM25，零外部依赖，1166 条知识库                                                    |
+| CPU 推理速度   | **26+ tok/s** | 8M 自研模型，老电脑流畅运行                                                                  |
+| 测试用例数      | **387+**      | 覆盖 Agent / 安全 / 费曼 / 配置 / 存储全链路                                                  |
+| 峰值内存占用     | **1.77 GB**   | 完整训练流程实测（见 [CPU\_LOWMEM\_EVALUATION.md](docs/CPU_LOWMEM_EVALUATION.md)）          |
+| 安全脱敏       | **100%**      | 全部历史重写，零 IP/密码泄露                                                                 |
+| 一键部署       | **1 条命令**     | `pip install -r requirements.txt && python -m framework.api.server --multi-port` |
 
-| 我想... | 去看 |
-|---|---|
-| 看这个项目长什么样 | [课堂模式演示](remote/templates/classroom.html) · [对话终端](remote/templates/lumiterm.html) |
-| 了解系统架构 | [docs/development_summary.md](docs/development_summary.md) |
-| 看模型怎么训练的 | `framework/model.py` · `framework/config.py` |
-| 看数据怎么处理的 | `data_management/` 目录 |
-| 了解开发原则 | [PROJECT_PRINCIPLES.md](PROJECT_PRINCIPLES.md) |
-| 看学习笔记 | [docs/learning_journey/](docs/learning_journey) |
-| 看 Jupyter 教程 | [notebooks/](notebooks) |
-| 看研究规划 | [docs/research/](docs/research) |
-| 了解如何贡献 | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| 了解版本变更 | [CHANGELOG.md](CHANGELOG.md) |
+| 我想...        | 去看                                                                                 |
+| ------------ | ---------------------------------------------------------------------------------- |
+| 看这个项目长什么样    | [课堂模式演示](remote/templates/classroom.html) · [对话终端](remote/templates/lumiterm.html) |
+| 了解系统架构       | [docs/development\_summary.md](docs/development_summary.md)                        |
+| 看模型怎么训练的     | `framework/model.py` · `framework/config.py`                                       |
+| 看数据怎么处理的     | `data_management/` 目录                                                              |
+| 了解开发原则       | [PROJECT\_PRINCIPLES.md](PROJECT_PRINCIPLES.md)                                    |
+| 看 Jupyter 教程 | [notebooks/](notebooks)                                                            |
+| 看研究规划        | [docs/reearch/](docs/research)                                                     |
+| 了解如何贡献       | [CONTRIBUTING.md](CONTRIBUTING.md)                                                 |
+| 了解版本变更       | [CHANGELOG.md](CHANGELOG.md)                                                       |
 
 ## 🤖 Agent 智能体
 
 LumiLearn 内置一套可独立启停、统一生命周期的 Agent 框架（`framework/admin/agents.py`），并在 Admin 面板「Agent 管理」中可视化运行；另有一个面向完整学习闭环的 LumiLearn 学习智能体（`lumilearn_agent.py`）。
 
-| Agent | ID | 能力 |
-|---|---|---|
-| **费曼教学 Agent** | `feynman_teacher` | 基于费曼五步法讲解知识点；传入对话历史时自动切换为**交互式单步引导** （现象引入 → 认知冲突 → 思维模型 → 自主推导 → 费曼测试），上下文连贯、逐步推进 |
-| **输出检测 Agent** | `output_detector` | 检测学生学习输出质量（简洁/准确/比喻/完整/术语五维评分），给出改进建议 |
-| **自适应学习 Agent** | `adaptive_path` | 根据学生学习进度与掌握度推荐个性化学习路径 |
-| **对话助手 Agent** | `chat_assistant` | 通用多轮对话，自动路由到当前端口配置的模型 |
-| **LumiLearn 学习智能体** | `lumilearn_agent.py` | 任务理解 → 流程编排（费曼五步） → 多模型工具调用 → 完整学习报告（掌握度 + 薄弱点 + 建议），推理过程写入本地推理记录库，供管理员/教师/模型自查 |
+| Agent               | ID                   | 能力                                                                                 |
+| ------------------- | -------------------- | ---------------------------------------------------------------------------------- |
+| **费曼教学 Agent**      | `feynman_teacher`    | 基于费曼五步法讲解知识点；传入对话历史时自动切换为**交互式单步引导** （现象引入 → 认知冲突 → 思维模型 → 自主推导 → 费曼测试），上下文连贯、逐步推进 |
+| **输出检测 Agent**      | `output_detector`    | 检测学生学习输出质量（简洁/准确/比喻/完整/术语五维评分），给出改进建议                                              |
+| **自适应学习 Agent**     | `adaptive_path`      | 根据学生学习进度与掌握度推荐个性化学习路径                                                              |
+| **对话助手 Agent**      | `chat_assistant`     | 通用多轮对话，自动路由到当前端口配置的模型                                                              |
+| **LumiLearn 学习智能体** | `lumilearn_agent.py` | 任务理解 → 流程编排（费曼五步） → 多模型工具调用 → 完整学习报告（掌握度 + 薄弱点 + 建议），推理过程写入本地推理记录库，供管理员/教师/模型自查    |
 
 所有 Agent 支持 `start / stop / status / run` 统一生命周期，Agent 运行状态持久化到数据库；推理过程（费曼每步、对话学习）自动写入 `reasoning_logs` 推理记录库，可通过 Admin「推理记录」、教师端「推理记录」、API `/api/reasoning-logs` 三方查看。
 
@@ -157,67 +156,64 @@ LumiLearn 内置一套可独立启停、统一生命周期的 Agent 框架（`fr
  费曼五步（现象→冲突→模型→推导→测试） 掌握度评分 建议 + 推荐知识点
 ```
 
-| 特性 | 说明 |
-|---|---|
+| 特性   | 说明                                                   |
+| ---- | ---------------------------------------------------- |
 | 独立模型 | 每个 Agent 可配置不同模型（`MULTI_AGENT_*_MODEL` 环境变量，优先读端口配置） |
-| 失败降级 | 单 Agent 异常不阻塞后续，`agent_trace` 记录 ok/skipped/failed |
-| 交互模式 | 传 `dialogue` 历史时自动切交互式单步引导 |
-| 报告落库 | 有评分时写入 `learning_reports`，Admin/教师端可视化可见 |
+| 失败降级 | 单 Agent 异常不阻塞后续，`agent_trace` 记录 ok/skipped/failed   |
+| 交互模式 | 传 `dialogue` 历史时自动切交互式单步引导                           |
+| 报告落库 | 有评分时写入 `learning_reports`，Admin/教师端可视化可见             |
 
 ## 📚 RAG 知识库检索（Day 3）
 
 教学内容"有据可查"：从 `training_data`（已发布教学资源）与 `knowledge_nodes`（知识点）构建**关键词倒排索引** ，纯 Python 实现、零外部依赖、不引入向量数据库。
 
 - 模块：`framework/services/knowledge_retrieval.py`（轻量中文分词 + 简化 BM25）
-
 - 集成：FeynmanTeacher 生成前自动检索相关知识点注入 prompt，报告带 `rag_sources` 展示来源
-
 - API：`GET/POST /api/knowledge/search?q=...`、`GET /api/knowledge/status`（需登录）
-
-- 设计文档：[docs/rag_design.md](docs/rag_design.md)
+- 设计文档：[docs/rag\_design.md](docs/rag_design.md)
 
 ## 📊 数据可视化 + 账号权限 + 数据合规导出（Day 2 任务三）
 
-| 能力 | 端口 | 说明 |
-|---|---|---|
-| 数据可视化 | Admin 18080 / 教师 5001 | 掌握度趋势、学科对比、薄弱点排行、知识点热力、模型推理统计、学生排行（教师仅本班） |
-| 管理员分级 | Admin | `super_admin`（管理）+ `operator`（查看），独立 `admins` 表 |
-| 用户启停/改角色 | Admin | 登录拦截、防锁死保护（不能禁用/删除自己） |
-| 数据合规导出 | Admin / 教师 | 教师申请 → 管理员审批 → 下载（JSON/CSV），全流程审计 |
+| 能力       | 端口                    | 说明                                              |
+| -------- | --------------------- | ----------------------------------------------- |
+| 数据可视化    | Admin 18080 / 教师 5001 | 掌握度趋势、学科对比、薄弱点排行、知识点热力、模型推理统计、学生排行（教师仅本班）       |
+| 管理员分级    | Admin                 | `super_admin`（管理）+ `operator`（查看），独立 `admins` 表 |
+| 用户启停/改角色 | Admin                 | 登录拦截、防锁死保护（不能禁用/删除自己）                           |
+| 数据合规导出   | Admin / 教师            | 教师申请 → 管理员审批 → 下载（JSON/CSV），全流程审计               |
 
 ## 🧠 模型与模型容器
 
 LumiLearn 支持**本地模型容器** 与**云端 API**  两类推理来源，其中 **Ollama 为默认推荐容器** 。全部接入模型可通过 Admin 面板「模型管理」集中配置，并按端口指定各服务使用的模型。
 
-| 来源 | 说明 | 模型发现 |
-|---|---|---|
-| **Ollama（推荐）** | 本地/远程 Ollama 服务，默认 `http://localhost:11434` | 自动调用 `/api/tags` 发现容器内**全部模型** |
-| **其他本地容器** | OpenAI 兼容接口：vLLM / LM Studio / LocalAI / llama.cpp server 等 | 自动调用 `/models` 发现容器内**全部模型** |
-| **云端 API** | 豆包 / 智谱 / Kimi / MiniMax / OpenAI / DeepSeek 等（OpenAI 兼容） | 配置时登记模型列表 |
+| 来源             | 说明                                                          | 模型发现                           |
+| -------------- | ----------------------------------------------------------- | ------------------------------ |
+| **Ollama（推荐）** | 本地/远程 Ollama 服务，默认 `http://localhost:11434`                 | 自动调用 `/api/tags` 发现容器内**全部模型** |
+| **其他本地容器**     | OpenAI 兼容接口：vLLM / LM Studio / LocalAI / llama.cpp server 等 | 自动调用 `/models` 发现容器内**全部模型**   |
+| **云端 API**     | 豆包 / 智谱 / Kimi / MiniMax / OpenAI / DeepSeek 等（OpenAI 兼容）   | 配置时登记模型列表                      |
 
 **模型接入** ：运行 `deploy/setup.py` 交互式引导（探测并列出容器内全部模型供选择），或在 Admin 面板「模型管理」中手动添加。
 
 **主要模型资产** ：
 
-| 模型 | 来源 | 用途 |
-|---|---|---|
-| `lumilearn-v2:latest` | 自研 LoRA 微调（Qwen2.5-1.5B，Q8_0 量化） | 默认对话/学习模型，CPU 推理 26+ tok/s |
-| `qwen2.5:7b` | Ollama 官方 | 费曼引导默认模型（上下文利用更强） |
-| 微调 Transformer（8M） | 从零训练 | 课堂演示、教学编排 |
-| 云端模型（可选） | 各厂商 API | 高质量生成场景 |
+| 模型                    | 来源                                | 用途                         |
+| --------------------- | --------------------------------- | -------------------------- |
+| `lumilearn-v2:latest` | 自研 LoRA 微调（Qwen2.5-1.5B，Q8\_0 量化） | 默认对话/学习模型，CPU 推理 26+ tok/s |
+| `qwen2.5:7b`          | Ollama 官方                         | 费曼引导默认模型（上下文利用更强）          |
+| 微调 Transformer（8M）    | 从零训练                              | 课堂演示、教学编排                  |
+| 云端模型（可选）              | 各厂商 API                           | 高质量生成场景                    |
 
 **端口模型配置** ：每个端口（终端/API/模型管理/学习平台 Web/教师端）可独立指定使用哪个提供商的哪个模型，配置实时生效，无需重启。
 
 ## 💡 技术创新
 
-| 创新点 | 位置 | 说明 |
-|---|---|---|
-| **知识分层拆解流水线** | `agent_core/knowledge_pipeline.py` | 章节粗切 → 知识点细切 → 格式校验 → 去重/冲突检测，将教材文档自动拆解为结构化知识点并落库 |
-| **双路校验机制** | `agent_core/verifier.py`（`dual_verify`）+ `agent_core/fact_checker.py`（`verify_question`） | 主模型生成内容，校验子模型独立复核，双重把关输出质量 |
-| **Trace + 自动评测闭环** | `agent_core/observability.py`（`eval_metrics` + `system_eval` 表） | 自动统计知识点召回率、出题格式合格率、错题识别准确率，形成可量化的评测闭环 |
-| **多基座自适应调度** | `framework/core/router.py`（`TaskType`）+ `agent_core/model_registry.py`（`fallback_chain`） | 按任务类型路由到合适的模型基座，基座失败时自动降级（fallback），保证服务持续可用 |
-| **分层记忆系统** | `framework/storage/layered_memory.py` | 短期会话（24 小时过期）/ 中期单元（按章节沉淀）/ 长期错题（持久保存并标记）三层记忆 |
-| **SQLite/文件存储双模式** | `framework/storage/file_compat.py` | SQLite 优先、JSON 文件自动降级，接口一致、无缝切换 |
+| 创新点                | 位置                                                                                       | 说明                                                |
+| ------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **知识分层拆解流水线**      | `agent_core/knowledge_pipeline.py`                                                       | 章节粗切 → 知识点细切 → 格式校验 → 去重/冲突检测，将教材文档自动拆解为结构化知识点并落库 |
+| **双路校验机制**         | `agent_core/verifier.py`（`dual_verify`）+ `agent_core/fact_checker.py`（`verify_question`） | 主模型生成内容，校验子模型独立复核，双重把关输出质量                        |
+| **Trace + 自动评测闭环** | `agent_core/observability.py`（`eval_metrics` + `system_eval` 表）                          | 自动统计知识点召回率、出题格式合格率、错题识别准确率，形成可量化的评测闭环             |
+| **多基座自适应调度**       | `framework/core/router.py`（`TaskType`）+ `agent_core/model_registry.py`（`fallback_chain`） | 按任务类型路由到合适的模型基座，基座失败时自动降级（fallback），保证服务持续可用      |
+| **分层记忆系统**         | `framework/storage/layered_memory.py`                                                    | 短期会话（24 小时过期）/ 中期单元（按章节沉淀）/ 长期错题（持久保存并标记）三层记忆     |
+| **SQLite/文件存储双模式** | `framework/storage/file_compat.py`                                                       | SQLite 优先、JSON 文件自动降级，接口一致、无缝切换                   |
 
 ## 🚀 零文件一键部署（无需下载任何文件）
 
@@ -239,7 +235,7 @@ irm https://raw.githubusercontent.com/k3234/lumilearn/master/deploy/install.ps1 
 - 管道模式自动 `--quick` 全默认值；`--no-start` 只克隆+配置、不启动服务
 - 仓库/分支可用环境变量 `LUMILEARN_REPO_URL` / `LUMILEARN_BRANCH` 覆盖
 - 凭据一律走环境变量（`REMOTE_HOST` / `REMOTE_USER` / `REMOTE_PASSWORD` 或 API Key），脚本不含任何真实 IP / 密码
-- 详细说明（参数/环境变量清单、Node.js 可选路径、与 bootstrap.* 的区别）见 [deploy/README.md](deploy/README.md)
+- 详细说明（参数/环境变量清单、Node.js 可选路径、与 bootstrap.\* 的区别）见 [deploy/README.md](deploy/README.md)
 
 ## 🐳 Docker 部署（推荐）
 
@@ -256,47 +252,46 @@ docker compose logs -f api
 
 **docker-compose.yml** 配置了以下服务：
 
-| 服务 | 端口 | 说明 |
-|---|---|---|
-| `api` | 5010 | 主 API 服务 |
-| `teacher` | 5001 | 教师端 |
-| `admin` | 18080 | Admin 管理面板 |
-| `analytics` | 18090 | 学习分析仪表盘 |
-| `ollama` | 11434 | 本地模型推理 |
-| `nginx` | 80 | 反向代理（可选） |
+| 服务          | 端口    | 说明         |
+| ----------- | ----- | ---------- |
+| `api`       | 5010  | 主 API 服务   |
+| `teacher`   | 5001  | 教师端        |
+| `admin`     | 18080 | Admin 管理面板 |
+| `analytics` | 18090 | 学习分析仪表盘    |
+| `ollama`    | 11434 | 本地模型推理     |
+| `nginx`     | 80    | 反向代理（可选）   |
 
 数据持久化到 `./data/` 和 `./ollama_data/` 目录。
 
 ## 文档索引
 
-| 文档 | 说明 |
-|---|---|
-| [docs/PROGRESS.md](docs/PROGRESS.md) | 项目进度总览（模块状态 / 部署信息 / 模型资产清单） |
-| [docs/admin_guide.md](docs/admin_guide.md) | 管理员系统使用指南 |
-| [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) | 本地与服务器部署指南（一键部署 + 健康检查） |
-| [docs/MODEL_COMPARISON.md](docs/MODEL_COMPARISON.md) | 模型资产对照表（脱敏版） |
-| [docs/REMOTE_DEPLOYMENT.md](docs/REMOTE_DEPLOYMENT.md) | 远程部署说明 |
-| [docs/rag_design.md](docs/rag_design.md) | RAG 知识库设计说明 |
-| [docs/privacy_compliance.md](docs/privacy_compliance.md) | 数据合规说明 |
-| [docs/open_source_plan.md](docs/open_source_plan.md) | 开源路线图 |
-| [docs/learning_journey/INDEX.md](docs/learning_journey/INDEX.md) | 学习旅程笔记索引 |
-| [notebooks/INDEX.md](notebooks/INDEX.md) | Jupyter 教程索引 |
-| [deploy/README.md](deploy/README.md) | 一键部署工具说明 |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献指南 |
-| [CHANGELOG.md](CHANGELOG.md) | 版本变更记录 |
-| [docs/SECURITY_LOCAL_AUDIT_20260817.md](docs/SECURITY_LOCAL_AUDIT_20260817.md) | 本地安全审计报告 |
-| [docs/ZERO_BASE_SETUP_GUIDE.md](docs/ZERO_BASE_SETUP_GUIDE.md) | 零基础用户配置指南（Windows，15分钟上手） |
+| 文档                                                                                | 说明                           |
+| --------------------------------------------------------------------------------- | ---------------------------- |
+| [docs/PROGRESS.md](docs/PROGRESS.md)                                              | 项目进度总览（模块状态 / 部署信息 / 模型资产清单） |
+| [docs/admin\_guide.md](docs/admin_guide.md)                                       | 管理员系统使用指南                    |
+| [docs/DEPLOYMENT\_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)                             | 本地与服务器部署指南（一键部署 + 健康检查）      |
+| [docs/MODEL\_COMPARISON.md](docs/MODEL_COMPARISON.md)                             | 模型资产对照表（脱敏版）                 |
+| [docs/REMOTE\_DEPLOYMENT.md](docs/REMOTE_DEPLOYMENT.md)                           | 远程部署说明                       |
+| [docs/rag\_design.md](docs/rag_design.md)                                         | RAG 知识库设计说明                  |
+| [docs/privacy\_compliance.md](docs/privacy_compliance.md)                         | 数据合规说明                       |
+| [docs/open\_source\_plan.md](docs/open_source_plan.md)                            | 开源路线图                        |
+| [notebooks/INDEX.md](notebooks/INDEX.md)                                          | Jupyter 教程索引                 |
+| [deploy/README.md](deploy/README.md)                                              | 一键部署工具说明                     |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                                | 贡献指南                         |
+| [CHANGELOG.md](CHANGELOG.md)                                                      | 版本变更记录                       |
+| [docs/SECURITY\_LOCAL\_AUDIT\_20260817.md](docs/SECURITY_LOCAL_AUDIT_20260817.md) | 本地安全审计报告                     |
+| [docs/ZERO\_BASE\_SETUP\_GUIDE.md](docs/ZERO_BASE_SETUP_GUIDE.md)                 | 零基础用户配置指南（Windows，15分钟上手）    |
 
 ## 核心模块
 
-| 模块 | 说明 | 状态 |
-|---|---|---|
-| **微型 Transformer** | GPT-2 风格，8 层 8 头，自训练轻量模型（framework/trainer.py） | ✅ 可用 |
-| **Agent 核心** | 路由 / 费曼教学 / 验证 / 事实核查多智能体（agent_core/） | ✅ 可用 |
-| **多智能体编排** | LangGraph 工作流 + 任务队列 + 成本追踪（agent_core/langgraph_engine.py） | ✅ 可用 |
-| **安全系统** | 安全网关 / 防火墙 / 代码沙箱 / 上传校验（framework/security/） | ✅ 可用 |
-| **Web 应用** | 学生端 / 教师端 / Admin 管理 / 学习分析仪表盘 | ✅ 可用 |
-| **部署** | Docker Compose / 一键脚本（deploy/）/ 远程部署（scripts/deploy_remote.py） | ✅ 可用 |
+| 模块                 | 说明                                                              | 状态   |
+| ------------------ | --------------------------------------------------------------- | ---- |
+| **微型 Transformer** | GPT-2 风格，8 层 8 头，自训练轻量模型（framework/trainer.py）                  | ✅ 可用 |
+| **Agent 核心**       | 路由 / 费曼教学 / 验证 / 事实核查多智能体（agent\_core/）                         | ✅ 可用 |
+| **多智能体编排**         | LangGraph 工作流 + 任务队列 + 成本追踪（agent\_core/langgraph\_engine.py）   | ✅ 可用 |
+| **安全系统**           | 安全网关 / 防火墙 / 代码沙箱 / 上传校验（framework/security/）                   | ✅ 可用 |
+| **Web 应用**         | 学生端 / 教师端 / Admin 管理 / 学习分析仪表盘                                  | ✅ 可用 |
+| **部署**             | Docker Compose / 一键脚本（deploy/）/ 远程部署（scripts/deploy\_remote.py） | ✅ 可用 |
 
 ## ⚠️ 系统局限性与未来规划
 
@@ -317,3 +312,4 @@ docker compose logs -f api
 - **V3**：扩充学科（语文/英语/生物），接入真实用户试用反馈，完善 Skills 插件生态
 - **V4**：探索多模态（图文混排教学）、离线语音交互、跨设备学习同步
 - 详细路线见 [docs/runtime-roadmap/spec.md](docs/runtime-roadmap/spec.md)
+

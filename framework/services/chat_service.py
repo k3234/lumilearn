@@ -4,17 +4,17 @@
 封装 ModelProvider 调用，集成费曼引擎，消息历史管理
 """
 import json
-import time
 import logging
-import requests
 import os
-from typing import Any, Dict, List, Optional, Generator
+import time
+from typing import Any, Dict, Generator, List, Optional
 
-from framework.models.ollama_provider import get_ollama_provider
-from framework.models.base import ModelProvider
-from framework.core.router import ModelRouter, RouteRequest, RouteResult
+import requests
+
 from framework.core.config import get_config
+from framework.core.router import ModelRouter, RouteRequest
 from framework.engines.feynman_engine import FeynmanEngine
+from framework.models.ollama_provider import get_ollama_provider
 
 logger = logging.getLogger("lumilearn.chat_service")
 
@@ -35,6 +35,9 @@ class ChatService:
         self._feynman: Optional[FeynmanEngine] = None
         self._history: Dict[str, List[Dict[str, str]]] = {}
         self._default_model = self._ollama.default_model or DEFAULT_MODEL
+        # 健康检查缓存（30s TTL）
+        self._health_cache_result: Optional[Dict[str, Any]] = None
+        self._health_cache_ts: float = 0.0
 
     def _get_feynman(self) -> FeynmanEngine:
         """懒加载费曼引擎（优先使用配置的 feynman_model，回退默认模型）"""
@@ -316,18 +319,32 @@ class ChatService:
         return "latest"
 
     def health_check(self) -> Dict[str, Any]:
-        """健康检查"""
+        """健康检查（带缓存，避免每次请求都触发 Ollama 连接探测）"""
         base_url = os.environ.get("OLLAMA_BASE_URL", GATEWAY_URL)
         result = {
             "status": "healthy",
             "gateway": "online",
             "default_model": self._default_model,
-            "model_version": self.get_model_version(),
-            "feynman_available": self._feynman is not None
+            # 模型版本需访问网关，默认先给 unknown，仅在网关可达时再查询，
+            # 避免网关离线时健康检查被该查询的长超时阻塞
+            "model_version": "unknown",
+            "feynman_available": self._feynman is not None,
         }
+        # 离线模式：跳过 Ollama 探测，直接返回健康
+        if os.environ.get("LUMILEARN_OFFLINE", "").lower() in ("1", "true", "yes"):
+            result["gateway"] = "offline"
+            result["status"] = "degraded"
+            result["offline_mode"] = True
+            return result
+        # 30 秒缓存，避免高频健康检查反复触发 Ollama 连接
+        now = time.time()
+        if (now - self._health_cache_ts) < 30 and self._health_cache_result is not None:
+            cached = dict(self._health_cache_result)
+            cached["cached"] = True
+            return cached
         try:
             t0 = time.time()
-            resp = requests.get(f"{base_url}/api/tags", timeout=5)
+            resp = requests.get(f"{base_url}/api/tags", timeout=2)
             latency = round((time.time() - t0) * 1000)
             models_count = len(resp.json().get("models", []))
             result["models"] = models_count
@@ -336,6 +353,8 @@ class ChatService:
             result["status"] = "degraded"
             result["gateway"] = "offline"
             result["error"] = str(e)
+        self._health_cache_result = result
+        self._health_cache_ts = now
         return result
 
     def update_history(self, session_id: str, messages: List[Dict[str, str]]):

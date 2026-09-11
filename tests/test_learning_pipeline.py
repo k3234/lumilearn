@@ -6,20 +6,17 @@
 """
 import os
 import sys
-
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from framework.database import db
-from framework.workflow_engine import LearningWorkflowEngine, run_learning_workflow
 from framework.output_detector import (
-    OutputDetector,
     DetectionResult,
-    detect_output,
-    run_guided_reinforcement,
+    OutputDetector,
 )
+from framework.workflow_engine import LearningWorkflowEngine, run_learning_workflow
 
 
 class TestEndToEndLearningPipeline(unittest.TestCase):

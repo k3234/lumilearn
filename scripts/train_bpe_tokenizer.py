@@ -7,7 +7,7 @@ import csv
 import json
 import os
 
-from tokenizers import Tokenizer, models, trainers, pre_tokenizers, decoders, processors
+from tokenizers import Tokenizer, decoders, models, pre_tokenizers, processors, trainers
 
 LUMILEARN_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

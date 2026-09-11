@@ -4,20 +4,15 @@
 补充项目缺失的英语和语文知识点数据
 """
 
-import csv
-import json
 import os
 import sys
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import Dict, List
 
 # 添加项目路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from lumilearn_shared import (
-    MASTER_CSV, read_existing_master, generate_id, write_master_csv,
-    TODAY, ensure_dirs
-)
+from lumilearn_shared import ensure_dirs, generate_id, read_existing_master, write_master_csv
 
 
 def generate_english_content() -> List[Dict]:
@@ -298,12 +293,12 @@ def add_content_to_master(topics: List[Dict]) -> None:
     """将生成的内容添加到主数据库"""
     existing_data = read_existing_master()
     existing_ids = {row["id"] for row in existing_data} if existing_data else set()
-    
+
     new_records = []
     for topic in topics:
         record_id = generate_id(existing_ids)
         existing_ids.add(record_id)
-        
+
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         record = {
             "id": record_id,
@@ -329,7 +324,7 @@ def add_content_to_master(topics: List[Dict]) -> None:
             "update_time": now
         }
         new_records.append(record)
-    
+
     all_records = existing_data + new_records
     write_master_csv(all_records)
     print(f"✓ 已添加 {len(new_records)} 条新记录到主数据库")
@@ -340,21 +335,21 @@ def main():
     print("=" * 60)
     print("📚 LumiLearn 英语语文内容生成器")
     print("=" * 60)
-    
+
     ensure_dirs()
-    
+
     print("\n📝 生成英语知识点...")
     english_content = generate_english_content()
     print(f"   生成了 {len(english_content)} 条英语知识点")
-    
+
     print("\n📝 生成语文知识点...")
     chinese_content = generate_chinese_content()
     print(f"   生成了 {len(chinese_content)} 条语文知识点")
-    
+
     print("\n💾 保存到数据库...")
     all_content = english_content + chinese_content
     add_content_to_master(all_content)
-    
+
     print("\n🎉 完成！")
     print("=" * 60)
 

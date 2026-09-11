@@ -3,14 +3,18 @@
 安全相关API路由
 """
 import logging
+
 from flask import Blueprint, jsonify, request
 
-from framework.security import (
-    get_gateway, get_sandbox, get_firewall,
-    reset_gateway, reset_sandbox, reset_firewall,
-    SecurityConfig,
-)
 from framework.admin.auth import require_admin
+from framework.security import (
+    get_firewall,
+    get_gateway,
+    get_sandbox,
+    reset_firewall,
+    reset_gateway,
+    reset_sandbox,
+)
 
 logger = logging.getLogger(__name__)
 

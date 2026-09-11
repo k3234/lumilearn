@@ -9,11 +9,16 @@
 """
 
 import logging
+import os
+import time
+from datetime import datetime
 
+import requests
 from flask import Blueprint, jsonify, request
 
 from framework.database import db
 from framework.engines.feynman_engine import FeynmanEngine
+from framework.engines.feynman_templates import get_template
 from framework.services.feynman_animation_bridge import get_animation_for_feynman
 from framework.services.agent_classroom import AgentClassroom
 
@@ -22,6 +27,97 @@ logger = logging.getLogger("lumilearn.routes.feynman")
 feynman_bp = Blueprint("feynman", __name__)
 
 VALID_LEVELS = {"junior", "senior", "college", "general"}
+
+# ---------------------------------------------------------------------------
+# 模块级缓存（explain / classroom 结果，TTL 3600s）
+# ---------------------------------------------------------------------------
+_result_cache: dict = {}
+_RESULT_CACHE_TTL = 3600  # 1 小时
+
+
+def _cache_get(cache_key: str) -> dict:
+    """从缓存获取结果，过期则返回 None"""
+    entry = _result_cache.get(cache_key)
+    if entry is None:
+        return None
+    if time.time() - entry["ts"] > _RESULT_CACHE_TTL:
+        _result_cache.pop(cache_key, None)
+        return None
+    return entry["data"]
+
+
+def _cache_set(cache_key: str, data: dict) -> None:
+    """写入缓存"""
+    _result_cache[cache_key] = {"data": data, "ts": time.time()}
+    # 限制缓存大小，防止内存无限增长
+    if len(_result_cache) > 200:
+        oldest = min(_result_cache, key=lambda k: _result_cache[k]["ts"])
+        _result_cache.pop(oldest)
+
+
+_OLLAMA_PING_CACHE = {}
+_OLLAMA_PING_TTL = 10  # 10 秒内不重复检测
+
+
+def _is_ollama_available() -> bool:
+    """快速检测 Ollama 是否可连接（< 1s），结果缓存 10s。"""
+    now = time.time()
+    for key, (ts, val) in _OLLAMA_PING_CACHE.items():
+        if now - ts < _OLLAMA_PING_TTL:
+            return val
+    try:
+        base = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+        r = requests.get(f"{base}/api/tags", timeout=1)
+        ok = r.status_code == 200
+    except Exception:
+        ok = False
+    _OLLAMA_PING_CACHE.clear()
+    _OLLAMA_PING_CACHE[("ok",)] = (now, ok)
+    return ok
+
+
+def _build_template_explain(topic: str, level: str) -> dict:
+    """Ollama 不可用时，用模板快速生成五步费曼讲解（< 50ms）。"""
+    t0 = time.time()
+    engine = FeynmanEngine(model_name="template-fallback")
+    subject, topic_type = engine._detect_subject_and_type(topic)
+
+    steps_config = [
+        ("phenomenon", "现象引入"),
+        ("conflict", "认知冲突"),
+        ("model", "思维模型"),
+        ("derive", "自主推导"),
+        ("test", "费曼测试"),
+    ]
+
+    steps = []
+    for key, name in steps_config:
+        content = get_template(subject, topic_type, key, topic)
+        steps.append({
+            "step_name": name,
+            "step_order": steps_config.index((key, name)) + 1,
+            "content": content.strip(),
+            "key_points": [f"用模板模式讲解{topic}的{name}"],
+            "animation_hint": engine._generate_animation_hint(name, topic, subject, topic_type),
+        })
+
+    full_content = "\n\n".join(
+        f"【第{i+1}步：{s['step_name']}】\n{s['content']}"
+        for i, s in enumerate(steps)
+    )
+    return {
+        "topic": topic,
+        "level": level,
+        "subject": subject,
+        "topic_type": topic_type,
+        "steps": steps,
+        "full_content": full_content,
+        "model_used": "template-fallback",
+        "mode": "template",
+        "fallback_reason": "Ollama 服务不可用，已自动降级到模板模式",
+        "total_time": round(time.time() - t0, 2),
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
 
 
 @feynman_bp.route("/api/feynman/explain", methods=["POST", "OPTIONS"])
@@ -76,6 +172,20 @@ def feynman_explain():
 
     model = data.get("model", "lumilearn-v2:latest")
 
+    # 检查缓存
+    cache_key = f"explain:{topic.strip().lower()}:{level}:{model}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        cached["cached"] = True
+        return jsonify(cached)
+
+    # Ollama 离线时直接走模板，避免 5 步 × 8s 的无谓等待
+    if not _is_ollama_available():
+        logger.info("Ollama 未连接，explain 直接走模板模式")
+        template_result = _build_template_explain(topic.strip(), level)
+        _cache_set(cache_key, template_result)
+        return jsonify(template_result)
+
     try:
         engine = FeynmanEngine(model_name=model)
         result = engine.explain(topic.strip(), level)
@@ -101,6 +211,9 @@ def feynman_explain():
 
         if animation_info:
             response_data["animation"] = animation_info
+
+        # 写入缓存
+        _cache_set(cache_key, response_data)
 
         # 推理过程写库（供管理员/教师查看用户真实使用记录；失败不影响主流程）
         try:
@@ -128,8 +241,31 @@ def feynman_explain():
         return jsonify(response_data)
 
     except Exception as e:
-        logger.error(f"费曼讲解失败: {e}")
-        return jsonify({"error": f"费曼讲解失败: {str(e)}"}), 500
+        logger.warning(f"Ollama 不可用，降级到模板模式: {e}")
+        template_result = _build_template_explain(topic.strip(), level)
+        try:
+            db.init()
+            steps_summary = "\n".join(
+                f"{s.get('step_order', i+1)}.{s.get('step_name', '')}: {str(s.get('content', ''))[:150]}"
+                for i, s in enumerate(template_result.get("steps", []))
+            )[:4000]
+            db.add_reasoning_log(
+                user_id=data.get("user_id", 0) or 0,
+                session_id=f"feynman:{topic.strip()[:50]}",
+                mode="feynman_template_fallback",
+                topic=topic.strip()[:200],
+                step_order=0,
+                step_name=f"五步讲解（模板降级，共{len(template_result.get('steps', []))}步）",
+                model_used=template_result.get("model_used", ""),
+                input_context=f"学生水平: {level}；主题: {topic.strip()}；原因: Ollama不可用",
+                output=steps_summary,
+                latency_ms=int(float(template_result.get("total_time", 0)) * 1000),
+                status="success",
+            )
+        except Exception as _e:
+            logger.warning(f"模板降级推理日志写库失败: {_e}")
+        _cache_set(cache_key, template_result)
+        return jsonify(template_result)
 
 
 @feynman_bp.route("/api/feynman/test", methods=["POST", "OPTIONS"])
@@ -244,6 +380,13 @@ def feynman_classroom():
     if not isinstance(max_turns, int) or max_turns < 1:
         max_turns = 5
 
+    # 检查缓存
+    cn_key = f"classroom:{topic.strip().lower()}:{level}:{max_turns}"
+    cn_cached = _cache_get(cn_key)
+    if cn_cached is not None:
+        cn_cached["cached"] = True
+        return jsonify(cn_cached)
+
     try:
         # 生成课堂对话
         classroom = AgentClassroom()
@@ -274,6 +417,9 @@ def feynman_classroom():
 
         if whiteboard_svg:
             response_data["whiteboard_svg"] = whiteboard_svg
+
+        # 写入缓存
+        _cache_set(cn_key, response_data)
 
         return jsonify(response_data)
 

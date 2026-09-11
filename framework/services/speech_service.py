@@ -8,13 +8,13 @@
 日期：2026-06-01
 """
 
+import logging
 import os
 import tempfile
-import logging
 from pathlib import Path
 from typing import Dict, Optional
 
-from framework.security.uploads import validate_upload_file, check_file_magic, ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES
+from framework.security.uploads import ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES, check_file_magic, validate_upload_file
 
 logger = logging.getLogger("lumilearn.speech_service")
 

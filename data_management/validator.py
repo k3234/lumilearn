@@ -6,9 +6,9 @@ LumiLearn 数据验证器
 - 领域覆盖分析
 - 训练就绪度评估
 """
-from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
 from collections import Counter
+from dataclasses import dataclass, field
+from typing import Dict, List
 
 from .schema import DataSchema
 

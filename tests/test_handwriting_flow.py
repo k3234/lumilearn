@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """手写识别流程测试"""
-import sys, os, time, json
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import importlib.util
+
 spec = importlib.util.spec_from_file_location("database", "framework/database.py")
 db_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(db_module)

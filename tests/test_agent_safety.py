@@ -8,20 +8,25 @@ LumiLearn Phase 3 — 安全集成测试（模拟 OWASP Top 10 for Agentic Appli
   - agent_core.orchestrator:  人工中断机制（interrupt/resume）
 """
 
-import sys
 import os
+import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_core.safety import (
-    AgentSafetyGuard, get_safety_guard, reset_safety_guard, check_agent_call,
-)
 from agent_core.observability import (
-    AgentTelemetry, get_telemetry, reset_telemetry,
+    AgentTelemetry,
+    get_telemetry,
+    reset_telemetry,
 )
 from agent_core.orchestrator import UnifiedOrchestrator
+from agent_core.safety import (
+    AgentSafetyGuard,
+    check_agent_call,
+    get_safety_guard,
+    reset_safety_guard,
+)
 
 
 # ================================================================

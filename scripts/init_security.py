@@ -19,9 +19,9 @@ def main():
     # 导入安全模块
     try:
         from framework.security.config import SecurityConfig
+        from framework.security.firewall import NetworkFirewall
         from framework.security.gateway import SecurityGateway
         from framework.security.sandbox import CodeSandbox
-        from framework.security.firewall import NetworkFirewall
         print("[OK] 安全模块导入成功")
     except ImportError as e:
         print(f"[ERROR] 安全模块导入失败: {e}")
@@ -45,8 +45,8 @@ def main():
     sandbox = CodeSandbox(config)
     firewall = NetworkFirewall(config)
 
-    print(f"\n[INFO] API网关已初始化")
-    print(f"[INFO] 代码沙箱已初始化")
+    print("\n[INFO] API网关已初始化")
+    print("[INFO] 代码沙箱已初始化")
     print(f"[INFO] 网络防火墙已初始化 (规则数: {len(firewall.rules)})")
 
     # 显示防火墙规则

@@ -4,9 +4,8 @@
 LumiLearn 一键停止脚本（跨平台统一入口）
 ============================================
 1. 读取 deploy/.pids.json，逐个终止对应 PID 进程；
-2. 残留进程兜底：按命令行含 lumilearn_web / teacher_portal / framework.api.server
-   的 python 进程清理（优先 psutil；缺省 Windows 用 PowerShell 枚举 + taskkill，
-   Linux/macOS 用 pgrep + SIGTERM）；
+2. 残留进程兜底：按命令行含 MARKERS 关键字的 python 进程清理（优先 psutil；缺省
+   Windows 用 PowerShell 枚举 + taskkill，Linux/macOS 用 pgrep + SIGTERM）；
 3. 删除 deploy/.pids.json。
 
 用法：
@@ -15,6 +14,7 @@ LumiLearn 一键停止脚本（跨平台统一入口）
 
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
@@ -35,7 +35,32 @@ except ImportError:
     psutil = None
 
 # 残留进程识别关键字（与进程命令行匹配）
-MARKERS = ("teacher_portal", "framework.api.server")
+# 覆盖同一服务的两种启动形式，避免只认其一造成漏杀：
+#   framework.api.server     ← python -m framework.api.server（deploy/start.py）
+#   framework/api/server.py  ← python framework/api/server.py（systemd 单元 / 手工直启）
+# lumilearn_web / teacher_portal 为早期独立入口，保留兜底。
+MARKERS = (
+    "lumilearn_web",
+    "teacher_portal",
+    "framework.api.server",
+    "framework/api/server.py",
+)
+
+
+def marker_pattern():
+    """把 MARKERS 编译为子串模式，供 PowerShell -match 与 pgrep -f 共用（唯一来源）。"""
+    return "|".join(re.escape(m) for m in MARKERS)
+
+
+def is_python_cmdline(cmdline):
+    """判断命令行是否由 python 解释器启动。
+
+    以命令行首段（可执行文件）判断而非进程 name：进程名可能被主线程名覆盖
+    （如 systemd 下显示为 pt_main_thread），只看 name 会漏判。
+    """
+    if not cmdline:
+        return False
+    return "python" in os.path.basename(cmdline.split()[0]).lower()
 
 SERVICE_NAMES = {
     "teacher_portal": "教师门户",
@@ -104,13 +129,12 @@ def find_leftover_pids():
     """按命令行关键字查找残留 python 进程 PID 列表（跨平台）。"""
     if psutil is not None:
         pids = []
-        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+        for proc in psutil.process_iter(["pid", "cmdline"]):
             try:
-                name = (proc.info.get("name") or "").lower()
                 cmdline = " ".join(proc.info.get("cmdline") or [])
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 continue
-            if "python" not in name:
+            if not is_python_cmdline(cmdline):
                 continue
             if any(m in cmdline for m in MARKERS):
                 pids.append(int(proc.info["pid"]))
@@ -120,9 +144,9 @@ def find_leftover_pids():
         # PowerShell 枚举 python 进程命令行（wmic 已弃用）
         script = (
             "Get-CimInstance Win32_Process -Filter \"Name LIKE 'python%'\" | "
-            "Where-Object { $_.CommandLine -match 'lumilearn_web|teacher_portal|framework\\.api\\.server' } | "
-            "ForEach-Object { $_.ProcessId }"
-        )
+            "Where-Object {{ $_.CommandLine -match '{}' }} | "
+            "ForEach-Object {{ $_.ProcessId }}"
+        ).format(marker_pattern())
         try:
             out = subprocess.run(
                 ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
@@ -133,7 +157,7 @@ def find_leftover_pids():
 
     # Linux/macOS 兜底
     try:
-        out = subprocess.run(["pgrep", "-f", "teacher_portal|framework.api.server"],
+        out = subprocess.run(["pgrep", "-f", marker_pattern()],
                              capture_output=True, text=True, timeout=30)
         return [int(line) for line in out.stdout.split() if line.strip().isdigit()]
     except Exception:

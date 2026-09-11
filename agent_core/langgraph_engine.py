@@ -14,22 +14,22 @@ LumiLearn Agent Core — LangGraph 风格编排引擎
 
 from __future__ import annotations
 
-import csv
+import hashlib
 import json
 import os
 import re
 import sys
 import time
-import hashlib
-from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent_core.model_registry import (
-    ALL_MODELS, ALL_MODELS_DICT, ModelEntry,
+    ALL_MODELS,
+    ALL_MODELS_DICT,
+    ModelEntry,
 )
 from agent_core.models import AgentState
 
@@ -45,7 +45,7 @@ class MultiFormatGenerator:
 
     def __init__(self, helper_model: str = "qwen2.5:7b"):
         self.helper_model = helper_model
-        self.ollama_url = f"http://localhost:11434"
+        self.ollama_url = "http://localhost:11434"
 
     def generate_all_formats(self, raw_response: str, topic: str,
                              model_name: str) -> Dict[str, str]:
@@ -87,7 +87,7 @@ class MultiFormatGenerator:
         lines = []
         for kp in key_points:
             lines.append(f"Q: {kp}")
-            lines.append(f"A: 请用自己的话解释这个要点")
+            lines.append("A: 请用自己的话解释这个要点")
             lines.append("---")
         return "\n".join(lines)
 

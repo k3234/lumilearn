@@ -8,13 +8,14 @@ import logging
 import os
 import time
 from typing import Dict
-from flask import Blueprint, request, jsonify
 
-from framework.database import db
-from framework.admin.auth import get_admin_auth, require_admin
+from flask import Blueprint, jsonify, request, session
+
 from framework.admin.agents import get_agent_registry
+from framework.admin.auth import get_admin_auth, require_admin
 from framework.api.validation import validate_document_import
 from framework.core.config import get_config
+from framework.database import db
 from framework.models.ollama_provider import get_ollama_provider
 
 logger = logging.getLogger("lumilearn.routes.admin")
@@ -36,6 +37,17 @@ def admin_login():
     result = get_admin_auth().login(username, password)
     if not result["success"]:
         return jsonify(result), 401
+
+    # 建立页面会话：管理控制台页面（/admin、/admin/org、/admin/ops）由
+    # server._page_role 依据 session 角色放行，而页面直链无法携带 X-Admin-Token 头，
+    # 因此登录成功后必须同时写入会话，否则控制台页面会永远 302 回首页。
+    admin = result.get("admin") or {}
+    role = admin.get("role", "admin")
+    session.permanent = True
+    session["role"] = role
+    session["user_role"] = role
+    session["admin_id"] = admin.get("id")
+    session["admin_username"] = admin.get("username", username)
     return jsonify(result)
 
 
@@ -44,6 +56,7 @@ def admin_login():
 def admin_logout():
     token = request.headers.get("X-Admin-Token", "")
     get_admin_auth().logout(token)
+    session.clear()
     return jsonify({"success": True, "message": "已退出登录"})
 
 
@@ -704,6 +717,7 @@ def admin_add_provider():
     api_key = data.get("api_key", "")
     enabled = data.get("enabled", True)
     models = data.get("models")
+    protocol = data.get("protocol", "openai")   # 协议：openai / anthropic / gemini / ollama
 
     # 更新时如果 api_key 为空字符串，保留原有 Key（前端传空表示不修改）
     if not api_key:
@@ -712,7 +726,7 @@ def admin_add_provider():
             api_key = get_provider_service().get_provider_api_key(key)
 
     result = get_provider_service().add_or_update_provider(
-        key, name, base_url, api_key, enabled=enabled, models=models
+        key, name, base_url, api_key, enabled=enabled, models=models, protocol=protocol
     )
     if not result["success"]:
         return jsonify(result), 400
@@ -1234,8 +1248,8 @@ def admin_reject_interrupt(trace_id):
 @require_admin
 def admin_cost_report():
     """成本报告：汇总 + 按模型分布 + 按 Agent 分布 + 趋势"""
-    from agent_core.observability import get_telemetry
     from agent_core.cost_tracker import get_cost_tracker
+    from agent_core.observability import get_telemetry
     telemetry = get_telemetry()
     summary = telemetry.get_cost_summary()
     tracker = get_cost_tracker()
@@ -1341,8 +1355,7 @@ def admin_list_mcp_servers():
 @require_admin
 def admin_add_mcp_server():
     """注册外部 MCP 服务器（http / stdio）"""
-    from agent_core.mcp_external import (
-        get_external_mcp_registry, ExternalMCPServerConfig)
+    from agent_core.mcp_external import ExternalMCPServerConfig, get_external_mcp_registry
     data = request.get_json(force=True) or {}
     server_name = (data.get("server_name") or "").strip()
     if not server_name:
@@ -1574,8 +1587,8 @@ def admin_import_document():
     if not ok:
         return jsonify({"status": "error", "message": err}), 400
 
-    from framework.pipeline.knowledge_parser import KnowledgeParser
     from agent_core.knowledge_pipeline import KnowledgePipeline
+    from framework.pipeline.knowledge_parser import KnowledgeParser
 
     parser = KnowledgeParser()
     try:

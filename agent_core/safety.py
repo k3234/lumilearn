@@ -19,13 +19,12 @@ LumiLearn Agent Core — Agent API 级安全控制（Phase 3）
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import re
 import threading
 import time
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger("lumilearn.agent.safety")
 

@@ -4,18 +4,17 @@ tests/test_security_gateway.py
 SecurityGateway 安全网关单元测试
 覆盖：速率限制、IP封禁、请求日志、端点保护
 """
-import sys, os
-from unittest import mock
+import os
+import sys
+
 import pytest
-from datetime import datetime, timedelta
-from dataclasses import replace
 from flask import Flask
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from framework.security.gateway import SecurityGateway, RateLimit, IPBlock, get_gateway, reset_gateway
-from framework.security.config import SecurityConfig, GatewayConfig
+from framework.security.config import GatewayConfig, SecurityConfig
+from framework.security.gateway import IPBlock, RateLimit, SecurityGateway, get_gateway, reset_gateway
 
 
 @pytest.fixture

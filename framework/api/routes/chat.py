@@ -11,13 +11,14 @@
 import json
 import logging
 import time
-import requests
-from flask import Blueprint, request, jsonify, Response, stream_with_context
 
-from framework.services.chat_service import get_chat_service
-from framework.services.provider_service import get_provider_service, ProviderService
-from framework.database import db
+import requests
+from flask import Blueprint, Response, jsonify, request, stream_with_context
+
 from framework.api.routes.auth import require_user_token
+from framework.database import db
+from framework.services.chat_service import get_chat_service
+from framework.services.provider_service import get_provider_service
 
 logger = logging.getLogger("lumilearn.routes.chat")
 
@@ -47,20 +48,24 @@ def _get_provider_service():
 def _resolve_port_config():
     """
     根据请求来源端口解析该端口配置的 provider/model。
+    若无端口映射，则回退到 DEFAULT_MODEL（provider:model 约定）。
     返回 (provider, model) 或 (None, None)。
     """
     try:
         from flask import request as req
         host = req.host  # 形如 localhost:18080
         port = host.rsplit(":", 1)[-1]
-        if not port.isdigit():
-            return None, None
-        port_int = int(port)
         ps = _get_provider_service()
-        port_map = ps.get_port_model_map()
-        for key, cfg in port_map.items():
-            if int(cfg.get("port", 0)) == port_int:
-                return cfg.get("provider", "ollama"), cfg.get("model", "")
+        if port.isdigit():
+            port_int = int(port)
+            port_map = ps.get_port_model_map()
+            for key, cfg in port_map.items():
+                if int(cfg.get("port", 0)) == port_int:
+                    return cfg.get("provider", "ollama"), cfg.get("model", "")
+        # 端口未命中：回退到 DEFAULT_MODEL / providers.yaml 顶层 default_model
+        default_provider, default_model = ps.get_default_model()
+        if default_provider and default_model:
+            return default_provider, default_model
         return None, None
     except Exception:
         return None, None
@@ -69,7 +74,7 @@ def _resolve_port_config():
 def _resolve_cloud_model(model: str):
     """
     检查 model 是否属于配置的提供者（云端 API 或本地 OpenAI 兼容容器）。
-    如果是则返回 (provider_key, api_key, base_url)；本地模型返回 None。
+    如果是则返回 (provider_key, api_key, base_url, protocol)；本地模型返回 None。
     云端提供者需 API Key；本地容器（vLLM / LM Studio / LocalAI / llama.cpp 等，
     配置里 local: true）即使没有 API Key 也会被解析，走同一 OpenAI 兼容接口。
     """
@@ -82,9 +87,10 @@ def _resolve_cloud_model(model: str):
             if m.get("id") == model:
                 api_key = cfg.get("api_key")
                 base_url = cfg.get("base_url")
+                protocol = cfg.get("protocol", "openai")
                 # 云端需 API Key；本地容器（local=true）无 Key 也可用
                 if api_key or cfg.get("local", False):
-                    return (key, api_key, base_url)
+                    return (key, api_key, base_url, protocol)
     return None
 
 
@@ -182,6 +188,46 @@ def _cloud_chat_sync(model, messages, api_key, base_url, temperature, max_tokens
     return {"error": "no response from cloud API"}
 
 
+def _cloud_chat_stream_dispatch(protocol, model, messages, api_key, base_url,
+                                temperature, max_tokens):
+    """按 provider 的 protocol 分派流式云端对话。
+
+    openai（含 ollama / 本地容器，及 protocol 缺省）走既有 OpenAI 兼容实现；
+    anthropic / gemini 走对应协议适配器（其内部已输出 NDJSON 兼容的 JSON 字符串）。
+    """
+    if protocol == "anthropic":
+        from framework.models.anthropic_provider import AnthropicProvider
+        provider = AnthropicProvider(base_url=base_url, default_model=model, api_key=api_key)
+        yield from provider.chat(messages, model=model, temperature=temperature,
+                                 max_tokens=max_tokens, stream=True)
+        return
+    if protocol == "gemini":
+        from framework.models.gemini_provider import GeminiProvider
+        provider = GeminiProvider(base_url=base_url, default_model=model, api_key=api_key)
+        yield from provider.chat(messages, model=model, temperature=temperature,
+                                 max_tokens=max_tokens, stream=True)
+        return
+    # 默认：OpenAI 兼容（保持既有行为不变）
+    yield from _cloud_chat_stream(model, messages, api_key, base_url,
+                                  temperature, max_tokens)
+
+
+def _cloud_chat_sync_dispatch(protocol, model, messages, api_key, base_url,
+                              temperature, max_tokens):
+    """按 provider 的 protocol 分派同步云端对话（默认 OpenAI 兼容，行为不变）"""
+    if protocol == "anthropic":
+        from framework.models.anthropic_provider import AnthropicProvider
+        provider = AnthropicProvider(base_url=base_url, default_model=model, api_key=api_key)
+        return provider.chat_sync(messages, model=model, temperature=temperature,
+                                  max_tokens=max_tokens)
+    if protocol == "gemini":
+        from framework.models.gemini_provider import GeminiProvider
+        provider = GeminiProvider(base_url=base_url, default_model=model, api_key=api_key)
+        return provider.chat_sync(messages, model=model, temperature=temperature,
+                                  max_tokens=max_tokens)
+    return _cloud_chat_sync(model, messages, api_key, base_url, temperature, max_tokens)
+
+
 @chat_bp.route("/api/chat", methods=["POST", "OPTIONS"])
 def chat():
     """
@@ -244,17 +290,17 @@ def chat():
     cloud_info = _resolve_cloud_model(model) if model else None
 
     if cloud_info:
-        provider_key, api_key, base_url = cloud_info
+        provider_key, api_key, base_url, protocol = cloud_info
 
         if not stream:
-            result = _cloud_chat_sync(model, messages, api_key, base_url,
-                                      temperature, max_tokens)
+            result = _cloud_chat_sync_dispatch(protocol, model, messages, api_key, base_url,
+                                               temperature, max_tokens)
             return jsonify(result)
 
         def generate_cloud():
             try:
-                for chunk in _cloud_chat_stream(model, messages, api_key, base_url,
-                                                temperature, max_tokens):
+                for chunk in _cloud_chat_stream_dispatch(protocol, model, messages, api_key,
+                                                         base_url, temperature, max_tokens):
                     yield chunk.encode("utf-8") + b"\n"
             except Exception as e:
                 logger.error(f"云端流式对话异常: {e}")

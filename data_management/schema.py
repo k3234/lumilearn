@@ -3,13 +3,11 @@
 LumiLearn 数据标准格式定义
 所有输入输出数据必须遵循此 Schema
 """
-import csv
-import json
 import hashlib
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Optional, List, Dict
+from typing import Dict, List
 
 
 class Difficulty(Enum):

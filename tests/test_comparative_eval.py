@@ -7,16 +7,15 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-import pytest
 
 from scripts.run_comparative_eval import (
-    load_datasets,
-    _answer_numbers,
-    _answer_num_units,
     _answer_core_text,
+    _answer_num_units,
+    _answer_numbers,
     _equivalent_texts,
     check_hallucination_simple,
     is_answer_correct,
+    load_datasets,
 )
 
 

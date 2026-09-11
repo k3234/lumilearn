@@ -4,8 +4,10 @@ tests/test_feynman_engine.py
 FeynmanEngine 核心模块单元测试
 覆盖：学科识别、Prompt构建、五步教学、交互式引导、降级、RAG注入
 """
-import sys, os
+import os
+import sys
 from unittest import mock
+
 import pytest
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

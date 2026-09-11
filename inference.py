@@ -1,12 +1,16 @@
-import sys, os, json, time, io
+import json
+import os
+import sys
+import time
+
 import torch
 import torch.nn.functional as F
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 
-from framework.model import LumiLearnModel
 from framework.config import ModelConfig
+from framework.model import LumiLearnModel
 from framework.tokenizer import LumiLearnTokenizer
 
 

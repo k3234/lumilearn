@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#08080d">
+<meta name="theme-color" content="#0a0a0a">
 <meta name="format-detection" content="telephone=no, email=no, address=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,20 +28,23 @@
 <!-- Chart.js 图表绘制 -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<!-- LumiLearn 设计系统基座 · 令牌级换肤（页面私有样式随后覆盖） -->
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
 <style>
 :root {
---bg-deep: #08080d;
---bg-surface: #141413;
---bg-elevated: #1c1c1a;
---text-primary: #faf9f5;
---text-secondary: #b0aea5;
---text-dim: #6b6b6b;
---accent-orange: #d97757;
---accent-blue: #6a9bcc;
---accent-green: #788c5d;
---border: #2a2a2a;
---glow-orange: rgba(217, 119, 87, 0.15);
---glow-blue: rgba(106, 155, 204, 0.1);
+--bg-deep: var(--background-900);
+--bg-surface: var(--background-800);
+--bg-elevated: var(--card);
+--text-primary: var(--foreground);
+--text-secondary: var(--color-text-muted);
+--text-dim: var(--text-500);
+--accent-orange: var(--primary);
+--accent-blue: var(--primary);
+--accent-green: var(--success);
+--border: var(--brand-700);
+--glow-orange: color-mix(in srgb, var(--primary) 15%, transparent);
+--glow-blue: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html { height: 100%; }
@@ -82,7 +85,7 @@ align-items: center;
 justify-content: space-between;
 padding: 14px 28px;
 padding-top: max(14px, env(safe-area-inset-top));
-background: rgba(20, 20, 19, 0.85);
+background: color-mix(in srgb, var(--background-800) 85%, transparent);
 backdrop-filter: blur(16px);
 -webkit-backdrop-filter: blur(16px);
 border-bottom: 1px solid var(--border);
@@ -112,10 +115,10 @@ letter-spacing: -0.3px;
 font-family: 'JetBrains Mono', monospace;
 font-size: 12px;
 color: var(--accent-orange);
-background: rgba(217, 119, 87, 0.1);
+background: color-mix(in srgb, var(--primary) 10%, transparent);
 padding: 4px 12px;
 border-radius: 20px;
-border: 1px solid rgba(217, 119, 87, 0.2);
+border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
 }
 .header-right { display: flex; align-items: center; gap: 16px; }
 .header-right select {
@@ -163,7 +166,7 @@ top: 2px; left: 2px;
 transition: all 0.25s;
 }
 .feynman-switch.on {
-background: rgba(217, 119, 87, 0.15);
+background: color-mix(in srgb, var(--primary) 15%, transparent);
 border-color: var(--accent-orange);
 }
 .feynman-switch.on::after {
@@ -214,8 +217,8 @@ font-size: 13px;
 font-weight: 600;
 flex-shrink: 0;
 }
-.msg-avatar.user { background: var(--accent-blue); color: white; }
-.msg-avatar.model { background: var(--accent-orange); color: white; }
+.msg-avatar.user { background: var(--accent-blue); color: var(--color-primary-foreground); }
+.msg-avatar.model { background: var(--accent-orange); color: var(--color-primary-foreground); }
 .msg-content {
 flex: 1;
 min-width: 0;
@@ -254,7 +257,7 @@ color: var(--accent-blue);
 font-family: 'JetBrains Mono', monospace;
 font-size: 14px;
 color: var(--accent-green);
-background: rgba(120, 140, 93, 0.08);
+background: color-mix(in srgb, var(--success) 8%, transparent);
 padding: 2px 6px;
 border-radius: 3px;
 letter-spacing: 0.3px;
@@ -328,8 +331,8 @@ white-space: nowrap;
 /* 已完成步骤 */
 .feynman-progress .fp-step.done {
 opacity: 1;
-border-color: rgba(120, 140, 93, 0.45);
-background: rgba(120, 140, 93, 0.10);
+border-color: color-mix(in srgb, var(--success) 45%, transparent);
+background: color-mix(in srgb, var(--success) 10%, transparent);
 }
 .feynman-progress .fp-step.done .fp-num { color: var(--accent-green); }
 .feynman-progress .fp-step.done .fp-name { color: var(--text-secondary); }
@@ -338,17 +341,17 @@ background: rgba(120, 140, 93, 0.10);
 opacity: 1;
 border-color: var(--accent-orange);
 background: var(--glow-orange);
-box-shadow: 0 0 12px var(--glow-orange), inset 0 0 0 1px rgba(217, 119, 87, 0.3);
+box-shadow: 0 0 12px var(--glow-orange), inset 0 0 0 1px color-mix(in srgb, var(--primary) 30%, transparent);
 }
 .feynman-progress .fp-step.active .fp-num { color: var(--accent-orange); }
 .feynman-progress .fp-step.active .fp-name { color: var(--text-primary); }
 
 /* ── 费曼引导：消息卡片样式 ── */
 .message.feynman-msg {
-border: 1px solid rgba(217, 119, 87, 0.25);
+border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
 border-radius: 12px;
 padding: 14px 16px;
-background: linear-gradient(180deg, rgba(217, 119, 87, 0.08), rgba(106, 155, 204, 0.05));
+background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 8%, transparent), color-mix(in srgb, var(--foreground) 5%, transparent));
 }
 /* 卡片内的步骤标题（由 "### 【...】" 渲染而来） */
 .message.feynman-msg .msg-text h3 {
@@ -357,8 +360,8 @@ font-family: 'JetBrains Mono', monospace;
 font-size: 13px;
 font-weight: 500;
 color: var(--accent-orange);
-background: rgba(217, 119, 87, 0.12);
-border: 1px solid rgba(217, 119, 87, 0.3);
+background: color-mix(in srgb, var(--primary) 12%, transparent);
+border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
 border-radius: 6px;
 padding: 4px 10px;
 margin: 0 0 10px;
@@ -404,7 +407,7 @@ color: var(--text-dim);
 position: relative; z-index: 2;
 padding: 16px 28px;
 padding-bottom: max(16px, env(safe-area-inset-bottom));
-background: rgba(20, 20, 19, 0.9);
+background: color-mix(in srgb, var(--background-800) 90%, transparent);
 backdrop-filter: blur(16px);
 -webkit-backdrop-filter: blur(16px);
 border-top: 1px solid var(--border);
@@ -440,7 +443,7 @@ caret-color: var(--accent-orange);
 flex-shrink: 0;
 width: 44px; height: 44px;
 background: var(--accent-orange);
-color: white;
+color: var(--color-primary-foreground);
 border: none;
 border-radius: 8px;
 font-size: 18px;
@@ -450,7 +453,7 @@ display: flex;
 align-items: center;
 justify-content: center;
 }
-.btn-send:hover { background: #c86641; transform: translateY(-1px); }
+.btn-send:hover { background: color-mix(in srgb, var(--primary) 85%, var(--background-900)); transform: translateY(-1px); }
 .btn-send:disabled {
 background: var(--border);
 cursor: not-allowed;
@@ -487,7 +490,7 @@ vertical-align: text-bottom;
 flex-shrink: 0;
 width: 44px; height: 44px;
 background: var(--accent-blue);
-color: white;
+color: var(--color-primary-foreground);
 border: none;
 border-radius: 8px;
 font-size: 18px;
@@ -497,14 +500,14 @@ display: flex;
 align-items: center;
 justify-content: center;
 }
-.btn-mic:hover { background: #5a8ab5; transform: translateY(-1px); }
+.btn-mic:hover { background: color-mix(in srgb, var(--primary) 85%, var(--background-900)); transform: translateY(-1px); }
 .btn-mic.recording {
-background: #e53e3e;
+background: var(--destructive);
 animation: micPulse 1s ease-in-out infinite;
 }
 @keyframes micPulse {
-0%, 100% { box-shadow: 0 0 4px #e53e3e; }
-50% { box-shadow: 0 0 16px #e53e3e; }
+0%, 100% { box-shadow: 0 0 4px var(--destructive); }
+50% { box-shadow: 0 0 16px var(--destructive); }
 }
 .btn-mic:disabled {
 background: var(--border);
@@ -547,17 +550,17 @@ white-space: nowrap;
 .btn-speak:hover {
 color: var(--accent-orange);
 border-color: var(--accent-orange);
-background: rgba(217, 119, 87, 0.08);
+background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 .btn-speak.speaking {
-color: #fff;
+color: var(--color-primary-foreground);
 background: var(--accent-orange);
 border-color: var(--accent-orange);
 animation: speakPulse 1.2s ease-in-out infinite;
 }
 .btn-speak.speaking:hover {
-background: #c56847;
-border-color: #c56847;
+background: color-mix(in srgb, var(--primary) 85%, var(--background-900));
+border-color: color-mix(in srgb, var(--primary) 85%, var(--background-900));
 }
 .btn-speak.loading {
 color: var(--accent-blue);
@@ -565,13 +568,13 @@ border-color: var(--accent-blue);
 opacity: 0.85;
 }
 .btn-speak.speak-error {
-color: #e53e3e;
-border-color: #e53e3e;
+color: var(--destructive);
+border-color: var(--destructive);
 }
 .btn-speak .speak-label { font-weight: 500; letter-spacing: 0.02em; }
 @keyframes speakPulse {
-0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0.4); }
-50% { box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.12); }
+0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 40%, transparent); }
+50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 12%, transparent); }
 }
 
 /* ── OCR Button ── */
@@ -579,7 +582,7 @@ border-color: #e53e3e;
 flex-shrink: 0;
 width: 44px; height: 44px;
 background: var(--accent-green);
-color: white;
+color: var(--color-primary-foreground);
 border: none;
 border-radius: 8px;
 font-size: 18px;
@@ -589,9 +592,9 @@ display: flex;
 align-items: center;
 justify-content: center;
 }
-.btn-ocr:hover { background: #6b7a50; transform: translateY(-1px); }
+.btn-ocr:hover { background: color-mix(in srgb, var(--success) 85%, var(--background-900)); transform: translateY(-1px); }
 .btn-ocr.loading {
-background: #4a8c3f;
+background: color-mix(in srgb, var(--success) 75%, var(--background-900));
 animation: ocrSpin 1s linear infinite;
 }
 @keyframes ocrSpin {
@@ -648,7 +651,7 @@ display: block;
 flex-shrink: 0;
 width: 44px; height: 44px;
 background: var(--accent-orange);
-color: white;
+color: var(--color-primary-foreground);
 border: none;
 border-radius: 8px;
 font-size: 18px;
@@ -658,7 +661,7 @@ display: flex;
 align-items: center;
 justify-content: center;
 }
-.btn-review:hover { background: #c86641; transform: translateY(-1px); }
+.btn-review:hover { background: color-mix(in srgb, var(--primary) 85%, var(--background-900)); transform: translateY(-1px); }
 .btn-review:disabled {
 background: var(--border);
 cursor: not-allowed;
@@ -721,7 +724,7 @@ line-height: 1;
 }
 .review-score.high { color: var(--accent-green); }
 .review-score.medium { color: var(--accent-orange); }
-.review-score.low { color: #f85149; }
+.review-score.low { color: var(--destructive); }
 .review-score-label {
 font-family: 'JetBrains Mono', monospace;
 font-size: 11px;
@@ -758,7 +761,7 @@ transition: width 0.6s ease-out;
 }
 .review-dim-fill.high { background: var(--accent-green); }
 .review-dim-fill.medium { background: var(--accent-orange); }
-.review-dim-fill.low { background: #f85149; }
+.review-dim-fill.low { background: var(--destructive); }
 .review-suggestions {
 padding-top: 12px;
 border-top: 1px solid var(--border);
@@ -799,7 +802,7 @@ border-radius: 8px;
 flex-shrink: 0;
 width: 44px; height: 44px;
 background: var(--accent-blue);
-color: white;
+color: var(--primary-foreground);
 border: none;
 border-radius: 8px;
 font-size: 18px;
@@ -809,7 +812,7 @@ display: flex;
 align-items: center;
 justify-content: center;
 }
-.btn-resources:hover { background: #5a8ab5; transform: translateY(-1px); }
+.btn-resources:hover { background: var(--brand-400); transform: translateY(-1px); }
 .btn-resources:disabled {
 background: var(--border);
 cursor: not-allowed;
@@ -919,10 +922,10 @@ line-height: 1.6;
 .code-block-light .line::before { counter-increment: line; content: counter(line); display: inline-block; width: 2em; margin-right: 1em; text-align: right; color: #999; font-size: 12px; user-select: none; }
 
 /* 图表 */
-.chart-container { background: #1e1e2e; border-radius: 8px; padding: 16px; margin: 12px 0; max-width: 100%; }
+.chart-container { background: var(--card); border-radius: 8px; padding: 16px; margin: 12px 0; max-width: 100%; }
 .chart-container canvas { max-height: 400px; width: 100% !important; }
-.chart-title { color: #cdd6f4; font-size: 14px; text-align: center; margin-bottom: 8px; }
-.chart-fallback { color: #a6adc8; font-size: 12px; text-align: center; padding: 20px; font-style: italic; }
+.chart-title { color: var(--foreground); font-size: 14px; text-align: center; margin-bottom: 8px; }
+.chart-fallback { color: var(--color-text-muted); font-size: 12px; text-align: center; padding: 20px; font-style: italic; }
 
 /* ── 触摸反馈 & 移动端基础样式 ── */
 button, .btn-send, .btn-mic, .btn-ocr, .btn-clear,
@@ -1063,7 +1066,7 @@ input:focus-visible {
 
 /* ── 浅色主题回退（兼容不支持深色系统） ── */
 @media (prefers-color-scheme: light) {
-  :root { --bg-deep: #1a1a20; --bg-surface: #252530; --bg-elevated: #2e2e38; }
+  :root { --bg-deep: var(--background-900); --bg-surface: var(--background-800); --bg-elevated: var(--card); }
 }
 
 /* ── 虚拟键盘弹出时调整输入区 ── */
@@ -1123,25 +1126,25 @@ body.keyboard-open .chat {
 <div class="feynman-switch" id="feynmanSwitch"></div>
 <span>费曼引导</span>
 </div>
-<span id="termUserBadge" style="display:none;font-size:12px;color:#8aa0b8;border:1px solid #2a2a2a;border-radius:6px;padding:4px 10px;cursor:pointer;" onclick="openLogin()" title="当前账号"></span>
-<button id="termLoginBtn" onclick="openLogin()" style="background:none;border:1px solid #2a2a2a;color:#a6adc8;cursor:pointer;font-size:13px;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">登录</button>
-<a href="/admin" target="_blank" title="管理面板（模型配置、用户管理等）" style="background:none;border:none;color:#a6adc8;cursor:pointer;font-size:18px;padding:4px 8px;text-decoration:none;display:inline-flex;align-items:center;">⚙</a>
+<span id="termUserBadge" style="display:none;font-size:12px;color:var(--color-text-muted);border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;" onclick="openLogin()" title="当前账号"></span>
+<button id="termLoginBtn" onclick="openLogin()" style="background:none;border:1px solid var(--border);color:var(--color-text-muted);cursor:pointer;font-size:13px;padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">登录</button>
+<a href="/admin" target="_blank" title="管理面板（模型配置、用户管理等）" style="background:none;border:none;color:var(--color-text-muted);cursor:pointer;font-size:18px;padding:4px 8px;text-decoration:none;display:inline-flex;align-items:center;">⚙</a>
 <div class="status-dot" id="statusDot"></div>
 <span class="latency" id="latencyDisplay">--</span>
 </div>
 </div>
 
 <!-- 账号登录弹窗 -->
-<div class="login-mask" id="loginMask" style="position:fixed;inset:0;background:rgba(8,8,13,.72);z-index:999;display:none;align-items:center;justify-content:center;">
-<div style="background:#141413;border:1px solid #2a2a2a;border-radius:12px;padding:26px 28px;width:min(320px,88vw);">
-<h3 style="margin-bottom:6px;color:#faf9f5;font-size:17px;">账号登录</h3>
-<p style="font-size:12px;color:#6b6b6b;margin-bottom:16px;">使用管理员分配的账号（students/users 表）登录</p>
-<input id="loginUser" placeholder="用户名" style="width:100%;background:#0c0c11;border:1px solid #2a2a2a;border-radius:8px;color:#faf9f5;padding:10px 12px;margin-bottom:10px;font-size:14px;">
-<input id="loginPass" type="password" placeholder="密码" style="width:100%;background:#0c0c11;border:1px solid #2a2a2a;border-radius:8px;color:#faf9f5;padding:10px 12px;margin-bottom:6px;font-size:14px;" onkeydown="if(event.key==='Enter')doLogin()">
-<div id="loginErr" style="font-size:12px;color:#f85149;min-height:18px;margin-bottom:6px;"></div>
+<div class="login-mask" id="loginMask" style="position:fixed;inset:0;background:color-mix(in srgb, var(--background-900) 72%, transparent);z-index:999;display:none;align-items:center;justify-content:center;">
+<div style="background:var(--card);border:1px solid var(--color-border);border-radius:12px;padding:26px 28px;width:min(320px,88vw);">
+<h3 style="margin-bottom:6px;color:var(--foreground);font-size:17px;">账号登录</h3>
+<p style="font-size:12px;color:var(--color-text-muted);margin-bottom:16px;">使用管理员分配的账号（students/users 表）登录</p>
+<input id="loginUser" placeholder="用户名" style="width:100%;background:var(--background-900);border:1px solid var(--color-border);border-radius:8px;color:var(--foreground);padding:10px 12px;margin-bottom:10px;font-size:14px;">
+<input id="loginPass" type="password" placeholder="密码" style="width:100%;background:var(--background-900);border:1px solid var(--color-border);border-radius:8px;color:var(--foreground);padding:10px 12px;margin-bottom:6px;font-size:14px;" onkeydown="if(event.key==='Enter')doLogin()">
+<div id="loginErr" style="font-size:12px;color:var(--destructive);min-height:18px;margin-bottom:6px;"></div>
 <div style="display:flex;gap:10px;justify-content:flex-end;">
-<button onclick="closeLogin()" style="background:none;border:1px solid #2a2a2a;color:#b0aea5;padding:8px 16px;border-radius:8px;cursor:pointer;">取消</button>
-<button onclick="doLogin()" style="background:#d97757;border:none;color:#fff;padding:8px 18px;border-radius:8px;cursor:pointer;">登录</button>
+<button onclick="closeLogin()" style="background:none;border:1px solid var(--color-border);color:var(--color-text-muted);padding:8px 16px;border-radius:8px;cursor:pointer;">取消</button>
+<button onclick="doLogin()" style="background:var(--primary);border:none;color:var(--color-primary-foreground);padding:8px 18px;border-radius:8px;cursor:pointer;">登录</button>
 </div>
 </div>
 </div>
@@ -1579,8 +1582,8 @@ let streamingText = streamingMsgDiv.querySelector('.msg-text');
 
 generating = true;
 brandDot.classList.add('active');
-statusDot.style.background = '#d97757';
-statusDot.style.boxShadow = '0 0 8px #d97757';
+statusDot.style.background = 'var(--primary)';
+statusDot.style.boxShadow = '0 0 8px var(--primary)';
 
 let fullText = '';
 let cursorSpan = '<span class="cursor-blink"></span>';
@@ -1669,8 +1672,8 @@ renderChartsInElement(streamingText.parentElement);
 clearTimeout(timeoutId);
 let errMsg = e.name === 'AbortError' ? '请求超时（120秒）' : '连接失败: ' + e.message;
 if (streamingText) streamingText.innerHTML = simpleMarkdown(errMsg);
-statusDot.style.background = '#f85149';
-statusDot.style.boxShadow = '0 0 8px #f85149';
+statusDot.style.background = 'var(--destructive)';
+statusDot.style.boxShadow = '0 0 8px var(--destructive)';
 }
 
 // 同时清除 streamingMsg 和 streamingText 两个 id，避免下一轮发送时冲突
@@ -1698,8 +1701,8 @@ if (streamingMsgDiv) {
 
 generating = false;
 brandDot.classList.remove('active');
-statusDot.style.background = '#788c5d';
-statusDot.style.boxShadow = '0 0 6px #788c5d';
+statusDot.style.background = 'var(--success)';
+statusDot.style.boxShadow = '0 0 6px var(--success)';
 btnSend.disabled = false;
 inputBox.focus();
 }
@@ -1718,8 +1721,8 @@ let resp = await fetch('/api/status');
 let data = await resp.json();
 let lt = Math.round(performance.now() - t0);
 if (data.gateway === 'online') {
-statusDot.style.background = '#788c5d';
-statusDot.style.boxShadow = '0 0 6px #788c5d';
+statusDot.style.background = 'var(--success)';
+statusDot.style.boxShadow = '0 0 6px var(--success)';
 latencyDisplay.textContent = lt + 'ms';
 }
 } catch(e) {}
@@ -2348,7 +2351,7 @@ btnReview.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24"><path d="M16 4h
 .catch(function(err) {
 var panel = document.createElement('div');
 panel.className = 'review-panel';
-panel.innerHTML = '<div style="color:#f85149;font-size:14px;">审查失败: ' + esc(err.message) + '</div>';
+panel.innerHTML = '<div style="color:var(--destructive);font-size:14px;">审查失败: ' + esc(err.message) + '</div>';
 chatArea.insertBefore(panel, chatArea.firstChild);
 chatArea.scrollTop = 0;
 btnReview.disabled = false;
@@ -2469,7 +2472,7 @@ btnResources.disabled = false;
 btnResources.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 })
 .catch(function(err) {
-list.innerHTML = '<div style="color:#f85149;font-size:13px;padding:12px 0;">[X] 搜索失败: ' + esc(err.message) + '</div>';
+list.innerHTML = '<div style="color:var(--destructive);font-size:13px;padding:12px 0;">[X] 搜索失败: ' + esc(err.message) + '</div>';
 btnResources.disabled = false;
 btnResources.innerHTML = '<svg class="btn-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 });

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn 教师端 · 任务与教学资源</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  .tabs{display:flex;gap:6px;margin-top:16px;border-bottom:1px solid var(--color-border)}
+  .tab{background:transparent;border:none;border-bottom:2px solid transparent;padding:9px 14px;font-size:13px;
+    color:var(--color-text-muted);font-weight:500;margin-bottom:-1px}
+  .tab.active{color:var(--color-text);border-bottom-color:var(--primary);font-weight:600}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .panel-head h3{font-size:15px;font-weight:600}
+  .panel-head .support{font-size:12px;color:var(--color-text-muted)}
+  .empty{text-align:center;color:var(--color-text-muted);font-size:13px;padding:26px 0}
+  .content-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .list{display:flex;flex-direction:column}
+  .res-item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--color-border)}
+  .res-item:last-child{border-bottom:none}
+  .res-item .grow{flex:1;min-width:0}
+  .res-item .grow b{font-size:13px;font-weight:600;display:block}
+  .res-item .grow span{font-size:12px;color:var(--color-text-muted);display:block}
+  .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .form-grid .full{grid-column:1/-1}
+  .field label{display:block;font-size:12px;color:var(--color-text-muted);margin-bottom:5px}
+  .field input,.field select,.field textarea{width:100%;padding:9px 11px;border:1px solid var(--color-border);
+    border-radius:8px;font-size:13px;background:var(--card);color:var(--color-text)}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--ring);outline-offset:-1px}
+  .field textarea{min-height:118px;resize:vertical;font-family:inherit}
+  .detail-row td{background:var(--muted)}
+  .detail-list{display:flex;flex-wrap:wrap;gap:8px}
+  .detail-list .chip{font-size:12px;border:1px solid var(--color-border);border-radius:99px;padding:2px 10px;background:var(--card)}
+  @media(max-width:1080px){.metrics-grid,.form-grid,.content-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">教学管理</div>
+        <h1>任务与教学资源</h1>
+        <p class="muted small mt-1">管理你创建的学习任务，导入并评审教学资源。</p>
+      </div>
+      <div class="tools"><span class="pill" id="userPill">—</span></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="tasks" type="button">学习任务</button>
+      <button class="tab" data-tab="resources" type="button">教学资源</button>
+    </div>
+
+    <!-- ===== 学习任务 ===== -->
+    <section id="tab-tasks">
+      <section class="metrics-grid">
+        <div class="metric-card"><div class="eyebrow">任务总数</div><div class="metric-value" id="mTotal">—</div><div class="delta muted small">我创建的任务</div></div>
+        <div class="metric-card"><div class="eyebrow">进行中任务</div><div class="metric-value" id="mActive">—</div><div class="delta muted small">状态 active</div></div>
+        <div class="metric-card"><div class="eyebrow">已分配人次</div><div class="metric-value" id="mAssigned">—</div><div class="delta muted small">全部任务合计</div></div>
+      </section>
+
+      <section class="card mt-2">
+        <div class="panel-head">
+          <div><h3>任务列表</h3><div class="support" id="taskHint">—</div></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>任务名称</th><th>类型</th><th>分配</th><th>发布</th><th>截止</th><th>完成率</th><th>状态</th><th style="text-align:right">操作</th>
+            </tr></thead>
+            <tbody id="taskBody"><tr><td colspan="8" class="muted" style="padding:26px;text-align:center">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+    <!-- ===== 教学资源 ===== -->
+    <section id="tab-resources" class="hidden">
+      <section class="card mt-2">
+        <div class="panel-head">
+          <div><h3>粘贴文本入库</h3><div class="support">保存为草稿（status=draft），评审通过后可发布</div></div>
+        </div>
+        <form id="importForm" class="form-grid" autocomplete="off">
+          <div class="field"><label>学科 *</label><input id="fSubject" placeholder="如：数学" required></div>
+          <div class="field"><label>章节</label><input id="fChapter" placeholder="如：函数与导数"></div>
+          <div class="field"><label>标题</label><input id="fTitle" placeholder="不填则记为「未命名资料」"></div>
+          <div class="field"><label>内容类型</label>
+            <select id="fType">
+              <option>知识总结</option><option>概念定义</option><option>例题解析</option><option>练习题</option><option>课件</option>
+            </select></div>
+          <div class="field"><label>难度</label>
+            <select id="fDifficulty"><option>基础</option><option selected>中等</option><option>困难</option></select></div>
+          <div class="field"><label>关键词</label><input id="fKeywords" placeholder="逗号分隔"></div>
+          <div class="field full"><label>正文内容 *（至少 5 个字符）</label>
+            <textarea id="fContent" placeholder="在此粘贴教学文本…" required></textarea></div>
+          <div class="full flex" style="justify-content:flex-end">
+            <button class="btn primary" id="importBtn" type="submit">入库为草稿</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="content-grid">
+        <div class="card">
+          <div class="panel-head">
+            <div><h3>已发布资源</h3><div class="support" id="pubHint">—</div></div>
+          </div>
+          <div class="list" id="pubList"><div class="empty">加载中…</div></div>
+        </div>
+        <div class="card">
+          <div class="panel-head">
+            <div><h3>待评审草稿</h3><div class="support" id="draftHint">—</div></div>
+          </div>
+          <div class="list" id="draftList"><div class="empty">加载中…</div></div>
+        </div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<script src="/static/ui/teacher.js"></script>
+<script>
+(function () {
+  var esc = LLT.esc, pct = LLT.pct;
+  var TASK_TYPE = { learn: "学习任务", exercise: "练习任务", review: "复习任务", assignment: "作业任务" };
+  var TASK_STATUS = {
+    draft: { label: "草稿", cls: "amber" },
+    active: { label: "进行中", cls: "blue" },
+    completed: { label: "已完成", cls: "green" },
+    archived: { label: "已归档", cls: "" }
+  };
+  var ASSIGN_STATUS = { assigned: "已分配", in_progress: "进行中", completed: "已完成", skipped: "已跳过" };
+  var TASKS = [];
+  var opened = {};
+
+  function typeLabel(t) { return TASK_TYPE[t] || (t ? esc(t) : "—"); }
+  function statusPill(s) {
+    var m = TASK_STATUS[s] || { label: s || "—", cls: "" };
+    return '<span class="pill ' + m.cls + '">' + esc(m.label) + '</span>';
+  }
+
+  /* ---------- 任务 ---------- */
+  function renderTasks() {
+    var body = document.getElementById("taskBody");
+    document.getElementById("mTotal").textContent = TASKS.length;
+    var active = TASKS.filter(function (t) { return t.status === "active"; }).length;
+    var assigned = TASKS.reduce(function (a, t) { return a + LLT.num(t.assignment_count); }, 0);
+    document.getElementById("mActive").textContent = active;
+    document.getElementById("mAssigned").textContent = assigned;
+    document.getElementById("taskHint").textContent = TASKS.length ? (TASKS.length + " 个任务") : "—";
+
+    if (!TASKS.length) {
+      body.innerHTML = '<tr><td colspan="8" class="muted" style="padding:26px;text-align:center">暂无任务</td></tr>';
+      return;
+    }
+    body.innerHTML = TASKS.map(function (t) {
+      var pub = t.published_at || t.created_at;
+      return '<tr data-task="' + t.id + '">' +
+        '<td><b style="font-size:13px">' + esc(t.title || "未命名任务") + '</b>' +
+          '<div class="muted small">' + esc(t.subject || "—") + (t.grade ? " · " + esc(t.grade) : "") + '</div></td>' +
+        '<td>' + typeLabel(t.task_type) + '</td>' +
+        '<td>' + LLT.num(t.assignment_count) + ' 人</td>' +
+        '<td class="muted">' + esc(LLT.fmtDate(pub)) + '</td>' +
+        '<td class="muted">—</td>' +
+        '<td class="muted">—</td>' +
+        '<td>' + statusPill(t.status) + '</td>' +
+        '<td style="text-align:right"><button class="btn ghost sm" data-assign="' + t.id + '" type="button">分配详情</button></td>' +
+      '</tr>' +
+      '<tr class="detail-row hidden" id="detail-' + t.id + '"><td colspan="8">' +
+        '<div class="detail-list" id="detailBody-' + t.id + '"><span class="muted small">加载中…</span></div>' +
+      '</td></tr>';
+    }).join("");
+
+    Array.prototype.forEach.call(body.querySelectorAll("[data-assign]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = LLT.num(btn.getAttribute("data-assign"));
+        var row = document.getElementById("detail-" + id);
+        if (!row) return;
+        if (row.classList.contains("hidden")) {
+          row.classList.remove("hidden");
+          if (!opened[id]) { opened[id] = true; loadAssignments(id); }
+        } else {
+          row.classList.add("hidden");
+        }
+      });
+    });
+  }
+
+  function loadAssignments(id) {
+    var host = document.getElementById("detailBody-" + id);
+    if (!host) return;
+    LLT.get("/api/tasks/" + id + "/assignments").then(function (j) {
+      var rows = LLT.ok(j) ? LLT.list(j, "assignments") : [];
+      if (!rows.length) { host.innerHTML = '<span class="muted small">尚未分配给任何学生</span>'; return; }
+      host.innerHTML = rows.map(function (a) {
+        return '<span class="chip">' + esc(a.user_name || a.username || ("#" + a.user_id)) +
+          ' · ' + esc(ASSIGN_STATUS[a.status] || a.status || "—") + '</span>';
+      }).join("");
+    }).catch(function () { host.innerHTML = '<span class="muted small">加载失败</span>'; });
+  }
+
+  /* ---------- 资源 ---------- */
+  function resMeta(r) {
+    return [r.subject || "综合", r.chapter, r.content_type].filter(Boolean).join(" · ");
+  }
+  function renderPublished(rows) {
+    var host = document.getElementById("pubList");
+    document.getElementById("pubHint").textContent = rows.length ? (rows.length + " 条已发布") : "—";
+    host.innerHTML = rows.length ? rows.map(function (r) {
+      return '<div class="res-item"><i class="icon icon-16 icon-file"></i>' +
+        '<span class="grow"><b>' + esc(r.title || "未命名资料") + '</b>' +
+        '<span>' + esc(resMeta(r)) + ' · ' + LLT.num(r.word_count) + ' 字 · ' + esc(LLT.fmtDate(r.updated_at)) + '</span></span>' +
+        '<span class="pill">' + esc(r.difficulty || "中等") + '</span></div>';
+    }).join("") : '<div class="empty">暂无已发布资源</div>';
+  }
+  function renderDrafts(rows) {
+    var host = document.getElementById("draftList");
+    document.getElementById("draftHint").textContent = rows.length ? (rows.length + " 条待评审") : "—";
+    host.innerHTML = rows.length ? rows.map(function (r) {
+      return '<div class="res-item"><i class="icon icon-16 icon-pen-line"></i>' +
+        '<span class="grow"><b>' + esc(r.title || "未命名资料") + '</b>' +
+        '<span>' + esc(resMeta(r)) + ' · ' + esc(r.status === "reviewed" ? "已评审" : "草稿") +
+        ' · ' + esc(LLT.fmtDate(r.updated_at)) + '</span></span>' +
+        '<button class="btn sm" data-publish="' + r.id + '" type="button">评审发布</button></div>';
+    }).join("") : '<div class="empty">暂无待评审草稿</div>';
+
+    Array.prototype.forEach.call(host.querySelectorAll("[data-publish]"), function (btn) {
+      btn.addEventListener("click", function () {
+        var id = LLT.num(btn.getAttribute("data-publish"));
+        btn.disabled = true;
+        LLT.put("/api/resources/" + id + "/review", { status: "published" }).then(function (j) {
+          if (LLT.ok(j)) { LLT.toast("已发布到资源库"); loadResources(); }
+          else { LLT.toast(LLT.errMsg(j)); btn.disabled = false; }
+        }).catch(function () { LLT.toast("发布失败"); btn.disabled = false; });
+      });
+    });
+  }
+  function loadResources() {
+    return Promise.all([
+      LLT.get("/api/resources").catch(function () { return {}; }),
+      LLT.get("/api/resources/drafts").catch(function () { return {}; })
+    ]).then(function (r) {
+      renderPublished(LLT.ok(r[0]) ? LLT.list(r[0], "resources") : []);
+      renderDrafts(LLT.ok(r[1]) ? LLT.list(r[1], "drafts") : []);
+    });
+  }
+
+  /* ---------- 交互 ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (t) {
+    t.addEventListener("click", function () {
+      Array.prototype.forEach.call(document.querySelectorAll(".tab"), function (x) { x.classList.remove("active"); });
+      t.classList.add("active");
+      var tab = t.getAttribute("data-tab");
+      document.getElementById("tab-tasks").classList.toggle("hidden", tab !== "tasks");
+      document.getElementById("tab-resources").classList.toggle("hidden", tab !== "resources");
+      if (tab === "resources" && !opened.__res) { opened.__res = true; loadResources(); }
+    });
+  });
+
+  document.getElementById("importForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var content = document.getElementById("fContent").value.trim();
+    if (content.length < 5) { LLT.toast("正文内容至少 5 个字符"); return; }
+    var payload = {
+      subject: document.getElementById("fSubject").value.trim(),
+      chapter: document.getElementById("fChapter").value.trim(),
+      title: document.getElementById("fTitle").value.trim(),
+      content_type: document.getElementById("fType").value,
+      difficulty: document.getElementById("fDifficulty").value,
+      keywords: document.getElementById("fKeywords").value.trim(),
+      content: content
+    };
+    var b = document.getElementById("importBtn");
+    b.disabled = true; b.textContent = "入库中…";
+    LLT.post("/api/resources/import-text", payload).then(function (j) {
+      if (LLT.ok(j)) {
+        LLT.toast("已入库为草稿（记录 #" + (j.record_id != null ? j.record_id : "—") + "）");
+        document.getElementById("fContent").value = "";
+        document.getElementById("fTitle").value = "";
+        loadResources();
+      } else {
+        LLT.toast(LLT.errMsg(j));
+      }
+    }).catch(function () { LLT.toast("入库失败"); }).then(function () {
+      b.disabled = false; b.textContent = "入库为草稿";
+    });
+  });
+
+  LLT.boot({ nav: "tasks" }).then(function (user) {
+    document.getElementById("userPill").textContent = user
+      ? ((user.role === "admin" ? "管理员" : "教师") + "：" + (user.name || "")) : "教师";
+    LLT.get("/api/tasks").then(function (j) {
+      if (!LLT.ok(j)) { LLT.toast(LLT.errMsg(j)); TASKS = []; }
+      else { TASKS = LLT.list(j, "tasks"); }
+      renderTasks();
+    }).catch(function () { LLT.toast("任务加载失败"); TASKS = []; renderTasks(); });
+  });
+})();
+</script>
+</body>
+</html>

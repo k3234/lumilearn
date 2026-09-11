@@ -5,13 +5,10 @@ LumiLearn 智能讲解引擎 - 直播讲课专用
 新增动画讲解模式：AI生成动画分镜和Manim代码
 """
 
-import json
-import time
-import threading
-import random
 import os
+import threading
 from dataclasses import dataclass, field
-from typing import Optional, Callable, Dict, Any
+from typing import Any, Callable, Dict, Optional
 
 # ============================================================
 # 动画生成器集成
@@ -551,8 +548,8 @@ def _lesson_cors_origins() -> list:
 
 def start_api_server(port: int = 8766):
     """启动 HTTP API 服务器"""
-    from http.server import HTTPServer, BaseHTTPRequestHandler
     import json as _json
+    from http.server import BaseHTTPRequestHandler, HTTPServer
 
     controllers = {}
     anim_gen = get_animation_generator()
@@ -677,9 +674,9 @@ def start_api_server(port: int = 8766):
 
     server = HTTPServer(("0.0.0.0", port), Handler)
     print(f"[Lesson API] 服务器启动: http://localhost:{port}")
-    print(f"  - /api/lessons         课程列表")
-    print(f"  - /api/lesson/start?id=xxx  开始课程")
-    print(f"  - /api/lesson/animation?id=xxx  生成动画分镜")
+    print("  - /api/lessons         课程列表")
+    print("  - /api/lesson/start?id=xxx  开始课程")
+    print("  - /api/lesson/animation?id=xxx  生成动画分镜")
     server.serve_forever()
 
 

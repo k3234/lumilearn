@@ -3,11 +3,12 @@
 LumiLearn 配置管理中心
 统一管理所有配置项，支持 YAML 配置文件加载
 """
-import os
-import yaml
 import json
+import os
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
+import yaml
 
 # 默认配置路径
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "framework.yaml"

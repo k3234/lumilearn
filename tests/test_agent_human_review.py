@@ -12,20 +12,21 @@ LumiLearn — P0-1 人工中断全链路扩展（Verifier 阶段）测试
   - 验证通过时不触发中断；human_review 开关可关闭
 """
 
-import sys
 import os
+import sys
 import time
 import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_core.verifier import (
-    VerifierAgent, evaluate_human_review,
-    HUMAN_REVIEW_CONFIDENCE_THRESHOLD,
-)
 from agent_core.multi_agent import MultiAgentPipeline
 from agent_core.orchestrator import UnifiedOrchestrator
+from agent_core.verifier import (
+    HUMAN_REVIEW_CONFIDENCE_THRESHOLD,
+    VerifierAgent,
+    evaluate_human_review,
+)
 
 
 def _uniq(prefix: str) -> str:

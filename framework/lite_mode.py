@@ -17,10 +17,10 @@ LumiLearn lite 模式（轻量自学模式）
 支持 `--mode lite|full`（默认 full），`-h/--help` 打印帮助。
 """
 
+import logging
 import os
 import sys
-import logging
-from typing import Dict, Any
+from typing import Any, Dict
 
 # --mode 参数帮助文本（各入口脚本共用）
 MODE_HELP_TEXT = """--mode {lite,full}  运行模式（默认 full）：

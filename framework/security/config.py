@@ -2,11 +2,10 @@
 """
 LumiLearn 安全配置
 """
-import os
-import socket
 import ipaddress
-from typing import Dict, List, Optional
+import socket
 from dataclasses import dataclass, field
+from typing import Dict, List, Optional
 
 
 @dataclass

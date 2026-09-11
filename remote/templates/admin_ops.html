@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn Admin · 容量与并发</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  .content-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-top:16px;align-items:start}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .panel-head h3{font-size:15px;font-weight:600}
+  .panel-head p{font-size:12px;color:var(--color-text-muted);margin-top:2px}
+  .svc-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--color-border);flex-wrap:wrap}
+  .svc-row:last-child{border-bottom:none}
+  .svc-row .grow{flex:1;min-width:180px}
+  .svc-row .grow b{display:block;font-size:13px;font-weight:600}
+  .svc-row .grow span{font-size:12px;color:var(--color-text-muted)}
+  .svc-row input[type=number]{width:110px;height:32px;border-radius:8px;border:1px solid var(--color-border);
+    background:var(--card);color:var(--color-text);padding:0 8px;font-size:13px}
+  .switch{display:inline-flex;align-items:center;gap:8px;font-size:12px;cursor:pointer}
+  .ro-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--color-border)}
+  .ro-row:last-child{border-bottom:none}
+  .ro-row .k{font-size:13px}
+  .ro-row .v{font-size:13px;font-weight:600}
+  .empty{text-align:center;color:var(--color-text-muted);font-size:13px;padding:22px 0}
+  .tag-ro{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-text-muted);
+    border:1px solid var(--color-border);border-radius:99px;padding:1px 8px}
+  @media (max-width:1100px){.content-grid{grid-template-columns:1fr}.metrics-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">管理控制台 · 系统设置 / 容量管理</div>
+        <h1>容量与并发配置</h1>
+      </div>
+      <div class="flex">
+        <span class="pill" id="verPill">版本：—</span>
+        <button class="btn sm" id="refreshBtn" type="button"><i class="icon icon-16 icon-chevrons-down-up"></i> 刷新</button>
+      </div>
+    </div>
+
+    <div id="alertHost"></div>
+
+    <section class="metrics-grid">
+      <div class="metric-card"><div class="eyebrow">累计请求数</div><div class="metric-value" id="mTotal">—</div><div class="delta muted small">安全网关计数器（非按日）</div></div>
+      <div class="metric-card"><div class="eyebrow">活跃连接</div><div class="metric-value" id="mConn">—</div><div class="delta muted small">网关跟踪的客户端数</div></div>
+      <div class="metric-card"><div class="eyebrow">限流阈值</div><div class="metric-value" id="mRate">—</div><div class="delta muted small" id="mRateSub">次 / 窗口</div></div>
+      <div class="metric-card"><div class="eyebrow">缓存命中率</div><div class="metric-value" id="mCache">—</div><div class="delta muted small">后端未提供该指标</div></div>
+    </section>
+
+    <div class="content-grid">
+      <section class="card">
+        <div class="panel-head">
+          <div>
+            <h3>端口服务配置</h3>
+            <p>启用开关与监听端口（写入真实配置，重启对应服务后生效）</p>
+          </div>
+          <button class="btn primary sm" id="savePorts" type="button"><i class="icon icon-16 icon-check"></i> 保存</button>
+        </div>
+        <div id="portList"><div class="empty">加载中…</div></div>
+      </section>
+
+      <section class="card">
+        <div class="panel-head">
+          <div>
+            <h3>并发限流与缓存</h3>
+            <p>以下参数由后端安全组件提供</p>
+          </div>
+          <span class="tag-ro">只读</span>
+        </div>
+        <div id="roList"><div class="empty">加载中…</div></div>
+      </section>
+    </div>
+
+    <section class="card mt-2">
+      <div class="panel-head"><h3>系统状态</h3><span class="muted small" id="sysSummary">—</span></div>
+      <div class="grid cols-4" id="sysGrid">
+        <div><div class="eyebrow">运行模式</div><div id="sysMode" class="metric-value" style="font-size:18px">—</div></div>
+        <div><div class="eyebrow">默认模型</div><div id="sysModel" class="metric-value" style="font-size:18px">—</div></div>
+        <div><div class="eyebrow">网关</div><div id="sysGateway" class="metric-value" style="font-size:18px">—</div></div>
+        <div><div class="eyebrow">可用模型数</div><div id="sysModels" class="metric-value" style="font-size:18px">—</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/ui/admin.js"></script>
+<script>
+(function () {
+  var E = LLA.esc, I = LLA.icon;
+  var PORTS = {};
+
+  function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  function plainGet(url) {
+    return fetch(url, { credentials: "same-origin" })
+      .then(function (r) { return r.json().catch(function () { return {}; }); });
+  }
+
+  function placeholders() {
+    ["mTotal", "mConn", "mRate", "mCache", "sysMode", "sysModel", "sysGateway", "sysModels"].forEach(function (id) { setText(id, "—"); });
+    document.getElementById("portList").innerHTML = '<div class="empty">未登录或无数据</div>';
+    document.getElementById("roList").innerHTML = '<div class="empty">未登录或无数据</div>';
+    setText("sysSummary", "未登录或无数据");
+  }
+
+  /* -------- 端口服务配置（真实读写） -------- */
+  function loadPorts() {
+    return LLA.get("/port-settings").then(function (r) {
+      PORTS = (r && r.port_settings) || {};
+      renderPorts();
+    });
+  }
+  function renderPorts() {
+    var keys = Object.keys(PORTS);
+    var host = document.getElementById("portList");
+    if (!keys.length) { host.innerHTML = '<div class="empty">暂无端口服务配置</div>'; return; }
+    host.innerHTML = keys.map(function (k) {
+      var s = PORTS[k] || {};
+      var statusPill = s.listening ? '<span class="pill green">监听中</span>'
+                     : (s.enabled ? '<span class="pill amber">已启用未监听</span>' : '<span class="pill">未启用</span>');
+      return '<div class="svc-row">' +
+        '<div class="grow"><b>' + E(s.display_name || k) + '</b><span>' + E(s.desc || s.script || "") + '</span></div>' +
+        statusPill +
+        '<label class="switch"><input type="checkbox" data-enabled="' + E(k) + '"' + (s.enabled ? " checked" : "") + '> 启用</label>' +
+        '<input type="number" min="1" max="65535" data-port="' + E(k) + '" value="' + E(s.port == null ? "" : s.port) + '">' +
+        '</div>';
+    }).join("");
+  }
+  function savePorts() {
+    var payload = {};
+    Object.keys(PORTS).forEach(function (k) {
+      var en = document.querySelector('[data-enabled="' + k + '"]');
+      var pt = document.querySelector('[data-port="' + k + '"]');
+      payload[k] = { enabled: !!(en && en.checked), port: parseInt((pt && pt.value) || "0", 10) };
+    });
+    var btn = document.getElementById("savePorts");
+    btn.disabled = true;
+    LLA.post("/port-settings", { port_settings: payload }).then(function (res) {
+      if (res && res.success) { LLA.toast("端口配置已保存（重启对应服务后生效）"); loadPorts(); }
+      else { LLA.toast((res && (res.errors || []).join("；")) || "保存失败"); }
+    }).catch(function (e) { LLA.toast(e.message || "保存失败"); })
+      .then(function () { btn.disabled = false; });
+  }
+
+  /* -------- 只读：并发限流与缓存 -------- */
+  function loadReadOnly() {
+    return plainGet("/api/security/status").then(function (s) {
+      var gw = (s && s.gateway) || {};
+      var sb = (s && s.sandbox) || {};
+      var cfg = sb.config || {};
+      setText("mTotal", gw.total_requests == null ? "—" : gw.total_requests);
+      setText("mConn", gw.active_connections == null ? "—" : gw.active_connections);
+      setText("mRate", gw.rate_limit == null ? "—" : gw.rate_limit);
+      setText("mRateSub", "次 / " + (gw.window == null ? "—" : gw.window + " 秒窗口"));
+      setText("mCache", "—");
+
+      var rows = [
+        ["网关限流阈值", gw.rate_limit == null ? "—" : (gw.rate_limit + " 次 / " + gw.window + " 秒")],
+        ["网关活跃连接", gw.active_connections == null ? "—" : gw.active_connections],
+        ["被封禁 IP 数", gw.blocked_ips == null ? "—" : gw.blocked_ips],
+        ["沙箱单次最长执行", cfg.max_execution_time == null ? "—" : (cfg.max_execution_time + " 秒")],
+        ["沙箱内存上限", cfg.max_memory_mb == null ? "—" : (cfg.max_memory_mb + " MB")],
+        ["沙箱调用频率", cfg.rate_limit || "—"],
+        ["沙箱累计执行", sb.total_executions == null ? "—" : sb.total_executions]
+      ];
+      document.getElementById("roList").innerHTML = rows.map(function (r) {
+        return '<div class="ro-row"><span class="k">' + E(r[0]) + '</span><span class="v">' + E(r[1]) + '</span></div>';
+      }).join("") +
+      '<div class="muted small mt-1">说明：后端未提供并发上限 / 缓存 TTL 的读写接口，故此处仅只读展示真实运行时参数。</div>';
+    });
+  }
+
+  /* -------- 系统状态 -------- */
+  function loadSystem() {
+    return plainGet("/api/status").then(function (s) {
+      s = s || {};
+      setText("verPill", "版本：" + (s.version || "—"));
+      setText("sysMode", s.mode || "—");
+      setText("sysModel", s.default_model || "—");
+      var gw = s.gateway || "—";
+      setText("sysGateway", gw);
+      setText("sysModels", s.models_count == null ? "—" : s.models_count);
+      setText("sysSummary", "自定义模型 " + (s.custom_models_count == null ? "—" : s.custom_models_count) +
+        " · 活跃版本 " + (s.active_model_version || "—"));
+    });
+  }
+
+  function loadAll() {
+    return Promise.all([
+      loadPorts().catch(function () { PORTS = {}; renderPorts(); }),
+      loadReadOnly().catch(function () {}),
+      loadSystem().catch(function () {})
+    ]);
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", function () { if (!LLA.isNoAuth()) loadAll(); });
+  document.getElementById("savePorts").addEventListener("click", function () {
+    if (LLA.isNoAuth()) { LLA.toast("请先登录"); return; }
+    savePorts();
+  });
+
+  LLA.boot({ nav: "ops" }).then(function (admin) {
+    if (!admin) { placeholders(); document.getElementById("alertHost").innerHTML = LLA.noAuthBanner(); LLA.bindLoginButton(); return; }
+    loadAll();
+  }).catch(function () { placeholders(); });
+})();
+</script>
+</body>
+</html>

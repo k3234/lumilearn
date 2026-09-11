@@ -83,9 +83,7 @@ source: https://github.com/.../understand-anything (20.1K Star)
       "concept_vocabulary",
       "concept_subword_tokenization"
     ],
-    "documentation_refs": [
-      "docs/learning_journey/Module_4.3_Prompt工程.md"
-    ]
+    "documentation_refs": []
   }
 }
 ```
@@ -526,7 +524,7 @@ LumiLearn UA:
 2. 答案来源：
    - framework/model.py: 基类实现
    - framework/config.py: 配置注册
-   - docs/learning_journey/MODULE_X: 教程
+   - docs/MODULE_X: 教程
 3. 推荐阅读顺序
 4. 相关常见问题
 ```

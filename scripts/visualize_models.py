@@ -5,8 +5,10 @@ LumiLearn 模型对比可视化
 """
 
 import json
-import matplotlib.pyplot as plt
+
 import matplotlib
+import matplotlib.pyplot as plt
+
 matplotlib.use('Agg')
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei']
 plt.rcParams['axes.unicode_minus'] = False
@@ -93,7 +95,7 @@ print("✅ 模型对比图已保存到: model_comparison.png")
 fig2, ax = plt.subplots(figsize=(10, 6))
 
 epochs = range(1, 51)
-v2_gap = [v2_report['history']['val_loss'][i] / v2_report['history']['train_loss'][i] 
+v2_gap = [v2_report['history']['val_loss'][i] / v2_report['history']['train_loss'][i]
           if i < len(v2_report['history']['train_loss']) and v2_report['history']['train_loss'][i] > 0 else 0
           for i in range(min(50, len(v2_report['history']['val_loss'])))]
 

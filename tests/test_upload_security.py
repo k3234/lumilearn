@@ -15,9 +15,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from werkzeug.datastructures import FileStorage
 
 from framework.security.uploads import (
-    validate_upload_file, check_file_magic,
-    ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_BYTES,
-    ALLOWED_AUDIO_EXTENSIONS, MAX_AUDIO_BYTES,
+    ALLOWED_AUDIO_EXTENSIONS,
+    ALLOWED_IMAGE_EXTENSIONS,
+    MAX_AUDIO_BYTES,
+    MAX_IMAGE_BYTES,
+    check_file_magic,
+    validate_upload_file,
 )
 from framework.services.ocr_service import get_ocr_service
 from framework.services.speech_service import get_speech_service

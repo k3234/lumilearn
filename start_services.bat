@@ -6,6 +6,12 @@ echo ============================================================
 echo   🚀 LumiLearn 服务启动中...
 echo ============================================================
 echo.
+echo   🏠 统一门户:  http://localhost:18080
+echo   👨‍🏫 教师门户:  http://localhost:5001
+echo   📚 学生门户:  http://localhost:5010
+echo   📊 分析仪表盘: http://localhost:18090
+echo   🔧 管理面板:   http://localhost:18080/admin
+echo.
 
 cd /d "%~dp0"
 
@@ -21,7 +27,7 @@ echo   ✓ Python 就绪
 echo.
 
 :: 调用统一启动脚本（端口与 Ollama 地址均从 config/framework.yaml 与 .env 读取）
-echo [2/2] 调用 deploy/start.py ...
+echo [2/2] 启动服务...
 python deploy/start.py %*
 if errorlevel 1 (
     echo.

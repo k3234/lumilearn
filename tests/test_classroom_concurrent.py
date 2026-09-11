@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """课堂模式多学生并发测试"""
-import sys, os, time, threading
+import os
+import sys
+import threading
+import time
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

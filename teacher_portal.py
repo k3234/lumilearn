@@ -18,14 +18,13 @@ LumiLearn 教师端 (Teacher Portal)
   浏览器打开 http://<ip>:5001
 """
 
-import json
 import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, request, jsonify, session, send_file
+from flask import Flask, jsonify, request, send_file, session
 
 from framework.core.config import get_app_secret_key, register_csrf_guard
 from framework.database import db
@@ -52,6 +51,7 @@ register_csrf_guard(app)
 
 # 统一 404 / 500 错误处理
 from framework.api.errors import register_error_handlers
+
 register_error_handlers(app)
 
 

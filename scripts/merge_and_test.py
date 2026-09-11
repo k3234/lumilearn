@@ -22,11 +22,10 @@ LumiLearn 合并 + 推理测试脚本
     --questions   测试题 JSON 文件（可选，默认内置 5 题）
     --max-new-tokens  生成最大 token 数
 """
-import os
-import sys
-import json
-import time
 import argparse
+import json
+import os
+import time
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
@@ -72,8 +71,8 @@ def load_questions(path: str | None) -> list[str]:
 def main() -> None:
     args = parse_args()
 
-    from transformers import AutoModelForCausalLM, AutoTokenizer
     from peft import PeftModel
+    from transformers import AutoModelForCausalLM, AutoTokenizer
 
     log(f"[内存] 加载基础模型: {args.base}")
     base = AutoModelForCausalLM.from_pretrained(

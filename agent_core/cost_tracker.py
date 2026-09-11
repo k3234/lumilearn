@@ -30,7 +30,7 @@ from typing import Dict, List, Optional
 # 确保直接运行脚本时能导入 agent_core 子模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_core.observability import MODEL_COST_PER_1K, DEFAULT_COST
+from agent_core.observability import DEFAULT_COST, MODEL_COST_PER_1K
 
 logger = logging.getLogger("lumilearn.agent.cost")
 

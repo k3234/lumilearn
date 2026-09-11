@@ -2,13 +2,13 @@
 """
 LumiLearn API安全网关
 """
+import logging
+import threading
 import time
 import uuid
-import logging
-from typing import Dict, Optional, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import wraps
-import threading
+from typing import Dict, Optional
 
 from framework.security.sanitize import mask_query_string
 

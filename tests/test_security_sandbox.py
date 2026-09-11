@@ -5,13 +5,11 @@ LumiLearn 沙箱安全回归测试（C-1 修复验证）
 """
 import os
 import sys
-from unittest import mock
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from framework.security.config import SecurityConfig
-from framework.security.sandbox import CodeSandbox, get_sandbox
+from framework.security.sandbox import CodeSandbox
 
 
 class _FakeConfig:
@@ -107,6 +105,7 @@ class TestSandboxTimeout:
 class TestSandboxEndpointAuth:
     def setup_method(self):
         import lumilearn_web  # noqa: F401
+
         # security blueprint 挂在 framework/api/server 中；此处直接验证 require_admin 装饰器
         from framework.api.routes import security
         self.mod = security

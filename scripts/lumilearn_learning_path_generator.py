@@ -3,13 +3,14 @@
 灵学 LumiLearn - 零基础模型开发学习路径生成器
 从入门到精通的完整学习路径，生成全面的教学内容
 """
-import os
-import json
-import time
 import csv
-import requests
+import json
+import os
 import re
+import time
 from datetime import datetime
+
+import requests
 
 OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 MODEL = "qwen2.5:7b"
@@ -95,7 +96,7 @@ def generate_module_content(module, stage_name):
     """生成模块详细内容"""
     title = module["title"]
     topics = module["topics"]
-    
+
     prompt = f"""为"{title}"模块生成详细的教学内容，这是"{stage_name}"的一部分。
 
 需要覆盖以下主题：{', '.join(topics)}
@@ -125,7 +126,7 @@ def generate_module_content(module, stage_name):
                 return json.loads(match.group())
         except:
             pass
-    
+
     # 默认内容
     return {
         "module_title": title,
@@ -142,38 +143,38 @@ def generate_learning_materials():
     print("灵学 LumiLearn - 零基础模型开发学习路径生成")
     print(f"时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 70)
-    
+
     all_materials = []
     total_modules = sum(len(s["modules"]) for s in LEARNING_PATH["stages"])
     current = 0
-    
+
     for stage in LEARNING_PATH["stages"]:
         print(f"\n{'='*60}")
         print(f"阶段 {stage['stage']}: {stage['name']} (预计{stage['duration']})")
         print(f"{'='*60}")
-        
+
         stage_materials = {
             "stage": stage["stage"],
             "name": stage["name"],
             "duration": stage["duration"],
             "modules": []
         }
-        
+
         for module in stage["modules"]:
             current += 1
             print(f"\n  [{current}/{total_modules}] 生成: {module['title']}")
             print(f"    主题: {', '.join(module['topics'][:3])}...")
-            
+
             content = generate_module_content(module, stage["name"])
             content["stage"] = stage["stage"]
             content["stage_name"] = stage["name"]
             stage_materials["modules"].append(content)
-            
+
             print(f"    ✅ 已生成 {len(content.get('topics', []))} 个主题内容")
             time.sleep(0.5)
-        
+
         all_materials.append(stage_materials)
-    
+
     return all_materials
 
 
@@ -182,47 +183,47 @@ def save_to_master_csv(materials):
     print(f"\n{'='*50}")
     print("保存学习资料到主数据库")
     print(f"{'='*50}")
-    
+
     existing = []
     if os.path.exists(MASTER_CSV):
         with open(MASTER_CSV, "r", encoding="utf-8") as f:
             existing = list(csv.DictReader(f))
-    
+
     existing_ids = set(r.get("id", "") for r in existing)
     new_records = []
-    
+
     fieldnames = ["id", "subject", "grade", "version", "chapter", "section",
                   "title", "content", "type", "difficulty", "source", "tags",
                   "source_type", "content_format", "deepseek_r1_15b", "qwen2_5_7b_p2",
                   "qwen2_5_7b_p3", "check_time", "errors", "create_time", "update_time"]
-    
+
     for stage_data in materials:
         stage_num = stage_data["stage"]
         stage_name = stage_data["name"]
-        
+
         for module in stage_data["modules"]:
             module_title = module.get("module_title", "未知模块")
             overview = module.get("overview", "")
-            
+
             # 为每个主题生成记录
             for topic in module.get("topics", []):
                 topic_name = topic.get("name", "")
                 content = topic.get("content", "")
                 key_points = topic.get("key_points", [])
-                
+
                 full_content = f"{overview}\n\n## {topic_name}\n\n{content}"
                 if key_points:
-                    full_content += f"\n\n### 要点\n" + "\n".join(f"- {p}" for p in key_points)
-                
+                    full_content += "\n\n### 要点\n" + "\n".join(f"- {p}" for p in key_points)
+
                 now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 base_id = f"LL{stage_num:02d}{TODAY.replace('-','')}"
                 idx = len(new_records) + 1
                 record_id = f"{base_id}{idx:04d}"
-                
+
                 while record_id in existing_ids:
                     idx += 1
                     record_id = f"{base_id}{idx:04d}"
-                
+
                 record = {
                     "id": record_id,
                     "subject": "AI模型开发",
@@ -246,11 +247,11 @@ def save_to_master_csv(materials):
                     "create_time": now,
                     "update_time": now
                 }
-                
+
                 existing_ids.add(record_id)
                 new_records.append(record)
                 print(f"  + {record_id}: {topic_name[:30]}")
-    
+
     if new_records:
         all_rows = existing + new_records
         with open(MASTER_CSV, "w", encoding="utf-8", newline="") as f:
@@ -258,14 +259,14 @@ def save_to_master_csv(materials):
             writer.writeheader()
             writer.writerows(all_rows)
         print(f"\n  ✅ 已保存 {len(new_records)} 条新记录")
-    
+
     return len(new_records)
 
 
 def save_full_output(materials):
     """保存完整输出"""
     output_path = os.path.join(LUMILEARN_DIR, f"learning_path_output_{TODAY}.json")
-    
+
     output = {
         "title": LEARNING_PATH["title"],
         "description": LEARNING_PATH["description"],
@@ -274,35 +275,35 @@ def save_full_output(materials):
         "total_modules": sum(len(s["modules"]) for s in materials),
         "stages": materials
     }
-    
+
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
-    
+
     print(f"\n  📄 完整输出: {output_path}")
     return output_path
 
 
 def main():
     t0 = time.time()
-    
+
     # 生成学习资料
     materials = generate_learning_materials()
-    
+
     # 保存到主数据库
     new_count = save_to_master_csv(materials)
-    
+
     # 保存完整输出
     output_path = save_full_output(materials)
-    
+
     total_time = time.time() - t0
-    
+
     # 统计
     total_topics = sum(
-        len(m.get("topics", [])) 
-        for s in materials 
+        len(m.get("topics", []))
+        for s in materials
         for m in s.get("modules", [])
     )
-    
+
     print(f"\n{'='*70}")
     print("📊 学习路径生成报告")
     print(f"{'='*70}")
@@ -311,14 +312,14 @@ def main():
     print(f"  生成模块:     {sum(len(s['modules']) for s in materials)} 个")
     print(f"  生成主题:     {total_topics} 个")
     print(f"  入库记录:     {new_count} 条")
-    print(f"  ─────────────────────────────")
-    
+    print("  ─────────────────────────────")
+
     # 显示各阶段概览
     for stage in materials:
         module_count = len(stage["modules"])
         topic_count = sum(len(m.get("topics", [])) for m in stage["modules"])
         print(f"  阶段{stage['stage']}: {stage['name']} - {module_count}模块, {topic_count}主题")
-    
+
     print(f"{'='*70}")
     print("✅ 零基础学习路径生成完成！")
 

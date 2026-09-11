@@ -7,16 +7,13 @@
 引导式加强：最多5轮迭代优化
 """
 
-import re
 import json
-import time
-from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
 
 # 导入框架模块
 from framework.database import db
-from framework.engines.feynman_engine import FeynmanEngine, FEYNMAN_TEMPLATES
-
+from framework.engines.feynman_engine import FEYNMAN_TEMPLATES, FeynmanEngine
 
 # ============================================================
 # 评分维度定义
@@ -521,7 +518,7 @@ class OutputDetector:
                 "feedback": result.get("feedback", ""),
                 "is_mastered": result.get("is_feynman_worthy", False),
             }
-        except Exception as e:
+        except Exception:
             return None
 
     # ============================================================

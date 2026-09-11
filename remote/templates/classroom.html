@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
-<meta name="theme-color" content="#08080d">
+<meta name="theme-color" content="#0a0a0a">
 <meta name="format-detection" content="telephone=no, email=no, address=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -14,6 +14,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet" onerror="this.onerror=null;this.href='';">
+<!-- LumiLearn UI 设计系统令牌（先于页面自有样式加载，页面样式可覆盖） -->
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
 <style>/* Fallback: Google Fonts will be skipped if blocked in China */</style>
 <!-- KaTeX 数学渲染（本地化，兼容无外网环境；CDN 失败时回退） -->
 <link rel="stylesheet" href="/static/vendor/katex/katex.min.css">
@@ -51,29 +54,29 @@ window.addEventListener('error', function (e) {
 </script>
 <style>
 /* ── LumiLearn Classroom · Observatory Dark Theme ── */
-:root {
---bg-deep: #08080d;
---bg-surface: #141413;
---bg-elevated: #1c1c1a;
---bg-dark: #0e0e0c;
---text-primary: #faf9f5;
---text-secondary: #b0aea5;
---text-dim: #6b6b6b;
---accent-orange: #d97757;
---accent-blue: #6a9bcc;
---accent-green: #788c5d;
---accent-purple: #9b7ec4;
---accent-red: #f26b6b;
---border: #2a2a2a;
---border-light: #343434;
---glow-orange: rgba(217, 119, 87, 0.15);
---glow-blue: rgba(106, 155, 204, 0.1);
---glow-purple: rgba(155, 126, 196, 0.15);
---glow-green: rgba(120, 140, 93, 0.12);
+:root, html.dark {
+--bg-deep: var(--background-900);
+--bg-surface: var(--background-800);
+--bg-elevated: var(--background-700);
+--bg-dark: var(--background-900);
+--text-primary: var(--foreground);
+--text-secondary: var(--color-text-muted);
+--text-dim: var(--text-500);
+--accent-orange: var(--primary);
+--accent-blue: var(--primary);
+--accent-green: var(--success);
+--accent-purple: var(--primary);
+--accent-red: var(--destructive);
+--border: var(--brand-700);
+--border-light: var(--color-border-strong);
+--glow-orange: color-mix(in srgb, var(--primary) 15%, transparent);
+--glow-blue: color-mix(in srgb, var(--primary) 10%, transparent);
+--glow-purple: color-mix(in srgb, var(--primary) 15%, transparent);
+--glow-green: color-mix(in srgb, var(--success) 12%, transparent);
 /* Legacy aliases */
 --bg: var(--bg-deep);
 --accent: var(--accent-orange);
---accent-hover: #e08a6a;
+--accent-hover: var(--primary);
 --accent-light: var(--glow-orange);
 --shadow: 0 2px 8px rgba(0,0,0,0.3);
 --shadow-lg: 0 4px 20px rgba(0,0,0,0.4);
@@ -86,6 +89,11 @@ window.addEventListener('error', function (e) {
 --font: 'Poppins', system-ui, -apple-system, sans-serif;
 --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
 --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+/* 补全被引用但此前未定义的令牌 */
+--transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+--text-muted: var(--text-dim);
+--accent-green-light: var(--glow-green);
+--accent-red-light: color-mix(in srgb, var(--destructive) 15%, transparent);
 /* Backward compat: map old --theme-* variables */
 --theme-bg: var(--bg-deep);
 --theme-bg-surface: var(--bg-elevated);
@@ -94,7 +102,7 @@ window.addEventListener('error', function (e) {
 --theme-text-secondary: var(--text-secondary);
 --theme-text-muted: var(--text-dim);
 --theme-accent: var(--accent-orange);
---theme-accent-hover: #e08a6a;
+--theme-accent-hover: var(--primary);
 --theme-accent-light: var(--glow-orange);
 --theme-border: var(--border);
 --theme-shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -632,7 +640,7 @@ transition: opacity var(--transition);
 .video-placeholder .video-poster .play-icon:hover { opacity: 0.8; }
 .video-placeholder .video-poster p {
 font-size: 13px;
-color: #94a3b8;
+color: var(--color-text-muted);
 }
 .video-loading {
 display: flex;
@@ -640,12 +648,12 @@ flex-direction: column;
 align-items: center;
 gap: 12px;
 padding: 32px;
-color: #94a3b8;
+color: var(--color-text-muted);
 }
 .video-progress-bar {
 width: 240px;
 height: 4px;
-background: #334155;
+background: var(--muted);
 border-radius: 2px;
 overflow: hidden;
 }
@@ -1207,13 +1215,13 @@ border: 2px solid var(--border);
 }
 .feynman-step-card.current .feynman-step-number {
 background: var(--accent);
-color: #fff;
+color: var(--primary-foreground);
 border-color: var(--accent);
 }
 .feynman-step-card.done .feynman-step-number {
-background: #22c55e;
-color: #fff;
-border-color: #22c55e;
+background: var(--success);
+color: var(--primary-foreground);
+border-color: var(--success);
 }
 .feynman-step-name {
 font-weight: 600;
@@ -1241,7 +1249,7 @@ background: var(--accent);
 animation: pulse-dot 1.5s ease-in-out infinite;
 }
 .step-status-dot.done {
-background: #22c55e;
+background: var(--success);
 }
 @keyframes pulse-dot {
 0%, 100% { opacity: 1; transform: scale(1); }
@@ -1290,7 +1298,7 @@ white-space: nowrap;
 margin-top: 10px;
 border-radius: var(--radius);
 overflow: hidden;
-background: #000;
+background: var(--background-900);
 }
 .step-animation video {
 width: 100%;
@@ -1341,8 +1349,8 @@ border-color: var(--accent);
 .feynman-test-submit {
 margin-top: 10px;
 padding: 10px 20px;
-background: #22c55e;
-color: #fff;
+background: var(--success);
+color: var(--primary-foreground);
 border: none;
 border-radius: var(--radius);
 cursor: pointer;
@@ -1350,7 +1358,7 @@ font-size: 13px;
 font-weight: 500;
 transition: all var(--transition);
 }
-.feynman-test-submit:hover { background: #16a34a; }
+.feynman-test-submit:hover { background: var(--color-success-600); }
 .feynman-test-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .feynman-test-result {
@@ -1363,7 +1371,7 @@ display: none;
 .feynman-score-circle {
 width: 80px; height: 80px;
 border-radius: 50%;
-border: 3px solid #22c55e;
+border: 3px solid var(--success);
 display: flex;
 align-items: center;
 justify-content: center;
@@ -1580,7 +1588,7 @@ position: relative;
 margin: 16px 0;
 border-radius: var(--radius);
 overflow: hidden;
-background: #1e1e2e;
+background: var(--background-800);
 border: 1px solid var(--border);
 }
 .block-code pre {
@@ -1589,7 +1597,7 @@ padding: 16px 20px;
 font-family: var(--font-mono);
 font-size: 13px;
 line-height: 1.6;
-color: #cdd6f4;
+color: var(--foreground);
 overflow-x: auto;
 white-space: pre-wrap;
 word-break: break-word;
@@ -1599,7 +1607,7 @@ position: absolute;
 top: 8px; right: 8px;
 padding: 4px 10px;
 background: rgba(255,255,255,0.1);
-color: #cdd6f4;
+color: var(--foreground);
 border: none;
 border-radius: 4px;
 font-size: 11px;
@@ -1614,7 +1622,7 @@ position: absolute;
 top: 8px; left: 12px;
 padding: 2px 8px;
 background: rgba(255,255,255,0.08);
-color: #a6adc8;
+color: var(--color-text-muted);
 border-radius: 3px;
 font-size: 10px;
 font-family: var(--font-mono);
@@ -1625,7 +1633,7 @@ position: relative;
 margin: 16px 0;
 border-radius: var(--radius);
 overflow: hidden;
-background: #0a0a1a;
+background: var(--background-900);
 aspect-ratio: 16/9;
 display: flex;
 align-items: center;
@@ -1681,7 +1689,7 @@ flex-shrink: 0;
 background: var(--bg);
 transition: opacity 0.3s ease;
 }
-.slide-nav-enhanced.hidden { opacity: 0; pointer-events: none; }
+.slide-nav-enhanced.hidden { display: flex !important; opacity: 0; pointer-events: none; }
 .slide-nav-row {
 display: flex;
 align-items: center;
@@ -1794,7 +1802,7 @@ white-space: nowrap;
 font-size: 18px;
 padding: 14px 28px;
 background: var(--theme-accent);
-color: white;
+color: var(--primary-foreground);
 box-shadow: 0 4px 12px var(--theme-accent-light);
 }
 .mindmap-node.root:hover { transform: scale(1.03); }
@@ -1901,7 +1909,7 @@ background: var(--accent-light);
 width: 100%;
 min-height: 320px;
 border: none;
-background: #fff;
+background: var(--background-50);
 display: block;
 }
 .simulation-resize-handle {
@@ -1915,7 +1923,7 @@ transition: background var(--transition);
 position: fixed;
 inset: 0;
 z-index: 9999;
-background: #fff;
+background: var(--background-50);
 }
 .simulation-fullscreen .simulation-iframe {
 height: 100%;
@@ -1988,7 +1996,7 @@ height: 100%;
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
 @media (prefers-color-scheme: light) {
-  :root { --bg-deep: #1a1a20; --bg-surface: #252530; --bg-elevated: #2e2e38; }
+  :root, html.dark { --bg-deep: var(--brand-900); --bg-surface: var(--brand-800); --bg-elevated: var(--brand-700); }
 }
 body.keyboard-open .chat-input-area,
 body.keyboard-open .slide-nav-enhanced {
@@ -2763,7 +2771,7 @@ return;
 videoArea.innerHTML = `
 <div class="video-loading">
 <div class="chat-typing"><span></span><span></span><span></span></div>
-<p style="font-size:13px;color:#94a3b8;">正在加载视频...</p>
+<p style="font-size:13px;color:var(--color-text-muted);">正在加载视频...</p>
 <div class="video-progress-bar">
 <div class="video-progress-fill" id="videoProgressFill" style="width:0%"></div>
 </div>
@@ -3381,7 +3389,7 @@ revealSlides.innerHTML = '';
 window.slides.forEach(slide => {
 const section = document.createElement('section');
 section.innerHTML = '<h2>' + esc(slide.title || '') + '</h2>' +
-'<p style="font-size:0.8em;color:#666;">' + esc(slide.subtitle || '') + '</p>' +
+'<p style="font-size:0.8em;color:var(--color-text-muted);">' + esc(slide.subtitle || '') + '</p>' +
 '<div style="text-align:left;font-size:0.7em;line-height:1.8;">' + esc(slide.content || '') + '</div>';
 revealSlides.appendChild(section);
 });
@@ -3925,13 +3933,13 @@ if (!resp.ok) throw new Error('HTTP ' + resp.status);
 return resp.json();
 }).then(function(data) {
 if (data.score !== undefined) {
-var scoreColor = data.score >= 80 ? '#22c55e' : (data.score >= 60 ? '#ea580c' : '#dc2626');
+var scoreColor = data.score >= 80 ? 'var(--success)' : (data.score >= 60 ? 'var(--warning)' : 'var(--destructive)');
 var dims = data.dimensions || {};
 var dimNames = { simplicity: '简洁度', accuracy: '准确度', analogy: '比喻运用', completeness: '完整度', jargon_free: '术语规避' };
 var dimsHtml = '';
 Object.keys(dimNames).forEach(function(key) {
 var val = dims[key] !== undefined ? dims[key] : 0;
-var barColor = val >= 16 ? '#22c55e' : (val >= 10 ? '#ea580c' : '#dc2626');
+var barColor = val >= 16 ? 'var(--success)' : (val >= 10 ? 'var(--warning)' : 'var(--destructive)');
 dimsHtml += '<div class="feynman-dimension">' +
 '<div class="feynman-dimension-name">' + dimNames[key] + '</div>' +
 '<div class="feynman-dimension-bar-wrap"><div class="feynman-dimension-bar" style="width:' + (val / 20 * 100) + '%;background:' + barColor + '"></div></div>' +
@@ -3944,7 +3952,7 @@ resultDiv.innerHTML =
 '<div class="feynman-score-label">费曼测试得分</div>' +
 dimsHtml +
 (data.feedback ? '<div class="feynman-feedback-text">' + escapeHtml(data.feedback) + '</div>' : '') +
-(data.is_feynman_worthy !== undefined ? '<div style="margin-top:10px;font-size:13px;text-align:center;color:' + (data.is_feynman_worthy ? '#22c55e' : '#ea580c') + '">' + (data.is_feynman_worthy ? '✓ 达到费曼标准' : '✗ 还需加油，继续改进') + '</div>' : '');
+(data.is_feynman_worthy !== undefined ? '<div style="margin-top:10px;font-size:13px;text-align:center;color:' + (data.is_feynman_worthy ? 'var(--success)' : 'var(--warning)') + '">' + (data.is_feynman_worthy ? '✓ 达到费曼标准' : '✗ 还需加油，继续改进') + '</div>' : '');
 } else {
 resultDiv.innerHTML = '<div class="feynman-loading" style="color:var(--accent-red)">评分失败</div>';
 }

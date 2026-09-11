@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn Admin · 仪表盘</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  .content-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .panel-head h3{font-size:15px;font-weight:600}
+  .svc-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--color-border)}
+  .svc-row:last-child{border-bottom:none}
+  .svc-row .grow{flex:1;min-width:0}
+  .svc-row .grow b{display:block;font-size:13px;font-weight:600}
+  .svc-row .grow span{font-size:12px;color:var(--color-text-muted)}
+  .empty{text-align:center;color:var(--color-text-muted);font-size:13px;padding:26px 0}
+  .topbar .tools{display:flex;align-items:center;gap:10px}
+  select{height:34px;border-radius:8px;border:1px solid var(--color-border);background:var(--card);
+    color:var(--color-text);padding:0 8px;font-size:13px}
+  @media (max-width:1100px){.metrics-grid{grid-template-columns:repeat(2,1fr)}.content-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">管理控制台 · 系统总览</div>
+        <h1>仪表盘</h1>
+      </div>
+      <div class="tools">
+        <span class="pill" id="healthPill">系统健康度：—</span>
+        <button class="btn sm" id="refreshBtn" type="button"><i class="icon icon-16 icon-chevrons-down-up"></i> 刷新</button>
+      </div>
+    </div>
+
+    <div id="alertHost"></div>
+
+    <section class="metrics-grid">
+      <div class="metric-card"><div class="eyebrow">在线用户数</div><div class="metric-value" id="mOnline">—</div><div class="delta muted small">后端未提供实时在线统计</div></div>
+      <div class="metric-card"><div class="eyebrow">API 请求量（今日）</div><div class="metric-value" id="mToday">—</div><div class="delta muted small">后端仅提供累计请求数（见容量配置）</div></div>
+      <div class="metric-card"><div class="eyebrow">系统健康度</div><div class="metric-value" id="mHealth">—</div><div class="delta muted small" id="mHealthSub">模型网关状态</div></div>
+      <div class="metric-card"><div class="eyebrow">总用户数</div><div class="metric-value" id="mUsers">—</div><div class="delta muted small" id="mUsersSub">学生 — · 教师 —</div></div>
+    </section>
+
+    <div class="content-grid">
+      <section class="card">
+        <div class="panel-head"><h3>服务状态</h3><span class="muted small" id="svcSummary">—</span></div>
+        <div id="svcList"><div class="empty">加载中…</div></div>
+      </section>
+
+      <section class="card">
+        <div class="panel-head"><h3>模型使用统计</h3><span class="muted small" id="modelSummary">—</span></div>
+        <div id="modelList"><div class="empty">加载中…</div></div>
+      </section>
+    </div>
+
+    <div class="content-grid">
+      <section class="card">
+        <div class="panel-head"><h3>Agent 运行状态</h3><span class="muted small" id="agentSummary">—</span></div>
+        <div id="agentList"><div class="empty">加载中…</div></div>
+      </section>
+
+      <section class="card">
+        <div class="panel-head">
+          <h3>最近系统日志</h3>
+          <select id="logSource">
+            <option value="all">全部来源</option>
+            <option value="system">系统操作</option>
+            <option value="reasoning">学生推理</option>
+            <option value="report">学习报告</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>时间</th><th>来源</th><th>模块</th><th>内容</th></tr></thead>
+            <tbody id="logBody"><tr><td colspan="4"><div class="empty">加载中…</div></td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="card mt-2">
+      <div class="panel-head"><h3>学习工作流 / 检测总量</h3></div>
+      <div class="grid cols-3">
+        <div><div class="eyebrow">学习工作流</div><div class="metric-value" id="mWorkflows" style="font-size:22px">—</div></div>
+        <div><div class="eyebrow">输出检测</div><div class="metric-value" id="mDetections" style="font-size:22px">—</div></div>
+        <div><div class="eyebrow">Agent（运行中/总数）</div><div class="metric-value" id="mAgents" style="font-size:22px">—</div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/ui/admin.js"></script>
+<script>
+(function () {
+  var E = LLA.esc, I = LLA.icon;
+  var SOURCE = { system: "系统操作", reasoning: "学生推理", report: "学习报告" };
+
+  function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
+  function placeholders() {
+    ["mOnline", "mToday", "mHealth", "mUsers", "mWorkflows", "mDetections", "mAgents"].forEach(function (id) { setText(id, "—"); });
+    setText("svcSummary", "—"); setText("modelSummary", "—"); setText("agentSummary", "—");
+    document.getElementById("svcList").innerHTML = '<div class="empty">未登录或无数据</div>';
+    document.getElementById("modelList").innerHTML = '<div class="empty">未登录或无数据</div>';
+    document.getElementById("agentList").innerHTML = '<div class="empty">未登录或无数据</div>';
+    document.getElementById("logBody").innerHTML = '<tr><td colspan="4"><div class="empty">未登录或无数据</div></td></tr>';
+  }
+
+  function loadOverview() {
+    return LLA.get("/overview").then(function (r) {
+      var s = (r && r.stats) || {};
+      var m = (r && r.model_status) || {};
+      setText("mUsers", s.total_users == null ? "—" : s.total_users);
+      setText("mUsersSub", "学生 " + (s.total_students == null ? "—" : s.total_students) +
+                           " · 教师 " + (s.total_teachers == null ? "—" : s.total_teachers));
+      setText("mWorkflows", s.total_workflows == null ? "—" : s.total_workflows);
+      setText("mDetections", s.total_detections == null ? "—" : s.total_detections);
+      setText("mAgents", (s.running_agents == null ? "—" : s.running_agents) + " / " + (s.total_agents == null ? "—" : s.total_agents));
+
+      var st = m.status || m.gateway || "unknown";
+      var ok = (m.gateway === "online") || (st === "healthy" || st === "ok" || st === "online");
+      setText("mHealth", st);
+      setText("mHealthSub", "网关 " + (m.gateway || "—") + " · 本地模型 " + (m.models == null ? "—" : m.models) +
+                            " · 延迟 " + (m.latency_ms == null ? "—" : m.latency_ms + "ms"));
+      var pill = document.getElementById("healthPill");
+      pill.className = "pill " + (ok ? "green" : "red");
+      pill.textContent = "系统健康度：" + st;
+    });
+  }
+
+  function loadServices() {
+    return LLA.get("/port-settings").then(function (r) {
+      var ps = (r && r.port_settings) || {};
+      var keys = Object.keys(ps);
+      var host = document.getElementById("svcList");
+      if (!keys.length) { host.innerHTML = '<div class="empty">暂无端口服务配置</div>'; setText("svcSummary", "0 个服务"); return; }
+      var listening = 0;
+      host.innerHTML = keys.map(function (k) {
+        var s = ps[k] || {};
+        if (s.listening) listening++;
+        var pill = s.listening ? '<span class="pill green">监听中</span>'
+                              : (s.enabled ? '<span class="pill amber">已启用未监听</span>' : '<span class="pill">未启用</span>');
+        return '<div class="svc-row">' + I(s.enabled ? "circle-check" : "circle-minus") +
+          '<div class="grow"><b>' + E(s.display_name || k) + '</b><span>端口 ' + E(s.port) +
+          (s.desc ? ' · ' + E(s.desc) : '') + '</span></div>' + pill + '</div>';
+      }).join("");
+      setText("svcSummary", listening + " / " + keys.length + " 个端口监听中");
+    });
+  }
+
+  function loadModels() {
+    return LLA.get("/models").then(function (r) {
+      var models = (r && r.models) || [];
+      var h = (r && r.health) || {};
+      var host = document.getElementById("modelList");
+      setText("modelSummary", "网关 " + (h.gateway || "—"));
+      var head = '<div class="svc-row">' + I("box") + '<div class="grow"><b>模型网关</b><span>状态 ' +
+        E(h.status || "—") + ' · 可用模型 ' + E(h.models == null ? "—" : h.models) +
+        ' · 延迟 ' + E(h.latency_ms == null ? "—" : h.latency_ms + "ms") + '</span></div>' +
+        (h.gateway === "online" ? '<span class="pill green">在线</span>' : '<span class="pill red">离线</span>') + '</div>';
+      if (!models.length) {
+        host.innerHTML = head + '<div class="empty">暂无本地模型</div>';
+        return;
+      }
+      host.innerHTML = head + models.map(function (m) {
+        var name = (typeof m === "string") ? m : (m.name || m.model || "—");
+        return '<div class="svc-row">' + I("box") + '<div class="grow"><b>' + E(name) + '</b></div></div>';
+      }).join("");
+    });
+  }
+
+  function loadAgents() {
+    return LLA.get("/agents").then(function (r) {
+      var agents = (r && r.agents) || [];
+      var host = document.getElementById("agentList");
+      var running = agents.filter(function (a) { return a.running || a.status === "running"; }).length;
+      setText("agentSummary", running + " / " + agents.length + " 运行中");
+      if (!agents.length) { host.innerHTML = '<div class="empty">暂无 Agent</div>'; return; }
+      host.innerHTML = agents.map(function (a) {
+        var on = a.running || a.status === "running";
+        return '<div class="svc-row">' + I(on ? "circle-play" : "circle-pause") +
+          '<div class="grow"><b>' + E(a.name || a.agent_id) + '</b><span>' + E(a.agent_type || "") +
+          (a.description ? ' · ' + E(a.description) : '') + '</span></div>' +
+          '<span class="pill ' + (on ? "green" : "") + '">' + E(on ? "运行中" : (a.status || "stopped")) + '</span></div>';
+      }).join("");
+    });
+  }
+
+  function loadLogs() {
+    var src = document.getElementById("logSource").value || "all";
+    return LLA.get("/activity-logs?source=" + encodeURIComponent(src) + "&limit=8").then(function (r) {
+      var logs = (r && r.logs) || [];
+      var body = document.getElementById("logBody");
+      if (!logs.length) { body.innerHTML = '<tr><td colspan="4"><div class="empty">暂无日志</div></td></tr>'; return; }
+      body.innerHTML = logs.map(function (l) {
+        var levelPill = l.level === "error" ? '<span class="pill red">error</span>'
+                       : (l.level === "warning" ? '<span class="pill amber">warning</span>' : '<span class="pill">info</span>');
+        return '<tr><td class="mono small">' + E(LLA.fmtDate(l.created_at)) + '</td>' +
+          '<td>' + E(SOURCE[l.source] || l.source || "—") + '</td>' +
+          '<td>' + E(l.module || "—") + '</td>' +
+          '<td>' + levelPill + ' ' + E(l.message || "") + '</td></tr>';
+      }).join("");
+    });
+  }
+
+  function loadAll() {
+    return Promise.all([
+      loadOverview(), loadServices(), loadModels(), loadAgents(), loadLogs()
+    ].map(function (p) { return p.catch(function () { return null; }); }));
+  }
+
+  document.getElementById("refreshBtn").addEventListener("click", function () {
+    if (!LLA.isNoAuth()) loadAll();
+    LLA.toast("已刷新");
+  });
+  document.getElementById("logSource").addEventListener("change", function () {
+    if (!LLA.isNoAuth()) loadLogs().catch(function () {});
+  });
+
+  LLA.boot({ nav: "dashboard" }).then(function (admin) {
+    if (!admin) { placeholders(); document.getElementById("alertHost").innerHTML = LLA.noAuthBanner(); LLA.bindLoginButton(); return; }
+    loadAll();
+  }).catch(function () { placeholders(); });
+})();
+</script>
+</body>
+</html>

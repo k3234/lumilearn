@@ -24,7 +24,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import pytest
 
 from agent_core.task_queue import (
-    TaskQueue, register_task, TASK_REGISTRY, get_task_queue, reset_task_queue,
+    TaskQueue,
+    register_task,
+    reset_task_queue,
 )
 from agent_core.verifier import VerifierAgent
 from framework.database import db

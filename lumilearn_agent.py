@@ -6,6 +6,7 @@ LumiLearn 兼容性 shim — 提供模型调用与任务解析能力
 以便 student_portal.py 和旧测试脚本无缝运行。
 """
 import os
+
 import requests
 
 
@@ -36,7 +37,6 @@ class ToolCaller:
             return False
 
     def call(self, prompt: str, task_type: str = "chat", timeout: int = 120) -> dict:
-        import json
         payload = {
             "model": self.preferred_model,
             "prompt": prompt,

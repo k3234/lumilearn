@@ -13,9 +13,15 @@ models:
     enabled: true
     host: http://localhost:11434
     models:
+      - name: qwen2.5:1.5b
+        alias: qwen-1.5b
+        enabled: true
+      - name: qwen2.5:3b
+        alias: qwen-3b
+        enabled: false
       - name: qwen2.5:7b
         alias: qwen-7b
-        enabled: true
+        enabled: false
       - name: deepseek-r1:7b
         alias: deepseek-r1
         enabled: false

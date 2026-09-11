@@ -17,8 +17,8 @@ import unittest
 # 确保能导入项目模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from framework.core.router import ModelRouter, RouteRequest, TaskType
 from agent_core.model_registry import FALLBACK_CHAIN, get_fallback_chain
+from framework.core.router import ModelRouter, RouteRequest, TaskType
 
 
 class TestAdaptiveRouting(unittest.TestCase):

@@ -6,6 +6,7 @@ LumiLearn 管理员系统
 - 管理服务：用户/模型/系统管理
 """
 from .auth import AdminAuth, get_admin_auth, require_admin
+
 try:
     from .agents import AgentRegistry, get_agent_registry
 except ImportError:

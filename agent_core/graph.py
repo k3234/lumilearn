@@ -33,8 +33,8 @@ from typing import Any, Callable, Dict, List, Optional, Union
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent_core.models import AgentState
-from agent_core.router import RouterAgent, get_router_agent
-from agent_core.multi_agent import MultiAgentPipeline, get_multi_agent_pipeline
+from agent_core.multi_agent import get_multi_agent_pipeline
+from agent_core.router import get_router_agent
 
 
 # ================================================================

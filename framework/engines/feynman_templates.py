@@ -3,7 +3,7 @@
 灵学 lumilearn - 费曼教学模板
 预定义的费曼五步法教学模板库
 """
-from typing import Dict, Optional
+from typing import Dict
 
 # 费曼五步法教学模板
 FEYNMAN_TEMPLATES: Dict[str, Dict[str, Dict[str, str]]] = {
@@ -21,6 +21,27 @@ FEYNMAN_TEMPLATES: Dict[str, Dict[str, Dict[str, str]]] = {
             "model": "把方程想象成一个天平。左边是已知数，右边是未知数。天平平衡时，两边相等。",
             "derive": "如果 x + 3 = 10，怎么求 x？提示：天平两边同时减去相同的数，还平衡吗？",
             "test": "用自己的话解释什么是方程，以及为什么要学方程。"
+        },
+        "math_calc": {
+            "phenomenon": "想象你站在山坡上，想知道坡有多陡——这就是导数要回答的问题。又比如，已知一辆车的速度，想知道它走了多远——这就是积分要做的事。",
+            "conflict": "导数说'瞬间的变化率'，但瞬间怎么可能变化？时间停下来了，变化去哪里了？这是数学史上困扰牛顿和莱布尼茨两百年的难题。",
+            "model": "把导数想象成放大镜：把一小段曲线'放大'到看起来像直线，斜率就是这段'小直线'的陡度。积分则是反过来——把无数条小直线'拼'成整条曲线下的面积。",
+            "derive": "先看导数：设 f(x)=x^2，取两个很近的点 x 和 x+Δx，算出它们的函数值之差除以 Δx，再让 Δx 越来越小。你能写出这个表达式，并观察当 Δx→0 时会收敛到什么？",
+            "test": "不用任何公式，用你自己的话告诉一个没学过导数的人：导数本质上在算什么？它和'变化'有什么关系？"
+        },
+        "math_concept": {
+            "phenomenon": "你在地图上标记两个位置，用一条线段连起来——这条线段既有方向又有长度，这就是向量的原型。风向、水流、力的方向，都是向量。",
+            "conflict": "两个向量相加，是把它们的长度直接加起来吗？如果它们方向相反，结果会怎样？向量能不能'乘'？乘出来是什么东西？",
+            "model": "把向量想象成一张'地图指令卡'：上面写着'向东走3步，再向北走2步'。向量加法就是按顺序走两步指令，终点就是你的结果。数量积（点乘）则是看两条指令在同一个方向上'重叠'了多少。",
+            "derive": "设向量 a=(3,1)，b=(2,4)。先画图，用'终点法'把 b 的起点移到 a 的终点，看看 a+b 的终点在哪里。再用坐标相加算一遍，结果一样吗？你能自己试算 a·b 吗？",
+            "test": "用一句话向完全不懂的人说清：向量到底'是什么'，和普通的数最大的区别在哪里？"
+        },
+        "math_proof": {
+            "phenomenon": "我们常常需要'证明'一件事，比如'三角形内角和是180度'。不是量出来的，而是用逻辑一步一步'钉死'它，让别人无法反驳。",
+            "conflict": "怎么证明一个看起来显然正确的事情？'一眼就看出来'不等于'严格成立'。数学的证明就是要堵住所有可能的漏洞。",
+            "model": "把证明想象成走楼梯：每一步都要踩实（依据定理、定义或已知条件），从上一步走到下一步，不能跳。楼梯顶就是你要证明的结论。",
+            "derive": "以'等腰三角形两底角相等'为例：从顶点作一条辅助线（比如底边上的高），把三角形分成两个小三角形。你能发现这两个小三角形满足什么全等条件吗？由此你能得到底角相等吗？",
+            "test": "用'因为……所以……'的格式，把刚才证明等腰三角形两底角相等的关键逻辑链完整说一遍，让别人只看这一句话就能跟着走。"
         },
         "default": {
             "phenomenon": "数学无处不在——从购物找零到规划时间，我们每天都在用数学。",
@@ -113,12 +134,12 @@ def get_template(subject: str, topic_type: str, step: str, topic: str = "") -> s
     subject_templates = FEYNMAN_TEMPLATES.get(subject, FEYNMAN_TEMPLATES["general"])
     type_templates = subject_templates.get(topic_type, subject_templates.get("default", {}))
     template = type_templates.get(step, "")
-    
+
     if not template:
         # 返回通用模板
         general = FEYNMAN_TEMPLATES["general"]["default"]
-        template = general.get(step, f"请用简单的语言解释这个概念。")
-    
+        template = general.get(step, "请用简单的语言解释这个概念。")
+
     return template
 
 
@@ -141,5 +162,5 @@ def add_template(subject: str, topic_type: str, step: str, template: str):
         FEYNMAN_TEMPLATES[subject] = {}
     if topic_type not in FEYNMAN_TEMPLATES[subject]:
         FEYNMAN_TEMPLATES[subject][topic_type] = {}
-    
+
     FEYNMAN_TEMPLATES[subject][topic_type][step] = template

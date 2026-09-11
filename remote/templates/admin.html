@@ -1,82 +1,84 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LumiLearn 管理面板</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: "Microsoft YaHei", sans-serif; background: #0d1117; color: #e6edf3; }
+  body { font-family: var(--font-sans); background: var(--background); color: var(--color-text); }
   .login-wrap { display: flex; justify-content: center; align-items: center; height: 100vh; }
-  .login-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 40px; width: 360px; }
-  .login-card h1 { font-size: 22px; margin-bottom: 24px; color: #58a6ff; }
-  .login-card input { width: 100%; padding: 12px; margin-bottom: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; font-size: 14px; }
-  .login-card button { width: 100%; padding: 12px; background: #238636; border: none; border-radius: 6px; color: #fff; font-size: 15px; cursor: pointer; }
-  .login-card button:hover { background: #2ea043; }
-  .error { color: #f85149; font-size: 13px; margin-bottom: 10px; min-height: 18px; }
+  .login-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 40px; width: 360px; }
+  .login-card h1 { font-size: 22px; margin-bottom: 24px; color: var(--primary); }
+  .login-card input { width: 100%; padding: 12px; margin-bottom: 12px; background: var(--background); border: 1px solid var(--border); border-radius: 6px; color: var(--color-text); font-size: 14px; }
+  .login-card button { width: 100%; padding: 12px; background: var(--success); border: none; border-radius: 6px; color: var(--success-foreground); font-size: 15px; cursor: pointer; }
+  .login-card button:hover { filter: brightness(1.12); }
+  .error { color: var(--destructive); font-size: 13px; margin-bottom: 10px; min-height: 18px; }
   .app { display: none; }
-  .sidebar { position: fixed; left: 0; top: 0; width: 200px; height: 100vh; background: #161b22; border-right: 1px solid #30363d; padding-top: 20px; }
-  .sidebar .brand { padding: 0 20px; font-size: 18px; font-weight: bold; color: #58a6ff; margin-bottom: 30px; }
-  .sidebar .nav-item { display: block; width: 100%; padding: 12px 20px; color: #8b949e; background: none; border: none; text-align: left; font-size: 14px; cursor: pointer; }
-  .sidebar .nav-item:hover, .sidebar .nav-item.active { color: #58a6ff; background: #0d1117; border-left: 3px solid #58a6ff; }
+  .sidebar { position: fixed; left: 0; top: 0; width: 200px; height: 100vh; background: var(--card); border-right: 1px solid var(--border); padding-top: 20px; }
+  .sidebar .brand { padding: 0 20px; font-size: 18px; font-weight: bold; color: var(--primary); margin-bottom: 30px; }
+  .sidebar .nav-item { display: block; width: 100%; padding: 12px 20px; color: var(--color-text-muted); background: none; border: none; text-align: left; font-size: 14px; cursor: pointer; }
+  .sidebar .nav-item:hover, .sidebar .nav-item.active { color: var(--primary); background: var(--background); border-left: 3px solid var(--primary); }
   .main { margin-left: 200px; padding: 24px; }
   .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
   .topbar h2 { font-size: 20px; }
-  .topbar .user { color: #8b949e; font-size: 13px; }
+  .topbar .user { color: var(--color-text-muted); font-size: 13px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-  .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
-  .card .num { font-size: 28px; font-weight: bold; color: #58a6ff; }
-  .card .label { font-size: 13px; color: #8b949e; margin-top: 6px; }
-  .panel { display: none; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .card .num { font-size: 28px; font-weight: bold; color: var(--primary); }
+  .card .label { font-size: 13px; color: var(--color-text-muted); margin-top: 6px; }
+  .panel { display: none; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
   .panel.active { display: block; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #21262d; }
-  th { color: #8b949e; font-weight: normal; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+  th { color: var(--color-text-muted); font-weight: normal; }
   .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; }
-  .badge.ok { background: #1f6feb33; color: #58a6ff; }
-  .badge.on { background: #23863633; color: #3fb950; }
-  .badge.off { background: #30363d; color: #8b949e; }
-  .badge.err { background: #f8514933; color: #f85149; }
-  button.act { padding: 6px 14px; margin-right: 6px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; cursor: pointer; font-size: 12px; }
-  button.act:hover { border-color: #58a6ff; color: #58a6ff; }
-  button.act.danger:hover { border-color: #f85149; color: #f85149; }
+  .badge.ok { background: var(--muted); color: var(--color-text); }
+  .badge.on { background: var(--success-subtle); color: var(--success-text); }
+  .badge.off { background: var(--muted); color: var(--color-text-muted); }
+  .badge.err { background: var(--destructive-subtle); color: var(--destructive-text); }
+  button.act { padding: 6px 14px; margin-right: 6px; background: var(--muted); border: 1px solid var(--border); border-radius: 6px; color: var(--color-text); cursor: pointer; font-size: 12px; }
+  button.act:hover { border-color: var(--primary); color: var(--primary); }
+  button.act.danger:hover { border-color: var(--destructive); color: var(--destructive); }
   .form-row { display: flex; gap: 10px; margin-bottom: 16px; }
-  .form-row input { flex: 1; padding: 10px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; }
-  .form-row select { padding: 10px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; }
-  .toast { position: fixed; top: 20px; right: 20px; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 20px; z-index: 999; display: none; }
+  .form-row input { flex: 1; padding: 10px; background: var(--background); border: 1px solid var(--border); border-radius: 6px; color: var(--color-text); }
+  .form-row select { padding: 10px; background: var(--background); border: 1px solid var(--border); border-radius: 6px; color: var(--color-text); }
+  .toast { position: fixed; top: 20px; right: 20px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; z-index: 999; display: none; }
   .toast.show { display: block; }
-  pre.log-box { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px; max-height: 500px; overflow-y: auto; font-size: 12px; line-height: 1.6; }
-  .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid #30363d; padding-bottom: 0; }
-  .sub-tab { padding: 8px 16px; background: none; border: none; color: #8b949e; cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
-  .sub-tab:hover { color: #58a6ff; }
-  .sub-tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+  pre.log-box { background: var(--background); border: 1px solid var(--border); border-radius: 6px; padding: 12px; max-height: 500px; overflow-y: auto; font-size: 12px; line-height: 1.6; }
+  .sub-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 0; }
+  .sub-tab { padding: 8px 16px; background: none; border: none; color: var(--color-text-muted); cursor: pointer; font-size: 13px; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .sub-tab:hover { color: var(--primary); }
+  .sub-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
   .sub-panel { display: none; }
   .sub-panel.active { display: block; }
-  .provider-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 12px; }
-  .provider-card h4 { margin: 0 0 8px 0; font-size: 14px; color: #e6edf3; }
+  .provider-card { background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .provider-card h4 { margin: 0 0 8px 0; font-size: 14px; color: var(--color-text); }
   .provider-card .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
-  .provider-card .row input { flex: 1; padding: 8px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; font-size: 13px; }
+  .provider-card .row input { flex: 1; padding: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--color-text); font-size: 13px; }
   .provider-card .row input[type="password"] { font-family: monospace; letter-spacing: 2px; }
-  .provider-card .row label { font-size: 12px; color: #8b949e; min-width: 60px; }
-  .provider-card .models-list { font-size: 12px; color: #8b949e; margin-top: 4px; }
-  .provider-card .models-list span { display: inline-block; background: #21262d; padding: 2px 8px; border-radius: 4px; margin: 2px; }
-  .toggle { display: inline-block; width: 36px; height: 20px; background: #30363d; border-radius: 10px; cursor: pointer; position: relative; transition: 0.2s; }
-  .toggle.on { background: #238636; }
-  .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: white; border-radius: 50%; top: 2px; left: 2px; transition: 0.2s; }
+  .provider-card .row label { font-size: 12px; color: var(--color-text-muted); min-width: 60px; }
+  .provider-card .models-list { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+  .provider-card .models-list span { display: inline-block; background: var(--muted); padding: 2px 8px; border-radius: 4px; margin: 2px; }
+  .toggle { display: inline-block; width: 36px; height: 20px; background: var(--muted); border-radius: 10px; cursor: pointer; position: relative; transition: 0.2s; }
+  .toggle.on { background: var(--success); }
+  .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; background: var(--background-50); border-radius: 50%; top: 2px; left: 2px; transition: 0.2s; }
   .toggle.on::after { left: 18px; }
-  .port-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; }
-  .port-card .port-name { font-size: 14px; font-weight: 500; min-width: 140px; color: #e6edf3; }
-  .port-card .port-current { font-size: 12px; color: #8b949e; min-width: 180px; }
-  .port-card select { padding: 6px 10px; background: #161b22; border: 1px solid #30363d; border-radius: 6px; color: #e6edf3; font-size: 12px; flex: 1; }
+  .port-card { background: var(--background); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px; }
+  .port-card .port-name { font-size: 14px; font-weight: 500; min-width: 140px; color: var(--color-text); }
+  .port-card .port-current { font-size: 12px; color: var(--color-text-muted); min-width: 180px; }
+  .port-card select { padding: 6px 10px; background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--color-text); font-size: 12px; flex: 1; }
   .port-collapse { margin-top: 0; margin-bottom: 12px; display: none; }
   .port-collapse.open { display: block; }
-  .port-collapse .model-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid #21262d; font-size: 13px; }
+  .port-collapse .model-item { display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
   .port-collapse .model-item:last-child { border-bottom: none; }
   .port-collapse .model-item .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
-  .port-collapse .model-item .tag.local { background: #1f6feb33; color: #58a6ff; }
-  .port-collapse .model-item .tag.cloud { background: #23863633; color: #3fb950; }
-  .toggle-btn { background: none; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; font-size: 12px; padding: 4px 10px; white-space: nowrap; }
-  .toggle-btn:hover { color: #58a6ff; border-color: #58a6ff; }
+  .port-collapse .model-item .tag.local { background: var(--muted); color: var(--color-text); }
+  .port-collapse .model-item .tag.cloud { background: var(--success-subtle); color: var(--success-text); }
+  .toggle-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--color-text-muted); cursor: pointer; font-size: 12px; padding: 4px 10px; white-space: nowrap; }
+  .toggle-btn:hover { color: var(--primary); border-color: var(--primary); }
   .toggle-btn .arrow { display: inline-block; transition: transform 0.2s; margin-right: 4px; }
   .toggle-btn .arrow.open { transform: rotate(90deg); }
 </style>
@@ -217,16 +219,16 @@ async function loadOverview() {
       <div class="card"><div class="num">${s.total_detections}</div><div class="label">输出检测</div></div>
       <div class="card"><div class="num">${s.running_agents}/${s.total_agents}</div><div class="label">运行中 Agent</div></div>
     </div>
-    <h3 style="margin:16px 0 10px;color:#8b949e;">模型服务状态</h3>
+    <h3 style="margin:16px 0 10px;color:var(--color-text-muted);">模型服务状态</h3>
     <div class="cards">
       <div class="card"><div class="num" style="font-size:18px;">${esc(m.status || 'unknown')}</div><div class="label">网关状态</div></div>
       <div class="card"><div class="num" style="font-size:18px;">${m.models ?? '-'}</div><div class="label">本地模型数</div></div>
       <div class="card"><div class="num" style="font-size:18px;">${m.latency_ms ?? '-'}ms</div><div class="label">响应延迟</div></div>
     </div>
-    <h3 style="margin:16px 0 10px;color:#8b949e;">最近活动（系统 + 学生使用记录）</h3>
+    <h3 style="margin:16px 0 10px;color:var(--color-text-muted);">最近活动（系统 + 学生使用记录）</h3>
     <pre class="log-box">${(data.recent_logs || []).map(l => {
       const _tag = {system: '⚙️ 系统', reasoning: '🧠 推理', report: '📚 报告'}[l.source] || l.source;
-      const _c = {system: '#58a6ff', reasoning: '#3fb950', report: '#d29922'}[l.source] || '#8b949e';
+      const _c = {system: 'var(--primary)', reasoning: 'var(--success)', report: 'var(--warning)'}[l.source] || 'var(--color-text-muted)';
       return `[${esc(l.created_at)}] [<b style="color:${esc(_c)}">${esc(_tag)}</b>] [${esc(l.module)}] ${esc(l.message)}`;
     }).join('\n') || '（暂无活动，快去课堂/五步学习吧）'}</pre>`;
 }
@@ -247,7 +249,7 @@ async function loadUsers() {
       </select>
       <button class="act" onclick="createUser()">添加用户</button>
     </div>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在学习平台(端口5000)、教师端(端口5001)、学生端(端口5010) 登录；管理员可在此为账号绑定班级、启停用账号、变更角色。</div>
+    <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:12px;">提示: 学生/教师可用"登录用户名+密码"在学习平台(端口5000)、教师端(端口5001)、学生端(端口5010) 登录；管理员可在此为账号绑定班级、启停用账号、变更角色。</div>
     <table>
       <tr><th>ID</th><th>姓名</th><th>用户名</th><th>角色</th><th>状态</th><th>班级</th><th>密码</th><th>创建时间</th><th>操作</th></tr>
       ${data.users.map(u => `
@@ -255,7 +257,7 @@ async function loadUsers() {
           <td>${u.id}</td><td>${esc(u.name)}</td><td>${esc(u.username || u.name)}</td><td>${esc(u.role)}</td>
           <td>${u.is_active === 0 ? '<span class="badge err">已禁用</span>' : '<span class="badge ok">启用</span>'}</td>
           <td>${(u.classes || []).map(c => `<span class="badge">${esc(c.school_name)} / ${esc(c.grade_name)} / ${esc(c.class_name)}
-                <a href="javascript:void(0)" data-act="unbind" data-id="${u.id}" data-class-id="${c.id}" data-name="${esc(u.name)}" style="color:#f85149;">✕</a></span>`).join(' ') || '-'}
+                <a href="javascript:void(0)" data-act="unbind" data-id="${u.id}" data-class-id="${c.id}" data-name="${esc(u.name)}" style="color:var(--destructive);">✕</a></span>`).join(' ') || '-'}
               ${u.role === 'student' && allClasses.length ? `<select id="cls_${u.id}" style="width:auto;max-width:140px;font-size:12px;padding:2px 4px;">
                 <option value="">+绑定班级</option>${allClasses.map(c => `<option value="${c.id}">${esc(c.school_name)} / ${esc(c.grade_name)} / ${esc(c.name)}</option>`).join('')}</select>
               <button class="act" style="padding:2px 8px;font-size:12px;" data-act="bind" data-id="${u.id}" data-name="${esc(u.name)}">绑定</button>` : ''}</td>
@@ -424,19 +426,19 @@ async function renderProviders() {
     const el = document.getElementById('modelSubContent');
 
     // 构建提供者列表
-    let listHtml = '<h3 style="color:#58a6ff;margin-bottom:12px;font-size:15px;">已配置的提供者</h3>';
+    let listHtml = '<h3 style="color:var(--primary);margin-bottom:12px;font-size:15px;">已配置的提供者</h3>';
     for (const p of providers) {
       const modelsHtml = (p.models || []).map(m => `<span>${esc(m.id || m.name || m)}</span>`).join(' ');
       listHtml += `
         <div class="provider-card">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <h4>${esc(p.name)} <span style="color:#8b949e;font-size:12px;font-weight:normal;">(${esc(p.key)})</span></h4>
-              <div style="font-size:12px;color:#8b949e;">${esc(p.base_url)}</div>
-              <div class="models-list">${modelsHtml || '<span style="color:#8b949e;">无模型</span>'}</div>
+              <h4>${esc(p.name)} <span style="color:var(--color-text-muted);font-size:12px;font-weight:normal;">(${esc(p.key)})</span></h4>
+              <div style="font-size:12px;color:var(--color-text-muted);">${esc(p.base_url)}</div>
+              <div class="models-list">${modelsHtml || '<span style="color:var(--color-text-muted);">无模型</span>'}</div>
             </div>
             <div style="display:flex;align-items:center;gap:12px;">
-              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8b949e;">
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--color-text-muted);">
                 <span>API Key: ${p.has_api_key ? '✅ 已配置' : '❌ 未配置'}</span>
                 <span>|</span>
                 <span>启用: <span class="toggle ${p.enabled ? 'on' : ''}" data-act="toggleProviderEnabled" data-key="${esc(p.key)}" style="vertical-align:middle;"></span></span>
@@ -447,15 +449,15 @@ async function renderProviders() {
           </div>
         </div>`;
     }
-    if (!providers.length) listHtml += '<div style="color:#8b949e;font-size:13px;padding:12px 0;">暂无已配置的云端提供者</div>';
+    if (!providers.length) listHtml += '<div style="color:var(--color-text-muted);font-size:13px;padding:12px 0;">暂无已配置的云端提供者</div>';
 
     // 构建模板选择 + 添加区域
     let templateOpts = templates.map(t => `<option value="${esc(t.key)}">${esc(t.name)}</option>`).join('');
     listHtml += `
-      <h3 style="color:#58a6ff;margin:20px 0 12px;font-size:15px;">添加/编辑提供者</h3>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:20px;">
+      <h3 style="color:var(--primary);margin:20px 0 12px;font-size:15px;">添加/编辑提供者</h3>
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:20px;">
         <div class="form-row">
-          <select id="providerTemplate" onchange="onProviderTemplateChange()" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;flex:1;">
+          <select id="providerTemplate" onchange="onProviderTemplateChange()" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);flex:1;">
             <option value="">-- 选择模板或手动输入 --</option>
             ${templateOpts}
           </select>
@@ -470,9 +472,9 @@ async function renderProviders() {
         </div>
         <div class="form-row">
           <input id="providerModels" placeholder="模型列表 (逗号分隔, 如 deepseek-chat,deepseek-reasoner)" style="flex:2;">
-          <button class="act" onclick="saveProvider()" style="background:#238636;border-color:#238636;color:white;padding:10px 20px;font-weight:bold;">保存提供者</button>
+          <button class="act" onclick="saveProvider()" style="background:var(--success);border-color:var(--success);color:white;padding:10px 20px;font-weight:bold;">保存提供者</button>
         </div>
-        <div style="font-size:12px;color:#8b949e;margin-top:4px;">提示: 选择模板自动填充标识/名称/地址/模型，API Key 需手动输入。编辑时不填 API Key 则保留原有值。</div>
+        <div style="font-size:12px;color:var(--color-text-muted);margin-top:4px;">提示: 选择模板自动填充标识/名称/地址/模型，API Key 需手动输入。编辑时不填 API Key 则保留原有值。</div>
       </div>`;
 
     el.innerHTML = listHtml;
@@ -486,7 +488,7 @@ async function renderProviders() {
       });
     });
   } catch (e) {
-    document.getElementById('modelSubContent').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('modelSubContent').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -501,6 +503,8 @@ function onProviderTemplateChange() {
     document.getElementById('providerName').value = tmpl.name;
     document.getElementById('providerBaseUrl').value = tmpl.base_url;
     document.getElementById('providerModels').value = (tmpl.models || []).map(m => m.id).join(', ');
+    const protoEl = document.getElementById('providerProtocol');
+    if (protoEl && tmpl.protocol) protoEl.value = tmpl.protocol;
   }).catch(() => {});
 }
 
@@ -545,6 +549,8 @@ async function editProvider(key) {
     document.getElementById('providerApiKey').value = '';
     document.getElementById('providerModels').value = (provider.models || []).map(m => m.id || m.name || m).join(', ');
     document.getElementById('providerTemplate').value = '';
+    const protoEl = document.getElementById('providerProtocol');
+    if (protoEl) protoEl.value = provider.protocol || 'openai';
     toast('已加载提供者信息到表单，修改后点击保存');
   } catch (e) {
     toast('加载失败: ' + e.message);
@@ -590,7 +596,7 @@ async function renderPortModels() {
     }
 
     // 显示说明
-    let html = `<div style="color:#8b949e;font-size:13px;margin-bottom:16px;padding:12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;">
+    let html = `<div style="color:var(--color-text-muted);font-size:13px;margin-bottom:16px;padding:12px;background:var(--background);border:1px solid var(--border);border-radius:8px;">
       为每个服务端口指定使用的模型提供者和模型。所有端口默认使用 Ollama 本地模型。
     </div>`;
 
@@ -635,11 +641,11 @@ async function renderPortModels() {
         const providerLabel = m.provider_display || (isLocal ? 'Ollama' : m.provider || '');
         allModelsHtml += `
           <div class="model-item">
-            <span style="color:#e6edf3;">${esc(modelName)}</span>
-            <span><span class="tag ${tagClass}">${tagText}</span>${!isLocal ? ` <span style="color:#8b949e;font-size:11px;">· ${esc(providerLabel)}</span>` : ''}</span>
+            <span style="color:var(--color-text);">${esc(modelName)}</span>
+            <span><span class="tag ${tagClass}">${tagText}</span>${!isLocal ? ` <span style="color:var(--color-text-muted);font-size:11px;">· ${esc(providerLabel)}</span>` : ''}</span>
           </div>`;
       }
-      if (!allModelsHtml) allModelsHtml = '<div class="model-item" style="color:#8b949e;">暂无可用模型</div>';
+      if (!allModelsHtml) allModelsHtml = '<div class="model-item" style="color:var(--color-text-muted);">暂无可用模型</div>';
 
       const collapseId = `collapse_${pk}`;
       const isOpen = window._portCollapseStates[pk] || false;
@@ -655,25 +661,25 @@ async function renderPortModels() {
             <select id="portModel_${esc(pk)}" style="min-width:160px;">
               ${modelOpts}
             </select>
-            <button class="act" onclick="savePortModel('${esc(pk)}')" style="background:#238636;border-color:#238636;color:white;font-weight:bold;">保存</button>
+            <button class="act" onclick="savePortModel('${esc(pk)}')" style="background:var(--success);border-color:var(--success);color:white;font-weight:bold;">保存</button>
           </div>
           <button class="toggle-btn" onclick="togglePortCollapse('${esc(pk)}')" title="查看所有可用模型" style="margin-left:auto;">
             <span class="arrow ${isOpen ? 'open' : ''}" id="arrow_${esc(pk)}">▶</span>
             <span id="collapseLabel_${esc(pk)}">${isOpen ? '收起' : '展开'}可用模型</span>
-            <span style="color:#8b949e;font-size:11px;">(${allModels.length}个)</span>
+            <span style="color:var(--color-text-muted);font-size:11px;">(${allModels.length}个)</span>
           </button>
         </div>
         <div class="port-collapse ${isOpen ? 'open' : ''}" id="${esc(collapseId)}">
-          <div style="background:#0d1117;border:1px solid #30363d;border-top:none;border-radius:0 0 8px 8px;padding:4px 0;">
+          <div style="background:var(--background);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;padding:4px 0;">
             ${allModelsHtml}
           </div>
         </div>`;
     }
 
-    html += `<div style="font-size:12px;color:#8b949e;margin-top:8px;">提示: 修改后需重启对应服务端口才能生效。</div>`;
+    html += `<div style="font-size:12px;color:var(--color-text-muted);margin-top:8px;">提示: 修改后需重启对应服务端口才能生效。</div>`;
     el.innerHTML = html;
   } catch (e) {
-    document.getElementById('modelSubContent').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('modelSubContent').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -797,19 +803,19 @@ let activitySource = 'all';
 async function loadLogs() {
   const data = await api('/activity-logs?source=' + activitySource + '&limit=200');
   const badge = { system: '⚙️ 系统', reasoning: '🧠 推理', report: '📚 报告' };
-  const colors = { system: '#58a6ff', reasoning: '#3fb950', report: '#d29922' };
+  const colors = { system: 'var(--primary)', reasoning: 'var(--success)', report: 'var(--warning)' };
   const sources = [['all', '全部'], ['system', '系统操作'], ['reasoning', '学习推理'], ['report', '学习报告']];
   document.getElementById('content').innerHTML = `
     <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-      ${sources.map(([k, v]) => `<button class="act" onclick="setActivitySource('${k}')" style="${k === activitySource ? 'background:#1f6feb;color:#fff;' : ''}">${v}</button>`).join('')}
+      ${sources.map(([k, v]) => `<button class="act" onclick="setActivitySource('${k}')" style="${k === activitySource ? 'background:var(--primary);color:var(--primary-foreground);' : ''}">${v}</button>`).join('')}
       <span style="flex:1"></span>
       <button class="act" onclick="clearLogs()" title="仅清理系统操作日志">清理系统日志</button>
     </div>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">统一活动日志：系统操作 + 学生推理（课堂聊天/五步学习）+ 学习报告。展示学生实际使用产生的数据。</div>
+    <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px;">统一活动日志：系统操作 + 学生推理（课堂聊天/五步学习）+ 学习报告。展示学生实际使用产生的数据。</div>
     <pre class="log-box">${(data.logs || []).map(l => {
       const tag = badge[l.source] || l.source;
-      const c = colors[l.source] || '#8b949e';
-      const err = l.level === 'error' ? '#f85149' : '#8b949e';
+      const c = colors[l.source] || 'var(--color-text-muted)';
+      const err = l.level === 'error' ? 'var(--destructive)' : 'var(--color-text-muted)';
       return `<span style="color:${esc(err)}">[${esc(l.created_at)}] [<b style="color:${esc(c)}">${esc(tag)}</b>] [${esc(l.module)}] ${esc(l.message)}</span>`;
     }).join('\n') || '（暂无活动记录，快去使用课堂/学习吧）'}</pre>`;
 }
@@ -872,11 +878,11 @@ async function loadReports() {
     const data = await api('/learning-reports?limit=100');
     const reports = data.reports || [];
     let html = `
-      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">所有学生在学习平台 Web（端口5000）生成的学习报告。</div>
+      <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:12px;">所有学生在学习平台 Web（端口5000）生成的学习报告。</div>
       <table>
         <tr><th>ID</th><th>学生</th><th>主题</th><th>学科</th><th>掌握度</th><th>等级</th><th>生成时间</th><th>操作</th></tr>`;
     if (!reports.length) {
-      html += '<tr><td colspan="8" style="color:#8b949e;">暂无学习记录</td></tr>';
+      html += '<tr><td colspan="8" style="color:var(--color-text-muted);">暂无学习记录</td></tr>';
     }
     for (const r of reports) {
       const s = r.summary || {};
@@ -895,7 +901,7 @@ async function loadReports() {
     html += '</table>';
     document.getElementById('content').innerHTML = html;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -912,36 +918,36 @@ async function viewReport(reportId) {
     const stepNames = ['现象引入', '认知冲突', '思维模型', '自主推导', '费曼测试'];
     document.getElementById('content').innerHTML = `
       <button class="act" onclick="loadReports()" style="margin-bottom:12px;">← 返回列表</button>
-      <h3 style="color:#58a6ff;margin-bottom:8px;">${esc(rep.title || '学习报告')}</h3>
-      <div style="color:#8b949e;font-size:12px;margin-bottom:16px;">生成时间: ${esc(rep.generated_at || '')}</div>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
-        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">任务理解</div>
+      <h3 style="color:var(--primary);margin-bottom:8px;">${esc(rep.title || '学习报告')}</h3>
+      <div style="color:var(--color-text-muted);font-size:12px;margin-bottom:16px;">生成时间: ${esc(rep.generated_at || '')}</div>
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:13px;color:var(--color-text-muted);margin-bottom:8px;">任务理解</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
-          <div><span style="color:#8b949e;font-size:11px;">学科</span><br>${esc(task.subject || '-')}</div>
-          <div><span style="color:#8b949e;font-size:11px;">类型</span><br>${esc(task.topic_type || '-')}</div>
-          <div><span style="color:#8b949e;font-size:11px;">难度</span><br>${esc(task.difficulty || '-')}</div>
-          <div><span style="color:#8b949e;font-size:11px;">核心主题</span><br>${esc(task.core_topic || '-')}</div>
+          <div><span style="color:var(--color-text-muted);font-size:11px;">学科</span><br>${esc(task.subject || '-')}</div>
+          <div><span style="color:var(--color-text-muted);font-size:11px;">类型</span><br>${esc(task.topic_type || '-')}</div>
+          <div><span style="color:var(--color-text-muted);font-size:11px;">难度</span><br>${esc(task.difficulty || '-')}</div>
+          <div><span style="color:var(--color-text-muted);font-size:11px;">核心主题</span><br>${esc(task.core_topic || '-')}</div>
         </div>
       </div>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
-        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">掌握度: ${mastery.score ?? '-'} (${esc(mastery.level || '-')})</div>
-        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">${esc(mastery.summary || '')}</div>
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:13px;color:var(--color-text-muted);margin-bottom:8px;">掌握度: ${mastery.score ?? '-'} (${esc(mastery.level || '-')})</div>
+        <div style="font-size:13px;color:var(--color-text-muted);margin-bottom:8px;">${esc(mastery.summary || '')}</div>
       </div>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
-        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">教学流程 (${steps.length}步)</div>
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:13px;color:var(--color-text-muted);margin-bottom:8px;">教学流程 (${steps.length}步)</div>
         ${steps.map((s, i) => `
-          <div style="padding:8px;border-bottom:1px solid #21262d;font-size:13px;">
+          <div style="padding:8px;border-bottom:1px solid var(--muted);font-size:13px;">
             <b>${s.success ? '✅' : '⬜'} ${esc(stepNames[i] || s.name || ('步骤' + (i + 1)))}</b>
-            <div style="color:#8b949e;font-size:12px;margin-top:4px;white-space:pre-wrap;">${esc(s.content || '')}</div>
-          </div>`).join('') || '<div style="color:#8b949e;">无流程数据</div>'}
+            <div style="color:var(--color-text-muted);font-size:12px;margin-top:4px;white-space:pre-wrap;">${esc(s.content || '')}</div>
+          </div>`).join('') || '<div style="color:var(--color-text-muted);">无流程数据</div>'}
       </div>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;margin-bottom:12px;">
-        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">薄弱点</div>
-        ${(rep.weak_points || []).map(w => `<div style="font-size:13px;padding:4px 0;">• ${esc(w)}</div>`).join('') || '<div style="color:#8b949e;">无</div>'}
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
+        <div style="font-size:13px;color:var(--color-text-muted);margin-bottom:8px;">薄弱点</div>
+        ${(rep.weak_points || []).map(w => `<div style="font-size:13px;padding:4px 0;">• ${esc(w)}</div>`).join('') || '<div style="color:var(--color-text-muted);">无</div>'}
       </div>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;">
-        <div style="font-size:13px;color:#8b949e;margin-bottom:8px;">下一步建议</div>
-        ${(rep.next_steps || []).map(n => `<div style="font-size:13px;padding:4px 0;">• ${esc(n)}</div>`).join('') || '<div style="color:#8b949e;">无</div>'}
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:16px;">
+        <div style="font-size:13px;color:var(--color-text-muted);margin-bottom:8px;">下一步建议</div>
+        ${(rep.next_steps || []).map(n => `<div style="font-size:13px;padding:4px 0;">• ${esc(n)}</div>`).join('') || '<div style="color:var(--color-text-muted);">无</div>'}
       </div>`;
   } catch (e) {
     toast('加载失败: ' + e.message);
@@ -988,29 +994,29 @@ async function renderReasoning() {
 
     // 统计卡片：按模型 / 按步骤分布以标签形式展示
     const byModelChips = Object.entries(s.by_model || {})
-      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('')
-      || '<span style="color:#8b949e;font-size:12px;">无</span>';
+      .map(([k, v]) => `<span style="display:inline-block;background:var(--muted);border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('')
+      || '<span style="color:var(--color-text-muted);font-size:12px;">无</span>';
     const byStepChips = Object.entries(s.by_step || {})
-      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('')
-      || '<span style="color:#8b949e;font-size:12px;">无</span>';
+      .map(([k, v]) => `<span style="display:inline-block;background:var(--muted);border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('')
+      || '<span style="color:var(--color-text-muted);font-size:12px;">无</span>';
 
     // 筛选栏（回显当前已应用的筛选条件）
     const filterBar = `
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px;margin-bottom:16px;">
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <select id="rfUser" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;min-width:130px;">
+          <select id="rfUser" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);min-width:130px;">
             <option value="">全部学生</option>
             ${reasoningState.users.map(u => `<option value="${u.id}" ${String(u.id) === String(f.user_id || '') ? 'selected' : ''}>${esc(u.name)}</option>`).join('')}
           </select>
-          <input id="rfModel" value="${esc(f.model || '')}" placeholder="模型（如 qwen2.5:7b）" style="flex:1;min-width:150px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
-          <select id="rfMode" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <input id="rfModel" value="${esc(f.model || '')}" placeholder="模型（如 qwen2.5:7b）" style="flex:1;min-width:150px;padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
+          <select id="rfMode" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
             <option value="">全部模式</option>
             <option value="feynman" ${f.mode === 'feynman' ? 'selected' : ''}>费曼</option>
             <option value="chat" ${f.mode === 'chat' ? 'selected' : ''}>对话</option>
             <option value="five" ${f.mode === 'five' ? 'selected' : ''}>五步</option>
           </select>
-          <input type="date" id="rfStart" value="${f.start_date || ''}" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;color-scheme:dark;">
-          <input type="date" id="rfEnd" value="${f.end_date || ''}" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;color-scheme:dark;">
+          <input type="date" id="rfStart" value="${f.start_date || ''}" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);color-scheme:dark;">
+          <input type="date" id="rfEnd" value="${f.end_date || ''}" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);color-scheme:dark;">
           <button class="act" onclick="queryReasoning()">查询</button>
           <button class="act" onclick="resetReasoning()">重置</button>
         </div>
@@ -1036,40 +1042,40 @@ async function renderReasoning() {
         <td style="white-space:nowrap;">${esc(it.created_at || '-')}</td>
         <td>${it.latency_ms != null ? it.latency_ms + 'ms' : '-'}</td>
       </tr>
-      <tr id="reasoning-detail-${it.id}" style="display:none;background:#0d1117;">
+      <tr id="reasoning-detail-${it.id}" style="display:none;background:var(--background);">
         <td colspan="9" style="padding:14px 16px;">
           <div style="font-size:13px;line-height:1.7;">
-            <div style="color:#8b949e;font-size:12px;margin-bottom:4px;">📋 Prompt 摘要</div>
-            <div style="margin-bottom:12px;white-space:pre-wrap;">${promptSummary}${promptFull.length > 300 ? '<span style="color:#8b949e;">…（已截断）</span>' : ''}</div>
-            <div style="color:#8b949e;font-size:12px;margin-bottom:4px;">💬 输入上下文（input_context）</div>
-            <div style="margin-bottom:12px;white-space:pre-wrap;">${esc(it.input_context) || '<span style="color:#8b949e;">（无）</span>'}</div>
-            <div style="color:#8b949e;font-size:12px;margin-bottom:4px;">🧾 模型输出（output）</div>
-            <div style="white-space:pre-wrap;">${esc(it.output) || '<span style="color:#8b949e;">（无）</span>'}</div>
+            <div style="color:var(--color-text-muted);font-size:12px;margin-bottom:4px;">📋 Prompt 摘要</div>
+            <div style="margin-bottom:12px;white-space:pre-wrap;">${promptSummary}${promptFull.length > 300 ? '<span style="color:var(--color-text-muted);">…（已截断）</span>' : ''}</div>
+            <div style="color:var(--color-text-muted);font-size:12px;margin-bottom:4px;">💬 输入上下文（input_context）</div>
+            <div style="margin-bottom:12px;white-space:pre-wrap;">${esc(it.input_context) || '<span style="color:var(--color-text-muted);">（无）</span>'}</div>
+            <div style="color:var(--color-text-muted);font-size:12px;margin-bottom:4px;">🧾 模型输出（output）</div>
+            <div style="white-space:pre-wrap;">${esc(it.output) || '<span style="color:var(--color-text-muted);">（无）</span>'}</div>
           </div>
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="9" style="color:#8b949e;">暂无推理记录</td></tr>';
+    }).join('') || '<tr><td colspan="9" style="color:var(--color-text-muted);">暂无推理记录</td></tr>';
 
     // 分页
     const totalPages = Math.max(1, Math.ceil(total / reasoningState.pageSize));
     const pager = `
-      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:13px;color:#8b949e;">
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:13px;color:var(--color-text-muted);">
         <button class="act" onclick="prevReasoningPage()" ${reasoningState.page === 0 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>← 上一页</button>
         <span>第 ${reasoningState.page + 1} / ${totalPages} 页（共 ${total} 条）</span>
         <button class="act" onclick="nextReasoningPage()" ${(reasoningState.page + 1) * reasoningState.pageSize >= total ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>下一页 →</button>
       </div>`;
 
     document.getElementById('content').innerHTML = `
-      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">模型推理过程日志：费曼引导每步、学习过程各步骤等。点击行可展开查看输入输出详情。</div>
+      <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:12px;">模型推理过程日志：费曼引导每步、学习过程各步骤等。点击行可展开查看输入输出详情。</div>
       <div class="cards">
         <div class="card"><div class="num">${s.total ?? 0}</div><div class="label">总记录数</div></div>
         <div class="card"><div class="num">${s.avg_latency_ms ?? 0}ms</div><div class="label">平均耗时</div></div>
-        <div class="card"><div class="num" style="color:${s.error_count ? '#f85149' : '#3fb950'};">${s.error_count ?? 0}</div><div class="label">失败数</div></div>
+        <div class="card"><div class="num" style="color:${s.error_count ? 'var(--destructive)' : 'var(--success)'};">${s.error_count ?? 0}</div><div class="label">失败数</div></div>
         <div class="card"><div class="label" style="margin-top:0;">按模型分布</div><div style="margin-top:8px;">${byModelChips}</div></div>
         <div class="card"><div class="label" style="margin-top:0;">按步骤分布</div><div style="margin-top:8px;">${byStepChips}</div></div>
       </div>
       ${filterBar}
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
         <table>
           <tr><th>ID</th><th>学生</th><th>主题</th><th>模式</th><th>模型</th><th>步骤</th><th>状态</th><th>时间</th><th>耗时</th></tr>
           ${rows}
@@ -1077,7 +1083,7 @@ async function renderReasoning() {
         ${pager}
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -1119,7 +1125,7 @@ function nextReasoningPage() {
 const memoryState = { page: 0, pageSize: 20, filters: {}, users: [] };
 
 const MEMORY_TYPE_NAMES = { short: '短期', mid: '中期', long: '长期' };
-const MEMORY_TYPE_COLORS = { short: '#58a6ff', mid: '#d29922', long: '#3fb950' };
+const MEMORY_TYPE_COLORS = { short: 'var(--primary)', mid: 'var(--warning)', long: 'var(--success)' };
 
 async function loadMemories() {
   // 加载有记忆的用户列表用于筛选下拉
@@ -1151,24 +1157,24 @@ async function renderMemories() {
         <div class="num" style="color:${MEMORY_TYPE_COLORS[k]};">${st[k] ?? 0}</div>
         <div class="label">${MEMORY_TYPE_NAMES[k]}记忆</div>
       </div>`).join('');
-    const wrongCard = `<div class="card"><div class="num" style="color:#f85149;">${st.wrong ?? 0}</div><div class="label">错题记忆（is_wrong_answer）</div></div>`;
+    const wrongCard = `<div class="card"><div class="num" style="color:var(--destructive);">${st.wrong ?? 0}</div><div class="label">错题记忆（is_wrong_answer）</div></div>`;
 
     // 筛选栏
     const filterBar = `
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px;margin-bottom:16px;">
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:16px;">
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <select id="mfType" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <select id="mfType" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
             <option value="">全部类型</option>
             <option value="short" ${f.memory_type === 'short' ? 'selected' : ''}>短期记忆</option>
             <option value="mid" ${f.memory_type === 'mid' ? 'selected' : ''}>中期记忆</option>
             <option value="long" ${f.memory_type === 'long' ? 'selected' : ''}>长期记忆</option>
           </select>
-          <select id="mfUser" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;min-width:130px;">
+          <select id="mfUser" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);min-width:130px;">
             <option value="">全部用户</option>
             ${memoryState.users.map(u => `<option value="${esc(u.user_id)}" ${String(u.user_id) === String(f.user_id || '') ? 'selected' : ''}>用户 #${esc(u.user_id)}（短${u.short}/中${u.mid}/长${u.long}）</option>`).join('')}
           </select>
-          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#8b949e;cursor:pointer;">
-            <input type="checkbox" id="mfWrong" ${f.wrong_only ? 'checked' : ''} style="accent-color:#f85149;">仅看错题记忆
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--color-text-muted);cursor:pointer;">
+            <input type="checkbox" id="mfWrong" ${f.wrong_only ? 'checked' : ''} style="accent-color:var(--destructive);">仅看错题记忆
           </label>
           <button class="act" onclick="queryMemories()">查询</button>
           <button class="act" onclick="resetMemories()">重置</button>
@@ -1178,7 +1184,7 @@ async function renderMemories() {
     // 表格行：点击展开详情
     const rows = items.map(it => {
       const typeName = MEMORY_TYPE_NAMES[it.memory_type] || esc(it.memory_type || '-');
-      const typeColor = MEMORY_TYPE_COLORS[it.memory_type] || '#8b949e';
+      const typeColor = MEMORY_TYPE_COLORS[it.memory_type] || 'var(--color-text-muted)';
       const typeBadge = `<span style="display:inline-block;background:${typeColor}22;color:${typeColor};border-radius:10px;padding:2px 10px;font-size:12px;">${typeName}</span>`;
       const wrongBadge = it.is_wrong_answer ? '<span class="badge err">错题</span>' : '';
       const expiredTxt = it.expires_at ? `过期时间: ${esc(it.expires_at)}` : '长期有效';
@@ -1194,33 +1200,33 @@ async function renderMemories() {
         <td>${esc(it.session_id || '-')}</td>
         <td>${contentSummary}${contentFull.length > 200 ? '…' : ''}</td>
         <td style="white-space:nowrap;">${esc(it.created_at || '-')}</td>
-        <td style="font-size:12px;color:#8b949e;">${expiredTxt}</td>
+        <td style="font-size:12px;color:var(--color-text-muted);">${expiredTxt}</td>
       </tr>
-      <tr id="memory-detail-${it.id}" style="display:none;background:#0d1117;">
+      <tr id="memory-detail-${it.id}" style="display:none;background:var(--background);">
         <td colspan="9" style="padding:14px 16px;">
-          <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${esc(contentFull) || '<span style="color:#8b949e;">（空）</span>'}</div>
+          <div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${esc(contentFull) || '<span style="color:var(--color-text-muted);">（空）</span>'}</div>
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="9" style="color:#8b949e;">暂无记忆数据</td></tr>';
+    }).join('') || '<tr><td colspan="9" style="color:var(--color-text-muted);">暂无记忆数据</td></tr>';
 
     // 分页
     const totalPages = Math.max(1, Math.ceil(total / memoryState.pageSize));
     const pager = `
-      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:13px;color:#8b949e;">
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;font-size:13px;color:var(--color-text-muted);">
         <button class="act" onclick="prevMemoryPage()" ${memoryState.page === 0 ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>← 上一页</button>
         <span>第 ${memoryState.page + 1} / ${totalPages} 页（共 ${total} 条）</span>
         <button class="act" onclick="nextMemoryPage()" ${(memoryState.page + 1) * memoryState.pageSize >= total ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>下一页 →</button>
       </div>`;
 
     document.getElementById('content').innerHTML = `
-      <div style="font-size:12px;color:#8b949e;margin-bottom:12px;">三层记忆内部链路：短期（会话上下文，24h 过期）/ 中期（章节沉淀）/ 长期（持久，含错题标记）。点击行展开完整内容。</div>
+      <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:12px;">三层记忆内部链路：短期（会话上下文，24h 过期）/ 中期（章节沉淀）/ 长期（持久，含错题标记）。点击行展开完整内容。</div>
       <div class="cards">
         ${statCards}
         ${wrongCard}
         <div class="card"><div class="num">${st.total ?? 0}</div><div class="label">记忆总条数</div></div>
       </div>
       ${filterBar}
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px;">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;">
         <table>
           <tr><th>ID</th><th>用户</th><th>类型</th><th>章节</th><th>知识点</th><th>会话</th><th>内容摘要</th><th>创建时间</th><th>有效期</th></tr>
           ${rows}
@@ -1228,7 +1234,7 @@ async function renderMemories() {
         ${pager}
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -1276,35 +1282,35 @@ async function loadPorts() {
     const s = settings[k];
     const listening = s.listening;
     return `
-      <div style="display:flex;align-items:center;gap:14px;padding:14px;background:#0d1117;border:1px solid #30363d;border-radius:8px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:14px;padding:14px;background:var(--background);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;">
         <label style="display:flex;align-items:center;gap:8px;min-width:60px;cursor:pointer;">
-          <input type="checkbox" data-key="${esc(k)}" data-field="enabled" ${s.enabled ? 'checked' : ''} onchange="onPortChange()" style="width:16px;height:16px;accent-color:#58a6ff;">
-          <span style="color:${s.enabled ? '#58a6ff' : '#8b949e'};font-weight:600;">${s.enabled ? '启用' : '禁用'}</span>
+          <input type="checkbox" data-key="${esc(k)}" data-field="enabled" ${s.enabled ? 'checked' : ''} onchange="onPortChange()" style="width:16px;height:16px;accent-color:var(--primary);">
+          <span style="color:${s.enabled ? 'var(--primary)' : 'var(--color-text-muted)'};font-weight:600;">${s.enabled ? '启用' : '禁用'}</span>
         </label>
         <div style="flex:1;min-width:180px;">
-          <div style="color:#e6edf3;font-size:14px;font-weight:600;">${esc(s.display_name)}</div>
-          <div style="color:#8b949e;font-size:12px;">${esc(s.desc || '')}</div>
+          <div style="color:var(--color-text);font-size:14px;font-weight:600;">${esc(s.display_name)}</div>
+          <div style="color:var(--color-text-muted);font-size:12px;">${esc(s.desc || '')}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span style="color:#8b949e;font-size:13px;">端口</span>
+          <span style="color:var(--color-text-muted);font-size:13px;">端口</span>
           <input type="number" data-key="${esc(k)}" data-field="port" value="${s.port}" min="1" max="65535"
                  onchange="onPortChange()"
-                 style="width:80px;padding:8px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;text-align:center;">
+                 style="width:80px;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--color-text);font-size:14px;text-align:center;">
         </div>
-        <span class="badge" style="min-width:70px;text-align:center;${listening ? 'background:#0f5132;color:#6ee7b7;' : 'background:#3d1d1d;color:#fca5a5;'}">${listening ? '● 运行中' : '○ 未运行'}</span>
+        <span class="badge" style="min-width:70px;text-align:center;${listening ? 'background:var(--success-subtle);color:var(--success-text);' : 'background:var(--destructive-subtle);color:var(--destructive-text);'}">${listening ? '● 运行中' : '○ 未运行'}</span>
       </div>`;
   }).join('');
   document.getElementById('content').innerHTML = `
-    <p style="color:#8b949e;font-size:13px;margin-bottom:16px;">选择启用哪些端口服务并自定义端口号，保存后重启对应服务生效。</p>
+    <p style="color:var(--color-text-muted);font-size:13px;margin-bottom:16px;">选择启用哪些端口服务并自定义端口号，保存后重启对应服务生效。</p>
     ${rows}
     <div style="display:flex;align-items:center;gap:12px;margin-top:16px;">
-      <button class="act" onclick="savePorts()" style="background:#238636;">💾 保存端口配置</button>
-      <span id="portSaveMsg" style="color:#8b949e;font-size:13px;"></span>
+      <button class="act" onclick="savePorts()" style="background:var(--success);">💾 保存端口配置</button>
+      <span id="portSaveMsg" style="color:var(--color-text-muted);font-size:13px;"></span>
     </div>
-    <div style="margin-top:20px;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:16px;">
-      <div style="color:#8b949e;font-size:13px;margin-bottom:8px;">💡 生效方式：保存后在服务器执行重启</div>
-      <code style="color:#a5b4fc;font-size:13px;">bash ~/lumilearn/remote_start_all.sh</code>
-      <div style="color:#6e7681;font-size:12px;margin-top:6px;">该脚本会按当前端口配置选择性启动服务。</div>
+    <div style="margin-top:20px;background:var(--background);border:1px solid var(--border);border-radius:8px;padding:16px;">
+      <div style="color:var(--color-text-muted);font-size:13px;margin-bottom:8px;">💡 生效方式：保存后在服务器执行重启</div>
+      <code style="color:var(--primary);font-size:13px;">bash ~/lumilearn/remote_start_all.sh</code>
+      <div style="color:var(--color-text-muted);font-size:12px;margin-top:6px;">该脚本会按当前端口配置选择性启动服务。</div>
     </div>`;
   portDirty = false;
 }
@@ -1334,21 +1340,21 @@ async function savePorts() {
 async function loadSettings() {
   document.getElementById('content').innerHTML = `
     <div style="max-width:500px;">
-      <h3 style="color:#58a6ff;margin-bottom:16px;">修改管理员密码</h3>
-      <div style="background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:20px;">
+      <h3 style="color:var(--primary);margin-bottom:16px;">修改管理员密码</h3>
+      <div style="background:var(--background);border:1px solid var(--border);border-radius:8px;padding:20px;">
         <div style="margin-bottom:12px;">
-          <label style="color:#8b949e;font-size:13px;display:block;margin-bottom:4px;">旧密码</label>
-          <input type="password" id="oldPassword" placeholder="输入旧密码" style="width:100%;padding:10px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;">
+          <label style="color:var(--color-text-muted);font-size:13px;display:block;margin-bottom:4px;">旧密码</label>
+          <input type="password" id="oldPassword" placeholder="输入旧密码" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--color-text);font-size:14px;">
         </div>
         <div style="margin-bottom:12px;">
-          <label style="color:#8b949e;font-size:13px;display:block;margin-bottom:4px;">新密码</label>
-          <input type="password" id="newPassword" placeholder="输入新密码（至少6位）" style="width:100%;padding:10px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;">
+          <label style="color:var(--color-text-muted);font-size:13px;display:block;margin-bottom:4px;">新密码</label>
+          <input type="password" id="newPassword" placeholder="输入新密码（至少6位）" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--color-text);font-size:14px;">
         </div>
         <div style="margin-bottom:16px;">
-          <label style="color:#8b949e;font-size:13px;display:block;margin-bottom:4px;">确认新密码</label>
-          <input type="password" id="confirmPassword" placeholder="再次输入新密码" style="width:100%;padding:10px;background:#161b22;border:1px solid #30363d;border-radius:6px;color:#e6edf3;font-size:14px;">
+          <label style="color:var(--color-text-muted);font-size:13px;display:block;margin-bottom:4px;">确认新密码</label>
+          <input type="password" id="confirmPassword" placeholder="再次输入新密码" style="width:100%;padding:10px;background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--color-text);font-size:14px;">
         </div>
-        <button class="act" onclick="changePassword()" style="background:#238636;border-color:#238636;color:white;font-weight:bold;padding:10px 24px;font-size:14px;">修改密码</button>
+        <button class="act" onclick="changePassword()" style="background:var(--success);border-color:var(--success);color:white;font-weight:bold;padding:10px 24px;font-size:14px;">修改密码</button>
         <div id="passwordResult" style="margin-top:12px;font-size:13px;min-height:20px;"></div>
       </div>
     </div>`;
@@ -1360,31 +1366,31 @@ async function changePassword() {
   const confirm = document.getElementById('confirmPassword').value;
   const resultEl = document.getElementById('passwordResult');
 
-  if (!old || !newPwd) { resultEl.style.color = '#f85149'; resultEl.textContent = '请填写完整'; return; }
-  if (newPwd !== confirm) { resultEl.style.color = '#f85149'; resultEl.textContent = '两次新密码不一致'; return; }
-  if (newPwd.length < 6) { resultEl.style.color = '#f85149'; resultEl.textContent = '新密码长度至少6位'; return; }
+  if (!old || !newPwd) { resultEl.style.color = 'var(--destructive)'; resultEl.textContent = '请填写完整'; return; }
+  if (newPwd !== confirm) { resultEl.style.color = 'var(--destructive)'; resultEl.textContent = '两次新密码不一致'; return; }
+  if (newPwd.length < 6) { resultEl.style.color = 'var(--destructive)'; resultEl.textContent = '新密码长度至少6位'; return; }
 
   try {
     const data = await api('/password', { method: 'POST', body: JSON.stringify({ old_password: old, new_password: newPwd }) });
     if (data.success) {
-      resultEl.style.color = '#3fb950';
+      resultEl.style.color = 'var(--success)';
       resultEl.textContent = '✅ 密码修改成功！';
       document.getElementById('oldPassword').value = '';
       document.getElementById('newPassword').value = '';
       document.getElementById('confirmPassword').value = '';
     } else {
-      resultEl.style.color = '#f85149';
+      resultEl.style.color = 'var(--destructive)';
       resultEl.textContent = '❌ ' + (data.error || '修改失败');
     }
   } catch (e) {
-    resultEl.style.color = '#f85149';
+    resultEl.style.color = 'var(--destructive)';
     resultEl.textContent = '❌ 修改失败: ' + e.message;
   }
 }
 
 // ---------- 数据可视化（纯 SVG 图表） ----------
 async function loadAnalytics() {
-  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  document.getElementById('content').innerHTML = '<div style="color:var(--color-text-muted);">加载中…</div>';
   try {
     const [ov, trend, subjects, weak, concepts, reasoning, users] = await Promise.all([
       api('/analytics/overview'),
@@ -1405,7 +1411,7 @@ async function loadAnalytics() {
     const acc = ovd.correct_rate;
 
     // ── 折线图：掌握度趋势 ──
-    let trendSvg = '<div style="color:#8b949e;font-size:13px;">暂无报告数据</div>';
+    let trendSvg = '<div style="color:var(--color-text-muted);font-size:13px;">暂无报告数据</div>';
     if (trendD.length) {
       const W = 560, H = 190, pad = 32;
       const max = Math.max(...trendD.map(d => d.avg), 10);
@@ -1415,21 +1421,21 @@ async function loadAnalytics() {
       const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
       const pts = trendD.map((d, i) => x(i) + ',' + y(d.avg)).join(' ');
       let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:560px">`;
-      svg += `<line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="#30363d" stroke-width="1"/>`;
-      svg += `<polyline fill="none" stroke="#58a6ff" stroke-width="2.5" points="${pts}"/>`;
+      svg += `<line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="var(--border)" stroke-width="1"/>`;
+      svg += `<polyline fill="none" stroke="var(--primary)" stroke-width="2.5" points="${pts}"/>`;
       trendD.forEach((d, i) => {
         if (i % Math.ceil(trendD.length / 7) === 0 || i === trendD.length - 1) {
-          svg += `<circle cx="${x(i)}" cy="${y(d.avg)}" r="3.5" fill="#58a6ff"/>`;
-          svg += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" fill="#8b949e" font-size="10">${esc(String(d.date).slice(5))}</text>`;
+          svg += `<circle cx="${x(i)}" cy="${y(d.avg)}" r="3.5" fill="var(--primary)"/>`;
+          svg += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">${esc(String(d.date).slice(5))}</text>`;
         }
       });
-      svg += `<text x="6" y="${y(trendD[trendD.length - 1].avg) - 6}" fill="#3fb950" font-size="11">${trendD[trendD.length - 1].avg}%</text>`;
+      svg += `<text x="6" y="${y(trendD[trendD.length - 1].avg) - 6}" fill="var(--success)" font-size="11">${trendD[trendD.length - 1].avg}%</text>`;
       svg += '</svg>';
       trendSvg = svg;
     }
 
     // ── 条形图：学科对比 ──
-    let subjSvg = '<div style="color:#8b949e;font-size:13px;">暂无数据</div>';
+    let subjSvg = '<div style="color:var(--color-text-muted);font-size:13px;">暂无数据</div>';
     if (subjD.length) {
       const max = Math.max(...subjD.map(s => s.avg), 10);
       const bw = Math.min(60, (560 - 60) / subjD.length);
@@ -1437,10 +1443,10 @@ async function loadAnalytics() {
       subjD.forEach((s, i) => {
         const h = Math.max(4, (s.avg / max) * 120);
         const bx = 40 + i * (bw + 22), by = 170 - h;
-        svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${h}" rx="6" fill="#58a6ff" opacity="${0.5 + 0.5 * i / subjD.length}"/>`;
-        svg += `<text x="${bx + bw / 2}" y="${by - 6}" text-anchor="middle" fill="#3fb950" font-size="11">${s.avg}%</text>`;
-        svg += `<text x="${bx + bw / 2}" y="192" text-anchor="middle" fill="#8b949e" font-size="10">${esc(s.subject)}</text>`;
-        svg += `<text x="${bx + bw / 2}" y="182" text-anchor="middle" fill="#66717f" font-size="9">${s.count}次</text>`;
+        svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${h}" rx="6" fill="var(--primary)" opacity="${0.5 + 0.5 * i / subjD.length}"/>`;
+        svg += `<text x="${bx + bw / 2}" y="${by - 6}" text-anchor="middle" fill="var(--success)" font-size="11">${s.avg}%</text>`;
+        svg += `<text x="${bx + bw / 2}" y="192" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">${esc(s.subject)}</text>`;
+        svg += `<text x="${bx + bw / 2}" y="182" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">${s.count}次</text>`;
       });
       svg += '</svg>';
       subjSvg = svg;
@@ -1448,28 +1454,28 @@ async function loadAnalytics() {
 
     // ── 推理统计卡片 ──
     const modeChips = Object.entries(reasD.by_mode || {})
-      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('') || '<span style="color:#8b949e;font-size:12px;">无</span>';
+      .map(([k, v]) => `<span style="display:inline-block;background:var(--muted);border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('') || '<span style="color:var(--color-text-muted);font-size:12px;">无</span>';
     const modelChips = Object.entries(reasD.by_model || {})
-      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('') || '<span style="color:#8b949e;font-size:12px;">无</span>';
+      .map(([k, v]) => `<span style="display:inline-block;background:var(--muted);border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} ×${v}</span>`).join('') || '<span style="color:var(--color-text-muted);font-size:12px;">无</span>';
 
     // ── 知识点热力 ──
     const concCells = concD.length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
       ${concD.map(c => {
         const col = c.value >= 70 ? 'rgba(63,185,80,.15)' : c.value >= 45 ? 'rgba(232,163,61,.14)' : 'rgba(248,81,73,.13)';
-        const tx = c.value >= 70 ? '#3fb950' : c.value >= 45 ? '#e8a33d' : '#f85149';
-        return `<div style="border-radius:10px;padding:12px 10px;text-align:center;border:1px solid #30363d;background:${col}">
+        const tx = c.value >= 70 ? 'var(--success)' : c.value >= 45 ? 'var(--warning)' : 'var(--destructive)';
+        return `<div style="border-radius:10px;padding:12px 10px;text-align:center;border:1px solid var(--border);background:${col}">
           <div style="font-size:18px;font-family:monospace;color:${tx}">${c.value}%</div>
-          <div style="font-size:11px;color:#8b949e;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</div>
+          <div style="font-size:11px;color:var(--color-text-muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(c.name)}</div>
         </div>`;
-      }).join('')}</div>` : '<div style="color:#8b949e;font-size:13px;">暂无知识点数据（学习后生成）</div>';
+      }).join('')}</div>` : '<div style="color:var(--color-text-muted);font-size:13px;">暂无知识点数据（学习后生成）</div>';
 
     // ── 薄弱点排行 ──
     const weakRows = weakD.length ? weakD.map(w => `
-      <div style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid #21262d;font-size:13px;color:#8b949e;">
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--muted);font-size:13px;color:var(--color-text-muted);">
         <span class="badge ${w.severity === '高' ? 'err' : w.severity === '中' ? 'warn' : 'ok'}" style="flex-shrink:0;">${esc(w.severity)}</span>
         <span style="flex:1;">${esc(w.text)}</span>
-        <span style="font-family:monospace;color:#58a6ff;">×${w.count}</span>
-      </div>`).join('') : '<div style="color:#8b949e;font-size:13px;">暂无薄弱点数据</div>';
+        <span style="font-family:monospace;color:var(--primary);">×${w.count}</span>
+      </div>`).join('') : '<div style="color:var(--color-text-muted);font-size:13px;">暂无薄弱点数据</div>';
 
     // ── 学生排行表 ──
     const userRows = userD.length ? userD.map((u, i) => `
@@ -1478,7 +1484,7 @@ async function loadAnalytics() {
         <td>${esc(u.name)}${i < 3 ? ' 🏆' : ''}</td>
         <td>${u.report_count}</td>
         <td><span class="badge ${u.avg_score >= 80 ? 'ok' : u.avg_score >= 60 ? 'warn' : 'err'}">${u.avg_score}%</span></td>
-      </tr>`).join('') : '<tr><td colspan="4" style="color:#8b949e;">暂无学习记录</td></tr>';
+      </tr>`).join('') : '<tr><td colspan="4" style="color:var(--color-text-muted);">暂无学习记录</td></tr>';
 
     document.getElementById('content').innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;">
@@ -1490,46 +1496,46 @@ async function loadAnalytics() {
         <div class="card"><div class="num">${ovd.concepts}</div><div class="label">知识点掌握</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📈 掌握度趋势（近14天）</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">📈 掌握度趋势（近14天）</h3>
           ${trendSvg}
         </div>
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📊 学科掌握度对比</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">📊 学科掌握度对比</h3>
           ${subjSvg}
         </div>
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🔴 薄弱点排行</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🔴 薄弱点排行</h3>
           ${weakRows}
         </div>
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🧩 知识点掌握度</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🧩 知识点掌握度</h3>
           ${concCells}
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🤖 模型推理统计（近7天）</h3>
-          <div style="font-size:13px;color:#8b949e;margin-bottom:6px;">总数: <b style="color:#e6edf3;">${reasD.total}</b> · 失败: <b style="color:#f85149;">${reasD.error_count}</b> · 平均延迟: <b style="color:#e6edf3;">${reasD.avg_latency_ms}ms</b></div>
-          <div style="margin-bottom:6px;"><span style="color:#8b949e;font-size:12px;">按模式:</span> ${modeChips}</div>
-          <div><span style="color:#8b949e;font-size:12px;">按模型:</span> ${modelChips}</div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🤖 模型推理统计（近7天）</h3>
+          <div style="font-size:13px;color:var(--color-text-muted);margin-bottom:6px;">总数: <b style="color:var(--color-text);">${reasD.total}</b> · 失败: <b style="color:var(--destructive);">${reasD.error_count}</b> · 平均延迟: <b style="color:var(--color-text);">${reasD.avg_latency_ms}ms</b></div>
+          <div style="margin-bottom:6px;"><span style="color:var(--color-text-muted);font-size:12px;">按模式:</span> ${modeChips}</div>
+          <div><span style="color:var(--color-text-muted);font-size:12px;">按模型:</span> ${modelChips}</div>
         </div>
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🏆 学生掌握度排行</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🏆 学生掌握度排行</h3>
           <table style="width:100%;font-size:13px;">
-            <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">排名</th><th style="text-align:left;">学生</th><th>报告数</th><th>平均分</th></tr>
+            <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">排名</th><th style="text-align:left;">学生</th><th>报告数</th><th>平均分</th></tr>
             ${userRows}
           </table>
         </div>
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
 // ---------- 管理员管理 ----------
 async function loadAdmins() {
-  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  document.getElementById('content').innerHTML = '<div style="color:var(--color-text-muted);">加载中…</div>';
   try {
     const data = await api('/admins');
     const admins = data.admins || [];
@@ -1544,39 +1550,39 @@ async function loadAdmins() {
         <td><span class="badge ${a.role === 'super_admin' ? 'ok' : 'warn'}">${a.role === 'super_admin' ? '超级管理员' : '操作员'}</span></td>
         <td>${a.is_active ? '<span class="badge ok">启用</span>' : '<span class="badge err">禁用</span>'}</td>
         <td>${esc(a.last_login_at || '-')}</td>
-        <td>${a.id === me.admin.id ? '<span style="color:#8b949e;font-size:12px;">（当前账号）</span>' : (isSuper ? `
+        <td>${a.id === me.admin.id ? '<span style="color:var(--color-text-muted);font-size:12px;">（当前账号）</span>' : (isSuper ? `
           <button class="act" onclick="toggleAdmin(${a.id}, ${a.is_active ? 0 : 1})">${a.is_active ? '禁用' : '启用'}</button>
           <button class="act" onclick="changeAdminRole(${a.id}, '${a.role === 'super_admin' ? 'operator' : 'super_admin'}')">设为${a.role === 'super_admin' ? '操作员' : '超管'}</button>
-          <button class="act" style="color:#f85149;" onclick="deleteAdmin(${a.id})">删除</button>` : '<span style="color:#8b949e;font-size:12px;">-</span>')}</td>
+          <button class="act" style="color:var(--destructive);" onclick="deleteAdmin(${a.id})">删除</button>` : '<span style="color:var(--color-text-muted);font-size:12px;">-</span>')}</td>
       </tr>`).join('');
 
     const createForm = isSuper ? `
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
-        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:12px;">➕ 创建管理员账号</h3>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h3 style="color:var(--color-text);font-size:15px;margin-bottom:12px;">➕ 创建管理员账号</h3>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <input id="newAdminName" placeholder="显示名称" style="flex:1;min-width:110px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
-          <input id="newAdminUser" placeholder="用户名（必填）" style="flex:1;min-width:110px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
-          <input id="newAdminPass" type="password" placeholder="密码（至少6位）" style="flex:1;min-width:110px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
-          <select id="newAdminRole" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <input id="newAdminName" placeholder="显示名称" style="flex:1;min-width:110px;padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
+          <input id="newAdminUser" placeholder="用户名（必填）" style="flex:1;min-width:110px;padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
+          <input id="newAdminPass" type="password" placeholder="密码（至少6位）" style="flex:1;min-width:110px;padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
+          <select id="newAdminRole" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
             <option value="operator">操作员</option>
             <option value="super_admin">超级管理员</option>
           </select>
-          <button class="act" onclick="createAdmin()" style="background:#238636;color:#fff;border-color:#238636;">创建</button>
+          <button class="act" onclick="createAdmin()" style="background:var(--success);color:var(--success-foreground);border-color:var(--success);">创建</button>
         </div>
       </div>` : '';
 
     document.getElementById('content').innerHTML = `
       ${createForm}
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">👑 管理员账号（${admins.length}）</h3>
-        <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">超级管理员可创建/启停/改角色/删除管理员账号；操作员仅可查看。</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">👑 管理员账号（${admins.length}）</h3>
+        <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px;">超级管理员可创建/启停/改角色/删除管理员账号；操作员仅可查看。</div>
         <table style="width:100%;font-size:13px;">
-          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">ID</th><th>名称</th><th>用户名</th><th>角色</th><th>状态</th><th>最后登录</th><th>操作</th></tr>
-          ${rows || '<tr><td colspan="7" style="color:#8b949e;">暂无管理员</td></tr>'}
+          <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">ID</th><th>名称</th><th>用户名</th><th>角色</th><th>状态</th><th>最后登录</th><th>操作</th></tr>
+          ${rows || '<tr><td colspan="7" style="color:var(--color-text-muted);">暂无管理员</td></tr>'}
         </table>
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -1622,7 +1628,7 @@ async function deleteAdmin(id) {
 const EXPORT_TYPES = { reports: '学习报告', reasoning: '推理日志', answers: '答题记录', users: '用户数据', concepts: '知识点掌握' };
 
 async function loadExports() {
-  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  document.getElementById('content').innerHTML = '<div style="color:var(--color-text-muted);">加载中…</div>';
   try {
     const [list, me] = await Promise.all([api('/exports?limit=100'), api('/me')]);
     const exports = list.exports || [];
@@ -1632,14 +1638,14 @@ async function loadExports() {
         : e.status === 'rejected' ? '<span class="badge err">已拒绝</span>' : '<span class="badge warn">待审批</span>';
       let action = '-';
       if (e.status === 'pending') {
-        action = `<button class="act" onclick="approveExport(${e.id}, 'approve')" style="background:#238636;color:#fff;border-color:#238636;">批准</button>
-                  <button class="act" onclick="approveExport(${e.id}, 'reject')" style="color:#f85149;">拒绝</button>`;
+        action = `<button class="act" onclick="approveExport(${e.id}, 'approve')" style="background:var(--success);color:var(--success-foreground);border-color:var(--success);">批准</button>
+                  <button class="act" onclick="approveExport(${e.id}, 'reject')" style="color:var(--destructive);">拒绝</button>`;
       } else if (e.status === 'approved' && e.can_download) {
         action = `<button class="act" onclick="downloadExport(${e.id})">⬇ 下载</button>`;
       }
       return `<tr>
         <td>${e.id}</td>
-        <td>${esc(e.requester_name)} <span style="color:#8b949e;font-size:11px;">(${e.requester_type === 'teacher' ? '教师' : '管理员'})</span></td>
+        <td>${esc(e.requester_name)} <span style="color:var(--color-text-muted);font-size:11px;">(${e.requester_type === 'teacher' ? '教师' : '管理员'})</span></td>
         <td>${esc(typeName)}</td>
         <td>${e.format.toUpperCase()}</td>
         <td>${e.scope === 'class' ? '班级' : '全部'}</td>
@@ -1648,33 +1654,33 @@ async function loadExports() {
         <td style="white-space:nowrap;">${esc(e.created_at || '-')}</td>
         <td>${action}</td>
       </tr>`;
-    }).join('') || '<tr><td colspan="9" style="color:#8b949e;">暂无导出申请</td></tr>';
+    }).join('') || '<tr><td colspan="9" style="color:var(--color-text-muted);">暂无导出申请</td></tr>';
 
     document.getElementById('content').innerHTML = `
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
-        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:12px;">➕ 发起导出（管理员直接导出，即时生成）</h3>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h3 style="color:var(--color-text);font-size:15px;margin-bottom:12px;">➕ 发起导出（管理员直接导出，即时生成）</h3>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-          <select id="expType" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <select id="expType" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
             ${Object.entries(EXPORT_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}
           </select>
-          <select id="expFmt" style="padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
+          <select id="expFmt" style="padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
             <option value="json">JSON</option>
             <option value="csv">CSV</option>
           </select>
-          <input id="expReason" placeholder="导出用途说明（可选）" style="flex:1;min-width:180px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;">
-          <button class="act" onclick="createExport()" style="background:#238636;color:#fff;border-color:#238636;">导出</button>
+          <input id="expReason" placeholder="导出用途说明（可选）" style="flex:1;min-width:180px;padding:10px;background:var(--background);border:1px solid var(--border);border-radius:6px;color:var(--color-text);">
+          <button class="act" onclick="createExport()" style="background:var(--success);color:var(--success-foreground);border-color:var(--success);">导出</button>
         </div>
-        <div style="font-size:12px;color:#8b949e;margin-top:8px;">教师端发起的导出申请需管理员在此审批；所有导出/下载操作均记录审计日志。</div>
+        <div style="font-size:12px;color:var(--color-text-muted);margin-top:8px;">教师端发起的导出申请需管理员在此审批；所有导出/下载操作均记录审计日志。</div>
       </div>
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📦 导出申请记录（${exports.length}）</h3>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">📦 导出申请记录（${exports.length}）</h3>
         <table style="width:100%;font-size:13px;">
-          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">ID</th><th>申请人</th><th>类型</th><th>格式</th><th>范围</th><th>状态</th><th>审批人</th><th>申请时间</th><th>操作</th></tr>
+          <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">ID</th><th>申请人</th><th>类型</th><th>格式</th><th>范围</th><th>状态</th><th>审批人</th><th>申请时间</th><th>操作</th></tr>
           ${rows}
         </table>
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -1721,7 +1727,7 @@ async function downloadExport(id) {
 
 // ---------- P1-4 待审批队列（人工监督 / EU AI Act Art.14） ----------
 async function loadInterrupts() {
-  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  document.getElementById('content').innerHTML = '<div style="color:var(--color-text-muted);">加载中…</div>';
   try {
     const data = await api('/interrupts?status=all');
     const list = data.interrupts || [];
@@ -1738,10 +1744,10 @@ async function loadInterrupts() {
         <td>${esc(i.topic || '—')}</td>
         <td>${esc(i.requested_at || '—')}</td>
         <td style="white-space:nowrap;">
-          <button class="act" style="background:#238636;color:#fff;border-color:#238636;" onclick="reviewInterrupt('${i.trace_id}', 'approved')">✓ 放行</button>
-          <button class="act" style="color:#f85149;" onclick="reviewInterrupt('${i.trace_id}', 'rejected')">✕ 拒绝</button>
+          <button class="act" style="background:var(--success);color:var(--success-foreground);border-color:var(--success);" onclick="reviewInterrupt('${i.trace_id}', 'approved')">✓ 放行</button>
+          <button class="act" style="color:var(--destructive);" onclick="reviewInterrupt('${i.trace_id}', 'rejected')">✕ 拒绝</button>
         </td>
-      </tr>`).join('') || '<tr><td colspan="6" style="color:#8b949e;">暂无待审批项 🎉</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="6" style="color:var(--color-text-muted);">暂无待审批项 🎉</td></tr>';
     const doneRows = done.slice(0, 20).map(i => `
       <tr>
         <td><code style="font-size:11px;">${esc(i.trace_id)}</code></td>
@@ -1750,29 +1756,29 @@ async function loadInterrupts() {
         <td>${statusBadge(i.status)}</td>
         <td>${esc(i.reviewer || '—')}</td>
         <td>${esc(i.reviewed_at || '—')}</td>
-      </tr>`).join('') || '<tr><td colspan="6" style="color:#8b949e;">暂无历史记录</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="6" style="color:var(--color-text-muted);">暂无历史记录</td></tr>';
     document.getElementById('content').innerHTML = `
       <div class="cards">
-        <div class="card"><div class="num" style="color:${pending.length ? '#e8a33d' : '#3fb950'};">${pending.length}</div><div class="label">待审批</div></div>
+        <div class="card"><div class="num" style="color:${pending.length ? 'var(--warning)' : 'var(--success)'};">${pending.length}</div><div class="label">待审批</div></div>
         <div class="card"><div class="num">${done.length}</div><div class="label">已处理</div></div>
       </div>
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
-        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🛡️ 待审批队列（人工监督 Art.14）</h3>
-        <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">敏感主题 / 内容质量异常 / 事实核查矛盾 触发的中断请求，放行后原请求可继续执行，拒绝则终止。审批全程留痕并写入审计日志。</div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🛡️ 待审批队列（人工监督 Art.14）</h3>
+        <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px;">敏感主题 / 内容质量异常 / 事实核查矛盾 触发的中断请求，放行后原请求可继续执行，拒绝则终止。审批全程留痕并写入审计日志。</div>
         <table style="width:100%;font-size:13px;">
-          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">Trace ID</th><th>节点</th><th>原因</th><th>主题</th><th>请求时间</th><th>操作</th></tr>
+          <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">Trace ID</th><th>节点</th><th>原因</th><th>主题</th><th>请求时间</th><th>操作</th></tr>
           ${pendingRows}
         </table>
       </div>
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📋 已处理记录（最近20条）</h3>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">📋 已处理记录（最近20条）</h3>
         <table style="width:100%;font-size:13px;">
-          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">Trace ID</th><th>节点</th><th>原因</th><th>结果</th><th>审批人</th><th>审批时间</th></tr>
+          <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">Trace ID</th><th>节点</th><th>原因</th><th>结果</th><th>审批人</th><th>审批时间</th></tr>
           ${doneRows}
         </table>
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -1788,7 +1794,7 @@ async function reviewInterrupt(traceId, decision) {
 
 // ---------- P1-4 成本报告 ----------
 async function loadCosts() {
-  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  document.getElementById('content').innerHTML = '<div style="color:var(--color-text-muted);">加载中…</div>';
   try {
     const d = await api('/costs?days=7');
     const s = d.summary || {};
@@ -1799,18 +1805,18 @@ async function loadCosts() {
     const agentBars = byAgent.length ? byAgent.sort((a, b) => b[1].cost - a[1].cost).map(([k, v], i) => {
       const pct = s.total_cost ? (v.cost / s.total_cost * 100).toFixed(1) : 0;
       return `<div style="margin-bottom:8px;">
-        <div style="display:flex;justify-content:space-between;font-size:13px;color:#e6edf3;margin-bottom:2px;">
-          <span>${esc(k)} <span style="color:#8b949e;">(${v.calls}次)</span></span>
-          <span style="color:#58a6ff;">¥${v.cost.toFixed(4)} (${pct}%)</span>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--color-text);margin-bottom:2px;">
+          <span>${esc(k)} <span style="color:var(--color-text-muted);">(${v.calls}次)</span></span>
+          <span style="color:var(--primary);">¥${v.cost.toFixed(4)} (${pct}%)</span>
         </div>
-        <div style="background:#21262d;border-radius:4px;height:8px;overflow:hidden;"><div style="width:${pct}%;background:#58a6ff;height:100%;border-radius:4px;"></div></div>
+        <div style="background:var(--muted);border-radius:4px;height:8px;overflow:hidden;"><div style="width:${pct}%;background:var(--primary);height:100%;border-radius:4px;"></div></div>
       </div>`;
-    }).join('') : '<div style="color:#8b949e;font-size:13px;">暂无成本数据（Agent 调用后生成）</div>';
+    }).join('') : '<div style="color:var(--color-text-muted);font-size:13px;">暂无成本数据（Agent 调用后生成）</div>';
     const modelChips = Object.entries(s.by_model || {})
-      .map(([k, v]) => `<span style="display:inline-block;background:#21262d;border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} · ¥${v.cost.toFixed(4)} · ${v.calls}次</span>`).join('') || '<span style="color:#8b949e;font-size:12px;">无</span>';
+      .map(([k, v]) => `<span style="display:inline-block;background:var(--muted);border-radius:4px;padding:2px 8px;margin:2px;font-size:12px;">${esc(k)} · ¥${v.cost.toFixed(4)} · ${v.calls}次</span>`).join('') || '<span style="color:var(--color-text-muted);font-size:12px;">无</span>';
     const anomRows = anomalies.length ? anomalies.map(a => `
-      <tr><td>${esc(a.date || a.day || '—')}</td><td>${esc(a.agent_id || a.agent || '—')}</td><td style="color:#f85149;">¥${(a.cost || 0).toFixed(4)}</td><td>${esc(a.reason || '异常波动')}</td></tr>`).join('')
-      : '<tr><td colspan="4" style="color:#8b949e;">无异常</td></tr>';
+      <tr><td>${esc(a.date || a.day || '—')}</td><td>${esc(a.agent_id || a.agent || '—')}</td><td style="color:var(--destructive);">¥${(a.cost || 0).toFixed(4)}</td><td>${esc(a.reason || '异常波动')}</td></tr>`).join('')
+      : '<tr><td colspan="4" style="color:var(--color-text-muted);">无异常</td></tr>';
     document.getElementById('content').innerHTML = `
       <div class="cards">
         <div class="card"><div class="num">${s.total_calls ?? 0}</div><div class="label">总调用次数</div></div>
@@ -1819,30 +1825,30 @@ async function loadCosts() {
         <div class="card"><div class="num">${trend.length}</div><div class="label">趋势天数</div></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🧠 按 Agent 成本分布</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🧠 按 Agent 成本分布</h3>
           ${agentBars}
         </div>
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🤖 按模型分布</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🤖 按模型分布</h3>
           <div>${modelChips}</div>
         </div>
       </div>
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-top:16px;">
-        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🚨 成本异常检测</h3>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:16px;">
+        <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🚨 成本异常检测</h3>
         <table style="width:100%;font-size:13px;">
-          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">日期</th><th>Agent</th><th>成本</th><th>说明</th></tr>
+          <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">日期</th><th>Agent</th><th>成本</th><th>说明</th></tr>
           ${anomRows}
         </table>
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
 // ---------- P1-4 权重配置（Agent 动态权重） ----------
 async function loadWeights() {
-  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  document.getElementById('content').innerHTML = '<div style="color:var(--color-text-muted);">加载中…</div>';
   try {
     const d = await api('/weights');
     const list = d.weights || [];
@@ -1856,22 +1862,22 @@ async function loadWeights() {
         <td>${w.fail_count ?? 0}</td>
         <td>${w.avg_latency_ms != null ? Math.round(w.avg_latency_ms) + 'ms' : '—'}</td>
         <td style="white-space:nowrap;">
-          <input id="wInput_${esc(w.agent_id)}" type="number" step="0.1" min="0.1" max="10" value="${w.base_weight != null ? w.base_weight : 1}" style="width:70px;padding:5px;background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#e6edf3;font-size:12px;">
+          <input id="wInput_${esc(w.agent_id)}" type="number" step="0.1" min="0.1" max="10" value="${w.base_weight != null ? w.base_weight : 1}" style="width:70px;padding:5px;background:var(--background);border:1px solid var(--border);border-radius:4px;color:var(--color-text);font-size:12px;">
           <button class="act" onclick="setWeight('${esc(w.agent_id)}')">保存</button>
         </td>
-      </tr>`).join('') || '<tr><td colspan="8" style="color:#8b949e;">暂无权重配置（Agent 调用后自动创建）</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="8" style="color:var(--color-text-muted);">暂无权重配置（Agent 调用后自动创建）</td></tr>';
     document.getElementById('content').innerHTML = `
-      <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
-        <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">⚖️ Agent 动态权重</h3>
-        <div style="font-size:12px;color:#8b949e;margin-bottom:10px;">动态权重 = 基础权重 × 成功率 × 延迟因子。基础权重由管理员配置，动态部分随调用表现自动更新。权重越高，路由时越优先被选用。</div>
-        <button class="act" onclick="recalcWeights()" style="background:#238636;color:#fff;border-color:#238636;">🔄 批量重算动态权重</button>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+        <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">⚖️ Agent 动态权重</h3>
+        <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px;">动态权重 = 基础权重 × 成功率 × 延迟因子。基础权重由管理员配置，动态部分随调用表现自动更新。权重越高，路由时越优先被选用。</div>
+        <button class="act" onclick="recalcWeights()" style="background:var(--success);color:var(--success-foreground);border-color:var(--success);">🔄 批量重算动态权重</button>
         <table style="width:100%;font-size:13px;margin-top:12px;">
-          <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">Agent</th><th>动态权重</th><th>基础权重</th><th>调用数</th><th>成功</th><th>失败</th><th>平均延迟</th><th>操作</th></tr>
+          <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">Agent</th><th>动态权重</th><th>基础权重</th><th>调用数</th><th>成功</th><th>失败</th><th>平均延迟</th><th>操作</th></tr>
           ${rows}
         </table>
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -1897,7 +1903,7 @@ async function recalcWeights() {
 
 // ---------- P1-5 MCP Server 管理 ----------
 async function loadMcpServers() {
-  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  document.getElementById('content').innerHTML = '<div style="color:var(--color-text-muted);">加载中…</div>';
   try {
     const d = await api('/mcp-servers');
     const servers = d.servers || [];
@@ -1918,7 +1924,7 @@ async function loadMcpServers() {
         <td><b>${esc(s.server_name)}</b></td>
         <td><span class="badge">${esc(s.transport)}</span></td>
         <td style="max-width:280px;word-break:break-all;">${addr}</td>
-        <td>${statusBadge}${st.error ? `<div style="font-size:11px;color:#f85149;margin-top:2px;word-break:break-all;">${esc(st.error)}</div>` : ''}</td>
+        <td>${statusBadge}${st.error ? `<div style="font-size:11px;color:var(--destructive);margin-top:2px;word-break:break-all;">${esc(st.error)}</div>` : ''}</td>
         <td>${st.tools_count != null ? st.tools_count : '—'}</td>
         <td style="white-space:nowrap;">
           <button class="act" onclick="testMcpServer('${esc(s.server_name)}')">测试</button>
@@ -1926,11 +1932,11 @@ async function loadMcpServers() {
           <button class="act danger" onclick="deleteMcpServer('${esc(s.server_name)}')">删除</button>
         </td>
       </tr>`;
-    }).join('') || '<tr><td colspan="6" style="color:#8b949e;">暂无 MCP Server（可先添加）</td></tr>';
+    }).join('') || '<tr><td colspan="6" style="color:var(--color-text-muted);">暂无 MCP Server（可先添加）</td></tr>';
     document.getElementById('content').innerHTML = `
       <div id="panel-mcp">
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:12px;">➕ 注册 MCP Server</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:12px;">➕ 注册 MCP Server</h3>
           <div class="form-row">
             <input id="mcpName" placeholder="名称 (如 my-tools)" style="flex:0.8;">
             <select id="mcpTransport" style="flex:0.4;">
@@ -1946,19 +1952,19 @@ async function loadMcpServers() {
             <input id="mcpArgs" placeholder="命令参数 (逗号或空格分隔，如 -y @modelcontextprotocol/server-everything)">
             <input id="mcpDesc" placeholder="描述 (可选)">
           </div>
-          <button class="act" onclick="addMcpServer()" style="background:#238636;color:#fff;border-color:#238636;padding:10px 20px;font-weight:bold;">添加 Server</button>
-          <div style="font-size:12px;color:#8b949e;margin-top:8px;">http 传输需填写 URL；stdio 传输需填写命令与参数（逗号或空格分隔）。</div>
+          <button class="act" onclick="addMcpServer()" style="background:var(--success);color:var(--success-foreground);border-color:var(--success);padding:10px 20px;font-weight:bold;">添加 Server</button>
+          <div style="font-size:12px;color:var(--color-text-muted);margin-top:8px;">http 传输需填写 URL；stdio 传输需填写命令与参数（逗号或空格分隔）。</div>
         </div>
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">🧩 MCP Server 列表（${servers.length}）</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">🧩 MCP Server 列表（${servers.length}）</h3>
           <table style="width:100%;font-size:13px;">
-            <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">名称</th><th>传输</th><th>地址/命令</th><th>状态</th><th>工具数</th><th>操作</th></tr>
+            <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">名称</th><th>传输</th><th>地址/命令</th><th>状态</th><th>工具数</th><th>操作</th></tr>
             ${rows}
           </table>
         </div>
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 
@@ -2012,7 +2018,7 @@ async function deleteMcpServer(name) {
 
 // ---------- P2-12 分布式任务队列 ----------
 async function loadTasks() {
-  document.getElementById('content').innerHTML = '<div style="color:#8b949e;">加载中…</div>';
+  document.getElementById('content').innerHTML = '<div style="color:var(--color-text-muted);">加载中…</div>';
   try {
     const d = await api('/tasks');
     const tasks = d.tasks || [];
@@ -2030,13 +2036,13 @@ async function loadTasks() {
         <td>${badge(t.status)}</td>
         <td>${t.priority}</td>
         <td>${t.retries}/${t.max_retries}</td>
-        <td style="max-width:220px;word-break:break-all;font-size:12px;color:#8b949e;">${esc(t.topic || '')}</td>
+        <td style="max-width:220px;word-break:break-all;font-size:12px;color:var(--color-text-muted);">${esc(t.topic || '')}</td>
         <td>${esc(t.created_at)}</td>
         <td style="white-space:nowrap;">
           <button class="act" onclick="getTask('${esc(t.task_id)}')">详情</button>
           ${t.status === 'pending' ? `<button class="act danger" onclick="cancelTask('${esc(t.task_id)}')">取消</button>` : ''}
         </td>
-      </tr>`).join('') || '<tr><td colspan="8" style="color:#8b949e;">暂无任务</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="8" style="color:var(--color-text-muted);">暂无任务</td></tr>';
     const total = s.total || 0;
     document.getElementById('content').innerHTML = `
       <div id="panel-tasks">
@@ -2047,8 +2053,8 @@ async function loadTasks() {
           <div class="card"><div class="num">${counts.completed || 0}</div><div class="label">已完成</div></div>
           <div class="card"><div class="num">${counts.failed || 0}</div><div class="label">失败</div></div>
         </div>
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:12px;">➕ 提交任务</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:12px;">➕ 提交任务</h3>
           <div class="form-row">
             <select id="taskType" style="flex:0.6;">
               <option value="unified_orchestrator">unified_orchestrator（统一编排器）</option>
@@ -2061,21 +2067,21 @@ async function loadTasks() {
             <input id="taskMaxRetries" placeholder="重试次数" value="1" style="flex:0.5;">
             <input id="taskDelay" placeholder="延迟秒" value="0" style="flex:0.5;">
           </div>
-          <button class="act" onclick="submitTask()" style="background:#238636;color:#fff;border-color:#238636;padding:10px 20px;font-weight:bold;">提交任务</button>
+          <button class="act" onclick="submitTask()" style="background:var(--success);color:var(--success-foreground);border-color:var(--success);padding:10px 20px;font-weight:bold;">提交任务</button>
           <button class="act" onclick="processTasks()">手动消费队列</button>
           <button class="act" onclick="loadTasks()">刷新</button>
-          <div style="font-size:12px;color:#8b949e;margin-top:8px;">任务在后台异步执行；未启动 worker 时点击「手动消费队列」立即执行到期任务。</div>
+          <div style="font-size:12px;color:var(--color-text-muted);margin-top:8px;">任务在后台异步执行；未启动 worker 时点击「手动消费队列」立即执行到期任务。</div>
         </div>
-        <div style="background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;">
-          <h3 style="color:#e6edf3;font-size:15px;margin-bottom:10px;">📋 任务列表（${tasks.length}）</h3>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;">
+          <h3 style="color:var(--color-text);font-size:15px;margin-bottom:10px;">📋 任务列表（${tasks.length}）</h3>
           <table style="width:100%;font-size:13px;">
-            <tr style="color:#8b949e;"><th style="text-align:left;padding:6px;">任务ID</th><th>类型</th><th>状态</th><th>优先级</th><th>重试</th><th>主题</th><th>创建时间</th><th>操作</th></tr>
+            <tr style="color:var(--color-text-muted);"><th style="text-align:left;padding:6px;">任务ID</th><th>类型</th><th>状态</th><th>优先级</th><th>重试</th><th>主题</th><th>创建时间</th><th>操作</th></tr>
             ${rows}
           </table>
         </div>
       </div>`;
   } catch (e) {
-    document.getElementById('content').innerHTML = `<div style="color:#f85149;font-size:13px;">加载失败: ${esc(e.message)}</div>`;
+    document.getElementById('content').innerHTML = `<div style="color:var(--destructive);font-size:13px;">加载失败: ${esc(e.message)}</div>`;
   }
 }
 

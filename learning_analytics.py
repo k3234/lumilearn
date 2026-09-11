@@ -12,9 +12,9 @@ LumiLearn L3增强版：学习数据分析与状态追踪模块
 import json
 import os
 import time
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
 from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass

@@ -1,103 +1,104 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LumiLearn 教师端</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-    background: #f5f7fb;
-    color: #1e293b;
+    font-family: var(--font-sans);
+    background: var(--background);
+    color: var(--color-text);
     min-height: 100vh;
   }
 
   /* ── 登录页 ── */
   .login-overlay {
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    background: var(--muted);
     display: flex; align-items: center; justify-content: center; z-index: 1000;
   }
   .login-box {
-    background: white; border-radius: 20px; padding: 40px;
-    width: 380px; box-shadow: 0 20px 60px rgba(79,70,229,0.15);
+    background: var(--card); border-radius: 20px; padding: 40px;
+    width: 380px; box-shadow: var(--shadow-lg);
   }
   .login-box .logo { text-align: center; margin-bottom: 24px; }
   .login-box .logo .icon { font-size: 40px; }
-  .login-box .logo h1 { font-size: 22px; color: #1e293b; margin-top: 8px; }
-  .login-box .logo p { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+  .login-box .logo h1 { font-size: 22px; color: var(--color-text); margin-top: 8px; }
+  .login-box .logo p { font-size: 13px; color: var(--color-text-muted); margin-top: 4px; }
   .login-box input {
     width: 100%; padding: 12px 16px; margin-bottom: 12px;
-    border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 15px; outline: none;
+    border: 1.5px solid var(--border); border-radius: 10px; font-size: 15px; outline: none;
     transition: border-color 0.2s;
   }
-  .login-box input:focus { border-color: #6366f1; }
+  .login-box input:focus { border-color: var(--ring); }
   .login-box button {
-    width: 100%; padding: 13px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-    color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+    width: 100%; padding: 13px; background: var(--primary);
+    color: var(--color-primary-foreground); border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
     cursor: pointer; transition: transform 0.1s, box-shadow 0.2s;
   }
-  .login-box button:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(99,102,241,0.4); }
-  .login-error { color: #ef4444; font-size: 13px; margin-bottom: 10px; min-height: 18px; text-align: center; }
-  .login-hint { font-size: 12px; color: #94a3b8; text-align: center; margin-top: 16px; }
+  .login-box button:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+  .login-error { color: var(--destructive); font-size: 13px; margin-bottom: 10px; min-height: 18px; text-align: center; }
+  .login-hint { font-size: 12px; color: var(--color-text-muted); text-align: center; margin-top: 16px; }
 
   /* ── 布局 ── */
   .app { display: none; }
   .app.active { display: flex; min-height: 100vh; }
 
   .sidebar {
-    width: 220px; background: white; border-right: 1px solid #e2e8f0;
+    width: 220px; background: var(--card); border-right: 1px solid var(--border);
     padding: 20px 12px; flex-shrink: 0; display: flex; flex-direction: column;
     position: sticky; top: 0; height: 100vh;
   }
-  .sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 20px; border-bottom: 1px solid #f1f5f9; margin-bottom: 16px; }
+  .sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
   .sidebar .brand .icon { font-size: 26px; }
-  .sidebar .brand h1 { font-size: 17px; color: #1e293b; }
-  .sidebar .brand small { display: block; font-size: 11px; color: #94a3b8; font-weight: 400; }
+  .sidebar .brand h1 { font-size: 17px; color: var(--color-text); }
+  .sidebar .brand small { display: block; font-size: 11px; color: var(--color-text-muted); font-weight: 400; }
   .nav-item {
     display: flex; align-items: center; gap: 10px;
-    padding: 11px 14px; border-radius: 10px; font-size: 14px; color: #64748b;
+    padding: 11px 14px; border-radius: 10px; font-size: 14px; color: var(--color-text-muted);
     cursor: pointer; transition: all 0.15s; margin-bottom: 4px; border: none; background: none; width: 100%; text-align: left;
   }
-  .nav-item:hover { background: #f1f5f9; color: #1e293b; }
-  .nav-item.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
+  .nav-item:hover { background: var(--muted); color: var(--color-text); }
+  .nav-item.active { background: var(--accent); color: var(--primary); font-weight: 600; }
   .sidebar .user-card {
-    margin-top: auto; padding: 12px; background: #f8fafc; border-radius: 12px;
+    margin-top: auto; padding: 12px; background: var(--muted); border-radius: 12px;
     display: flex; align-items: center; gap: 10px;
   }
-  .user-card .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-  .user-card .uname { font-size: 13px; font-weight: 600; color: #334155; }
-  .user-card .urole { font-size: 11px; color: #94a3b8; }
-  .user-card .logout-btn { margin-left: auto; padding: 5px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; color: #64748b; cursor: pointer; background: white; }
-  .user-card .logout-btn:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+  .user-card .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary); color: var(--color-primary-foreground); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .user-card .uname { font-size: 13px; font-weight: 600; color: var(--color-text); }
+  .user-card .urole { font-size: 11px; color: var(--color-text-muted); }
+  .user-card .logout-btn { margin-left: auto; padding: 5px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--color-text-muted); cursor: pointer; background: var(--card); }
+  .user-card .logout-btn:hover { background: var(--destructive-subtle); color: var(--destructive); border-color: var(--destructive-border); }
 
   .main { flex: 1; padding: 24px 32px; max-width: 1200px; }
 
   .page { display: none; }
   .page.active { display: block; }
-  .page-title { font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
-  .page-sub { font-size: 13px; color: #94a3b8; margin-bottom: 20px; }
+  .page-title { font-size: 20px; font-weight: 700; color: var(--color-text); margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--color-text-muted); margin-bottom: 20px; }
 
   /* ── 卡片 ── */
   .card {
-    background: white; border-radius: 14px; padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 16px;
+    background: var(--card); border-radius: 14px; padding: 20px;
+    box-shadow: var(--shadow-sm); margin-bottom: 16px;
   }
-  .card-title { font-size: 15px; font-weight: 600; color: #334155; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--color-text); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
 
   /* 统计卡 */
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
   .stat-card {
-    background: white; border-radius: 14px; padding: 18px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    background: var(--card); border-radius: 14px; padding: 18px;
+    box-shadow: var(--shadow-sm);
   }
-  .stat-card .num { font-size: 28px; font-weight: 700; color: #4f46e5; }
-  .stat-card .label { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-  .stat-card .extra { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .stat-card .num { font-size: 28px; font-weight: 700; color: var(--primary); }
+  .stat-card .label { font-size: 12px; color: var(--color-text-muted); margin-top: 4px; }
+  .stat-card .extra { font-size: 12px; color: var(--color-text-muted); margin-top: 2px; }
 
   /* 按钮 */
   .btn {
@@ -105,116 +106,116 @@
     padding: 9px 16px; border-radius: 9px; font-size: 13px; font-weight: 500;
     cursor: pointer; border: none; transition: all 0.15s;
   }
-  .btn-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; }
-  .btn-primary:hover { box-shadow: 0 4px 12px rgba(99,102,241,0.35); transform: translateY(-1px); }
-  .btn-ghost { background: #f1f5f9; color: #475569; }
-  .btn-ghost:hover { background: #e2e8f0; }
-  .btn-danger { background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; }
-  .btn-danger:hover { background: #fee2e2; }
+  .btn-primary { background: var(--primary); color: var(--color-primary-foreground); }
+  .btn-primary:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .btn-ghost { background: var(--muted); color: var(--color-text); }
+  .btn-ghost:hover { background: var(--border); }
+  .btn-danger { background: var(--destructive-subtle); color: var(--destructive); border: 1px solid var(--destructive-border); }
+  .btn-danger:hover { background: var(--destructive-border); }
   .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 7px; }
 
   /* 表格 */
   table { width: 100%; border-collapse: collapse; }
-  th { text-align: left; font-size: 12px; color: #94a3b8; font-weight: 500; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; }
-  td { padding: 11px 12px; font-size: 13px; color: #334155; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
-  tr:hover td { background: #fafbff; }
+  th { text-align: left; font-size: 12px; color: var(--color-text-muted); font-weight: 500; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 11px 12px; font-size: 13px; color: var(--color-text); border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:hover td { background: var(--muted); }
   .table-wrap { overflow-x: auto; }
 
   /* 徽标 */
   .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-  .badge-blue { background: #eef2ff; color: #4f46e5; }
-  .badge-green { background: #dcfce7; color: #16a34a; }
-  .badge-red { background: #fee2e2; color: #dc2626; }
-  .badge-orange { background: #ffedd5; color: #ea580c; }
-  .badge-gray { background: #f1f5f9; color: #64748b; }
+  .badge-blue { background: var(--accent); color: var(--primary); }
+  .badge-green { background: var(--success-subtle); color: var(--success-text); }
+  .badge-red { background: var(--destructive-subtle); color: var(--destructive-text); }
+  .badge-orange { background: var(--warning-subtle); color: var(--warning-text); }
+  .badge-gray { background: var(--muted); color: var(--color-text-muted); }
 
   /* 表单 */
   .form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
   .form-group { flex: 1; min-width: 150px; }
-  .form-group label { display: block; font-size: 12px; color: #64748b; margin-bottom: 5px; }
+  .form-group label { display: block; font-size: 12px; color: var(--color-text-muted); margin-bottom: 5px; }
   .form-group input, .form-group select, .form-group textarea {
-    width: 100%; padding: 9px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+    width: 100%; padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
     font-size: 13px; outline: none; transition: border-color 0.2s; font-family: inherit;
   }
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #6366f1; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--ring); }
 
   /* 树形结构 */
-  .org-block { border: 1px solid #eef2f7; border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+  .org-block { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
   .org-head {
-    padding: 12px 16px; background: #f8fafc; display: flex; align-items: center; gap: 10px;
-    font-size: 14px; font-weight: 600; color: #334155;
+    padding: 12px 16px; background: var(--muted); display: flex; align-items: center; gap: 10px;
+    font-size: 14px; font-weight: 600; color: var(--color-text);
   }
   .org-children { padding: 10px 16px 14px; }
   .org-child {
-    padding: 8px 12px; border-radius: 8px; font-size: 13px; color: #475569;
+    padding: 8px 12px; border-radius: 8px; font-size: 13px; color: var(--color-text);
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
-    background: #fafbff; border: 1px solid #eef2ff;
+    background: var(--muted); border: 1px solid var(--border);
   }
-  .org-child .del { color: #94a3b8; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
-  .org-child .del:hover { background: #fee2e2; color: #ef4444; }
+  .org-child .del { color: var(--color-text-muted); cursor: pointer; padding: 2px 6px; border-radius: 6px; }
+  .org-child .del:hover { background: var(--destructive-subtle); color: var(--destructive); }
 
   /* 学生详情弹窗 */
   .modal-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.5);
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(24,24,27,0.5);
     display: none; align-items: center; justify-content: center; z-index: 900; padding: 20px;
   }
   .modal-overlay.active { display: flex; }
   .modal {
-    background: white; border-radius: 16px; width: 860px; max-width: 100%; max-height: 88vh;
-    overflow-y: auto; padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+    background: var(--card); border-radius: 16px; width: 860px; max-width: 100%; max-height: 88vh;
+    overflow-y: auto; padding: 24px; box-shadow: var(--shadow-lg);
   }
   .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .modal-head h3 { font-size: 17px; color: #1e293b; }
-  .modal-close { font-size: 22px; color: #94a3b8; cursor: pointer; border: none; background: none; }
-  .modal-close:hover { color: #1e293b; }
-  .modal-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
-  .modal-tab { padding: 7px 14px; border-radius: 8px; font-size: 13px; color: #64748b; cursor: pointer; border: none; background: none; }
-  .modal-tab.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
+  .modal-head h3 { font-size: 17px; color: var(--color-text); }
+  .modal-close { font-size: 22px; color: var(--color-text-muted); cursor: pointer; border: none; background: none; }
+  .modal-close:hover { color: var(--color-text); }
+  .modal-tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+  .modal-tab { padding: 7px 14px; border-radius: 8px; font-size: 13px; color: var(--color-text-muted); cursor: pointer; border: none; background: none; }
+  .modal-tab.active { background: var(--accent); color: var(--primary); font-weight: 600; }
 
   /* 进度条 */
-  .bar { height: 8px; border-radius: 4px; background: #f1f5f9; overflow: hidden; }
-  .bar > div { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+  .bar { height: 8px; border-radius: 4px; background: var(--muted); overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 4px; background: var(--primary); }
 
   /* toast */
   .toast-box {
     position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
-    background: #1e293b; color: white; padding: 10px 22px; border-radius: 10px;
-    font-size: 13px; z-index: 2000; box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    background: var(--foreground); color: var(--background); padding: 10px 22px; border-radius: 10px;
+    font-size: 13px; z-index: 2000; box-shadow: var(--shadow-md);
   }
 
   /* 空状态 */
-  .empty { text-align: center; color: #94a3b8; font-size: 13px; padding: 32px 0; }
+  .empty { text-align: center; color: var(--color-text-muted); font-size: 13px; padding: 32px 0; }
   .empty .e-icon { font-size: 36px; margin-bottom: 10px; }
 
   /* 资源详情 */
   .resource-content {
-    white-space: pre-wrap; font-size: 13.5px; line-height: 1.8; color: #334155;
-    background: #f8fafc; border-radius: 10px; padding: 16px; margin-top: 10px;
+    white-space: pre-wrap; font-size: 13.5px; line-height: 1.8; color: var(--color-text);
+    background: var(--muted); border-radius: 10px; padding: 16px; margin-top: 10px;
   }
-  .tag { display: inline-block; margin-right: 6px; margin-bottom: 6px; padding: 2px 10px; border-radius: 16px; font-size: 11px; background: #f1f5f9; color: #64748b; }
-  .tag-green { background: rgba(22,163,74,.12); color: #16a34a; }
-  .tag-red { background: rgba(239,68,68,.12); color: #ef4444; }
-  .tag-amber { background: rgba(245,158,11,.13); color: #d97706; }
+  .tag { display: inline-block; margin-right: 6px; margin-bottom: 6px; padding: 2px 10px; border-radius: 16px; font-size: 11px; background: var(--muted); color: var(--color-text-muted); }
+  .tag-green { background: var(--success-subtle); color: var(--success-text); }
+  .tag-red { background: var(--destructive-subtle); color: var(--destructive-text); }
+  .tag-amber { background: var(--warning-subtle); color: var(--warning-text); }
 
   /* 学习分析图表容器 */
-  .weak-row { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+  .weak-row { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--border); font-size: 13px; }
   .weak-row:last-child { border-bottom: none; }
   .heat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
-  .heat-cell { border-radius: 10px; padding: 12px 10px; text-align: center; border: 1px solid #e2e8f0; }
+  .heat-cell { border-radius: 10px; padding: 12px 10px; text-align: center; border: 1px solid var(--border); }
   .heat-cell b { font-size: 18px; font-family: monospace; }
-  .heat-cell span { display: block; font-size: 11px; color: #64748b; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .heat-cell span { display: block; font-size: 11px; color: var(--color-text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* 推理记录详情 */
   .reasoning-block {
-    white-space: pre-wrap; word-break: break-word; font-size: 12.5px; line-height: 1.7; color: #334155;
-    background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 8px; padding: 12px;
+    white-space: pre-wrap; word-break: break-word; font-size: 12.5px; line-height: 1.7; color: var(--color-text);
+    background: var(--muted); border: 1px solid var(--border); border-radius: 8px; padding: 12px;
     max-height: 260px; overflow-y: auto;
   }
 
   .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; }
   .flex { display: flex; align-items: center; gap: 10px; }
   .between { display: flex; align-items: center; justify-content: space-between; }
-  .muted { color: #94a3b8; } .small { font-size: 12px; }
+  .muted { color: var(--color-text-muted); } .small { font-size: 12px; }
 
   @media (max-width: 800px) {
     .sidebar { display: none; }
@@ -301,7 +302,7 @@
           <div class="page-sub">查看学生学习情况，管理账号</div>
         </div>
         <div class="flex">
-          <input id="studentSearch" placeholder="搜索学生姓名..." style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;width:200px;" oninput="renderStudents()">
+          <input id="studentSearch" placeholder="搜索学生姓名..." style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;width:200px;" oninput="renderStudents()">
           <button class="btn btn-primary" onclick="showCreateStudent()">➕ 创建学生</button>
         </div>
       </div>
@@ -323,7 +324,7 @@
           <div class="page-sub">查看学生模型推理过程（费曼引导 / 五步学习），点击行可展开输出详情</div>
         </div>
         <div class="flex">
-          <select id="reasoningStudentSelect" onchange="onReasoningStudentChange()" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+          <select id="reasoningStudentSelect" onchange="onReasoningStudentChange()" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;">
             <option value="">全部学生</option>
           </select>
         </div>
@@ -348,7 +349,7 @@
           <div class="page-sub">本班学生数据可视化（纯 SVG 图表，仅限我班级内的学生）</div>
         </div>
         <div class="flex">
-          <select id="analyticsClassSelect" onchange="loadAnalytics()" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+          <select id="analyticsClassSelect" onchange="loadAnalytics()" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;">
             <option value="">全部班级</option>
           </select>
         </div>
@@ -407,14 +408,44 @@
       <div class="between">
         <div>
           <div class="page-title">📚 教学资源</div>
-          <div class="page-sub">已发布的教学内容库与知识点</div>
+          <div class="page-sub">教学资源导入 / 评审 / 发布 与 学情驱动备课</div>
         </div>
-        <select id="resourceSubject" onchange="loadResources()" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+        <select id="resourceSubject" onchange="loadResources()" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;">
           <option value="">全部学科</option>
           <option>数学</option><option>物理</option><option>化学</option><option>生物</option>
           <option>英语</option><option>语文</option><option>历史</option><option>地理</option><option>政治</option>
         </select>
       </div>
+
+      <!-- 资源导入工具栏 -->
+      <div class="card mt-3">
+        <div class="card-title">➕ 资源导入</div>
+        <div class="form-row">
+          <div class="form-group" style="flex:2;"><label>标题</label><input id="resTitle" placeholder="资料标题"></div>
+          <div class="form-group"><label>学科</label>
+            <select id="resSubject"><option>数学</option><option>物理</option><option>化学</option><option>生物</option><option>英语</option><option>语文</option><option>历史</option><option>地理</option><option>政治</option></select>
+          </div>
+          <div class="form-group"><label>章节</label><input id="resChapter" placeholder="如：必修一 第二章"></div>
+        </div>
+        <div class="form-row">
+          <textarea id="resContent" placeholder="粘贴教材/笔记/教案正文...（md/txt 文本）或填写网络 URL 进行采集" style="flex:1;min-height:90px;padding:10px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;font-family:inherit;"></textarea>
+        </div>
+        <div class="flex" style="gap:10px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" onclick="doImportText()">📝 粘贴入库</button>
+          <label class="btn btn-outline" style="cursor:pointer;">📁 上传文件（md/txt/html/ppt）
+            <input type="file" id="resFile" accept=".md,.txt,.html,.htm,application/vnd.openxmlformats-officedocument.presentationml.presentation,.ppt,.pptx" onchange="doUpload()" style="display:none;">
+          </label>
+          <input id="resUrl" placeholder="http(s)://... 采集网址" style="flex:0 0 280px;padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;">
+          <button class="btn btn-outline" onclick="doImportWeb()">🌐 网页采集</button>
+        </div>
+      </div>
+
+      <!-- 待评审草稿 -->
+      <div class="card mt-3">
+        <div class="between"><div class="card-title">🗂️ 待评审草稿</div><button class="btn btn-ghost btn-sm" onclick="loadDrafts()">刷新</button></div>
+        <div class="table-wrap"><table><thead><tr><th>标题</th><th>学科</th><th>来源</th><th>状态</th><th>操作</th></tr></thead><tbody id="draftTable"></tbody></table></div>
+      </div>
+
       <div class="card mt-3">
         <div class="table-wrap">
           <table>
@@ -423,6 +454,19 @@
           </table>
         </div>
       </div>
+
+      <!-- 学情驱动备课 -->
+      <div class="card mt-3">
+        <div class="between">
+          <div class="card-title">🎯 学情驱动备课</div>
+          <div class="flex">
+            <select id="lessonClassSelect" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;"><option value="">全部班级</option></select>
+            <button class="btn btn-primary" onclick="loadLessonPlan()">分析</button>
+          </div>
+        </div>
+        <div id="lessonPlan"></div>
+      </div>
+
       <div class="card mt-3">
         <div class="card-title">🧩 知识点（可生成任务）</div>
         <div id="knowledgeNodes"></div>
@@ -442,7 +486,7 @@
         <div class="form-row">
           <div class="form-group">
             <label>数据类型</label>
-            <select id="expType" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+            <select id="expType" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;">
               <option value="reports">学习报告</option>
               <option value="reasoning">推理日志</option>
               <option value="answers">答题记录</option>
@@ -451,21 +495,21 @@
           </div>
           <div class="form-group">
             <label>格式</label>
-            <select id="expFmt" style="padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+            <select id="expFmt" style="padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;">
               <option value="json">JSON</option>
               <option value="csv">CSV</option>
             </select>
           </div>
           <div class="form-group" style="flex:2;">
             <label>用途说明</label>
-            <input id="expReason" placeholder="说明导出用途（管理员审批参考）" style="width:100%;padding:9px 14px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;outline:none;">
+            <input id="expReason" placeholder="说明导出用途（管理员审批参考）" style="width:100%;padding:9px 14px;border:1.5px solid var(--border);border-radius:9px;font-size:13px;outline:none;">
           </div>
           <div class="form-group">
             <label>&nbsp;</label>
             <button class="btn btn-primary" onclick="requestExport()">提交申请</button>
           </div>
         </div>
-        <div style="font-size:12px;color:#8b949e;margin-top:8px;">导出数据范围仅限你名下班级的学生；申请提交后由管理员审批，批准后可下载。</div>
+        <div style="font-size:12px;color:var(--color-text-muted);margin-top:8px;">导出数据范围仅限你名下班级的学生；申请提交后由管理员审批，批准后可下载。</div>
       </div>
       <div class="card mt-3">
         <div class="card-title">📋 我的导出申请</div>
@@ -728,8 +772,8 @@ function renderOrg() {
     if (!wrap) return;
     const grades = (ALL_DATA.grades || []).filter(g => g.school_id === s.id);
     wrap.innerHTML = grades.length ? grades.map(g => `
-      <div class="org-block" style="background:#fafbff;">
-        <div class="org-head" style="background:#f1f5f9;">
+      <div class="org-block" style="background:var(--muted);">
+        <div class="org-head" style="background:var(--muted);">
           <span>📗 ${esc(g.name)}</span>
           <span class="badge badge-gray">${g.class_count} 班级</span>
           <span style="flex:1"></span>
@@ -865,14 +909,14 @@ async function viewStudentScores(userId, name) {
   const modalContent = `
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
       <div class="stat-card"><div class="num">${d.total_answers || 0}</div><div class="label">总答题</div></div>
-      <div class="stat-card"><div class="num" style="color:${acc >= 70 ? '#16a34a' : acc >= 50 ? '#ea580c' : '#dc2626'}">${acc}%</div><div class="label">正确率</div></div>
+      <div class="stat-card"><div class="num" style="color:${acc >= 70 ? 'var(--success)' : acc >= 50 ? 'var(--warning)' : 'var(--destructive)'}">${acc}%</div><div class="label">正确率</div></div>
       <div class="stat-card"><div class="num">${d.total_sessions || 0}</div><div class="label">学习会话</div></div>
       <div class="stat-card"><div class="num">${d.total_time_minutes || 0}</div><div class="label">累计分钟</div></div>
     </div>
     <div class="mt-3">
       <div class="card-title">⚠️ 薄弱知识点</div>
       ${(d.weak_topics || []).length ? d.weak_topics.map(w => `
-        <div class="flex between" style="padding:8px 0;border-bottom:1px solid #f8fafc;">
+        <div class="flex between" style="padding:8px 0;border-bottom:1px solid var(--border);">
           <span style="font-size:13px;">${esc(w.topic)}</span>
           <span><span class="badge badge-red">错误率 ${Math.round(w.error_rate * 100)}%</span></span>
         </div>`).join('') : '<div class="empty">暂无薄弱知识点</div>'}
@@ -920,7 +964,7 @@ async function switchStudentTab(tab, el) {
         <div class="stat-card"><div class="num">${d.not_started || 0}</div><div class="label">⬜ 未开始</div></div>
       </div>
       <div class="mt-3">${(d.nodes || []).map(n => `
-        <div class="flex between" style="padding:8px 0;border-bottom:1px solid #f8fafc;">
+        <div class="flex between" style="padding:8px 0;border-bottom:1px solid var(--border);">
           <span style="font-size:13px;">${esc(n.name)} <span class="badge badge-gray">${esc(n.category)}</span></span>
           <span style="width:180px;" class="flex">
             <div class="bar" style="flex:1;"><div style="width:${(n.understanding || 0) * 100}%"></div></div>
@@ -934,14 +978,14 @@ async function switchStudentTab(tab, el) {
     c.innerHTML = `
       <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
         <div class="stat-card"><div class="num">${d.total_answers || 0}</div><div class="label">总答题</div></div>
-        <div class="stat-card"><div class="num" style="color:${acc >= 70 ? '#16a34a' : acc >= 50 ? '#ea580c' : '#dc2626'}">${acc}%</div><div class="label">正确率</div></div>
+        <div class="stat-card"><div class="num" style="color:${acc >= 70 ? 'var(--success)' : acc >= 50 ? 'var(--warning)' : 'var(--destructive)'}">${acc}%</div><div class="label">正确率</div></div>
         <div class="stat-card"><div class="num">${d.total_sessions || 0}</div><div class="label">学习会话</div></div>
         <div class="stat-card"><div class="num">${d.total_time_minutes || 0}</div><div class="label">累计分钟</div></div>
       </div>
       <div class="mt-3">
         <div class="card-title">⚠️ 薄弱知识点</div>
         ${(d.weak_topics || []).length ? d.weak_topics.map(w => `
-          <div class="flex between" style="padding:8px 0;border-bottom:1px solid #f8fafc;">
+          <div class="flex between" style="padding:8px 0;border-bottom:1px solid var(--border);">
             <span style="font-size:13px;">${esc(w.topic)}</span>
             <span><span class="badge badge-red">错误率 ${Math.round(w.error_rate * 100)}%</span></span>
           </div>`).join('') : '<div class="empty">暂无薄弱知识点</div>'}
@@ -964,12 +1008,12 @@ async function viewReportDetail(userId, reportId) {
       <div class="stat-card" style="flex:1;"><div class="num" style="font-size:18px;">${esc(mastery.summary || '')}</div><div class="label">${esc(mastery.emoji || '')}</div></div>
     </div>
     <div class="card-title">📚 教学流程</div>
-    ${steps.map((s, i) => `<div class="flex" style="padding:7px 0;border-bottom:1px solid #f8fafc;">
+    ${steps.map((s, i) => `<div class="flex" style="padding:7px 0;border-bottom:1px solid var(--border);">
       <span class="badge ${s.success ? 'badge-green' : 'badge-gray'}">${s.success ? '✓' : (i + 1)}</span>
       <span style="font-size:13px;flex:1;"><b>${stepNames[i] || s.name}</b><div class="muted small">${esc(String(s.content || '').substring(0, 120))}...</div></span>
     </div>`).join('')}
     <div class="card-title mt-4">⚠️ 薄弱点</div>
-    ${(r.weak_points || []).map(w => `<div class="tag" style="background:#fee2e2;color:#dc2626;">${esc(w)}</div>`).join('') || '<span class="muted">无</span>'}
+    ${(r.weak_points || []).map(w => `<div class="tag" style="background:var(--destructive-subtle);color:var(--destructive);">${esc(w)}</div>`).join('') || '<span class="muted">无</span>'}
     <div class="card-title mt-4">💡 下一步建议</div>
     ${(r.next_steps || []).map(n => `<div class="tag">${esc(n)}</div>`).join('') || '<span class="muted">无</span>'}
   `;
@@ -1095,7 +1139,7 @@ async function loadReasoningStats() {
     <div class="stat-card"><div class="num" style="font-size:18px;">${models.length ? models.map(([k, v]) => `${esc(k)} ${v}`).join(' · ') : '—'}</div><div class="label">🤖 模型分布</div></div>
     <div class="stat-card"><div class="num" style="font-size:18px;">${steps.length ? steps.map(([k, v]) => `${esc(k)} ${v}`).join(' · ') : '—'}</div><div class="label">🪜 步骤分布</div></div>
     <div class="stat-card"><div class="num">${d.avg_latency_ms || 0}ms</div><div class="label">⚡ 平均耗时</div></div>
-    <div class="stat-card"><div class="num" style="color:${d.error_count ? '#dc2626' : '#16a34a'}">${d.error_count}</div><div class="label">⚠️ 失败次数</div></div>`;
+    <div class="stat-card"><div class="num" style="color:${d.error_count ? 'var(--destructive)' : 'var(--success)'}">${d.error_count}</div><div class="label">⚠️ 失败次数</div></div>`;
 }
 
 // ═══════════ 任务管理 ═══════════
@@ -1216,7 +1260,16 @@ async function loadResources() {
       <td><button class="btn btn-ghost btn-sm" onclick="openResourceDetail(${r.id}, '${esc(r.title)}')">查看</button></td>
     </tr>`).join('') : '<tr><td colspan="6"><div class="empty"><div class="e-icon">📚</div>暂无教学内容</div></td></tr>';
 
+  await loadDrafts();
+  // 备课班级下拉（懒加载一次）
+  if (!$('lessonClassSelect').dataset.loaded) {
+    try { const cls = (await api('/api/classes')).classes || []; $('lessonClassSelect').innerHTML = '<option value="">全部班级</option>' + cls.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join(''); } catch(e) {}
+    $('lessonClassSelect').dataset.loaded = '1';
+  }
+  await loadLessonPlan();
+
   const nodes = (await api('/api/knowledge-nodes')).nodes || [];
+
   ALL_DATA.nodes = nodes;
   $('knowledgeNodes').innerHTML = nodes.length ? `<div class="flex" style="flex-wrap:wrap;gap:8px;">
     ${nodes.map(n => `<button class="tag" style="cursor:pointer;" onclick="generateTaskFromNode('${n.id}', '${esc(n.name)}')">📗 ${esc(n.name)} <span class="muted">(${esc(n.category)})</span></button>`).join('')}
@@ -1252,6 +1305,94 @@ async function generateTaskFromNode(nodeId, name) {
     toast(`已生成任务「${d.title}」（含 ${d.question_count} 道题）`);
     loadTasks();
   }
+}
+
+// ═══════════ 教学资源导入 / 评审 / 备课 ═══════════
+function _resMeta() {
+  return {
+    subject: $('resSubject').value,
+    chapter: $('resChapter').value.trim(),
+    title: $('resTitle').value.trim(),
+  };
+}
+
+async function doImportText() {
+  const meta = _resMeta();
+  const content = $('resContent').value.trim();
+  if (!content) return toast('请输入要导入的文本内容');
+  const d = await api('/api/resources/import-text', 'POST', { ...meta, content });
+  if (d.success) { toast('已入库（草稿），可在下方评审发布'); $('resContent').value=''; $('resTitle').value=''; loadDrafts(); loadResources(); }
+  else toast(d.error || '导入失败');
+}
+
+async function doImportWeb() {
+  const url = $('resUrl').value.trim();
+  if (!url) return toast('请输入要采集的网址');
+  const meta = _resMeta();
+  const d = await api('/api/resources/import-web', 'POST', { ...meta, url });
+  if (d.success) { toast(`已采集入库（${d.word_count} 字）`); $('resUrl').value=''; loadDrafts(); }
+  else toast(d.error || '采集失败');
+}
+
+async function doUpload() {
+  const f = $('resFile').files[0];
+  if (!f) return;
+  const fd = new FormData();
+  fd.append('file', f);
+  fd.append('subject', _resMeta().subject);
+  fd.append('chapter', _resMeta().chapter);
+  fd.append('title', _resMeta().title);
+  const r = await fetch('/api/resources/upload', { method: 'POST', body: fd });
+  let d = {}; try { d = await r.json(); } catch(e) {}
+  if (d.success) { toast('文件已解析入库（草稿）'); $('resFile').value=''; loadDrafts(); }
+  else toast(d.error || '上传解析失败');
+}
+
+async function loadDrafts() {
+  const d = await api('/api/resources/drafts');
+  if (!d.success) return;
+  $('draftTable').innerHTML = d.drafts.length ? d.drafts.map(dr => `
+    <tr>
+      <td><b>${esc(dr.title)}</b></td>
+      <td>${esc(dr.subject)}</td>
+      <td class="muted">${esc(dr.source_type || dr.source || '')}</td>
+      <td><span class="badge ${dr.status==='published'?'badge-green':dr.status==='reviewed'?'badge-blue':'badge-gray'}">${esc(dr.status)}</span></td>
+      <td class="flex" style="gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="openResourceDetail(${dr.id}, '${esc(dr.title)}')">查看</button>
+        <button class="btn btn-ghost btn-sm" onclick="reviewResource(${dr.id}, 'published', '${esc(dr.title)}')">发布</button>
+        <button class="btn btn-ghost btn-sm" onclick="reviewResource(${dr.id}, 'reviewed', '${esc(dr.title)}')">评审</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteResource(${dr.id}, '${esc(dr.title)}')">删</button>
+      </td>
+    </tr>`).join('') : '<tr><td colspan="5"><div class="empty"><div class="e-icon">🗂️</div>暂无待评审草稿</div></td></tr>';
+}
+
+async function reviewResource(id, status, title) {
+  const oc = prompt(`为「${title}」补充常见错误（可选，回车跳过）：`, '');
+  const pre = prompt(`补充前置知识（可选，回车跳过）：`, '');
+  const d = await api(`/api/resources/${id}/review`, 'PUT', { status, common_mistakes: oc || '', prerequisites: pre || '' });
+  if (d.success) { toast(`已${status==='published'?'发布':'评审'}「${title}」`); loadDrafts(); loadResources(); }
+  else toast(d.error || '操作失败');
+}
+
+async function deleteResource(id, title) {
+  if (!confirm(`确定删除「${title}」？`)) return;
+  const d = await api('/api/resources/' + id, 'DELETE');
+  if (d.success) { toast('已删除'); loadDrafts(); loadResources(); }
+  else toast(d.error || '删除失败');
+}
+
+async function loadLessonPlan() {
+  const cid = $('lessonClassSelect').value;
+  const d = await api('/api/lesson/plan?class_id=' + cid);
+  if (!d.success) return toast(d.error || '加载失败');
+  const plan = d.weak_nodes || [];
+  $('lessonPlan').innerHTML = plan.length ? plan.map(w => `
+    <div class="card-list-item">
+      <div class="between">
+        <div><b>📘 ${esc(w.name)}</b> <span class="muted">薄弱（掌握度 ${w.avg_mastery}）· 涉及 ${w.students} 人</span></div>
+      </div>
+      ${w.materials && w.materials.length ? `<div class="muted small mt-1">推荐素材：${w.materials.map(m => `<span class="tag">${esc(m.title)}</span>`).join(' ')}</div>` : `<div class="muted small mt-1">暂无匹配素材，可先通过上方导入补充。</div>`}
+    </div>`).join('') : '<div class="empty"><div class="e-icon">🎯</div>暂无薄弱知识点（学生答题数据较少）</div>';
 }
 
 // ═══════════ 学习分析（本班学生 SVG 图表） ═══════════
@@ -1296,15 +1437,15 @@ async function loadAnalytics() {
       const y = v => H - pad - ((v - min) / span) * (H - pad * 2);
       const pts = trendD.map((d, i) => x(i) + ',' + y(d.avg)).join(' ');
       let svg = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:560px">`;
-      svg += `<line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="#e2e8f0" stroke-width="1"/>`;
-      svg += `<polyline fill="none" stroke="#4f46e5" stroke-width="2.5" points="${pts}"/>`;
+      svg += `<line x1="${pad}" y1="${H - pad}" x2="${W - pad}" y2="${H - pad}" stroke="var(--border)" stroke-width="1"/>`;
+      svg += `<polyline fill="none" stroke="var(--primary)" stroke-width="2.5" points="${pts}"/>`;
       trendD.forEach((d, i) => {
         if (i % Math.ceil(trendD.length / 7) === 0 || i === trendD.length - 1) {
-          svg += `<circle cx="${x(i)}" cy="${y(d.avg)}" r="3.5" fill="#4f46e5"/>`;
-          svg += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" fill="#94a3b8" font-size="10">${esc(String(d.date).slice(5))}</text>`;
+          svg += `<circle cx="${x(i)}" cy="${y(d.avg)}" r="3.5" fill="var(--primary)"/>`;
+          svg += `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">${esc(String(d.date).slice(5))}</text>`;
         }
       });
-      svg += `<text x="6" y="${y(trendD[trendD.length - 1].avg) - 6}" fill="#16a34a" font-size="11">${trendD[trendD.length - 1].avg}%</text>`;
+      svg += `<text x="6" y="${y(trendD[trendD.length - 1].avg) - 6}" fill="var(--success)" font-size="11">${trendD[trendD.length - 1].avg}%</text>`;
       svg += '</svg>';
       $('analyticsTrend').innerHTML = svg;
     } else {
@@ -1319,10 +1460,10 @@ async function loadAnalytics() {
       subjD.forEach((s, i) => {
         const h = Math.max(4, (s.avg / max) * 120);
         const bx = 40 + i * (bw + 22), by = 170 - h;
-        svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${h}" rx="6" fill="#4f46e5" opacity="${0.5 + 0.5 * i / subjD.length}"/>`;
-        svg += `<text x="${bx + bw / 2}" y="${by - 6}" text-anchor="middle" fill="#16a34a" font-size="11">${s.avg}%</text>`;
-        svg += `<text x="${bx + bw / 2}" y="192" text-anchor="middle" fill="#64748b" font-size="10">${esc(s.subject)}</text>`;
-        svg += `<text x="${bx + bw / 2}" y="182" text-anchor="middle" fill="#94a3b8" font-size="9">${s.count}次</text>`;
+        svg += `<rect x="${bx}" y="${by}" width="${bw}" height="${h}" rx="6" fill="var(--primary)" opacity="${0.5 + 0.5 * i / subjD.length}"/>`;
+        svg += `<text x="${bx + bw / 2}" y="${by - 6}" text-anchor="middle" fill="var(--success)" font-size="11">${s.avg}%</text>`;
+        svg += `<text x="${bx + bw / 2}" y="192" text-anchor="middle" fill="var(--color-text-muted)" font-size="10">${esc(s.subject)}</text>`;
+        svg += `<text x="${bx + bw / 2}" y="182" text-anchor="middle" fill="var(--color-text-muted)" font-size="9">${s.count}次</text>`;
       });
       svg += '</svg>';
       $('analyticsSubjects').innerHTML = svg;
@@ -1334,15 +1475,15 @@ async function loadAnalytics() {
     $('analyticsWeak').innerHTML = weakD.length ? weakD.map(w => `
       <div class="weak-row">
         <span class="tag ${w.severity === '高' ? 'tag-red' : w.severity === '中' ? 'tag-amber' : 'tag-green'}">${esc(w.severity)}</span>
-        <span style="flex:1;color:#475569;font-size:13px;">${esc(w.text)}</span>
-        <span style="font-family:monospace;color:#4f46e5;">×${w.count}</span>
+        <span style="flex:1;color:var(--color-text-secondary);font-size:13px;">${esc(w.text)}</span>
+        <span style="font-family:monospace;color:var(--primary);">×${w.count}</span>
       </div>`).join('') : '<div class="empty">暂无薄弱点数据</div>';
 
     // 知识点热力
     $('analyticsConcepts').innerHTML = concD.length ? `<div class="heat-grid">
       ${concD.map(c => {
         const col = c.value >= 70 ? 'rgba(22,163,74,.13)' : c.value >= 45 ? 'rgba(245,158,11,.12)' : 'rgba(239,68,68,.11)';
-        const tx = c.value >= 70 ? '#16a34a' : c.value >= 45 ? '#f59e0b' : '#ef4444';
+        const tx = c.value >= 70 ? 'var(--success)' : c.value >= 45 ? 'var(--warning)' : 'var(--destructive)';
         return `<div class="heat-cell" style="background:${col}">
           <b style="color:${tx}">${c.value}%</b><span>${esc(c.name)}</span></div>`;
       }).join('')}</div>` : '<div class="empty">暂无知识点数据</div>';

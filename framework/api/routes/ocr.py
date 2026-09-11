@@ -6,10 +6,11 @@
 import base64
 import io
 import logging
-from flask import Blueprint, request, jsonify
+
+from flask import Blueprint, jsonify, request
 from werkzeug.datastructures import FileStorage
 
-from framework.security.uploads import validate_upload_file, ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_BYTES
+from framework.security.uploads import ALLOWED_IMAGE_EXTENSIONS, MAX_IMAGE_BYTES, validate_upload_file
 
 logger = logging.getLogger("lumilearn.routes.ocr")
 

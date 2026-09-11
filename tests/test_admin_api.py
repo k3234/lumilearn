@@ -6,8 +6,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from framework.database import db
 from framework.api.server import create_app
+from framework.database import db
 
 
 class TestAdminAPI(unittest.TestCase):
@@ -108,7 +108,14 @@ class TestAdminAPI(unittest.TestCase):
         resp = self.client.delete(f"/api/admin/api-keys/{api_key}", headers={"X-Admin-Token": token})
         self.assertEqual(resp.status_code, 200)
 
-    def test_admin_page_served(self):
+    def test_admin_page_requires_login(self):
+        """未登录直链 /admin 应被页面守卫重定向首页（v0.2.0 角色守卫）"""
+        resp = self.client.get("/admin")
+        self.assertEqual(resp.status_code, 302)
+
+    def test_admin_page_served_after_login(self):
+        """管理员登录后（会话已建立）访问 /admin 返回 200"""
+        self._login()
         resp = self.client.get("/admin")
         self.assertEqual(resp.status_code, 200)
 

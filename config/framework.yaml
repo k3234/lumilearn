@@ -1,7 +1,7 @@
 # LumiLearn 框架配置文件
 # 服务器、模型、安全等配置
 
-version: "1.0.0"
+version: "0.2.0-beta"
 debug: false
 
 # 轻量自学模式（lite）：仅保留核心学习服务，适合低资源/自学场景
@@ -10,11 +10,12 @@ lite_mode: false
 server:
   terminal_port: 18080
   api_port: 18081
-  models_port: 18082
   host: "0.0.0.0"
 
 # 端口服务选择性配置（Admin 面板「端口管理」可修改）
 # enabled: 是否启用该端口服务；port: 自定义端口号
+# 端口整合后仅保留 management 门户(terminal) + REST API(api) 两端口；
+# 教师/学生/分析仪表盘已并入统一门户，models/teacher/student/analytics 均已停用。
 port_settings:
   terminal:
     enabled: true
@@ -23,16 +24,16 @@ port_settings:
     enabled: true
     port: 18081
   models:
-    enabled: true
+    enabled: false
     port: 18082
   teacher_portal:
-    enabled: true
+    enabled: false
     port: 5001
   student_portal:
-    enabled: true
+    enabled: false
     port: 5010
   analytics_dashboard:
-    enabled: true
+    enabled: false
     port: 18090
 
 ollama:
@@ -49,3 +50,17 @@ security:
   api_key_required: false
   allowed_origins:
     - "*"
+
+# 资料管线（framework/resources importer）
+# web_import_enabled 默认关闭，需管理员显式开启以防滥用/注入；本地导入不受限。
+resources:
+  web_import_enabled: false
+  max_web_bytes: 500000
+  timeout: 15
+  upload_exts:
+    - md
+    - txt
+    - html
+    - htm
+    - ppt
+    - pptx

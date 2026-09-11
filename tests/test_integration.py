@@ -28,12 +28,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pytest
 
-from agent_core.orchestrator import UnifiedOrchestrator
-from agent_core.multi_agent import MultiAgentPipeline
-from agent_core.verifier import VerifierAgent
 from agent_core.knowledge_cache import get_knowledge_cache
+from agent_core.multi_agent import MultiAgentPipeline
+from agent_core.orchestrator import UnifiedOrchestrator
+from agent_core.verifier import VerifierAgent
 from framework.database import db
-
 
 # ================================================================
 # 测试数据

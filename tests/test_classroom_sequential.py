@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """课堂模式顺序测试（单线程，避免并发超时）"""
-import sys, os, time
+import os
+import sys
+import time
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

@@ -5,7 +5,6 @@ LumiLearn 综合训练数据合并脚本
 生成统一的综合训练集。
 """
 import json
-import os
 import random
 from pathlib import Path
 

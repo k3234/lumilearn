@@ -7,12 +7,13 @@ LumiLearn 智能混合回复引擎
 - 费曼教学模式：不直接给答案，引导式教学
 """
 
-import os as _os
-import re
-import random
 import json
-import requests
+import os as _os
+import random
+import re
 from typing import Optional, Tuple
+
+import requests
 
 # ============================================================
 # 乱码检测（基于常用字频率）
@@ -746,7 +747,7 @@ class LiveTutor:
         result = self._feynman_engine.explain(topic, level)
         return result.get("full_content", f"费曼讲解「{topic}」准备中...")
 
-    def feynman_test(self, concept: str, 
+    def feynman_test(self, concept: str,
                       student_explanation: str) -> dict:
         """
         费曼30秒测试评分
@@ -764,7 +765,7 @@ class LiveTutor:
             return {"score": 0, "feedback": "费曼引擎不可用", "is_feynman_worthy": False}
         return self._feynman_engine.thirty_second_test(concept, student_explanation)
 
-    def feynman_correct(self, concept: str, 
+    def feynman_correct(self, concept: str,
                          wrong_explanation: str) -> str:
         """
         费曼式纠错引导
@@ -798,7 +799,7 @@ class LiveTutor:
             f"让我们用一个生活中的例子来理解「{topic}」。你见过...",
             f"现在有个问题想问：你觉得为什么「{topic}」会是这样的？",
             f"我来给你一个简单的模型来理解「{topic}」。把它想象成...",
-            f"根据刚才的模型，你能推出了吗？试试看...",
+            "根据刚才的模型，你能推出了吗？试试看...",
             f"好了，现在给你30秒，用最简单的话讲清楚什么是「{topic}」。开始！",
         ]
 
@@ -939,7 +940,7 @@ def _generate_template_slides(topic: str, slide_count: int, style: str) -> list:
         {
             "title_suffix": "核心概念",
             "subtitle": f"理解{topic}的关键要素",
-            "content": f"<h3>核心要点</h3><ul><li>关键概念的定义与解释</li><li>核心要素的拆解分析</li><li>与其他知识的关联</li></ul>",
+            "content": "<h3>核心要点</h3><ul><li>关键概念的定义与解释</li><li>核心要素的拆解分析</li><li>与其他知识的关联</li></ul>",
         },
         {
             "title_suffix": "公式与推导",
@@ -954,7 +955,7 @@ def _generate_template_slides(topic: str, slide_count: int, style: str) -> list:
         {
             "title_suffix": "常见误区",
             "subtitle": f"学习{topic}时的注意事项",
-            "content": f"<h3>避坑指南</h3><ul><li>容易混淆的概念辨析</li><li>常见错误及纠正</li><li>记忆技巧分享</li></ul>",
+            "content": "<h3>避坑指南</h3><ul><li>容易混淆的概念辨析</li><li>常见错误及纠正</li><li>记忆技巧分享</li></ul>",
         },
         {
             "title_suffix": "进阶拓展",

@@ -9,26 +9,25 @@ LumiLearn Phase 2 — 并行化与反馈回路 端到端测试
   - agent_core.orchestrator: UnifiedOrchestrator 接入新流水线
 """
 
-import sys
 import os
+import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_core.verifier import VerifierAgent, get_verifier_agent, verify_teaching
-from agent_core.multi_agent import (
-    FeynmanTeacher, ScoreAgent, CoachAgent,
-    MultiAgentPipeline, MultiAgentOrchestrator,
-    get_multi_agent_pipeline, get_multi_agent_orchestrator, run_multi_agent,
-)
 from agent_core.graph import (
-    StateGraph, CompiledGraph, build_feedback_graph,
-    get_feedback_graph, run_graph,
-    router_node, feynman_node, score_node, coach_node, verifier_node,
+    StateGraph,
+    build_feedback_graph,
     verifier_condition,
 )
-
+from agent_core.multi_agent import (
+    FeynmanTeacher,
+    MultiAgentOrchestrator,
+    MultiAgentPipeline,
+    run_multi_agent,
+)
+from agent_core.verifier import VerifierAgent, get_verifier_agent, verify_teaching
 
 # ================================================================
 # 一、VerifierAgent 测试

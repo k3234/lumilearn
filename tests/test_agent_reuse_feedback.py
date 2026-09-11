@@ -10,8 +10,8 @@ LumiLearn — 自积累知识复用 / 权重自优化 / 人工中断接线 测�
       敏感主题 → awaiting_review → resume(approved) → 带标记重跑放行
 """
 
-import sys
 import os
+import sys
 import time
 import unittest
 from unittest.mock import patch

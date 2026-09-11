@@ -3,17 +3,14 @@
 LumiLearn 代码沙箱
 用于安全执行用户提交的代码
 """
-import sys
-import os
-import io
 import ast
-import types
-import time
+import io
 import logging
+import sys
 import threading
-from typing import Dict, Any, Optional, List
+import time
 from dataclasses import dataclass
-from contextlib import contextmanager
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 

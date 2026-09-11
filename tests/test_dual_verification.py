@@ -10,15 +10,15 @@ LumiLearn — 双路校验机制测试（P0-3）
 完全离线运行：所有模型调用均通过 unittest.mock.patch 替换。
 """
 
-import sys
 import os
+import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_core.verifier import dual_verify
 from agent_core.fact_checker import FactCheckerAgent
+from agent_core.verifier import dual_verify
 
 
 # ================================================================

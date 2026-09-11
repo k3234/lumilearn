@@ -22,11 +22,10 @@ LumiLearn 真实数据训练脚本（CPU / QLoRA）
     --lr          学习率
     --threads     PyTorch CPU 线程数（建议 4，避免争用）
 """
-import os
-import sys
-import json
-import time
 import argparse
+import json
+import os
+import time
 
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")

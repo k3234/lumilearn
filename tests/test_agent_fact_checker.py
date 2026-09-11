@@ -10,11 +10,11 @@ LumiLearn — P0-2 事实核查 Agent 测试
   - UnifiedOrchestrator：事实核查失败 → awaiting_review(node=verifier)
 """
 
-import sys
 import os
+import sys
 import time
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 

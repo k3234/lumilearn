@@ -19,7 +19,9 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from framework.log_retention import (
-    LogRetentionManager, get_log_retention_manager, LOG_TABLES,
+    LOG_TABLES,
+    LogRetentionManager,
+    get_log_retention_manager,
 )
 
 

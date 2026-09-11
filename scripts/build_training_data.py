@@ -11,12 +11,11 @@ LumiLearn 真实高质量训练数据构建脚本
 
 输出：data/distil/train_data_high_quality.jsonl (instruction/response 格式)
 """
+import csv
 import json
-import os
 import random
 import re
 import sys
-import csv
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding='utf-8')

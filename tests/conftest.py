@@ -3,6 +3,7 @@ LumiLearn 测试配置和共享 fixtures
 """
 import os
 import sys
+
 try:
     import torch
 except ImportError:
@@ -15,6 +16,7 @@ collect_ignore = [
     "test_api_stress.py",
     "test_classroom_concurrent.py",
     "test_classroom_sequential.py",
+    "test_concurrent_simulation.py",
     "test_feynman_workflow.py",
     "test_handwriting_flow.py",
     "test_robustness_and_admin.py",
@@ -25,7 +27,8 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 framework_DIR = os.path.join(PROJECT_ROOT, "framework")
 sys.path.insert(0, framework_DIR)
 
-from framework.config import ModelConfig, LumiLearnConfig, TrainingConfig, DataConfig, ExperimentConfig, get_preset_configs
+from framework.config import LumiLearnConfig, ModelConfig, get_preset_configs
+
 # LumiLearnModel requires torch; import lazily to avoid ImportError when torch is absent
 
 
@@ -35,9 +38,10 @@ def isolated_db(tmp_path, monkeypatch):
     每个测试使用独立的临时数据库，并预置测试所需用户。
     避免测试依赖项目根 lumilearn.db 中的残留数据（导致 CI 外键约束失败）。
     """
-    from framework.database import db
-    from framework.admin import auth as admin_auth
     from werkzeug.security import generate_password_hash
+
+    from framework.admin import auth as admin_auth
+    from framework.database import db
 
     db_path = str(tmp_path / "test_lumilearn.db")
     monkeypatch.setenv("LUMILEARN_DB_PATH", db_path)

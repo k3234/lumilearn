@@ -21,13 +21,12 @@ LumiLearn Agent Core — 外部 MCP 服务器接入管理（P1-5）
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
-import json
-import logging
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 # 确保直接运行脚本时能导入 agent_core / framework 子模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

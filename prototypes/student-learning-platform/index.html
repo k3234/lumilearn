@@ -1,271 +1,205 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LumiLearn · 发起学习</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="pages.css">
+<title>LumiLearn · 学生学习仪表盘</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .welcome{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}
+  .welcome .hi{font-size:13px;color:var(--color-text-muted);margin-bottom:4px}
+  .welcome h2{font-size:20px;font-weight:700}
+  .welcome p{font-size:13px;color:var(--color-text-muted);margin-top:6px;max-width:60ch}
+  .cta-row{display:flex;gap:10px;flex-wrap:wrap}
+  .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+  .content-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-top:16px}
+  .content-grid.equal{grid-template-columns:1fr 1fr}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .panel-head h3{font-size:15px;font-weight:600}
+  .list{display:flex;flex-direction:column}
+  .list-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--color-border)}
+  .list-item:last-child{border-bottom:none}
+  .list-item .idx{width:22px;height:22px;border-radius:6px;background:var(--muted);display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+  .list-item .grow{flex:1;min-width:0}
+  .list-item .grow b{font-size:13px;font-weight:600;display:block}
+  .list-item .grow span{font-size:12px;color:var(--color-text-muted)}
+  .path-step{display:flex;align-items:center;gap:12px;padding:10px 0}
+  .path-step .snum{width:24px;height:24px;border-radius:50%;border:1px solid var(--color-border);display:grid;place-items:center;font-size:11px;flex:none}
+  .path-step.weak .snum{border-color:var(--destructive-border);color:var(--destructive-text)}
+  .chart-wrap{margin-top:6px}
+  .chart-legend{display:flex;gap:14px;font-size:12px;color:var(--color-text-muted);margin-bottom:6px}
+  .empty{text-align:center;color:var(--color-text-muted);font-size:13px;padding:26px 0}
+  .material{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--color-border)}
+  .material:last-child{border-bottom:none}
+  .topbar .tools{display:flex;align-items:center;gap:10px}
+  .topbar .tools .iconbtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--color-border);background:var(--card);display:grid;place-items:center}
+</style>
 </head>
-<body data-page="index">
+<body>
 <div class="shell">
-  <aside class="app-nav">
-    <a class="brand" href="index.html">
-      <span class="brand-mark" aria-hidden="true">L</span>
-      <span class="brand-text"><b>LumiLearn</b><em>学生端 · AI 教官</em></span>
-    </a>
-    <nav class="nav-list" aria-label="主导航">
-      <a class="nav-item" data-nav="index" href="index.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span>发起学习</span>
-      </a>
-      <a class="nav-item" data-nav="learn" href="learn.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-        <span>学习过程</span>
-      </a>
-      <a class="nav-item" data-nav="report" href="report.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
-        <span>学习报告</span>
-      </a>
-      <a class="nav-item" data-nav="history" href="history.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-        <span>学习历史</span>
-      </a>
-      <a class="nav-item" data-nav="profile" href="profile.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span>我的档案</span>
-      </a>
-    </nav>
-    <div class="nav-foot">
-      <div class="user-box" id="userBox" style="display:none">
-        <span class="dot"></span>
-        <span class="uname" id="userName">—</span>
-        <button class="btn btn-ghost btn-sm" id="logoutBtn" type="button">退出</button>
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow" id="todayLine">—</div>
+        <h1 id="greeting">你好</h1>
       </div>
-      <span class="dev-badge">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>
-        CPU 本地推理 · 无云依赖
-      </span>
-      <span class="model-status"><span class="dot"></span><code>lumilearn-v2</code> 在线</span>
+      <div class="tools">
+        <span class="pill" id="cognitivePill">学习状态：—</span>
+        <button class="iconbtn" title="通知"><i class="icon icon-16 icon-bell"></i></button>
+      </div>
     </div>
-  </aside>
-  <main class="app-content" id="app">
 
-    <section class="hero reveal r1">
-      <p class="page-kicker">FEYNMAN TEACHING · MULTI-AGENT · LOCAL-FIRST</p>
-      <h1>把复杂的概念，<br>讲成你<span class="hl">听得懂</span>的话。</h1>
-      <p class="sub">输入一个学习目标，LumiLearn 的多位 AI 教官会按费曼五步法，一步步带你从「见过」到「讲得清」。全部在本地 CPU 上推理，你的学习数据不出设备。</p>
+    <section class="card welcome">
+      <div>
+        <div class="hi">今日学习建议</div>
+        <h2 id="adviceTitle">继续你的个性化学习路径</h2>
+        <p id="adviceText">系统将根据你的掌握度与薄弱知识点，推荐下一步学习内容。</p>
+      </div>
+      <div class="cta-row">
+        <a class="btn primary lg" href="start.html"><i class="icon icon-16 icon-circle-play"></i> 开始今日学习</a>
+        <a class="btn lg" href="checkpoint.html"><i class="icon icon-16 icon-target"></i> 去闯关检测</a>
+      </div>
     </section>
 
-    <div class="start-grid">
-      <form class="card form-card reveal r2" id="learnForm" novalidate>
-        <div>
-          <label class="field" for="topicInput">
-            <span class="field-label">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
-              学习目标
-            </span>
-            <textarea id="topicInput" class="input-lg" placeholder="例如：我想理解函数的单调性" maxlength="80"></textarea>
-          </label>
-        </div>
-        <div>
-          <span class="field-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            学科
-          </span>
-          <div class="chip-row" id="subjectRow">
-            <button type="button" class="chip selected" data-subject="数学">数学</button>
-            <button type="button" class="chip" data-subject="物理">物理</button>
-            <button type="button" class="chip" data-subject="化学">化学</button>
-            <button type="button" class="chip" data-subject="生物">生物</button>
-          </div>
-        </div>
-        <div>
-          <span class="field-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>
-            难度
-          </span>
-          <div class="chip-row" id="levelRow">
-            <button type="button" class="chip" data-level="初中">初中</button>
-            <button type="button" class="chip selected" data-level="高中">高中</button>
-            <button type="button" class="chip" data-level="大学">大学</button>
-          </div>
-        </div>
-        <div>
-          <span class="field-label">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-            想不出学什么？点一个试试
-          </span>
-          <div class="quick-row" id="quickRow"></div>
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg btn-submit" id="submitBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-          开始学习
-        </button>
-      </form>
+    <section class="metrics-grid">
+      <div class="metric-card"><div class="eyebrow">已掌握知识点</div><div class="metric-value" id="mMastered">—</div><div class="delta muted small" id="mMasteredSub">共 — 个知识点</div></div>
+      <div class="metric-card"><div class="eyebrow">平均掌握度</div><div class="metric-value" id="mAvg">—</div><div class="delta muted small">来自历史学习报告</div></div>
+      <div class="metric-card"><div class="eyebrow">学习报告</div><div class="metric-value" id="mReports">—</div><div class="delta muted small">累计完成</div></div>
+      <div class="metric-card"><div class="eyebrow">整体学习进度</div><div class="metric-value" id="mProgress">—</div><div class="delta muted small" id="mProgressSub">已启动 — 个</div></div>
+    </section>
 
-      <div class="info-col">
-        <div class="card feynman-strip reveal r3">
-          <h3>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
-            费曼五步法
-          </h3>
-          <div class="step-pill"><span class="num">1</span>现象引入<span class="purpose">· 生活场景切入</span></div>
-          <div class="step-pill"><span class="num">2</span>认知冲突<span class="purpose">· 打破原有理解</span></div>
-          <div class="step-pill"><span class="num">3</span>思维模型<span class="purpose">· 比喻让抽象可摸</span></div>
-          <div class="step-pill"><span class="num">4</span>自主推导<span class="purpose">· 苏格拉底式追问</span></div>
-          <div class="step-pill"><span class="num">5</span>费曼测试<span class="purpose">· 30 秒讲给外行</span></div>
-        </div>
+    <section class="content-grid">
+      <div class="card">
+        <div class="panel-head"><h3>薄弱知识点 TOP3</h3><a class="btn ghost sm" href="profile.html">全部</a></div>
+        <div class="list" id="weakList"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="panel-head"><h3>推荐学习路径</h3><span class="muted small">按掌握度排序</span></div>
+        <div class="list" id="pathList"><div class="empty">加载中…</div></div>
+      </div>
+    </section>
 
-        <div class="card recent-mini reveal r4">
-          <h3>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-            近期学习
-          </h3>
-          <div id="recentList"></div>
-          <a class="btn btn-ghost btn-sm" href="history.html" style="align-self:flex-start">
-            查看全部历史
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </a>
+    <section class="content-grid equal">
+      <div class="card">
+        <div class="panel-head"><h3>最近学习记录</h3><a class="btn ghost sm" href="profile.html">查看全部</a></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>主题</th><th>日期</th><th>掌握度</th></tr></thead>
+            <tbody id="recentBody"><tr><td colspan="3" class="muted">加载中…</td></tr></tbody>
+          </table>
         </div>
       </div>
-    </div>
+      <div class="card">
+        <div class="panel-head"><h3>学习趋势</h3><span class="muted small" id="trendHint">—</span></div>
+        <div class="chart-wrap" id="trendChart"></div>
+      </div>
+    </section>
 
+    <section class="card mt-2">
+      <div class="panel-head"><h3>课后复习素材</h3><span class="muted small">来自教师已发布资料</span></div>
+      <div id="materials"><div class="empty">加载中…</div></div>
+    </section>
   </main>
 </div>
-<div class="login-gate" id="loginGate">
-  <form class="login-box" id="loginForm" autocomplete="on">
-    <h3>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      登录 LumiLearn
-    </h3>
-    <p class="sub">使用你的学习账号登录（users 表账号，如 123）</p>
-    <input id="loginUser" placeholder="用户名" autocomplete="username">
-    <input id="loginPass" type="password" placeholder="密码" autocomplete="current-password">
-    <button class="btn btn-primary" id="loginBtn" type="submit">登 录</button>
-    <p class="sub" style="text-align:center">演示账号：123 / test123</p>
-  </form>
-</div>
-<div class="toast" id="toast"></div>
-<script src="nav.js"></script>
+
 <script src="mock.js"></script>
 <script src="api.js"></script>
-<script src="auth.js"></script>
+<script src="app.js"></script>
 <script>
 (function () {
-  var toastEl = document.getElementById("toast");
-  var toastTimer = null;
-  function toast(msg) {
-    toastEl.textContent = msg;
-    toastEl.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  var esc = LL.esc, pct = LL.pct;
+
+  function lineChart(points) {
+    if (!points || points.length < 2) return '<div class="empty">暂无趋势数据（完成学习后生成）</div>';
+    var w = 520, h = 170, pad = 26;
+    var xs = points.map(function (_, i) { return i; });
+    var max = Math.max.apply(null, points.map(function (p) { return p.score; }).concat([100]));
+    var min = Math.min.apply(null, points.map(function (p) { return p.score; }).concat([0]));
+    var span = Math.max(1, max - min);
+    function X(i) { return pad + i * (w - pad * 2) / Math.max(1, points.length - 1); }
+    function Y(v) { return h - pad - (v - min) / span * (h - pad * 2); }
+    var d = points.map(function (p, i) { return (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(p.score).toFixed(1); }).join(" ");
+    var area = d + " L" + X(points.length - 1).toFixed(1) + " " + (h - pad) + " L" + X(0).toFixed(1) + " " + (h - pad) + " Z";
+    var dots = points.map(function (p, i) { return '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(p.score).toFixed(1) + '" r="3" fill="var(--primary)"/>'; }).join("");
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="170" role="img" aria-label="学习趋势折线图">' +
+      '<line x1="' + pad + '" y1="' + (h - pad) + '" x2="' + (w - pad) + '" y2="' + (h - pad) + '" stroke="var(--color-border)"/>' +
+      '<path d="' + area + '" fill="var(--muted)" opacity=".7"/>' +
+      '<path d="' + d + '" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' + dots +
+      '<text x="' + pad + '" y="' + (h - 6) + '" font-size="10" fill="var(--color-text-muted)">' + esc(points[0].date) + '</text>' +
+      '<text x="' + (w - pad) + '" y="' + (h - 6) + '" font-size="10" text-anchor="end" fill="var(--color-text-muted)">' + esc(points[points.length - 1].date) + '</text>' +
+    '</svg>';
   }
 
-  /* 学科/难度单选 */
-  var subject = "数学", level = "高中";
-  document.getElementById("subjectRow").addEventListener("click", function (e) {
-    var c = e.target.closest(".chip"); if (!c) return;
-    document.querySelectorAll("#subjectRow .chip").forEach(function (x) { x.classList.remove("selected"); });
-    c.classList.add("selected"); subject = c.dataset.subject;
-  });
-  document.getElementById("levelRow").addEventListener("click", function (e) {
-    var c = e.target.closest(".chip"); if (!c) return;
-    document.querySelectorAll("#levelRow .chip").forEach(function (x) { x.classList.remove("selected"); });
-    c.classList.add("selected"); level = c.dataset.level;
-  });
+  function render(profile, status, resources) {
+    var u = profile.user || {};
+    var ov = (status && status.overview) || {};
+    document.getElementById("greeting").textContent = "你好，" + (u.name || "同学");
+    document.getElementById("adviceTitle").textContent =
+      (status && status.weak_points && status.weak_points.length)
+        ? "优先巩固 " + (status.weak_points[0].name || status.weak_points[0].node_id)
+        : "继续你的个性化学习路径";
 
-  /* 快捷示例 chips */
-  var quickRow = document.getElementById("quickRow");
-  DB.quickExamples.forEach(function (t) {
-    var b = document.createElement("button");
-    b.type = "button"; b.className = "chip"; b.textContent = t;
-    b.addEventListener("click", function () {
-      var input = document.getElementById("topicInput");
-      input.value = "我想理解" + t;
-      input.focus();
-      var hit = DB.stepLibrary[t];
-      if (hit) {
-        subject = hit.subject;
-        document.querySelectorAll("#subjectRow .chip").forEach(function (x) {
-          x.classList.toggle("selected", x.dataset.subject === subject);
-        });
-      }
-    });
-    quickRow.appendChild(b);
-  });
+    document.getElementById("mMastered").textContent = (ov.mastered != null ? ov.mastered : "—");
+    document.getElementById("mMasteredSub").textContent = "共 " + (ov.studied != null ? ov.studied : "—") + " 个已学知识点";
+    document.getElementById("mAvg").textContent = pct(profile.avg_mastery);
+    document.getElementById("mReports").textContent = (profile.total_reports != null ? profile.total_reports : "—");
+    document.getElementById("mProgress").textContent = pct(ov.overall_progress);
 
-  /* 近期学习（前 3 条，点击进报告） */
-  var recentList = document.getElementById("recentList");
-  DB.sessions.slice(0, 3).forEach(function (s) {
-    var item = document.createElement("div");
-    item.className = "recent-item";
-    item.innerHTML =
-      '<div class="ri-topic"><b></b><span></span></div>' +
-      '<div class="mastery-bar"><i style="width:' + s.mastery + '%"></i></div>' +
-      '<span class="ri-score">' + s.mastery + '</span>';
-    item.querySelector("b").textContent = s.topic;
-    item.querySelector("span").textContent = s.subject + " · " + s.date;
-    item.addEventListener("click", function () {
-      SessionStore.save({ mode: "report", reportId: s.id });
-      location.href = "report.html";
-    });
-    recentList.appendChild(item);
-  });
+    var weak = (profile.weak_points || []).slice(0, 3);
+    document.getElementById("weakList").innerHTML = weak.length ? weak.map(function (w, i) {
+      return '<div class="list-item"><span class="idx">' + (i + 1) + '</span>' +
+        '<span class="grow"><b>' + esc(w.text) + '</b><span>出现 ' + (w.count || 1) + ' 次 · 严重度 ' + esc(w.severity || "低") + '</span></span>' +
+        '<a class="btn sm" href="start.html?topic=' + encodeURIComponent(w.text) + '">立即复习</a></div>';
+    }).join("") : '<div class="empty">暂无薄弱点（完成学习后生成）</div>';
 
-  /* 提交 */
-  var btn = document.getElementById("submitBtn");
-  document.getElementById("learnForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    if (btn.disabled) return;
-    var topic = document.getElementById("topicInput").value.trim();
-    if (!topic) { toast("先告诉我你想学什么"); document.getElementById("topicInput").focus(); return; }
-    btn.disabled = true;
-    var orig = btn.innerHTML;
-    btn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>编排调度 Agent 理解任务…';
-    api.startLearning({ topic: topic, subject: subject, difficulty: level })
-      .then(function (res) {
-        SessionStore.save({ mode: "learning", session: res.data });
-        location.href = "learn.html";
-      })
-      .catch(function () {
-        toast("启动失败，请重试");
-        btn.disabled = false;
-        btn.innerHTML = orig;
-      });
-  });
+    var path = (status && status.path) || profile.learning_path || [];
+    var weakIds = (status && status.weak_points || []).map(function (x) { return x.node_id || x.name; });
+    document.getElementById("pathList").innerHTML = path.length ? path.slice(0, 5).map(function (n, i) {
+      var isWeak = weakIds.indexOf(n.node_id || n.name) !== -1;
+      return '<div class="path-step' + (isWeak ? " weak" : "") + '"><span class="snum">' + (i + 1) + '</span>' +
+        '<span class="grow"><b>' + esc(n.name || n.node_id) + '</b></span>' +
+        (isWeak ? '<span class="pill red">待巩固</span>' : '<span class="pill">难度 ' + (n.difficulty || 1) + '</span>') + '</div>';
+    }).join("") : '<div class="empty">暂无个性化路径（先开始一次学习）</div>';
 
-  /* ---------- 真实后端模式：登录门 ---------- */
-  var loginGate = document.getElementById("loginGate");
-  function showLogin() { loginGate.classList.add("show"); }
+    var recent = profile.recent_reports || [];
+    document.getElementById("recentBody").innerHTML = recent.length ? recent.map(function (r) {
+      return '<tr><td><a href="report.html?id=' + encodeURIComponent(r.id) + '">' + esc(r.topic) + '</a></td>' +
+        '<td class="muted">' + esc(LL.fmtDate(r.date)) + '</td>' +
+        '<td><span class="pill green">' + pct(r.score) + '</span></td></tr>';
+    }).join("") : '<tr><td colspan="3" class="muted">暂无学习记录</td></tr>';
 
-  if (window.__LUMILEARN_REAL__) {
-    api.me().then(function (j) {
-      if (j.code !== 0) showLogin();
-    }).catch(showLogin);
+    var trend = profile.trend || [];
+    document.getElementById("trendChart").innerHTML = lineChart(trend);
+    document.getElementById("trendHint").textContent = trend.length ? (trend.length + " 次记录") : "—";
+
+    var mats = (resources && (resources.resources || resources.data)) || [];
+    document.getElementById("materials").innerHTML = mats.length ? mats.slice(0, 5).map(function (m) {
+      return '<div class="material"><i class="icon icon-16 icon-file"></i>' +
+        '<span class="grow"><b style="font-size:13px">' + esc(m.title) + '</b> ' +
+        '<span class="muted small">' + esc(m.subject || "综合") + ' · ' + esc(m.content_type || "资料") + '</span></span>' +
+        '<span class="pill">' + esc(m.difficulty || "中等") + '</span></div>';
+    }).join("") : '<div class="empty">暂无教师发布的复习素材</div>';
+
+    var cs = (status && status.cognitive_state) || profile.cognitive_state || "engaged";
+    var map = { engaged: "投入", confused: "困惑", frustrated: "受挫", distracted: "分心", fluent: "流畅", unknown: "—" };
+    document.getElementById("cognitivePill").textContent = "学习状态：" + (map[cs] || cs);
   }
 
-  document.getElementById("loginForm").addEventListener("submit", function (e) {
-    e.preventDefault();
-    var u = document.getElementById("loginUser").value.trim();
-    var p = document.getElementById("loginPass").value;
-    if (!u || !p) { toast("请输入用户名和密码"); return; }
-    var lb = document.getElementById("loginBtn");
-    lb.disabled = true; lb.textContent = "登录中…";
-    api.login(u, p).then(function (j) {
-      if (j.code === 0) {
-        loginGate.classList.remove("show");
-        if (location.search.indexOf("need=login") !== -1) {
-          history.replaceState(null, "", location.pathname);
-        }
-        toast("欢迎回来，" + (j.data.name || u));
-      } else {
-        toast(j.message || "登录失败");
-        lb.disabled = false; lb.textContent = "登 录";
-      }
-    }).catch(function () {
-      toast("网络异常，请重试");
-      lb.disabled = false; lb.textContent = "登 录";
+  LL.boot({ nav: "index" }).then(function (user) {
+    var now = new Date();
+    var wd = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][now.getDay()];
+    if (user) document.getElementById("todayLine").textContent = wd + " · " + (now.getMonth() + 1) + "月" + now.getDate() + "日";
+    else document.getElementById("todayLine").textContent = wd;
+    if (!user) { render({ user: {}, total_reports: 0, avg_mastery: 0, trend: [], weak_points: [], recent_reports: [] }, { overview: {}, path: [], weak_points: [] }, {}); return; }
+
+    Promise.all([
+      api.profile().catch(function () { return { code: 1, data: {} }; }),
+      api.getLearnStatus().catch(function () { return { code: 1, data: {} }; }),
+      api.getResources().catch(function () { return { resources: [] }; })
+    ]).then(function (r) {
+      render((r[0] && r[0].data) || {}, (r[1] && r[1].data) || {}, r[2] || {});
     });
   });
 })();

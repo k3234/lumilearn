@@ -34,7 +34,7 @@ import os
 import re
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -217,8 +217,7 @@ class FactCheckerAgent:
             if with_content:
                 return with_content
         try:
-            from framework.services.knowledge_retrieval import (
-                get_knowledge_retriever)
+            from framework.services.knowledge_retrieval import get_knowledge_retriever
             retriever = get_knowledge_retriever()
             return retriever.search(
                 topic, top_k=self.top_k,

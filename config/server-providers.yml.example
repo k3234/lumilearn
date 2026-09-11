@@ -1,0 +1,47 @@
+# LumiLearn 模型提供者配置（OpenMAIC 兼容格式，camelCase）
+#
+# 用法：复制为 config/server-providers.yml 并填入真实 Key：
+#     cp config/server-providers.yml.example config/server-providers.yml
+# config/server-providers.yml 含真实凭据，已在 .gitignore 中忽略，严禁提交。
+#
+# protocol 由段名推断：
+#   openai    → openai
+#   anthropic → anthropic
+#   google    → gemini
+#   azure     → openai（Azure OpenAI 兼容接口）
+#
+# 合并优先级（高 → 低）：
+#   1. config/providers.yaml 中显式配置的同名 provider（不会被本文件覆盖）
+#   2. config/server-providers.yml（本文件）
+#   3. 内置 PROVIDER_TEMPLATES（仅用于 UI 模板）
+#
+# 本文件中的值全部为占位/空值，请勿在此写入任何真实 Key。
+
+providers:
+  openai:
+    apiKey:
+    # baseUrl: https://api.openai.com/v1   # 可选，默认走官方地址
+    models:
+      - gpt-4o
+      - gpt-4o-mini
+
+  anthropic:
+    apiKey:
+    # baseUrl: https://api.anthropic.com
+    models:
+      - claude-3-5-sonnet-20241022
+      - claude-3-5-haiku-20241022
+
+  google:
+    apiKey:
+    # baseUrl: https://generativelanguage.googleapis.com
+    models:
+      - gemini-2.0-flash
+      - gemini-1.5-pro
+
+  azure:
+    apiKey:
+    baseUrl: https://YOUR-RESOURCE.openai.azure.com/openai
+    # Azure 的 models 即部署名（deployment name）
+    models:
+      - YOUR-DEPLOYMENT-NAME

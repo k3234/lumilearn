@@ -16,15 +16,19 @@ from __future__ import annotations
 import os
 import sys
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 # 确保能导入项目配置
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from lumilearn_config import (
-    REMOTE_HOST, REMOTE_OLLAMA_PORT, REMOTE_API_PORT,
-    CLOUD_MODELS, REMOTE_MODELS, get_cloud_api_key,
+    CLOUD_MODELS,
+    REMOTE_API_PORT,
+    REMOTE_HOST,
+    REMOTE_MODELS,
+    REMOTE_OLLAMA_PORT,
+    get_cloud_api_key,
 )
 from lumilearn_shared import OLLAMA_MODELS, SOLO_MODELS
 

@@ -13,19 +13,19 @@ LumiLearn CPU 训练入口
     # 指定数据文件
     python scripts/train_cpu.py --data data/merged_corpus.jsonl
 """
+import argparse
 import os
 import sys
 import time
-import argparse
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, PROJECT_DIR)
 
 from framework.config import get_preset_configs
+from framework.data import load_records
 from framework.model import LumiLearnModel
 from framework.tokenizer import LumiLearnTokenizer
-from framework.data import load_records
 from framework.trainer import LumiLearnTrainer
 from framework.utils import get_device
 
@@ -75,12 +75,12 @@ def main():
     print(f"  总记录数: {len(records)}")
 
     # 初始化 tokenizer
-    print(f"\n[分词器] 初始化 BPE tokenizer")
+    print("\n[分词器] 初始化 BPE tokenizer")
     tokenizer = LumiLearnTokenizer(vocab_size=config.model.vocab_size)
     print(f"  词表大小: {tokenizer.vocab_size_actual}")
 
     # 初始化模型（可选：从已有权重加载）
-    print(f"\n[模型] 初始化 LumiLearnModel")
+    print("\n[模型] 初始化 LumiLearnModel")
     if args.init_from and os.path.exists(args.init_from):
         model = LumiLearnModel.from_pretrained(args.init_from, map_location="cpu")
         print(f"  从已有权重加载: {args.init_from}")
@@ -89,7 +89,7 @@ def main():
         if args.init_from:
             print(f"  [警告] init_from 路径不存在: {args.init_from}，使用随机初始化")
 
-    print(f"\n[训练器] 初始化")
+    print("\n[训练器] 初始化")
     trainer = LumiLearnTrainer(
         config=config,
         model=model,
@@ -98,7 +98,7 @@ def main():
     )
 
     print(f"\n{'=' * 70}")
-    print(f"开始训练")
+    print("开始训练")
     print(f"{'=' * 70}")
 
     start_time = time.time()

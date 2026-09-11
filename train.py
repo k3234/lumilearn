@@ -10,9 +10,9 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 
 from framework.config import LumiLearnConfig
+from framework.data import load_records
 from framework.model import LumiLearnModel
 from framework.tokenizer import LumiLearnTokenizer
-from framework.data import load_records
 from framework.trainer import LumiLearnTrainer
 
 

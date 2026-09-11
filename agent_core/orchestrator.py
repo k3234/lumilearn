@@ -17,13 +17,12 @@ from typing import Callable, Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent_core.models import AgentState, AgentResult, TaskProfile
-from agent_core.router import RouterAgent, get_router_agent
 from agent_core.langgraph_engine import OrchestrationEngine
-from agent_core.model_registry import ALL_MODELS, get_model_summary
+from agent_core.model_registry import get_model_summary
+from agent_core.models import TaskProfile
+from agent_core.router import get_router_agent
 from agent_core.self_critique import SelfCritiqueAgent
 from framework.core.fallback import FallbackHandler
-
 
 # ================================================================
 # 敏感主题检测（EU AI Act Article 14 人工监督触发词）
@@ -288,6 +287,7 @@ class UnifiedOrchestrator:
         questions = result.get("questions")
         if isinstance(questions, list):
             import json as _json
+
             from agent_core.fact_checker import FactCheckerAgent
             from agent_core.verifier import dual_verify
             valid = [

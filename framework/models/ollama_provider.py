@@ -3,12 +3,13 @@
 LumiLearn Ollama 模型提供者
 封装 Ollama API 调用
 """
-import os
 import json
-import time
 import logging
+import os
+import time
+from typing import Any, Dict, Generator, List, Optional
+
 import requests
-from typing import List, Dict, Optional, Generator, Any
 
 from .base import ModelProvider
 
@@ -23,7 +24,7 @@ class OllamaProvider(ModelProvider):
     Ollama 模型提供者
     封装 Ollama API 的流式/同步调用
     """
-    
+
     def __init__(self, base_url: str = None, default_model: str = None):
         """
         初始化 Ollama 提供者
@@ -36,10 +37,10 @@ class OllamaProvider(ModelProvider):
             base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         if default_model is None:
             default_model = os.getenv("OLLAMA_MODEL", "lumilearn-v2:latest")
-        
+
         super().__init__(name="ollama", base_url=base_url, default_model=default_model)
         self._timeout = int(os.getenv("OLLAMA_TIMEOUT", "300"))
-    
+
     def chat(self, messages: List[Dict[str, str]], model: str = None,
             temperature: float = 0.7, max_tokens: int = 2048,
             stream: bool = True) -> Generator[str, None, None]:
@@ -48,7 +49,7 @@ class OllamaProvider(ModelProvider):
         """
         if model is None:
             model = self._default_model
-        
+
         payload = {
             "model": model,
             "messages": messages,
@@ -58,7 +59,7 @@ class OllamaProvider(ModelProvider):
                 "num_predict": max_tokens
             }
         }
-        
+
         try:
             resp = requests.post(
                 f"{self._base_url}/api/chat",
@@ -66,14 +67,14 @@ class OllamaProvider(ModelProvider):
                 timeout=self._timeout,
                 stream=True
             )
-            
+
             if resp.status_code != 200:
                 error_body = resp.text[:500]
                 yield json.dumps({
                     "error": f"Ollama returned {resp.status_code}: {error_body}"
                 }, ensure_ascii=False)
                 return
-            
+
             for line in resp.iter_lines():
                 if line:
                     try:
@@ -81,14 +82,14 @@ class OllamaProvider(ModelProvider):
                         yield json.dumps(data, ensure_ascii=False)
                     except json.JSONDecodeError:
                         continue
-                        
+
         except requests.exceptions.Timeout:
             yield json.dumps({"error": "Ollama request timed out"}, ensure_ascii=False)
         except requests.exceptions.ConnectionError:
             yield json.dumps({"error": "unable to connect to Ollama"}, ensure_ascii=False)
         except Exception as e:
             yield json.dumps({"error": str(e)}, ensure_ascii=False)
-    
+
     def chat_sync(self, messages: List[Dict[str, str]], model: str = None,
                   temperature: float = 0.7, max_tokens: int = 2048) -> Dict[str, Any]:
         """
@@ -96,7 +97,7 @@ class OllamaProvider(ModelProvider):
         """
         if model is None:
             model = self._default_model
-        
+
         payload = {
             "model": model,
             "messages": messages,
@@ -106,14 +107,14 @@ class OllamaProvider(ModelProvider):
                 "num_predict": max_tokens
             }
         }
-        
+
         try:
             resp = requests.post(
                 f"{self._base_url}/api/chat",
                 json=payload,
                 timeout=self._timeout
             )
-            
+
             if resp.status_code == 200:
                 return resp.json()
             else:
@@ -122,7 +123,7 @@ class OllamaProvider(ModelProvider):
                 }
         except Exception as e:
             return {"error": str(e)}
-    
+
     def generate(self, prompt: str, model: str = None,
                  temperature: float = 0.7, max_tokens: int = 2048,
                  stream: bool = False) -> str:
@@ -141,7 +142,7 @@ class OllamaProvider(ModelProvider):
         """
         if model is None:
             model = self._default_model
-        
+
         payload = {
             "model": model,
             "prompt": prompt,
@@ -151,14 +152,14 @@ class OllamaProvider(ModelProvider):
                 "num_predict": max_tokens
             }
         }
-        
+
         try:
             resp = requests.post(
                 f"{self._base_url}/api/generate",
                 json=payload,
                 timeout=self._timeout
             )
-            
+
             if resp.status_code == 200:
                 return resp.json().get("response", "")
             else:
@@ -167,7 +168,7 @@ class OllamaProvider(ModelProvider):
         except Exception as e:
             logger.error(f"Ollama generate exception: {e}")
             return ""
-    
+
     def list_models(self) -> List[Dict[str, Any]]:
         """
         获取可用模型列表
@@ -184,7 +185,7 @@ class OllamaProvider(ModelProvider):
         except Exception as e:
             logger.error(f"Failed to list models: {e}")
         return []
-    
+
     def health_check(self) -> Dict[str, Any]:
         """
         健康检查
@@ -195,12 +196,12 @@ class OllamaProvider(ModelProvider):
             "models": 0,
             "latency_ms": 0
         }
-        
+
         try:
             t0 = time.time()
             resp = requests.get(f"{self._base_url}/api/tags", timeout=5)
             latency = round((time.time() - t0) * 1000)
-            
+
             if resp.status_code == 200:
                 result["status"] = "healthy"
                 result["gateway"] = "online"
@@ -213,7 +214,7 @@ class OllamaProvider(ModelProvider):
             result["status"] = "offline"
             result["gateway"] = "offline"
             result["error"] = str(e)
-        
+
         return result
 
     def pull_model(self, model_name: str, stream: bool = True) -> Dict[str, Any]:

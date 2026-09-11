@@ -2,18 +2,17 @@
 测试 LumiLearn 配置模块
 覆盖 ModelConfig、LumiLearnConfig、预设配置
 """
-import pytest
 import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from framework.config import (
-    ModelConfig,
-    LumiLearnConfig,
-    TrainingConfig,
     DataConfig,
     ExperimentConfig,
+    LumiLearnConfig,
+    ModelConfig,
+    TrainingConfig,
     get_preset_configs,
 )
 

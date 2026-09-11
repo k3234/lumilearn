@@ -1,4 +1,4 @@
-﻿# LumiLearn 项目进度
+# LumiLearn 项目进度
 
 > 最后更新: 2026-08-10
 >
@@ -19,7 +19,7 @@
 | 语音 / 字幕 | Whisper 语音转文字（tiny 模型，懒加载）+ 语音合成（speech / voicebox 两套端点，edge-tts） | ✅ | —（经 REST API 18081） | 完成 |
 | 训练系统 | 从零训练（V1 8M CPU）+ LoRA 微调（train_real.py / train_lora_gpu.py / train_cpu.py，Qwen2.5 LoRA）+ GGUF 转换（convert_hf_to_gguf.py）+ Ollama 部署（_deploy_ollama_remote.py / _upload_gguf.py）+ 评测（eval_model.py） | ✅ | —（CLI 脚本） | 完成（CPU 训练速度慢，已产出可用模型） |
 | 安全系统 | 网络隔离（内网网段白名单/黑名单）、API 网关（限流/突发限制/请求体大小）、代码沙箱（受限模块/路径/超时）、防火墙规则、CSP 策略、API Key 认证 | ✅ | —（中间件，随主服务） | 完成 |
-| 学习笔记 / 文档体系 | 学习旅程笔记（docs/learning_journey/，含 Whisper/OCR/Prompt/前端等模块）、研究报告（docs/research/，20+ 篇）、Jupyter 教程（notebooks/）、技能模块（skills/） | ✅ | — | 持续补充中 |
+| 学习笔记 / 文档体系 | 研究报告（docs/research/，20+ 篇）、Jupyter 教程（notebooks/）、技能模块（skills/） | ✅ | — | 持续补充中 |
 
 ## 二、服务部署信息
 

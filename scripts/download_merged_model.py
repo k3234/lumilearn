@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """从远程下载综合训练后的模型回本地"""
-import paramiko
 import os
 import sys
+
+import paramiko
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _remote_config import get_config

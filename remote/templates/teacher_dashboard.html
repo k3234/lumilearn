@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn 教师端 · 仪表盘</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+  .content-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;margin-top:16px}
+  .content-grid.equal{grid-template-columns:1fr 1fr}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .panel-head h3{font-size:15px;font-weight:600}
+  .panel-head .support{font-size:12px;color:var(--color-text-muted)}
+  .empty{text-align:center;color:var(--color-text-muted);font-size:13px;padding:26px 0}
+  .list{display:flex;flex-direction:column}
+  .list-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--color-border)}
+  .list-item:last-child{border-bottom:none}
+  .list-item .idx{width:22px;height:22px;border-radius:6px;background:var(--muted);display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+  .list-item .grow{flex:1;min-width:0}
+  .list-item .grow b{font-size:13px;font-weight:600;display:block}
+  .list-item .grow span{font-size:12px;color:var(--color-text-muted)}
+  .subj-row{display:flex;align-items:center;gap:10px;padding:9px 0}
+  .subj-row .name{width:56px;font-size:13px;flex:none}
+  .subj-row .bar{flex:1;height:8px;background:var(--muted);border-radius:99px;overflow:hidden}
+  .subj-row .bar>i{display:block;height:100%;background:var(--primary);border-radius:99px}
+  .subj-row .v{width:52px;text-align:right;font-size:12px;color:var(--color-text-muted);font-variant-numeric:tabular-nums}
+  .chart-wrap{margin-top:4px}
+  .topbar .tools{display:flex;align-items:center;gap:10px}
+  .progress-cell{display:flex;align-items:center;gap:8px;min-width:110px}
+  .progress-cell .progress{flex:1}
+  .progress-cell span{font-size:12px;font-variant-numeric:tabular-nums;color:var(--color-text-muted)}
+  .student-cell{display:flex;align-items:center;gap:10px}
+  .student-avatar{width:26px;height:26px;border-radius:8px;background:var(--muted);display:grid;place-items:center;font-size:12px;font-weight:600;flex:none}
+  @media(max-width:1080px){.metrics-grid{grid-template-columns:repeat(2,1fr)}.content-grid,.content-grid.equal{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow" id="todayLine">—</div>
+        <h1>教师工作台</h1>
+        <p class="muted small mt-1">快速了解班级学习概况、学生进展与待办任务。</p>
+      </div>
+      <div class="tools"><span class="pill" id="userPill">—</span></div>
+    </div>
+
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="eyebrow">班级数</div>
+        <div class="metric-value" id="mClass">—</div>
+        <div class="delta muted small" id="mClassSub">我的班级</div>
+      </div>
+      <div class="metric-card">
+        <div class="eyebrow">学生数</div>
+        <div class="metric-value" id="mStudent">—</div>
+        <div class="delta muted small">去重学生人数</div>
+      </div>
+      <div class="metric-card">
+        <div class="eyebrow">任务完成率</div>
+        <div class="metric-value" id="mRate">—</div>
+        <div class="delta muted small" id="mRateSub">已完成 / 总任务</div>
+      </div>
+      <div class="metric-card">
+        <div class="eyebrow">进行中任务</div>
+        <div class="metric-value" id="mActive">—</div>
+        <div class="delta muted small" id="mActiveSub">状态 active</div>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <div class="card">
+        <div class="panel-head">
+          <div><h3>班级掌握度趋势</h3><div class="support">近 14 天学生报告平均分</div></div>
+          <span class="pill" id="trendHint">—</span>
+        </div>
+        <div class="chart-wrap" id="trendChart"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card">
+        <div class="panel-head">
+          <div><h3>学科分布</h3><div class="support">按报告数排序的平均分</div></div>
+        </div>
+        <div id="subjectList"><div class="empty">加载中…</div></div>
+      </div>
+    </section>
+
+    <section class="content-grid equal">
+      <div class="card">
+        <div class="panel-head">
+          <div><h3>学生排行榜 TOP5</h3><div class="support">按答题正确率排序</div></div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th style="width:44px">排名</th><th>学生</th><th>学习时长</th><th>正确率</th><th>报告</th></tr></thead>
+            <tbody id="rankBody"><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="panel-head">
+          <div><h3>薄弱学生关注</h3><div class="support">正确率偏低或尚未开始学习</div></div>
+          <span class="pill" id="weakHint">—</span>
+        </div>
+        <div class="list" id="weakList"><div class="empty">加载中…</div></div>
+      </div>
+    </section>
+
+    <section class="card mt-2">
+      <div class="panel-head">
+        <div><h3>最近任务</h3><div class="support">你创建的最近学习任务</div></div>
+        <a class="btn ghost sm" href="/teacher/tasks">全部任务</a>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>任务名称</th><th>学科</th><th>类型</th><th>已分配</th><th>创建时间</th><th>状态</th></tr></thead>
+          <tbody id="taskBody"><tr><td colspan="6" class="muted">加载中…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/static/ui/teacher.js"></script>
+<script>
+(function () {
+  var esc = LLT.esc, pct = LLT.pct, icon = LLT.icon;
+
+  var TASK_TYPE = { learn: "学习任务", exercise: "练习任务", review: "复习任务", assignment: "作业任务" };
+  var TASK_STATUS = {
+    draft: { label: "草稿", cls: "amber" },
+    active: { label: "进行中", cls: "blue" },
+    completed: { label: "已完成", cls: "green" },
+    archived: { label: "已归档", cls: "" }
+  };
+  function typeLabel(t) { return TASK_TYPE[t] || (t ? esc(t) : "—"); }
+  function statusPill(s) {
+    var m = TASK_STATUS[s] || { label: s || "—", cls: "" };
+    return '<span class="pill ' + m.cls + '">' + esc(m.label) + '</span>';
+  }
+  function hours(min) {
+    var n = LLT.num(min);
+    return n > 0 ? (n / 60).toFixed(1) + "h" : "0.0h";
+  }
+
+  /* ---- 趋势：内联 SVG 折线 ---- */
+  function lineChart(points) {
+    if (!points || points.length < 2) return '<div class="empty">暂无趋势数据</div>';
+    var w = 520, h = 180, pad = 30;
+    var vals = points.map(function (p) { return LLT.num(p.avg); });
+    var max = Math.max.apply(null, vals.concat([100]));
+    var min = Math.min.apply(null, vals.concat([0]));
+    var span = Math.max(1, max - min);
+    function X(i) { return pad + i * (w - pad * 2) / Math.max(1, points.length - 1); }
+    function Y(v) { return h - pad - (v - min) / span * (h - pad * 2); }
+    var d = points.map(function (p, i) { return (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(LLT.num(p.avg)).toFixed(1); }).join(" ");
+    var area = d + " L" + X(points.length - 1).toFixed(1) + " " + (h - pad) +
+               " L" + X(0).toFixed(1) + " " + (h - pad) + " Z";
+    var dots = points.map(function (p, i) {
+      return '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(LLT.num(p.avg)).toFixed(1) +
+             '" r="3" fill="var(--primary)"><title>' + esc(p.date) + ' · ' + pct(p.avg) + '</title></circle>';
+    }).join("");
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="180" role="img" aria-label="班级掌握度趋势折线图">' +
+      '<line x1="' + pad + '" y1="' + (h - pad) + '" x2="' + (w - pad) + '" y2="' + (h - pad) + '" stroke="var(--color-border)"/>' +
+      '<path d="' + area + '" fill="var(--muted)" opacity=".7"/>' +
+      '<path d="' + d + '" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+      dots +
+      '<text x="' + pad + '" y="' + (h - 6) + '" font-size="10" fill="var(--color-text-muted)">' + esc(points[0].date) + '</text>' +
+      '<text x="' + (w - pad) + '" y="' + (h - 6) + '" font-size="10" text-anchor="end" fill="var(--color-text-muted)">' + esc(points[points.length - 1].date) + '</text>' +
+      '<text x="' + pad + '" y="' + (pad - 8) + '" font-size="10" fill="var(--color-text-muted)">' + max + '%</text>' +
+    '</svg>';
+  }
+
+  function render(overview, anOv, trend, subjects, students, tasks) {
+    document.getElementById("mClass").textContent = overview.class_count != null ? overview.class_count : "—";
+    document.getElementById("mClassSub").textContent = "我的班级";
+    document.getElementById("mStudent").textContent = overview.student_count != null ? overview.student_count : "—";
+
+    var total = LLT.num(overview.task_total), done = LLT.num(overview.task_completed);
+    if (overview.task_total == null) {
+      document.getElementById("mRate").textContent = "—";
+      document.getElementById("mRateSub").textContent = "已完成 / 总任务";
+    } else {
+      document.getElementById("mRate").textContent = total > 0 ? pct(done / total * 100) : "—";
+      document.getElementById("mRateSub").textContent = "已完成 " + done + " / 共 " + total;
+    }
+    document.getElementById("mActive").textContent = overview.task_active != null ? overview.task_active : "—";
+    document.getElementById("mActiveSub").textContent = anOv && anOv.correct_rate != null
+      ? "答题正确率 " + pct(anOv.correct_rate) : "状态 active";
+
+    /* 趋势 */
+    document.getElementById("trendChart").innerHTML = lineChart(trend);
+    document.getElementById("trendHint").textContent = (trend && trend.length) ? (trend.length + " 天") : "—";
+
+    /* 学科分布 */
+    var sl = document.getElementById("subjectList");
+    if (subjects && subjects.length) {
+      sl.innerHTML = subjects.map(function (s) {
+        var v = LLT.num(s.avg);
+        return '<div class="subj-row"><span class="name" title="' + esc(s.subject) + '">' + esc(s.subject || "综合") + '</span>' +
+          '<span class="bar"><i style="width:' + Math.max(0, Math.min(100, v)) + '%"></i></span>' +
+          '<span class="v">' + pct(v) + ' · ' + LLT.num(s.count) + '</span></div>';
+      }).join("");
+    } else {
+      sl.innerHTML = '<div class="empty">暂无学科数据</div>';
+    }
+
+    /* 排行榜 */
+    var ranked = (students || []).map(function (s) {
+      var st = s.stats || {};
+      return { name: s.name || s.username || "学生", acc: LLT.num(st.accuracy),
+               ans: LLT.num(st.total_answers), t: LLT.num(st.total_time_minutes),
+               reports: LLT.num(s.report_count) };
+    }).filter(function (s) { return s.ans > 0 || s.reports > 0; })
+      .sort(function (a, b) { return b.acc - a.acc || b.t - a.t; })
+      .slice(0, 5);
+    document.getElementById("rankBody").innerHTML = ranked.length ? ranked.map(function (s, i) {
+      return '<tr><td>' + (i + 1) + '</td>' +
+        '<td><div class="student-cell"><span class="student-avatar">' + esc(String(s.name).slice(0, 1)) + '</span>' +
+        '<span>' + esc(s.name) + '</span></div></td>' +
+        '<td>' + hours(s.t) + '</td>' +
+        '<td><div class="progress-cell"><span class="progress"><i style="width:' + Math.max(0, Math.min(100, s.acc)) + '%"></i></span>' +
+        '<span>' + pct(s.acc) + '</span></div></td>' +
+        '<td>' + s.reports + '</td></tr>';
+    }).join("") : '<tr><td colspan="5" class="muted">暂无学生答题数据</td></tr>';
+
+    /* 薄弱学生 */
+    var all = (students || []).map(function (s) {
+      var st = s.stats || {};
+      return { name: s.name || s.username || "学生", acc: LLT.num(st.accuracy),
+               ans: LLT.num(st.total_answers), reports: LLT.num(s.report_count),
+               cls: s.classes && s.classes[0] ? s.classes[0].class_name : "" };
+    });
+    var low = all.filter(function (s) { return s.ans > 0 && s.acc < 60; })
+                 .sort(function (a, b) { return a.acc - b.acc; });
+    var idle = all.filter(function (s) { return s.ans === 0 && s.reports === 0; });
+    var weak = low.concat(idle).slice(0, 6);
+    document.getElementById("weakHint").textContent = weak.length ? (weak.length + " 人") : "—";
+    document.getElementById("weakList").innerHTML = weak.length ? weak.map(function (s) {
+      var idleFlag = s.ans === 0 && s.reports === 0;
+      var tag = idleFlag ? '<span class="pill amber">未开始</span>' : '<span class="pill red">正确率偏低</span>';
+      return '<div class="list-item"><span class="student-avatar">' + esc(String(s.name).slice(0, 1)) + '</span>' +
+        '<span class="grow"><b>' + esc(s.name) + ' ' + tag + '</b>' +
+        '<span>' + esc(s.cls || "未分班") + ' · 答题 ' + s.ans + ' 题 · 正确率 ' + pct(s.acc) + '</span></span></div>';
+    }).join("") : '<div class="empty">暂无需要关注的学生</div>';
+
+    /* 最近任务 */
+    var ts = (tasks || []).slice(0, 6);
+    document.getElementById("taskBody").innerHTML = ts.length ? ts.map(function (t) {
+      return '<tr><td><b style="font-size:13px">' + esc(t.title || "未命名任务") + '</b></td>' +
+        '<td>' + esc(t.subject || "—") + '</td>' +
+        '<td>' + typeLabel(t.task_type) + '</td>' +
+        '<td>' + LLT.num(t.assignment_count) + ' 人</td>' +
+        '<td class="muted">' + esc(LLT.fmtDate(t.created_at)) + '</td>' +
+        '<td>' + statusPill(t.status) + '</td></tr>';
+    }).join("") : '<tr><td colspan="6" class="muted">暂无任务</td></tr>';
+  }
+
+  LLT.boot({ nav: "dashboard" }).then(function (user) {
+    var now = new Date();
+    var wd = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][now.getDay()];
+    document.getElementById("todayLine").textContent =
+      "今日概览 · " + (now.getMonth() + 1) + "月" + now.getDate() + "日 " + wd;
+    document.getElementById("userPill").textContent = user
+      ? ((user.role === "admin" ? "管理员" : "教师") + "：" + (user.name || ""))
+      : "教师";
+
+    Promise.all([
+      LLT.get("/api/overview").catch(function () { return {}; }),
+      LLT.get("/api/analytics/overview").catch(function () { return {}; }),
+      LLT.get("/api/analytics/trend").catch(function () { return {}; }),
+      LLT.get("/api/analytics/subjects").catch(function () { return {}; }),
+      LLT.get("/api/students").catch(function () { return {}; }),
+      LLT.get("/api/tasks").catch(function () { return {}; })
+    ]).then(function (r) {
+      render(
+        LLT.ok(r[0]) ? r[0] : {},
+        LLT.ok(r[1]) ? (LLT.val(r[1]) || {}) : {},
+        LLT.list(r[2]),
+        LLT.list(r[3]),
+        LLT.list(r[4], "students"),
+        LLT.list(r[5], "tasks")
+      );
+    }).catch(function () { LLT.toast("数据加载失败"); });
+  });
+})();
+</script>
+</body>
+</html>

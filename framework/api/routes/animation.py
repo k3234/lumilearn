@@ -4,7 +4,8 @@
 Manim 动画生成端点
 """
 import logging
-from flask import Blueprint, request, jsonify
+
+from flask import Blueprint, jsonify, request
 
 logger = logging.getLogger("lumilearn.routes.animation")
 
@@ -33,15 +34,15 @@ def generate_animation():
     """
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"})
-    
+
     data = request.get_json(force=True)
     if not data:
         return jsonify({"error": "请求体为空"}), 400
-    
+
     animation_type = data.get("type", "")
     if not animation_type:
         return jsonify({"error": "缺少 type 字段"}), 400
-    
+
     # TODO: 实现动画生成逻辑
     return jsonify({
         "status": "success",
@@ -57,7 +58,7 @@ def animation_status(animation_id):
     """
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"})
-    
+
     return jsonify({
         "status": "success",
         "animation_id": animation_id,
@@ -102,7 +103,7 @@ def list_animations():
     """
     if request.method == "OPTIONS":
         return jsonify({"status": "ok"})
-    
+
     return jsonify({
         "status": "success",
         "animations": []

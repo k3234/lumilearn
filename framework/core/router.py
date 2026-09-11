@@ -3,10 +3,10 @@
 LumiLearn 模型路由器
 根据请求特征选择最合适的模型
 """
-from dataclasses import dataclass, field
-from typing import List, Dict, Optional
-from enum import Enum
 import random
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Dict, List, Optional
 
 
 class TaskType(str, Enum):
