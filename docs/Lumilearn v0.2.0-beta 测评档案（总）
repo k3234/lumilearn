@@ -3,7 +3,6 @@
 > **测评对象**：https://github.com/k3234/Lumilearn @ commit `bbb6949fd23a54e43e0d20e50eec39a776149a8f`（v0.2.0-beta，"双端口架构 + lumi 设计系统 + 完整测评"）
 > **测评日期**：2026-09-12（Asia/Shanghai）
 > **测评方式**：实际 git clone + 最小依赖启动 + 多身份黑盒走查（curl + 真实浏览器）+ 静态代码审查 + 同维度竞品对比
-> **配套子报告**：`env_setup_report.md`（环境搭建）、`code_review.md`（代码审查全文）、`openmaic_comparison.md`（openMAIC 对比全文）、`blackbox_eval.md`（黑盒测评全文）
 
 ---
 
