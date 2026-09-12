@@ -95,7 +95,6 @@ trainable = sum(p.numel() for p in self.parameters() if p.requires_grad)
 | `framework/database.py` | SQLite 数据库系统（12+ 张表） |
 | `framework/security/` | 安全网关、代码沙箱、网络防火墙 |
 | `scripts/db_admin.py` | 数据库 CLI 管理工具 |
-| `tests/test_student_end_to_end.py` | 学生端端到端测试 |
 
 ---
 

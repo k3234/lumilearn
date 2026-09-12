@@ -8,8 +8,6 @@
 
 | 文档 | 路径 | 说明 |
 |---|---|---|
-| LumiLearn 提交材料 | [LumiLearn_SUBMISSION.md](LumiLearn_SUBMISSION.md) | 参赛项目完整提交文档 |
-| 技术方案 | [LumiLearn_TECHNICAL.md](LumiLearn_TECHNICAL.md) | 系统架构、Agent 设计、技术细节 |
 | V2.5 技术总结 | [V25_COMPETITION_TECHNICAL_REPORT.md](V25_COMPETITION_TECHNICAL_REPORT.md) | 竞赛版本核心能力与测试数据 |
 | 风险评估 | [../RISK-STATEMENT.md](../RISK-STATEMENT.md) | AI 幻觉风险、教育边界、隐私声明 |
 | 评测报告 | [evaluation-report.md](evaluation-report.md) | 自动化测试 + 学科评测数据 |

@@ -83,7 +83,6 @@ PDF 文档解析，知识点拆分；课堂会话管理；测验生成；答题�
 | `comparison-maic.md` | ✅ | LumiLearn 与 OpenMAIC 对比分析 |
 | `test-record.md` | ✅ | 测试记录：现象、bug、迭代改进记录；只做小范围案例记录，不编造百人统计实验 |
 | `reference.md` | ✅ | 参考文献，录入 OpenMAIC 论文信息 |
-| `future-roadmap.md` | ✅ | 后续迭代路线，写明抽离内核为 LumiFlow |
 | `DEVELOP_RULE.md` | ✅ | 本开发规则文件 |
 
 **README.md 强制章节**：

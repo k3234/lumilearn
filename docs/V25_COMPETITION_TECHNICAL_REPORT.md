@@ -1,4 +1,4 @@
-﻿# LumiLearn V2.5 竞赛版本 · 技术总结报告
+# LumiLearn V2.5 竞赛版本 · 技术总结报告
 
 > **版本**：V2.5 竞赛版  
 > **日期**：2026-08-21  
@@ -258,13 +258,11 @@ analytics_dashboard.py --mode lite
 - `.env.example` 已提交仓库（含占位说明）
 - `.env` 已加入 `.gitignore`（本地配置不入库）
 
-### 5.4 安全声明（三处落地）
+### 5.4 安全声明落地
 
 | 位置 | 声明内容 |
 |---|---|
 | `README.md` | AI 辅助边界 / 幻觉风险 / 本地存储 / 凭据配置 |
-| `docs/LumiLearn_TECHNICAL.md` | 同 README，补充技术细节 |
-| `remote/templates/dashboard.html` | 页面底部 footer 展示 |
 
 ---
 

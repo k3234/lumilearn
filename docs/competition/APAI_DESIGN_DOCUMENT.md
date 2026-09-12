@@ -333,7 +333,7 @@ pytest 全量测试：591 用例，569 passed + 2 skipped + 0 failed
 - **项目地址**：https://github.com/k3234/lumilearn
 - **开源协议**：MIT License
 - **语言**：Python 3.10+
-- **贡献指南**：[CONTRIBUTING.md](../CONTRIBUTING.md)
+- **贡献指南**：[CONTRIBUTING.md](../../CONTRIBUTING.md)
 
 ---
 

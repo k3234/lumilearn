@@ -29,11 +29,6 @@
 **核心文件:**
 | 文件 | 职责 |
 |------|------|
-| `models/distil/trainer.py` | 训练器（含自定义训练循环） |
-| `models/distil/data_factory.py` | 数据工厂（生成/清洗/验证） |
-| `models/distil/prompts.py` | 24 个费曼五步法提示模板 |
-| `models/distil/evaluate.py` | 模型评估套件 |
-| `scripts/generate_responses.py` | 用模型生成训练回复 |
 | `scripts/train_real.py` | 简化训练脚本 |
 | `merge_and_test.py` | 合并+推理测试 |
 
