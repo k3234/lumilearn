@@ -111,7 +111,7 @@ def admin_client():
     app.config["TESTING"] = True
     client = app.test_client()
     resp = client.post("/api/admin/login",
-                       json={"username": "admin", "password": "admin123"})
+                       json={"username": "admin", "password": "TestAdmin2026"})
     assert resp.status_code == 200, resp.get_data(as_text=True)
     token = resp.get_json()["token"]
     return client, token

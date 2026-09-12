@@ -22,7 +22,7 @@ class TestAdminAuth(unittest.TestCase):
         self.assertTrue(admin["is_active"])
 
     def test_login_success(self):
-        result = self.auth.login("admin", "admin123")
+        result = self.auth.login("admin", "TestAdmin2026")
         self.assertTrue(result["success"])
         self.assertIn("token", result)
         self.assertEqual(result["admin"]["username"], "admin")
@@ -33,11 +33,11 @@ class TestAdminAuth(unittest.TestCase):
         self.assertIn("error", result)
 
     def test_login_unknown_user(self):
-        result = self.auth.login("nobody", "admin123")
+        result = self.auth.login("nobody", "TestAdmin2026")
         self.assertFalse(result["success"])
 
     def test_verify_valid_token(self):
-        login = self.auth.login("admin", "admin123")
+        login = self.auth.login("admin", "TestAdmin2026")
         admin = self.auth.verify(login["token"])
         self.assertIsNotNone(admin)
         self.assertEqual(admin["username"], "admin")
@@ -46,13 +46,13 @@ class TestAdminAuth(unittest.TestCase):
         self.assertIsNone(self.auth.verify("invalid_token_xyz"))
 
     def test_logout_invalidates_token(self):
-        login = self.auth.login("admin", "admin123")
+        login = self.auth.login("admin", "TestAdmin2026")
         self.auth.logout(login["token"])
         self.assertIsNone(self.auth.verify(login["token"]))
 
     def test_change_password_and_login(self):
         admin = db.get_admin_by_username("admin")
-        result = self.auth.change_password(admin["id"], "admin123", "NewPass123")
+        result = self.auth.change_password(admin["id"], "TestAdmin2026", "NewPass123")
         self.assertTrue(result["success"])
 
         # 新密码可登录
@@ -60,11 +60,11 @@ class TestAdminAuth(unittest.TestCase):
         self.assertTrue(login["success"])
 
         # 旧密码失效
-        failed = self.auth.login("admin", "admin123")
+        failed = self.auth.login("admin", "TestAdmin2026")
         self.assertFalse(failed["success"])
 
         # 还原密码
-        self.auth.change_password(admin["id"], "NewPass123", "admin123")
+        self.auth.change_password(admin["id"], "NewPass123", "TestAdmin2026")
 
 
 if __name__ == "__main__":

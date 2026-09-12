@@ -216,7 +216,13 @@
       var j = res.body;
       if (res.ok && (j.code === 0 || j.success)) {
         var user = j.user || j.data || null;
-        var entry = entryFor(user && user.role);
+        var role = user && user.role;
+        // 管理员：把后台令牌交给管理端（admin.js 读 localStorage['admin_token']），
+        // 否则跳转 /admin 后 admin.js 无令牌，仍会弹出登录门。
+        if ((role === "admin" || role === "super_admin") && j.admin_token) {
+          try { localStorage.setItem("admin_token", j.admin_token); } catch (e) {}
+        }
+        var entry = entryFor(role);
         if (entry) { location.href = entry.path; return; }
         renderAccount(user);
         toast("登录成功");

@@ -193,6 +193,14 @@ def get_admin_auth() -> AdminAuth:
     return _auth_instance
 
 
+# 强制改密期间仍放行的端点（否则管理员无法完成改密，形成死锁）
+_MUST_CHANGE_ALLOWLIST = {
+    "/api/admin/password",  # 修改密码
+    "/api/admin/logout",    # 登出
+    "/api/admin/me",        # 身份查询（前端据此判断是否需跳转改密）
+}
+
+
 def require_admin(f: Callable) -> Callable:
     """Flask 装饰器：要求有效管理员会话"""
     @wraps(f)
@@ -203,6 +211,13 @@ def require_admin(f: Callable) -> Callable:
         admin = get_admin_auth().verify(token)
         if not admin:
             return jsonify({"error": "会话已过期或无效"}), 401
+        # 强制改密拦截：未改密前仅放行改密/登出/身份查询，其余管理接口一律 403
+        if admin.get("must_change_password") and request.path not in _MUST_CHANGE_ALLOWLIST:
+            return jsonify({
+                "error": "首次登录需先修改初始密码",
+                "code": 403,
+                "must_change_password": True,
+            }), 403
         request.admin = admin  # type: ignore
         return f(*args, **kwargs)
     return wrapper

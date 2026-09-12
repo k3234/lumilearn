@@ -55,10 +55,13 @@ def isolated_db(tmp_path, monkeypatch):
             "INSERT OR IGNORE INTO users (id, name, role) VALUES (?, ?, 'student')",
             (uid, name),
         )
-    # 预置默认管理员 admin / admin123（每个测试独立库，需重建）
+    # 预置默认管理员 admin / TestAdmin2026（每个测试独立库，需重建）
+    # 注意：夹具不能使用 admin123 等弱口令——产品会把弱口令账号标记为
+    # must_change_password，导致管理接口统一 403，业务测试无法进行。
     if not db.get_admins():
-        db.add_admin("admin", generate_password_hash("admin123"),
-                     display_name="超级管理员", role="super_admin")
+        db.add_admin("admin", generate_password_hash("TestAdmin2026"),
+                     display_name="超级管理员", role="super_admin",
+                     must_change_password=0)
     db.conn.commit()
 
     # 重置 admin 认证单例，确保指向新库

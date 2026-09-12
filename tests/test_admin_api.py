@@ -19,12 +19,12 @@ class TestAdminAPI(unittest.TestCase):
         cls.client = cls.app.test_client()
 
     def _login(self):
-        resp = self.client.post("/api/admin/login", json={"username": "admin", "password": "admin123"})
+        resp = self.client.post("/api/admin/login", json={"username": "admin", "password": "TestAdmin2026"})
         self.assertEqual(resp.status_code, 200)
         return resp.get_json()["token"]
 
     def test_login_endpoint(self):
-        resp = self.client.post("/api/admin/login", json={"username": "admin", "password": "admin123"})
+        resp = self.client.post("/api/admin/login", json={"username": "admin", "password": "TestAdmin2026"})
         self.assertEqual(resp.status_code, 200)
         data = resp.get_json()
         self.assertTrue(data["success"])

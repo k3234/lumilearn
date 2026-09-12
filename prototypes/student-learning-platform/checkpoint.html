@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn · 闯关检测</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .levels{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0}
+  .level{padding:9px 16px;border:1px solid var(--color-border);border-radius:var(--radius);background:var(--card);
+    font-size:13px;color:var(--color-text-secondary)}
+  .level.active{border-color:var(--primary);color:var(--color-text);font-weight:600}
+  .level small{display:block;font-size:11px;color:var(--color-text-muted);font-weight:400}
+  .ck-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;align-items:start}
+  .node-list{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .node-item{border:1px solid var(--color-border);border-radius:10px;background:var(--card);padding:12px;cursor:pointer;transition:.15s}
+  .node-item:hover{border-color:var(--border-strong)}
+  .node-item.active{border-color:var(--primary);box-shadow:var(--shadow-sm)}
+  .node-item b{font-size:13px;display:block}
+  .node-item .muted{font-size:11px}
+  .node-item .bar{margin-top:8px}
+  .answer textarea{width:100%;min-height:110px;padding:12px;border:1px solid var(--color-border);border-radius:10px;
+    font-size:14px;resize:vertical;background:var(--background)}
+  .answer textarea:focus{outline:2px solid var(--ring);outline-offset:-1px}
+  .stat-row{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--color-border);font-size:13px}
+  .stat-row:last-child{border-bottom:none}
+  .verdict{border-radius:10px;padding:14px;margin-top:12px;font-size:13px;border:1px solid var(--color-border)}
+  .verdict.pass{background:var(--success-subtle);border-color:var(--success-border);color:var(--success-text)}
+  .verdict.fail{background:var(--destructive-subtle);border-color:var(--destructive-border);color:var(--destructive-text)}
+  .spin{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (max-width:1000px){.ck-grid{grid-template-columns:1fr}.node-list{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">ADAPTIVE CHECKPOINT · BKT</div>
+        <h1>闯关检测</h1>
+      </div>
+      <div class="tools"><span class="pill" id="overallPill">整体掌握 —</span></div>
+    </div>
+
+    <div class="levels" id="levels"></div>
+
+    <div class="ck-grid">
+      <div class="card">
+        <div class="between" style="margin-bottom:12px">
+          <h3 style="font-size:15px;font-weight:600" id="levelTitle">基础关</h3>
+          <span class="muted small" id="levelHint">选择一个知识点开始检测</span>
+        </div>
+        <div class="node-list" id="nodeList"><div class="muted small">加载中…</div></div>
+      </div>
+
+      <div>
+        <div class="card" id="quizCard">
+          <div class="between" style="margin-bottom:10px"><h3 style="font-size:15px;font-weight:600" id="qNode">未选择知识点</h3><span class="pill" id="qDiff">—</span></div>
+          <div class="muted small" id="qDesc" style="margin-bottom:10px">从左侧选择一个知识点，用自己的话讲清它的核心。</div>
+          <div class="answer">
+            <textarea id="explain" placeholder="用最简单的话讲清这个知识点（AI 将按准确度/简洁度/完整度等维度评分，≥70 分视为通关）…"></textarea>
+            <div class="flex" style="gap:10px;margin-top:10px">
+              <button class="btn primary" id="submitBtn" disabled><i class="icon icon-16 icon-send-horizontal"></i> 提交讲解</button>
+              <button class="btn" id="hintBtn" disabled><i class="icon icon-16 icon-circle-question-mark"></i> 看提示</button>
+            </div>
+          </div>
+          <div id="resultBox"></div>
+        </div>
+
+        <div class="card mt-2">
+          <div class="between" style="margin-bottom:10px"><h3 style="font-size:15px;font-weight:600">本次闯关统计</h3></div>
+          <div class="stat-row"><span class="muted">已尝试</span><b id="stTried">0</b></div>
+          <div class="stat-row"><span class="muted">已通关</span><b id="stPass">0</b></div>
+          <div class="stat-row"><span class="muted">平均得分</span><b id="stScore">—</b></div>
+          <div class="stat-row"><span class="muted">最新掌握度变化</span><b id="stDelta">—</b></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="mock.js"></script>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  var esc = LL.esc, pct = LL.pct;
+  var uid = null, graph = { nodes: [], edges: [] }, byId = {};
+  var levels = [
+    { key: "basic",   name: "基础关", desc: "难度 1",   min: 1, max: 1,  pass: 100 },
+    { key: "medium",  name: "进阶关", desc: "难度 2-3", min: 2, max: 3,  pass: 90 },
+    { key: "hard",    name: "拔高关", desc: "难度 4-5", min: 4, max: 5,  pass: 80 }
+  ];
+  var current = "basic", selected = null;
+  var stats = { tried: 0, pass: 0, scores: [], delta: null };
+
+  function nodesOf(lv) {
+    return graph.nodes.filter(function (n) { return n.difficulty >= lv.min && n.difficulty <= lv.max; });
+  }
+
+  function renderLevels() {
+    document.getElementById("levels").innerHTML = levels.map(function (lv) {
+      var list = nodesOf(lv);
+      var act = lv.key === current ? " active" : "";
+      return '<button class="level' + act + '" data-lv="' + lv.key + '">' + esc(lv.name) + '<small>' + esc(lv.desc) + ' · ' + list.length + ' 个知识点</small></button>';
+    }).join("");
+    document.getElementById("levels").querySelectorAll("[data-lv]").forEach(function (b) {
+      b.addEventListener("click", function () { current = b.dataset.lv; selected = null; renderLevels(); renderNodes(); resetQuiz(); });
+    });
+  }
+
+  function renderNodes() {
+    var lv = levels.filter(function (x) { return x.key === current; })[0];
+    document.getElementById("levelTitle").textContent = lv.name;
+    document.getElementById("levelHint").textContent = "通关标准：" + lv.pass + " 分";
+    var list = nodesOf(lv);
+    document.getElementById("nodeList").innerHTML = list.length ? list.map(function (n) {
+      var act = selected && selected.id === n.id ? " active" : "";
+      return '<div class="node-item' + act + '" data-node="' + esc(n.id) + '">' +
+        '<b>' + esc(n.name) + '</b><span class="muted">' + esc(n.category || "") + ' · 难度 ' + (n.difficulty || 1) + '</span>' +
+        '<div class="bar progress"><i style="width:' + Math.round((n._m || 0) * 100) + '%"></i></div></div>';
+    }).join("") : '<div class="muted small">该关卡暂无知识点</div>';
+    document.getElementById("nodeList").querySelectorAll("[data-node]").forEach(function (el) {
+      el.addEventListener("click", function () { selectNode(el.dataset.node); });
+    });
+  }
+
+  function selectNode(nid) {
+    selected = byId[nid] || null;
+    if (!selected) return;
+    renderNodes();
+    document.getElementById("qNode").textContent = selected.name;
+    document.getElementById("qDiff").textContent = "难度 " + (selected.difficulty || 1);
+    var pre = (selected.prerequisites || []).map(function (p) { return p.name; }).join("、");
+    document.getElementById("qDesc").textContent = (selected.description || "用自己的话讲清这个知识点的核心。") + (pre ? "（前置：" + pre + "）" : "");
+    document.getElementById("submitBtn").disabled = false;
+    document.getElementById("hintBtn").disabled = false;
+    document.getElementById("resultBox").innerHTML = "";
+    // 懒加载该节点详情（前置/描述），避免一次性并发拉取全部节点
+    if (!selected._meta) {
+      fetch("/api/learn/node/" + encodeURIComponent(nid)).then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (j && j.code === 0 && j.data) {
+            Object.assign(byId[nid], j.data, { _meta: true });
+            if (selected && selected.id === nid) selectNode(nid);
+          }
+        })
+        .catch(function () {});
+    }
+  }
+
+  function resetQuiz() {
+    selected = null;
+    document.getElementById("qNode").textContent = "未选择知识点";
+    document.getElementById("qDiff").textContent = "—";
+    document.getElementById("qDesc").textContent = "从左侧选择一个知识点，用自己的话讲清它的核心。";
+    document.getElementById("explain").value = "";
+    document.getElementById("submitBtn").disabled = true;
+    document.getElementById("hintBtn").disabled = true;
+    document.getElementById("resultBox").innerHTML = "";
+  }
+
+  function updateStats() {
+    document.getElementById("stTried").textContent = stats.tried;
+    document.getElementById("stPass").textContent = stats.pass;
+    document.getElementById("stScore").textContent = stats.scores.length ? Math.round(stats.scores.reduce(function (a, b) { return a + b; }, 0) / stats.scores.length) : "—";
+    document.getElementById("stDelta").textContent = stats.delta == null ? "—" : (stats.delta >= 0 ? "+" : "") + Math.round(stats.delta * 100) + "%";
+  }
+
+  LL.boot({ nav: "checkpoint" }).then(function (user) {
+    if (!user) { document.getElementById("nodeList").innerHTML = '<div class="muted small">登录后开始闯关</div>'; return; }
+    uid = user.id;
+    document.getElementById("overallPill").textContent = "整体掌握 ——";
+
+    Promise.all([
+      api.getKnowledgeGraph().catch(function () { return { code: 1 }; }),
+      api.getStudentStatus(uid).catch(function () { return { code: 1 }; })
+    ]).then(function (r) {
+      var g = (r[0] && r[0].data) || {};
+      graph.nodes = g.nodes || [];
+      graph.edges = g.edges || [];
+      byId = {};
+      graph.nodes.forEach(function (n) { byId[n.id] = Object.assign({}, n); });
+      var st = (r[1] && r[1].data) || null;
+      if (st) document.getElementById("overallPill").textContent = "整体掌握 " + pct(st.overall_mastery || 0, 0) + " · 已掌握 " + (st.mastered_nodes || 0) + " 项";
+      renderLevels(); renderNodes();
+    });
+
+    document.getElementById("hintBtn").addEventListener("click", function () {
+      if (!selected) return;
+      var d = byId[selected.id];
+      var pre = (d.prerequisites || []).map(function (p) { return p.name; }).join("、");
+      LL.toast("提示：" + (d.description || selected.name) + (pre ? "；先想清楚前置 " + pre : ""));
+    });
+
+    document.getElementById("submitBtn").addEventListener("click", function () {
+      if (!selected) return;
+      var text = (document.getElementById("explain").value || "").trim();
+      if (text.length < 10) { LL.toast("再多讲一点（至少 10 个字）"); return; }
+      var btn = this, orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="icon icon-16 icon-clock spin"></i> AI 评分中…';
+      api.submitFeynmanTest({ topic: selected.name, text: text })
+        .then(function (r) {
+          var d = (r && r.data) || {};
+          var score = d.score != null ? d.score : 0;
+          var lv = levels.filter(function (x) { return x.key === current; })[0];
+          var pass = score >= lv.pass;
+          stats.tried++; if (pass) stats.pass++; stats.scores.push(score);
+          // 真实 BKT 更新
+          return api.submitAttempt(uid, {
+            node_id: selected.id, correct: pass, time_spent: 30, question_type: "feynman_explain"
+          }).catch(function () { return { code: 1 }; }).then(function (ar) {
+            var ad = (ar && ar.data) || {};
+            if (ad.p_change != null) stats.delta = ad.p_change;
+            if (ad.p != null) { byId[selected.id]._m = ad.p; }
+            updateStats();
+            renderNodes();
+            var fb = d.feedback || {};
+            var dims = Object.keys(fb).map(function (k) { return esc((fb[k] && fb[k].comment) || ""); }).filter(Boolean).join(" · ");
+            document.getElementById("resultBox").innerHTML =
+              '<div class="verdict ' + (pass ? "pass" : "fail") + '">' +
+                '<b>' + score + ' 分 · ' + (pass ? "已通关" : "未通关（需 " + lv.pass + " 分）") + '</b>' +
+                '<div style="margin-top:6px">' + esc(d.verdict || "") + '</div>' +
+                (dims ? '<div class="small" style="margin-top:6px;opacity:.85">' + dims + '</div>' : '') +
+                (ad.p != null ? '<div class="small" style="margin-top:6px">掌握度更新为 ' + pct(ad.p, 0) + '</div>' : '') +
+              '</div>';
+            btn.disabled = false; btn.innerHTML = orig;
+          });
+        })
+        .catch(function () { LL.toast("评分失败，请重试"); btn.disabled = false; btn.innerHTML = orig; });
+    });
+  });
+})();
+</script>
+</body>
+</html>

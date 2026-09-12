@@ -22,6 +22,7 @@ security_bp = Blueprint('security', __name__, url_prefix='/api/security')
 
 
 @security_bp.route('/status', methods=['GET'])
+@require_admin
 def get_status():
     """获取安全系统状态"""
     gateway = get_gateway()
@@ -38,6 +39,7 @@ def get_status():
 
 
 @security_bp.route('/gateway/stats', methods=['GET'])
+@require_admin
 def get_gateway_stats():
     """获取网关统计"""
     gateway = get_gateway()
@@ -87,6 +89,7 @@ def unblock_ip():
 
 
 @security_bp.route('/gateway/logs', methods=['GET'])
+@require_admin
 def get_gateway_logs():
     """获取网关日志"""
     limit = request.args.get('limit', 100, type=int)
@@ -98,6 +101,7 @@ def get_gateway_logs():
 
 
 @security_bp.route('/firewall/rules', methods=['GET'])
+@require_admin
 def get_firewall_rules():
     """获取防火墙规则"""
     firewall = get_firewall()
@@ -142,6 +146,7 @@ def add_firewall_rule():
 
 
 @security_bp.route('/firewall/rules/<rule_id>', methods=['DELETE'])
+@require_admin
 def remove_firewall_rule(rule_id):
     """删除防火墙规则"""
     firewall = get_firewall()
@@ -154,6 +159,7 @@ def remove_firewall_rule(rule_id):
 
 
 @security_bp.route('/firewall/check', methods=['POST'])
+@require_admin
 def check_access():
     """检查访问权限"""
     data = request.get_json()
@@ -225,6 +231,7 @@ def reset_security_system():
 
 
 @security_bp.route('/recommendations', methods=['GET'])
+@require_admin
 def get_security_recommendations():
     """获取安全建议"""
     firewall = get_firewall()

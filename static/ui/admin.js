@@ -87,7 +87,9 @@
         j = j || {};
         if (r.status === 401 || r.status === 403) {
           if (r.status === 401) { TOKEN = ""; try { localStorage.removeItem(TOKEN_KEY); } catch (e) {} }
-          setNoAuth(r.status);
+          // 强制改密期：后端对非改密端点统一 403，前端应弹改密窗而非登录门
+          if (j.must_change_password) { showPwdGate(); }
+          else { setNoAuth(r.status); }
           var err = new Error(j.error || j.message || "未登录或权限不足");
           err.status = r.status; throw err;
         }
@@ -192,6 +194,60 @@
   }
   function showLogin() { ensureGate(); document.getElementById("loginGate").classList.add("show"); }
 
+  /* ---------------- 强制改密门 ----------------
+   * 首次登录（must_change_password=1）时后端对所有非改密端点返回 403，
+   * 必须提供改密入口，否则管理员被锁在门外无法完成改密。
+   */
+  function ensurePwdGate() {
+    if (document.getElementById("pwdGate")) return;
+    var g = document.createElement("div");
+    g.className = "login-gate"; g.id = "pwdGate";
+    g.innerHTML =
+      '<form class="login-box" id="pwdForm">' +
+        '<h3>' + icon("settings") + ' 首次登录需修改密码</h3>' +
+        '<p class="sub">为保障账号安全，请先修改初始密码（至少 8 位，含大写字母和数字）。</p>' +
+        '<input id="pwdOld" type="password" placeholder="当前密码" autocomplete="current-password">' +
+        '<input id="pwdNew" type="password" placeholder="新密码" autocomplete="new-password">' +
+        '<input id="pwdNew2" type="password" placeholder="确认新密码" autocomplete="new-password">' +
+        '<div class="small" style="color:var(--destructive-text);min-height:16px;margin-top:6px" id="pwdErr"></div>' +
+        '<button class="btn primary" id="pwdBtn" type="submit">提交修改</button>' +
+      '</form>';
+    document.body.appendChild(g);
+    g.querySelector("#pwdForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      var errEl = g.querySelector("#pwdErr");
+      errEl.textContent = "";
+      var oldP = g.querySelector("#pwdOld").value;
+      var newP = g.querySelector("#pwdNew").value;
+      var newP2 = g.querySelector("#pwdNew2").value;
+      if (!oldP || !newP) { errEl.textContent = "请填写当前密码与新密码"; return; }
+      if (newP !== newP2) { errEl.textContent = "两次输入的新密码不一致"; return; }
+      var b = g.querySelector("#pwdBtn");
+      b.disabled = true; b.textContent = "提交中…";
+      // 直接 fetch：改密端点本身放行，不经过 request() 以免触发 403 分支
+      var headers = { "Content-Type": "application/json" };
+      if (TOKEN) headers["X-Admin-Token"] = TOKEN;
+      fetch(API + "/password", {
+        method: "POST", headers: headers, credentials: "same-origin",
+        body: JSON.stringify({ old_password: oldP, new_password: newP })
+      }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (j) {
+        j = j || {};
+        if (j.success) {
+          g.classList.remove("show");
+          toast("密码修改成功");
+          setTimeout(function () { location.reload(); }, 600);
+        } else {
+          errEl.textContent = j.error || j.message || "修改失败";
+          b.disabled = false; b.textContent = "提交修改";
+        }
+      }).catch(function () {
+        errEl.textContent = "网络异常，请重试";
+        b.disabled = false; b.textContent = "提交修改";
+      });
+    });
+  }
+  function showPwdGate() { ensurePwdGate(); document.getElementById("pwdGate").classList.add("show"); }
+
   var _noAuth = false;
   function setNoAuth(status) {
     _noAuth = status || 401;
@@ -228,7 +284,12 @@
     ensureToast();
     renderSidebar(opts.nav || "");
     return me().then(function (a) {
-      if (a) { renderAdmin(a); return a; }
+      if (a) {
+        renderAdmin(a);
+        // 首次登录未改密：仅展示改密窗并阻止业务数据加载（返回 null）
+        if (a.must_change_password) { showPwdGate(); return null; }
+        return a;
+      }
       showLogin();
       return null;
     });
@@ -239,7 +300,8 @@
     boot: boot, me: me, logout: logout,
     toast: toast, esc: esc, pct: pct, fmtDate: fmtDate,
     fmtBytes: fmtBytes, fmtDuration: fmtDuration, icon: icon,
-    showLogin: showLogin, noAuthBanner: noAuthBanner, bindLoginButton: bindLoginButton,
+    showLogin: showLogin, showPwdGate: showPwdGate,
+    noAuthBanner: noAuthBanner, bindLoginButton: bindLoginButton,
     isNoAuth: function () { return _noAuth; },
     admin: function () { return _me; }
   };

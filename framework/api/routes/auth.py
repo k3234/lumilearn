@@ -14,21 +14,68 @@ LumiLearn 账号认证路由（users 表）
 import logging
 import secrets
 import threading
+import time
 from datetime import datetime
 from functools import wraps
 
 from flask import Blueprint, jsonify, request, session
 
+from framework.admin.auth import get_admin_auth
 from framework.database import db
 
 logger = logging.getLogger("lumilearn.routes.auth")
 
 auth_bp = Blueprint("auth", __name__)
 
-# 内存 token 表：{token: {"user_id": int, "username": str, "created_at": str}}
+# 内存 token 表：{token: {"user_id", "username", "role", "created_at", "expires_at"}}
 _TOKENS = {}
 _TOKENS_LOCK = threading.Lock()
 TOKEN_TTL_SECONDS = 12 * 3600  # 12 小时有效
+
+# 登录暴力破解防护：同一 IP+用户名 连续失败 N 次后锁定
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_LOCK_SECONDS = 900  # 15 分钟
+_login_failures = {}
+_login_failures_lock = threading.Lock()
+
+
+def _client_ip() -> str:
+    """获取客户端 IP（无请求上下文时返回 'unknown'，保证可测试）"""
+    try:
+        return request.remote_addr or "unknown"
+    except Exception:
+        return "unknown"
+
+
+def _login_lock_check(username: str):
+    """登录锁定检查；处于锁定期返回 (剩余秒数)，否则 None"""
+    key = f"{_client_ip()}|{username}"
+    with _login_failures_lock:
+        rec = _login_failures.get(key)
+        if rec and rec.get("lock_until", 0) > time.time():
+            return int(rec["lock_until"] - time.time())
+    return None
+
+
+def _record_login_failure(username: str):
+    """记录一次登录失败；达到阈值则触发锁定"""
+    key = f"{_client_ip()}|{username}"
+    with _login_failures_lock:
+        rec = _login_failures.get(key) or {"count": 0, "lock_until": 0}
+        if rec["lock_until"] > time.time():
+            return  # 已处于锁定中，不再叠加
+        rec["count"] += 1
+        if rec["count"] >= LOGIN_MAX_ATTEMPTS:
+            rec["lock_until"] = time.time() + LOGIN_LOCK_SECONDS
+            rec["count"] = 0
+        _login_failures[key] = rec
+
+
+def _clear_login_failures(username: str):
+    """登录成功后清除失败记录"""
+    key = f"{_client_ip()}|{username}"
+    with _login_failures_lock:
+        _login_failures.pop(key, None)
 
 
 def _issue_token(user) -> str:
@@ -39,16 +86,21 @@ def _issue_token(user) -> str:
             "username": user.get("username") or user["name"],
             "role": user.get("role", "user"),
             "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "expires_at": time.time() + TOKEN_TTL_SECONDS,
         }
     return token
 
 
 def get_user_by_token(token: str):
-    """供其他路由解析当前登录用户（未登录返回 None）"""
+    """供其他路由解析当前登录用户（未登录/已过期返回 None）"""
     if not token:
         return None
     with _TOKENS_LOCK:
         entry = _TOKENS.get(token)
+        # Token 过期检查：定义 TTL 后必须真正执行，否则 token 永不过期
+        if entry and entry.get("expires_at", 0) < time.time():
+            _TOKENS.pop(token, None)
+            entry = None
     if not entry:
         return None
     return db.get_user(entry["user_id"])
@@ -107,9 +159,44 @@ def api_auth_login():
     password = data.get("password") or ""
     if not username or not password:
         return jsonify({"error": "请输入用户名和密码"}), 400
+
+    # 暴力破解防护：锁定期内直接拒绝
+    remain = _login_lock_check(username)
+    if remain:
+        return jsonify({"error": f"登录失败次数过多，已锁定 {remain} 秒，请稍后再试"}), 429
+
     user = db.verify_user_login(username, password)
     if not user:
+        # 兼容管理员账号：admins 表独立认证。
+        # 修复「管理员浏览器无法登录」——首页登录表单此前只查 users 表，
+        # 管理员凭据永远 401，且 /admin 页面门禁会将其弹回首页，形成死锁。
+        admin_res = get_admin_auth().login(username, password)
+        if admin_res.get("success"):
+            admin = admin_res["admin"]
+            _clear_login_failures(username)
+            role = admin.get("role") or "admin"
+            # 写入页面级会话角色，使 _page_role("admin","super_admin") 放行
+            session["role"] = role
+            session["admin_id"] = admin["id"]
+            public = {
+                "id": admin["id"],
+                "name": admin.get("display_name") or admin["username"],
+                "username": admin["username"],
+                "role": role,
+            }
+            return jsonify({
+                "success": True,
+                "code": 0,
+                "token": admin_res["token"],
+                "admin_token": admin_res["token"],
+                "user": public,
+                "data": {"id": public["id"], "name": public["name"], "role": public["role"]},
+                "must_change_password": bool(admin.get("must_change_password", False)),
+            })
+        _record_login_failure(username)
         return jsonify({"error": "用户名或密码错误"}), 401
+
+    _clear_login_failures(username)
     token = _issue_token(user)
     # 同时写入 cookie 会话，供 teacher/student 门户（session 认证）复用同一登录态
     session["user_id"] = user["id"]
@@ -135,6 +222,26 @@ def api_auth_me():
         return jsonify({"status": "ok"})
     user = require_user_token()
     if not user:
+        # 管理员会话回退：管理员经首页登录后 cookie 会话仅有 admin_id/role，
+        # 无 users 表记录，需单独识别，保证首页登录态展示与页面门禁一致。
+        admin_id = session.get("admin_id")
+        role = session.get("role") or ""
+        if admin_id and role in ("admin", "super_admin"):
+            admin = db.get_admin(admin_id)
+            if admin:
+                public = {
+                    "id": admin["id"],
+                    "name": admin.get("display_name") or admin["username"],
+                    "username": admin["username"],
+                    "role": role,
+                }
+                return jsonify({
+                    "success": True,
+                    "code": 0,
+                    "user": public,
+                    "data": {"id": public["id"], "name": public["name"], "role": public["role"]},
+                    "must_change_password": bool(admin.get("must_change_password", 0)),
+                })
         return jsonify({"error": "未登录", "code": 401, "message": "未登录"}), 401
     public = {
         "id": user["id"],

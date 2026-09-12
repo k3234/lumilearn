@@ -326,7 +326,7 @@ def feynman_test():
 
     except Exception as e:
         logger.error(f"费曼测试失败: {e}")
-        return jsonify({"error": f"费曼测试失败: {str(e)}"}), 500
+        return jsonify({"error": "费曼测试失败，请稍后重试或联系管理员"}), 500
 
 
 @feynman_bp.route("/api/feynman/classroom", methods=["POST", "OPTIONS"])
@@ -425,4 +425,4 @@ def feynman_classroom():
 
     except Exception as e:
         logger.error(f"多智能体课堂生成失败: {e}")
-        return jsonify({"error": f"多智能体课堂生成失败: {str(e)}"}), 500
+        return jsonify({"error": "课堂内容生成失败，请稍后重试或联系管理员"}), 500

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LumiLearn · 开始学习</title>
+<link rel="stylesheet" href="/static/ui/lumi.css">
+<link rel="stylesheet" href="/static/ui/icons.css">
+<style>
+  .start-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px;align-items:start}
+  .field-label{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-bottom:8px}
+  .input-lg{width:100%;min-height:88px;padding:12px 14px;border:1px solid var(--color-border);
+    border-radius:var(--radius);font-size:15px;resize:vertical;background:var(--background)}
+  .input-lg:focus{outline:2px solid var(--ring);outline-offset:-1px}
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{padding:6px 14px;border:1px solid var(--color-border);border-radius:99px;background:var(--background);
+    font-size:13px;color:var(--color-text-secondary)}
+  .chip:hover{border-color:var(--color-text)}
+  .chip.selected{background:var(--primary);border-color:var(--primary);color:var(--color-primary-foreground)}
+  .form-block{margin-bottom:20px}
+  .step-pill{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--color-border);font-size:13px}
+  .step-pill:last-child{border-bottom:none}
+  .step-pill .num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--color-primary-foreground);
+    display:grid;place-items:center;font-size:11px;font-weight:600;flex:none}
+  .step-pill .purpose{margin-left:auto;font-size:12px;color:var(--color-text-muted)}
+  .spin{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="app-sidebar" id="appSidebar"></aside>
+  <main class="app-main">
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">FEYNMAN TEACHING · MULTI-AGENT · LOCAL-FIRST</div>
+        <h1>开始一次学习</h1>
+      </div>
+    </div>
+
+    <div class="start-grid">
+      <form class="card" id="learnForm" novalidate>
+        <div class="form-block">
+          <span class="field-label"><i class="icon icon-16 icon-target"></i> 学习目标</span>
+          <textarea id="topicInput" class="input-lg" placeholder="例如：我想理解函数的单调性" maxlength="80"></textarea>
+        </div>
+        <div class="form-block">
+          <span class="field-label"><i class="icon icon-16 icon-box"></i> 学科</span>
+          <div class="chip-row" id="subjectRow">
+            <button type="button" class="chip selected" data-subject="数学">数学</button>
+            <button type="button" class="chip" data-subject="物理">物理</button>
+            <button type="button" class="chip" data-subject="化学">化学</button>
+            <button type="button" class="chip" data-subject="生物">生物</button>
+          </div>
+        </div>
+        <div class="form-block">
+          <span class="field-label"><i class="icon icon-16 icon-clock"></i> 难度</span>
+          <div class="chip-row" id="levelRow">
+            <button type="button" class="chip" data-level="初中">初中</button>
+            <button type="button" class="chip selected" data-level="高中">高中</button>
+            <button type="button" class="chip" data-level="大学">大学</button>
+          </div>
+        </div>
+        <div class="form-block">
+          <span class="field-label"><i class="icon icon-16 icon-flame"></i> 想不出学什么？点一个试试</span>
+          <div class="chip-row" id="quickRow"></div>
+        </div>
+        <button type="submit" class="btn primary lg" id="submitBtn" style="width:100%">
+          <i class="icon icon-16 icon-circle-play"></i> 开始学习
+        </button>
+      </form>
+
+      <div>
+        <div class="card">
+          <div class="panel-head between" style="margin-bottom:12px"><h3 style="font-size:15px;font-weight:600">费曼五步法</h3></div>
+          <div class="step-pill"><span class="num">1</span>现象引入<span class="purpose">生活场景切入</span></div>
+          <div class="step-pill"><span class="num">2</span>认知冲突<span class="purpose">打破原有理解</span></div>
+          <div class="step-pill"><span class="num">3</span>思维模型<span class="purpose">比喻让抽象可摸</span></div>
+          <div class="step-pill"><span class="num">4</span>自主推导<span class="purpose">苏格拉底式追问</span></div>
+          <div class="step-pill"><span class="num">5</span>费曼测试<span class="purpose">30 秒讲给外行</span></div>
+        </div>
+        <div class="card mt-2">
+          <div class="between" style="margin-bottom:10px"><h3 style="font-size:15px;font-weight:600">近期学习</h3><a class="btn ghost sm" href="profile.html">全部</a></div>
+          <div id="recentList"><div class="muted small">加载中…</div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="mock.js"></script>
+<script src="api.js"></script>
+<script src="app.js"></script>
+<script>
+(function () {
+  var esc = LL.esc, pct = LL.pct;
+  var subject = "数学", level = "高中";
+
+  document.getElementById("subjectRow").addEventListener("click", function (e) {
+    var c = e.target.closest(".chip"); if (!c) return;
+    document.querySelectorAll("#subjectRow .chip").forEach(function (x) { x.classList.remove("selected"); });
+    c.classList.add("selected"); subject = c.dataset.subject;
+  });
+  document.getElementById("levelRow").addEventListener("click", function (e) {
+    var c = e.target.closest(".chip"); if (!c) return;
+    document.querySelectorAll("#levelRow .chip").forEach(function (x) { x.classList.remove("selected"); });
+    c.classList.add("selected"); level = c.dataset.level;
+  });
+
+  // 快捷示例（来自 mock 文案库；真实模式同样可用作输入建议）
+  var quickRow = document.getElementById("quickRow");
+  if (window.DB && DB.quickExamples) {
+    DB.quickExamples.forEach(function (t) {
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = t;
+      b.addEventListener("click", function () {
+        var input = document.getElementById("topicInput");
+        input.value = "我想理解" + t; input.focus();
+        var hit = DB.stepLibrary && DB.stepLibrary[t];
+        if (hit) {
+          subject = hit.subject;
+          document.querySelectorAll("#subjectRow .chip").forEach(function (x) {
+            x.classList.toggle("selected", x.dataset.subject === subject);
+          });
+        }
+      });
+      quickRow.appendChild(b);
+    });
+  }
+
+  // URL 预填（首页薄弱点「立即复习」跳转）
+  var qs = new URLSearchParams(location.search);
+  if (qs.get("topic")) document.getElementById("topicInput").value = qs.get("topic");
+
+  function renderRecent(profile) {
+    var list = profile.recent_reports || [];
+    document.getElementById("recentList").innerHTML = list.length ? list.slice(0, 3).map(function (r) {
+      return '<a class="list-item" href="report.html?id=' + encodeURIComponent(r.id) + '" style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--color-border)">' +
+        '<span style="flex:1;min-width:0"><b style="font-size:13px">' + esc(r.topic) + '</b><br>' +
+        '<span class="muted small">' + esc(LL.fmtDate(r.date)) + '</span></span>' +
+        '<span class="pill green">' + pct(r.score) + '</span></a>';
+    }).join("") : '<div class="muted small">暂无学习记录</div>';
+  }
+
+  LL.boot({ nav: "start" }).then(function (user) {
+    if (user) api.profile().then(function (j) { renderRecent((j && j.data) || {}); }).catch(function () {});
+  });
+
+  var btn = document.getElementById("submitBtn");
+  document.getElementById("learnForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (btn.disabled) return;
+    var topic = document.getElementById("topicInput").value.trim();
+    if (!topic) { LL.toast("先告诉我你想学什么"); document.getElementById("topicInput").focus(); return; }
+    btn.disabled = true;
+    var orig = btn.innerHTML;
+    btn.innerHTML = '<i class="icon icon-16 icon-clock spin"></i> 编排调度 Agent 理解任务…';
+    api.startLearning({ topic: topic, subject: subject, difficulty: level })
+      .then(function (res) {
+        if (!res || res.code !== 0) { LL.toast((res && res.message) || "启动失败，请重试"); btn.disabled = false; btn.innerHTML = orig; return; }
+        SessionStore.save({ mode: "learning", session: res.data, topic: topic, subject: subject, difficulty: level });
+        location.href = "learn.html";
+      })
+      .catch(function () { LL.toast("启动失败，请重试"); btn.disabled = false; btn.innerHTML = orig; });
+  });
+})();
+</script>
+</body>
+</html>

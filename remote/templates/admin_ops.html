@@ -98,7 +98,13 @@
 
   function setText(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
   function plainGet(url) {
-    return fetch(url, { credentials: "same-origin" })
+    // 安全接口已要求管理员鉴权：需带 X-Admin-Token（与 admin.js 同一 localStorage 键）
+    var headers = {};
+    try {
+      var t = localStorage.getItem("admin_token");
+      if (t) headers["X-Admin-Token"] = t;
+    } catch (e) {}
+    return fetch(url, { credentials: "same-origin", headers: headers })
       .then(function (r) { return r.json().catch(function () { return {}; }); });
   }
 

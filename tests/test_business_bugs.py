@@ -124,7 +124,7 @@ class TestPermissionBoundary(unittest.TestCase):
 
     def test_normal_login_rejected_for_admin_endpoint(self):
         """普通用户登录凭证不能用于 Admin 接口"""
-        login = self.auth.login("admin", "admin123")
+        login = self.auth.login("admin", "TestAdmin2026")
         self.assertTrue(login["success"])
         self.assertIsNotNone(self.auth.verify(login["token"]))
 

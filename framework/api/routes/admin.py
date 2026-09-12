@@ -72,6 +72,8 @@ def admin_me():
             "display_name": admin["display_name"],
             "role": admin["role"],
             "last_login_at": admin["last_login_at"],
+            # 供前端在强制改密期弹出改密窗（未改密前管理接口一律 403）
+            "must_change_password": bool(admin.get("must_change_password", 0)),
         },
     })
 

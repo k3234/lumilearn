@@ -340,7 +340,7 @@ class TestAdminAPI:
         assert client.get("/api/admin/tasks").status_code == 401
 
         resp = client.post("/api/admin/login",
-                           json={"username": "admin", "password": "admin123"})
+                           json={"username": "admin", "password": "TestAdmin2026"})
         token = resp.get_json()["token"]
         h = {"X-Admin-Token": token}
 
