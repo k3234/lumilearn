@@ -86,11 +86,9 @@ Lumilearn/
 
 **管理员**：后台 API 覆盖度极高（用户/班级/学习报告/推理日志/模型/Agent/MCP/审计日志/导出），RBAC 越权拦截到位。但：① 首页登录表单只查 `users` 表，admin 在独立 `admins` 表，**浏览器里管理员实际进不去后台**；② `must_change_password=true` 不阻断任何 API 调用；③ Ollama 离线时把 `Connection refused 127.0.0.1:11499` 错误串直接外泄到响应体。**校园契合度 6/10**。
 
-截图存于 `screenshots/01_homepage_visitor.png`、`02_student_portal_guest.png`、`03_student_dashboard_loggedin.png`、`04_teacher_dashboard.png`。
-
 ---
 
-## 4. 代码审查摘要（完整版见 `code_review.md`）
+## 4. 代码审查摘要
 
 **综合评分：50/100**（安全 38 / 工程 55 / 测试 48 / 文档 60）
 
@@ -117,7 +115,7 @@ Lumilearn/
 
 ---
 
-## 5. 与 openMAIC 对比（完整版见 `openmaic_comparison.md`）
+## 5. 与 openMAIC 对比
 
 **openMAIC 已确认**：`THU-MAIC/OpenMAIC`（https://github.com/THU-MAIC/OpenMAIC），清华开源，**35,426 stars / 5,648 forks / MIT / v1.0.0（2026-08-27）**，置信度高（GitHub org + 官网 + arXiv 论文 MAIC-UI + 媒体报道四方交叉验证）。
 
@@ -232,13 +230,4 @@ Lumilearn/
 
 | 文件 | 内容 |
 |---|---|
-| `Lumilearn_v0.2.0-beta_测评档案.md` | 本文件（总档案） |
-| `env_setup_report.md` | 环境搭建/启动命令/端口/账号/pytest 全文 |
-| `code_review.md` | 代码审查全文（含文件:行号证据、Top 5 风险） |
-| `openmaic_comparison.md` | openMAIC 调研与同维度对比全文（含来源 URL） |
-| `blackbox_eval.md` | 多身份黑盒测评全文（含 curl 命令、UI 问题清单） |
-| `screenshots/01_homepage_visitor.png` | 访客视角首页 |
-| `screenshots/02_student_portal_guest.png` | 未登录学生端（卡在加载中） |
-| `screenshots/03_student_dashboard_loggedin.png` | 登录后学生端（仍卡在加载中） |
-| `screenshots/04_teacher_dashboard.png` | 教师端仪表盘（完整渲染） |
-| `startup.log` / `portal_18083.log` / `pytest.log` | 服务启动与测试原始日志 |
+| `Lumilearn v0.2.0-beta 测评档案（总）` | 本文件（总档案） |
