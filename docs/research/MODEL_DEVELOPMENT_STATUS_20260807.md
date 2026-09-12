@@ -225,7 +225,7 @@
 - ❌ 对齐层: SFT数据准备和RLHF/DPO未实现
 - ❌ 部署层: GGUF量化导出未实现
 
-### 规划: 填充真实训练数据 (2026-06-06-fill-real-training-data.md)
+### 规划: 填充真实训练数据
 - ⚠️ 部分实现: train_real.py有LoRA微调，但未见真实数据管道
 - ❌ Self-distillation模式未实现
 - ❌ Simple训练脚本未验证

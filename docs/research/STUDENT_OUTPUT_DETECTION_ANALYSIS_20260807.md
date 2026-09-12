@@ -91,7 +91,6 @@ engine.generate_learning_path() # 动态路径
 ### ❌ 完全缺失（规划中但未实现）
 
 #### 1. OutputDetector — `framework/output_detector.py`
-**规划文档**：`2026-08-07-student-output-detector.md`
 - 四维综合评分：思考质量(30%) + AI会话(25%) + 概念掌握(30%) + 答题正确率(15%)
 - 思维模式检测：探究型/实践型/反思型/总结型
 - 学习风格分析
@@ -100,7 +99,6 @@ engine.generate_learning_path() # 动态路径
 - **状态：0% — 文件不存在**
 
 #### 2. WorkflowEngine — `framework/workflow_engine.py`
-**规划文档**：`2026-08-07-learning-output-detection.md`
 - 五步学习工作流编排
 - 学习成果检测流水线
 - 引导式加强引擎
@@ -131,7 +129,6 @@ model_training_records, daily_stats
 ```sql
 learning_workflows    -- 五步学习工作流
 output_detection      -- 输出检测结果
--- (在 2026-08-07-learning-output-detection.md 中规划)
 ```
 
 ### 数据库方法缺口

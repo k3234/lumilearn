@@ -117,7 +117,6 @@ skills/
 docs/superpowers/plans/
 ├── 2026-06-06-animation-teaching.md          # 动画教学计划
 ├── 2026-06-06-feynman-animation-integration.md  # 费曼+动画整合
-├── 2026-06-06-fill-real-training-data.md     # 真实训练数据填充
 └── 2026-06-06-train-llm-from-scratch.md      # LLM从零训练计划
 ```
 
