@@ -1,6 +1,6 @@
 # LumiLearn 教学笔记本索引
 
-> 由 notebook_generator.py 基于 learn-shit 风格自动生成
+> 由 notebook_generator.py 基于 learn-shit 风格自动生成<!-- 注：notebook_generator.py 未随仓库入库，属本地生成脚本 -->
 
 ## 已生成笔记本
 
@@ -18,6 +18,9 @@ jupyter notebook notebooks/
 ```
 
 ### 用 notebook_generator 生成新笔记本
+
+> 以下命令依赖本地未入库的生成脚本（`scripts/notebook_generator.py`），仅在本地环境可用。
+
 ```bash
 python scripts/notebook_generator.py --topic "complex_numbers"
 python scripts/notebook_generator.py --all

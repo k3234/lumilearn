@@ -99,10 +99,7 @@
 | 文件 | 大小 | 说明 |
 |------|------|------|
 | archive/lumilearn_master.csv | 8.2MB | 主训练数据集 |
-| archive/bpe_corpus.txt | 6.4MB | BPE语料 |
-| archive/lumilearn_training_merged.csv | 4.5MB | 合并训练数据 |
-| archive/lumilearn_multi_difficulty_data.csv | 1.1MB | 多难度数据 |
-| archive/lumilearn_extended_data.csv | 475KB | 扩展数据 |
+| （其余 archive 训练数据） | — | 已合并入 lumilearn_master.csv，源文件已删除 |
 | archive/train_data.jsonl | 167KB | 蒸馏训练数据 |
 
 ### 2.5 推理引擎 ✅ 80%

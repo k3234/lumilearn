@@ -1,4 +1,4 @@
-﻿# LumiLearn 仓库全面测评报告
+# LumiLearn 仓库全面测评报告
 
 > 生成时间：2026-08-23 12:00 (Beijing time)
 > 分析范围：e:\学习LLM\lumilearn（含本地 master）
@@ -111,7 +111,7 @@ lumilearn/
 |---|---|---|
 | **测试覆盖** | **A-** | 639 个测试函数，覆盖 Agent/安全/费曼/配置全链路 |
 | **文档完整性** | **A** | LumiLearn 文档链完整，含技术方案/差距分析/合规清单 |
-| **代码规范** | **B+** | ruff.toml + 类型标注 + conftest.py fixtures |
+| **代码规范** | **B+** | .ruff.toml + 类型标注 + conftest.py fixtures |
 | **可复现性** | **B+** | 一键部署脚本 + DOCKER.md + ZERO_BASE_SETUP_GUIDE.md |
 | **架构清晰度** | **A** | 分层清晰：agent_core → framework → api/routes → templates |
 

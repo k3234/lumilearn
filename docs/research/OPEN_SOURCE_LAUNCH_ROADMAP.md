@@ -33,9 +33,9 @@
 | **代码整理** | 清理调试脚本、统一代码风格 | 干净的代码库 |
 | **README撰写** | 中英文双语README，含GIF演示 | README.md |
 | **一键部署脚本** | `start_lumilearn.bat`（双击即用） | 部署脚本 |
-| **Logo设计** | 龙授蜜蜂品牌Logo | logo.png |
+| **Logo设计** | 龙授蜜蜂品牌Logo | logo.png（规划中） |
 | **License选择** | MIT（最宽松） | LICENSE |
-| **行为准则** | Contributor Covenant | CODE_OF_CONDUCT.md |
+| **行为准则** | Contributor Covenant | CODE_OF_CONDUCT.md（规划中） |
 | **贡献指南** | 如何参与贡献 | CONTRIBUTING.md |
 
 ### Phase 1：预热期（1周）—— 制造声量

@@ -220,7 +220,7 @@ topics = [
 ]
 
 dataset = builder.create_full_dataset(topics)
-# 保存为训练数据
+# 保存为训练数据（示例输出文件，非仓库产物）
 save_training_data(dataset, "llm_education_data.json")
 ```
 

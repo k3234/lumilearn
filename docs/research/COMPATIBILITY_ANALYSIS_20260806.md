@@ -85,7 +85,7 @@ from framework.api.routes import (
 
 **远端**:
 ```python
-model_list = self._config.get_model_list()  # 读取 models.yaml
+model_list = self._config.get_model_list()  # 读取模型配置（config/ 下 provider yaml）
 for model in model_list:
     ...
 ```

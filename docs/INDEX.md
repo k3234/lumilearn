@@ -57,8 +57,6 @@
 ```
 docs/
 ├── 竞赛材料（必读）
-│   ├── LumiLearn_SUBMISSION.md        ← 参赛提交主文档
-│   ├── LumiLearn_TECHNICAL.md          ← 技术方案详情
 │   ├── V25_COMPETITION_TECHNICAL_REPORT.md ← 竞赛版本总结
 │   ├── evaluation-report.md       ← 自动化评测报告
 │   ├── PRESS_RELEASE.md           ← 项目发布说明

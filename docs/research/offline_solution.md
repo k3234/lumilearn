@@ -3,6 +3,8 @@
 > 设计日期：2026-06-03
 > 硬件：R7-7840HS（8核16线程，集成 GPU 780M）
 > 目标：脱离 Ollama，实现完全本地推理
+>
+> 注：本文为**设计稿**，图中 `lumiterm_local_server.py`、`langgraph_engine.py`、`lessons.json` 等均为拟建/示意文件名，非仓库现有提交物。
 
 ---
 

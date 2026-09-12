@@ -297,7 +297,7 @@ questions = [
 
 education_data = distiller.create_distillation_dataset(questions, mode="guided")
 
-# 保存为训练格式
+# 保存为训练格式（示例输出文件，非仓库产物）
 with open("education_distilled_data.json", "w") as f:
     json.dump(education_data, f, ensure_ascii=False, indent=2)
 ```

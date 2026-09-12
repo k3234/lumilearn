@@ -293,8 +293,7 @@ lumilearn/
 │   ├── 404.html                  # 统一 404 页面
 │   └── admin_traces.html         # Trace 可视化面板
 ├── docs/
-│   ├── ARCHITECTURE.md           # 五层架构图 + 模块接口表
-│   └── LumiLearn_TECHNICAL.md         # 技术报告（含安全声明）
+│   └── ARCHITECTURE.md           # 五层架构图 + 模块接口表
 ├── reports/
 │   └── eval_report_*.html/.json  # 自动生成，不入库（.gitignore）
 └── tests/

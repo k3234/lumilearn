@@ -4,6 +4,8 @@
 > 仓库地址：https://github.com/THU-MAIC/OpenMAIC
 > 作者：清华大学 THU-MAIC 团队
 > GitHub Star：17K+（一周内达到，持续增长）
+>
+> 注：文中架构图为**设计对比示意**，`lumiterm_local_server.py`、`lumiterm.html` 等为拟建文件名，非仓库现有提交物。
 
 ---
 

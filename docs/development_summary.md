@@ -26,6 +26,8 @@
 └─────────────┴─────────────┴─────────────┘
 ```
 
+> 注：`data_factory.py` / `prompts.py` / `evaluate.py` / `simple_train` 为远程训练服务器上的一次性脚本，未随本仓库分发（入库版本见 `scripts/train_real.py` 与 `scripts/merge_and_test.py`）。
+
 **核心文件:**
 | 文件 | 职责 |
 |------|------|
