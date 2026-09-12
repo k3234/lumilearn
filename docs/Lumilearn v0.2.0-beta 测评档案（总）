@@ -1,0 +1,245 @@
+# LumiLearn v0.2.0-beta 完整测评档案
+
+> **测评对象**：https://github.com/k3234/Lumilearn @ commit `bbb6949fd23a54e43e0d20e50eec39a776149a8f`（v0.2.0-beta，"双端口架构 + lumi 设计系统 + 完整测评"）
+> **测评日期**：2026-09-12（Asia/Shanghai）
+> **测评方式**：实际 git clone + 最小依赖启动 + 多身份黑盒走查（curl + 真实浏览器）+ 静态代码审查 + 同维度竞品对比
+> **配套子报告**：`env_setup_report.md`（环境搭建）、`code_review.md`（代码审查全文）、`openmaic_comparison.md`（openMAIC 对比全文）、`blackbox_eval.md`（黑盒测评全文）
+
+---
+
+## 0. 一句话结论
+
+LumiLearn v0.2.0-beta 是一个**由高中生单人维护、教学法落地很深、但工程完成度仍处原型阶段**的 K12 教育 AI 系统。它在"教师端教学闭环"和"CPU 老设备可跑"这两点上有真实差异化，但**学生端主仪表盘前端瘫痪、管理员无浏览器登录路径、安全读接口裸奔**三个 P0/P1 问题决定了它当前不能直接进真实校园。与清华开源的 openMAIC（35k star）不是同一层产品——openMAIC 做"一键出互动课件"，LumiLearn 做"学习过程跟踪"，应错位竞争而非正面硬刚。
+
+**综合评分：52/100**（安全 38 / 工程 55 / 功能完成度 50 / 校园适配 55 / 教学法差异化 70）
+
+---
+
+## 1. 启动信息（实测可复现）
+
+| 项 | 值 |
+|---|---|
+| 仓库路径 | `<WORKSPACE>/Lumilearn`（隔离沙箱工作副本，具体路径已按安全要求移除） |
+| 实际 commit | `bbb6949`（HEAD 即目标 commit，无 tag） |
+| Python | 3.12.11 |
+| 真实启动命令 | `set -a && . ./.env && set +a && python3 -m framework.api.server --multi-port` |
+| 门户 URL | http://127.0.0.1:18083/ （18080 被沙箱 gost 占用，补起在 18083） |
+| REST API | http://127.0.0.1:18081/ |
+| 健康检查 | `/health` → `status: degraded, gateway: offline`（Ollama 不可用但 Web 层不崩） |
+| 管理员账号 | 沙箱内置管理员（首次登录强制改密）；具体账号口令已按安全要求移除 |
+| 学生/教师账号 | **开箱无内置账号**，由 admin 通过 `POST /api/admin/users` 创建 |
+| 数据库 | SQLite，文件 `Lumilearn/lumilearn.db` |
+| pytest | **210 passed / 2 skipped / 1 failed**（失败项为依赖外部活服务的 e2e，非代码 bug） |
+
+> ⚠️ 文档不一致：`start.sh` 注释称三端口 18080/18081/18082，实际代码是两端口；docker-compose.yml 写的 5010/5001/18090 在 v0.2.0 已停用。`.env` 不会被 `server.py` 自动加载，启动时必须手动 `source`。
+
+---
+
+## 2. 项目概览
+
+### 2.1 技术栈
+- **后端**：Python / Flask（多蓝图），SQLite 单文件，22 个路由文件，19 个已注册蓝图
+- **前端**：静态 HTML + Jinja2 模板，本地化 KaTeX/Chart.js/highlight.js，无现代前端框架
+- **AI**：自研 8M Transformer（演示用）+ 外接 Ollama（推荐 qwen2.5:7b / Qwen2.5-1.5B LoRA）；纯 Python BM25 RAG（1166 条知识库，零向量库）
+- **多智能体**：FeynmanTeacher / ScoreAgent / CoachAgent 三 Agent 协作，费曼五步法编排
+- **辅助能力**：PaddleOCR 手写体识别、manim 动画生成、语音 TTS/ASR、思维导图、幻灯片导出
+- **部署**：pip 直跑 / `install.sh` 一行脚本 / docker-compose（含 Ollama 容器）/ 远程 SSH 部署
+
+### 2.2 目录结构
+```
+Lumilearn/
+├── framework/            # 核心（api/routes/ core/ database.py security/ services/ models/ engines/ knowledge/ admin/）
+├── agent_core/           # 多智能体运行时
+├── tests/                # 66 个测试文件
+├── prototypes/           # 前端静态原型（student-learning-platform/）
+├── config/ docs/ scripts/ deploy/
+├── docker-compose.yml Dockerfile start.sh
+└── 根级独立入口：lumilearn_web.py student_portal.py teacher_portal.py analytics_dashboard.py inference_server.py
+```
+
+---
+
+## 3. 多身份测评矩阵（黑盒实测）
+
+| 功能点 \ 身份 | 访客 | 学生 student01 | 教师 teacher01 | 管理员 admin |
+|---|---|---|---|---|
+| 登录 | ❌ 无自助注册 | ✅ `/api/auth/login` | ✅ `/api/login` | ⚠️ API 可登，**门户 UI 登不进** |
+| 个人资料/Me | ✅ 401 正确拦截 | ✅ 200 | ✅ 200 | ✅（但 must_change_pwd 未阻断 API） |
+| 首页/工作台 | ⚠️ 可看半成品 | ❌ **前端永久"加载中…"** | ✅ 仪表盘完整渲染 | ❌ 无 UI 入口 |
+| 学习路径/课程 | ✅ 401 | ✅ API 正常，前端未渲染 | ➖ | ✅ 后台可查 |
+| 费曼学习 | ⚠️ 未登录可调 | ⚠️ Ollama 离线走模板降级（设计如此） | ➖ | ➖ |
+| 学校/年级/班级 | ✅ 401/403 | ✅ 403 拒绝 | ✅ 建校→年级→班→入班全通 | ✅ 可查可管 |
+| 任务/作业 | ✅ 401 | ⚠️ 学生侧无待办入口 | ⚠️ 建任务成功但默认 draft，发布闭环未走通 | ✅ 可审计 |
+| 学情/数据看板 | ✅ 302 | ❌ 前端不渲染 | ✅ 薄弱学生/趋势/排行渲染 | ✅ overview/analytics 正常 |
+| 用户管理 | ✅ 401 | ➖ | ✅ 仅本班学生 | ✅ 列表/建/改密/删 |
+| 安全/防火墙接口 | ❌ **读侧裸奔 P1** | 同左 | 同左 | ✅ 写操作需管理员 |
+| 支付回调 | ⚠️ 空桩返回 "success" | 同左 | 同左 | 同左（TODO） |
+
+图例：✅ 可用 / ⚠️ 降级或有缺陷 / ❌ 不可用或 bug / ➖ 不适用。
+
+### 3.1 各身份详情
+
+**访客**：门户首页三角色卡片清晰；`/admin`、`/teacher`、`/analytics` 正确 302 到登录；但 `/learn`、`/classroom`、`/student/` 静态页未登录可打开却只显示转圈。**校园契合度 7/10**。
+
+**学生**：API 层完整（login/profile/learn history/status/feynman），费曼离线时降级模板模式体验良好。**但浏览器打开 `/student/` 后所有数据卡片永久"加载中…"**——curl 证明后端 200 有数据，纯前端 JS 渲染 bug。问候语只显示"你好"未带用户名。无签到/积分/作业待办/消息通知入口。**校园契合度 4/10**。
+
+**教师**：本次测评完成度最高。学校→年级→班级→学生入班→布置任务→学情看板全闭环，浏览器仪表盘 UI 精致，"薄弱学生关注"正确显示真实数据。扣分项：任务默认 draft、发布闭环未走通；不带 `grade_id` 建班级时报错信息误导。**校园契合度 8/10**。
+
+**管理员**：后台 API 覆盖度极高（用户/班级/学习报告/推理日志/模型/Agent/MCP/审计日志/导出），RBAC 越权拦截到位。但：① 首页登录表单只查 `users` 表，admin 在独立 `admins` 表，**浏览器里管理员实际进不去后台**；② `must_change_password=true` 不阻断任何 API 调用；③ Ollama 离线时把 `Connection refused 127.0.0.1:11499` 错误串直接外泄到响应体。**校园契合度 6/10**。
+
+截图存于 `screenshots/01_homepage_visitor.png`、`02_student_portal_guest.png`、`03_student_dashboard_loggedin.png`、`04_teacher_dashboard.png`。
+
+---
+
+## 4. 代码审查摘要（完整版见 `code_review.md`）
+
+**综合评分：50/100**（安全 38 / 工程 55 / 测试 48 / 文档 60）
+
+### 做得对的地方
+- 密码哈希用 `werkzeug.security`，默认 admin 密码 `secrets.token_urlsafe` 随机生成
+- SQL 全参数化查询 + `_validate_sql_ident()` 标识符白名单
+- CORS 不用 `*`，有 CSP / X-Frame-Options / X-Content-Type-Options 头
+- 生产环境 SECRET_KEY fail-closed
+- 22 个路由文件 vs 66 个测试文件，conftest 用隔离临时 DB
+
+### Top 5 风险
+| # | 级别 | 风险 | 证据 |
+|---|---|---|---|
+| 1 | P0 | 安全管理读接口无鉴权（防火墙规则/内网 IP/网关日志未登录可读） | `framework/api/routes/security.py:24,40,89,100,156,227` |
+| 2 | P0 | LLM 推理端点无鉴权（费曼 explain/test/classroom、思维导图、模型训练/切换/对比） | `feynman.py:123,271,332`; `mindmap.py:80`; `models.py:153,243,344` |
+| 3 | P0 | 支付回调 `/api/payment/notify` 无验签直接返回 "success"（当前空桩，上线前必修） | `payment.py:48-57` |
+| 4 | P1 | Token TTL 定义了 12h 但从未执行过期检查；普通用户登录无暴力破解防护 | `auth.py:31,46-54,101` |
+| 5 | P1 | 31 个依赖全 `>=` 浮动版本，无锁文件；8 个核心集成测试被 `collect_ignore` 排除 | `requirements.txt`; `conftest.py:14-23` |
+
+### 黑盒复核结论
+- 写操作（删防火墙规则、封 IP、沙箱执行）**已正确 401**，P0-1 实际降为 P1（信息泄露，无法远程利用）
+- 支付回调是空桩，当前不构成真实资金漏洞，但接真实支付宝前必须补 RSA2 验签
+- 学生/教师越权调 admin API 全部 401/403，RBAC 边界清晰
+
+---
+
+## 5. 与 openMAIC 对比（完整版见 `openmaic_comparison.md`）
+
+**openMAIC 已确认**：`THU-MAIC/OpenMAIC`（https://github.com/THU-MAIC/OpenMAIC），清华开源，**35,426 stars / 5,648 forks / MIT / v1.0.0（2026-08-27）**，置信度高（GitHub org + 官网 + arXiv 论文 MAIC-UI + 媒体报道四方交叉验证）。
+
+### 同维度对照
+
+| 维度 | LumiLearn v0.2.0-beta | openMAIC v1.0.0 |
+|---|---|---|
+| 本质 | **学习过程系统**（费曼五步法 + 错题本 + 掌握度） | **课件生成器**（一键把 PDF/主题变成可观看的互动课） |
+| 技术栈 | Python/Flask + SQLite + 可选 Ollama | Next.js/TypeScript + 可选 Postgres + 商业 LLM API |
+| 硬件门槛 | **极低**：CPU 老 4GB 笔记本可跑，1.77GB 内存 | 中高：需 Node 22+ + 自备 LLM API Key |
+| 多角色权限 | 学生/教师/Admin/Analytics 四端分离 + 审批导出 | 仅 ACCESS_CODE 单密码，无班级/作业/成绩 |
+| AI 能力 | 教学法驱动（费曼五步 + 双路校验），自研 8M 模型演示 | 多智能体课堂（AI 教师/助教/同学实时对话）+ 20+ Skills + 3D/白板/TTS/ASR |
+| 学科纵深 | 中文 K12 数理化，对齐人教 A 版 / 广东考情 | 通用主题生成，不绑定教材 |
+| 活跃度 | 单人 159 commits，Issues 为零 | 523 commits，~180 open issues，周增 star ≈ 9.5k |
+| 部署 | pip / curl bash / docker-compose | pnpm / Vercel 一键 / docker-compose |
+| License | MIT | MIT |
+
+### 差异化与短板
+**真正护城河**（不要丢）：
+1. "教学过程" vs "教学内容"——openMAIC 做内容生产，LumiLearn 做学习跟踪，不是同一层产品
+2. CPU 老设备可跑——三四线县城学校真需求，openMAIC 看不上也做不了
+3. K12 角色闭环 + 数据合规导出——落地学校必须的 IT 合规流
+4. 学科纵深（数理化 + 手写体识别 + manim 动画）
+
+**必须承认的短板**：
+1. 产品完成度差几个数量级（35k star vs 单人 159 commits）
+2. 无多模态课堂交互（3D/白板/TTS/AI 同学对话）
+3. 零生态/零分发（无 IM/IDE 入口、无 SDK、无 Vercel 一键部署）
+4. 自研 8M 模型能力上限 README 自承，生产实际依赖 qwen2.5:7b
+5. 完全面向中文 K12，出海为零
+
+**战略建议**：不要正面拼"一键出炫酷课件"。把 openMAIC 当上游（它生产内容、LumiLearn 做课后跟踪），主攻"CPU 可跑 + K12 合规"这个 openMAIC 看不上也做不了的细分。
+
+---
+
+## 6. 真实校园场景适配性评估
+
+### 6.1 单点登录与教务对接
+- **无 CAS / 学校微信 / 企业微信对接**：全站只有本地 `users` / `admins` 表 + 内存 Token，无 OAuth2 / SAML / LDAP。中国大学/中小学统一身份认证（CAS）是硬需求，当前完全缺失。
+- **无教务系统对接**：无选课、成绩导入、课表同步接口。教师端的"学校→年级→班级"是手建骨架，不是从教务系统拉的。
+
+### 6.2 合规
+- **未成年人保护**：无实名认证、无内容过滤家长侧、无使用时长控制。K12 场景下这是硬伤。
+- **数据出境**：默认走本地 Ollama，合规友好；但代码里 provider 抽象支持豆包/智谱/Kimi/MiniMax/DeepSeek 等云端 API，若启用则需评估数据出境合规。
+- **等保**：无审计日志导出给第三方 SIEM（`/api/admin/activity-logs` 有但格式未标准化）；无 HTTPS 强制；无 WAF 集成。
+- **支付**：`payment.py` 全是 TODO 桩，支付宝沙箱开关 `ALIPAY_SANDBOX=true` 但无验签。若做家校缴费/付费课程，上线前必须补 RSA2 验签 + 等保三级要求。
+
+### 6.3 离线与弱网
+- **离线可用**：✅ SQLite 单文件 + Ollama 本地模型 + 静态资源本地化，无外网 API Key 也能跑核心功能。这是最大校园优势。
+- **弱网**：前端是静态 HTML + JSON API，无大体积首屏，但未做 Service Worker / PWA 离线缓存。
+
+### 6.4 多端适配
+- 未实测移动端，但模板未声明 viewport 自适应（静态原型），手机端体验预期差。
+- 无小程序 / APP / 企业微信内置应用。
+
+### 6.5 校园场景契合度总评
+| 场景 | 适配度 | 说明 |
+|---|---|---|
+| 高中数学/物理课后自学（单机/机房） | ⭐⭐⭐⭐ | CPU 可跑 + 数理化纵深，但学生端前端瘫痪需先修 |
+| 班主任日常班级管理 | ⭐⭐⭐⭐ | 教师端闭环完整 |
+| 学校信息中心运维 | ⭐⭐⭐ | 后台路由全，但 admin UI 进不去 |
+| 大学公共课/通识课 | ⭐ | 无 SSO、无选课、无作业批改闭环 |
+| 家校通知/家长端 | ⭐ | 无家长角色、无微信集成 |
+| 考试/测验场景 | ⭐⭐ | 无防作弊、无考试模式、无监考 |
+
+---
+
+## 7. 风险与改进建议（按优先级）
+
+### P0（上线前必修）
+1. **修学生端主仪表盘前端渲染 bug**：登录后所有数据卡片永久"加载中…"，curl 证明 API 正常。学生首次登录看到空壳，无法使用。
+2. **补 `/api/payment/notify` 支付宝 RSA2 验签**：当前空桩直接返回 "success"，接真实支付即资金漏洞。
+3. **给 LLM 推理端点加登录校验**：费曼 explain/test/classroom、思维导图、模型 train/switch/compare 全部未登录可调，在线时会被刷 token 配额。
+
+### P1（近期修）
+4. **修管理员浏览器登录路径**：门户首页表单只查 `users` 表，admin 在 `admins` 表，浏览器里管理员实际进不去后台。
+5. **强制改密在 API 层生效**：`must_change_password=true` 当前不阻断任何管理接口。
+6. **给 `/api/security/*` 读端点加 `@require_admin`**：未登录可读内网 IP、防火墙规则、网关日志（已黑盒复核属实）。
+7. **Token 过期检查落地**：定义了 12h TTL 但从未执行；普通用户登录加频率限制。
+8. **生成依赖锁文件**：31 个包全 `>=` 浮动版本，无 pip-tools/poetry lock。
+
+### P2（体验改进）
+9. 学生端补：签到/积分/作业待办/消息通知入口
+10. 错误信息脱敏：Ollama 离线时把 `Connection refused 127.0.0.1:11499` 错误串外泄到响应体
+11. 修建班级时"重复名误报"bug（不带 grade_id 时事务回滚无提示）
+12. 两套登录端点（`/api/auth/login` vs `/api/login`）统一
+13. 8 个被 `collect_ignore` 排除的集成测试改用 flask test_client 在 CI 内起应用
+
+### P3（战略层）
+14. 补 CAS / 企业微信 SSO——这是进中国校园的门票
+15. 补多智能体课堂"AI 同学对话"——和 openMAIC 名字都带 multi-agent 的差异化答辩题
+16. 把"1.77GB 内存 / SQLite / 无外网 Key 也能跑 / 多角色审批导出"做成一页纸 sell sheet
+
+---
+
+## 8. 最终评分
+
+| 维度 | 得分 | 权重 | 加权 |
+|---|---|---|---|
+| 安全（鉴权/密钥/注入/CORS） | 38/100 | 25% | 9.5 |
+| 工程质量（架构/依赖/错误处理） | 55/100 | 20% | 11.0 |
+| 功能完成度（多身份闭环） | 50/100 | 25% | 12.5 |
+| 校园场景适配 | 55/100 | 15% | 8.25 |
+| 教学法/教学差异化 | 70/100 | 15% | 10.5 |
+| **综合** | | | **51.75 ≈ 52/100** |
+
+**结论一句话**：教学法设计和教师端闭环是亮点，学生端前端瘫痪 + 管理员进不去 + 安全读接口裸奔是三个必须先修的硬伤；和 openMAIC 错位竞争（做学习过程不做课件生成）是清晰的战略方向。
+
+---
+
+## 附录：交付物清单
+
+| 文件 | 内容 |
+|---|---|
+| `Lumilearn_v0.2.0-beta_测评档案.md` | 本文件（总档案） |
+| `env_setup_report.md` | 环境搭建/启动命令/端口/账号/pytest 全文 |
+| `code_review.md` | 代码审查全文（含文件:行号证据、Top 5 风险） |
+| `openmaic_comparison.md` | openMAIC 调研与同维度对比全文（含来源 URL） |
+| `blackbox_eval.md` | 多身份黑盒测评全文（含 curl 命令、UI 问题清单） |
+| `screenshots/01_homepage_visitor.png` | 访客视角首页 |
+| `screenshots/02_student_portal_guest.png` | 未登录学生端（卡在加载中） |
+| `screenshots/03_student_dashboard_loggedin.png` | 登录后学生端（仍卡在加载中） |
+| `screenshots/04_teacher_dashboard.png` | 教师端仪表盘（完整渲染） |
+| `startup.log` / `portal_18083.log` / `pytest.log` | 服务启动与测试原始日志 |
