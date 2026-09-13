@@ -367,6 +367,24 @@ class FeynmanEngine:
 
         return hint
 
+    def _subject_prior(self, topic: str) -> str:
+        """命中学科深度包时返回教材先验文本，否则返回空串。
+
+        局部导入以规避 services 包与 engines 包之间的循环依赖；
+        任何异常都降级为空串，绝不影响主讲解链路。
+        """
+        if not topic:
+            return ""
+        try:
+            from framework.services.subject_packs import resolve_pack, pack_prior
+            node = resolve_pack(topic)
+            if node:
+                return (f"\n教材先验（本章节权威结论，讲解必须准确、不得与之矛盾）：\n"
+                        f"{pack_prior(node)}\n")
+        except Exception:
+            return ""
+        return ""
+
     def _build_feynman_prompt(self, step: str, topic: str, level: str,
                                context: list = None,
                                extra_context: str = None,
@@ -427,6 +445,9 @@ class FeynmanEngine:
 {extra_context[:800]}
 """
 
+        # 学科深度包：命中教材章节时注入权威要点，使讲解有教材依据
+        pack_str = self._subject_prior(topic)
+
         # 构建最终Prompt
         prompt = f"""【费曼教学法 - {step}阶段】
 
@@ -439,6 +460,7 @@ class FeynmanEngine:
 
 {context_str}
 {rag_str}
+{pack_str}
 请按照费曼教学法的要求，为 "{topic}" 这个主题写出{step}阶段的教学内容。
 
 要求：
@@ -744,6 +766,9 @@ class FeynmanEngine:
                 f"\n参考资料（来自知识库检索，仅作内容参考，不可直接照抄，需用自己的话讲解）：\n"
                 f"{self._rag_context[:500]}\n")
 
+        # 学科深度包：命中教材章节时注入权威要点，使讲解有教材依据
+        pack_str = self._subject_prior(topic)
+
         if step_order == 1:
             # 第一步没有前序对话，直接引导
             prompt = f"""【费曼教学法 - {step_name}】（第{step_order}/5步）
@@ -755,6 +780,7 @@ class FeynmanEngine:
 
 参考引导语：{template}
 {rag_str}
+{pack_str}
 要求：
 1. 直接对"你"（学生）本人说话，像面对面聊天
 2. 语言极度简单口语化，用具体生活例子
@@ -788,6 +814,7 @@ class FeynmanEngine:
 
 参考引导语：{template}
 {rag_str}
+{pack_str}
 {dialogue_str}
 {answer_hint}
 {forbidden_hint}
