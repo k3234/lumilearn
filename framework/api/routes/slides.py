@@ -3,40 +3,133 @@
 灵学 lumilearn - 幻灯片 API 路由
 幻灯片生成端点（基于本地 Ollama 模型真实生成）
 """
-import html
-import logging
-import re
+import html
+import logging
+import os
+import re
+import time
+import uuid
+from io import BytesIO
+
+from flask import Blueprint, jsonify, request, send_file
+
+from framework.models.ollama_provider import get_ollama_provider
+from framework.services.exporter import export_slides as _export_slides
+from framework.services.review_service import get_review_service
+from framework.services.subject_packs import pack_prior, resolve_pack
+
+logger = logging.getLogger("lumilearn.routes.slides")
+
+slides_bp = Blueprint("slides", __name__)
+
+SLIDES_MODEL = "lumilearn-v2:latest"
+MAX_SLIDES = 12
+
+# 生成内容审查阈值：overall 与费曼度任一项低于阈值即判定不合格，降级到模板。
+# overall==0 视为「审查不可用」（模型不可用/解析失败），此时放行不误杀。
+REVIEW_OVERALL_THRESHOLD = float(os.getenv("SLIDES_REVIEW_OVERALL_THRESHOLD", "6.0"))
+REVIEW_FEYNMAN_THRESHOLD = float(os.getenv("SLIDES_REVIEW_FEYNMAN_THRESHOLD", "5.0"))
+
+# 近期生成的幻灯片缓存：cache_key -> {"slides": [...], "ts": float}
+# 供导出端点取用同一份生成结果（内存级、带 TTL，避免引入持久化依赖）。
+_EXPORT_CACHE: dict = {}
+_EXPORT_CACHE_TTL = 1800  # 30 分钟
+
+
+def _cache_export(slides: list) -> str:
+    """把生成的幻灯片写入内存缓存，返回 cache_key。"""
+    key = uuid.uuid4().hex
+    _EXPORT_CACHE[key] = {"slides": slides, "ts": time.time()}
+    _export_cache_cleanup()
+    return key
+
+
+def _export_cache_cleanup() -> None:
+    now = time.time()
+    dead = [k for k, v in _EXPORT_CACHE.items() if now - v["ts"] > _EXPORT_CACHE_TTL]
+    for k in dead:
+        _EXPORT_CACHE.pop(k, None)
+
+
+def _slides_to_review_text(slides: list) -> str:
+    """把解析出的幻灯片拼接成供审查的纯文本（去 HTML 标签/装饰符）。
+
+    审查对象是「讲解内容的整体质量」，因此以标题 + 去标签要点的叠加文本为准。
+    """
+    parts = []
+    for s in slides or []:
+        if not s:
+            continue
+        title = s.get("title") or ""
+        subtitle = s.get("subtitle") or ""
+        content = s.get("content") or ""
+        clean = _clean_md(re.sub(r"<[^>]+>", " ", content))
+        chunk = " ".join(p for p in (title, subtitle, clean) if p)
+        if chunk:
+            parts.append(chunk)
+    return "\n".join(parts)
+
+
+def _maybe_review(slides: list, do_review: bool):
+    """审查生成内容，据此决定呈现还是降级。
+
+    返回 (review_status, slides, model_used, review_result)：
+      - review_status: "approved" | "rejected" | "skipped"
+      - skipped：请求关闭审查，或审查不可用（overall==0）时放行原结果，不误杀可用内容。
+      - rejected：整体分或费曼度不达阈值，降级到模板兜底。
+    """
+    if not do_review:
+        return "skipped", slides, None
+
+    text = _slides_to_review_text(slides)
+    if not text:
+        return "skipped", slides, None
+
+    try:
+        result = get_review_service().review(
+            text, student_level="senior", mode="quick"
+        )
+    except Exception as e:  # 审查自身异常不阻断生成
+        logger.warning(f"幻灯片内容审查异常，放行: {e}")
+        return "skipped", slides, None
+
+    overall = result.get("overall", 0)
+    feynman = result.get("feynman_score", 0)
+
+    # 审查不可用（模型失败/解析失败）：放行，不做误判
+    if overall <= 0:
+        return "skipped", slides, result
+
+    if overall < REVIEW_OVERALL_THRESHOLD or feynman < REVIEW_FEYNMAN_THRESHOLD:
+        logger.info(
+            f"幻灯片内容审查未通过 (overall={overall}, feynman={feynman})，降级模板"
+        )
+        return "rejected", None, result
+
+    return "approved", slides, result
 
-from flask import Blueprint, jsonify, request
 
-from framework.models.ollama_provider import get_ollama_provider
-
-logger = logging.getLogger("lumilearn.routes.slides")
-
-slides_bp = Blueprint("slides", __name__)
-
-SLIDES_MODEL = "lumilearn-v2:latest"
-MAX_SLIDES = 12
-
-
-def _build_prompt(topic: str, slide_count: int, style: str) -> str:
-    """构建幻灯片生成提示词"""
-    style_hint = {
-        "detailed": "内容详细，每页给出关键要点",
-        "concise": "内容精炼，突出重点",
-        "default": "内容条理清晰",
-    }.get(style, "内容条理清晰")
-    return (
-        f"你是 LumiLearn 的教学幻灯片生成助手。请为学习主题「{topic}」生成 {slide_count} 页教学幻灯片。\n"
-        f"要求：{style_hint}；内容面向高中生，准确、有条理；"
-        f"第 1 页介绍概念，中间页讲原理/推导/应用，最后一页总结与思考。\n\n"
-        f"必须严格按以下格式输出（每页固定两行，用 PAGE| 开头）：\n"
-        f"PAGE|标题|副标题\n"
-        f"第一行内容\n"
-        f"第二行内容\n"
-        f"PAGE|标题2|副标题2\n"
-        f"...\n\n"
-        f"不要输出任何其他文字或代码块标记。"
+def _build_prompt(topic: str, slide_count: int, style: str,
+                  prior: str = "") -> str:
+    """构建幻灯片生成提示词"""
+    style_hint = {
+        "detailed": "内容详细，每页给出关键要点",
+        "concise": "内容精炼，突出重点",
+        "default": "内容条理清晰",
+    }.get(style, "内容条理清晰")
+    prior_block = f"\n\n{prior}\n必须以上述教材先验为准绳组织内容。" if prior else ""
+    return (
+        f"你是 LumiLearn 的教学幻灯片生成助手。请为学习主题「{topic}」生成 {slide_count} 页教学幻灯片。\n"
+        f"要求：{style_hint}；内容面向高中生，准确、有条理；"
+        f"第 1 页介绍概念，中间页讲原理/推导/应用，最后一页总结与思考。"
+        f"{prior_block}\n\n"
+        f"必须严格按以下格式输出（每页固定两行，用 PAGE| 开头）：\n"
+        f"PAGE|标题|副标题\n"
+        f"第一行内容\n"
+        f"第二行内容\n"
+        f"PAGE|标题2|副标题2\n"
+        f"...\n\n"
+        f"不要输出任何其他文字或代码块标记。"
     )
 
 
@@ -190,43 +283,71 @@ def generate_slides():
     if not topic:
         return jsonify({"error": "缺少 topic 字段"}), 400
 
-    slide_count = int(data.get("slide_count") or data.get("slides_count") or 5)
-    slide_count = max(3, min(slide_count, MAX_SLIDES))
-    style = data.get("style", "detailed")
-
-    provider = get_ollama_provider()
-    messages = [
-        {"role": "system", "content": "你是教学幻灯片生成助手，严格按指定格式输出。"},
-        {"role": "user", "content": _build_prompt(topic, slide_count, style)},
+    slide_count = data.get("slide_count") or data.get("slides_count") or 5
+    try:
+        slide_count = int(slide_count)
+    except (TypeError, ValueError):
+        slide_count = 5  # 前端传入非法数字时回退默认
+    slide_count = max(3, min(slide_count, MAX_SLIDES))
+    style = data.get("style", "detailed")
+
+    # 深度包先验：命中理科/物理章节时，注入权威要点作为教材依据
+    pack_node = resolve_pack(topic)
+    prior = pack_prior(pack_node) if pack_node else ""
+
+    provider = get_ollama_provider()
+    messages = [
+        {"role": "system", "content": "你是教学幻灯片生成助手，严格按指定格式输出。"},
+        {"role": "user", "content": _build_prompt(topic, slide_count, style, prior)},
     ]
 
-    try:
-        result = provider.chat_sync(
-            messages, model=SLIDES_MODEL, temperature=0.7, max_tokens=2048
-        )
-        if "error" in result:
-            logger.warning(f"幻灯片生成模型错误，使用兜底: {result['error']}")
-            slides = _fallback_slides(topic, slide_count)
-            model_used = "fallback"
-        else:
-            text = result.get("message", {}).get("content", "")
-            slides = _parse_slides(text, topic, slide_count)
-            model_used = result.get("model", SLIDES_MODEL)
-            if not slides:
-                logger.warning("幻灯片生成解析为空，使用兜底")
-                slides = _fallback_slides(topic, slide_count)
-                model_used = "fallback"
-    except Exception as e:
-        logger.error(f"幻灯片生成失败: {e}")
-        slides = _fallback_slides(topic, slide_count)
-        model_used = "fallback"
-
-    return jsonify({
-        "status": "success",
-        "slides": slides,
-        "model_used": model_used,
-        "count": len(slides),
-    })
+    review_status = None
+    review_score = None
+    try:
+        result = provider.chat_sync(
+            messages, model=SLIDES_MODEL, temperature=0.7, max_tokens=2048
+        )
+        if "error" in result:
+            logger.warning(f"幻灯片生成模型错误，使用兜底: {result['error']}")
+            slides = _fallback_slides(topic, slide_count)
+            model_used = "fallback"
+        else:
+            text = result.get("message", {}).get("content", "")
+            slides = _parse_slides(text, topic, slide_count)
+            model_used = result.get("model", SLIDES_MODEL)
+            if not slides:
+                logger.warning("幻灯片生成解析为空，使用兜底")
+                slides = _fallback_slides(topic, slide_count)
+                model_used = "fallback"
+            else:
+                review_status, _reviewed, review_result = _maybe_review(
+                    slides, do_review=bool(data.get("review", True))
+                )
+                if review_result:
+                    review_score = review_result.get("overall")
+                if review_status == "rejected":
+                    slides = _fallback_slides(topic, slide_count)
+                    model_used = "fallback"
+    except Exception as e:
+        logger.error(f"幻灯片生成失败: {e}")
+        slides = _fallback_slides(topic, slide_count)
+        model_used = "fallback"
+
+    cache_key = _cache_export(slides)
+    resp = {
+        "status": "success",
+        "slides": slides,
+        "model_used": model_used,
+        "count": len(slides),
+        "cache_key": cache_key,
+    }
+    if pack_node:
+        resp["pack"] = {"id": pack_node["id"], "name": pack_node["name"]}
+    if review_status:
+        resp["review_status"] = review_status
+        if review_score is not None:
+            resp["review_score"] = review_score
+    return jsonify(resp)
 
 
 @slides_bp.route("/api/slides/<slide_id>", methods=["GET", "OPTIONS"])
@@ -243,26 +364,53 @@ def get_slide(slide_id):
     })
 
 
-@slides_bp.route("/api/slides/export", methods=["POST", "OPTIONS"])
-def export_slides():
-    """
-    导出幻灯片
-
-    请求体（JSON）:
-        {
-            "slide_ids": ["slide1", "slide2"],
-            "format": "pptx/pdf"
-        }
-    """
-    if request.method == "OPTIONS":
-        return jsonify({"status": "ok"})
-
-    data = request.get_json(force=True)
-    if not data:
-        return jsonify({"error": "请求体为空"}), 400
-
-    # TODO: 实现导出逻辑
-    return jsonify({
-        "status": "success",
-        "message": "导出功能开发中"
-    })
+@slides_bp.route("/api/slides/export", methods=["POST", "OPTIONS"])
+def export_slides():
+    """
+    导出幻灯片（PPTX / PDF 真实文件下载）
+
+    请求体（JSON）:
+        {
+            "cache_key": "生成时返回的缓存键（优先）",
+            "slides": [{"title": ..., "subtitle": ..., "content": "<p>...</p>"}],
+            "title": "导出标题（可选）",
+            "format": "pptx/pdf"
+        }
+
+    响应：以附件形式返回二进制文件流。
+    """
+    if request.method == "OPTIONS":
+        return jsonify({"status": "ok"})
+
+    data = request.get_json(force=True)
+    if not data:
+        return jsonify({"error": "请求体为空"}), 400
+
+    fmt = str(data.get("format") or "pptx").lower()
+    slides = data.get("slides") or []
+
+    # 未直接提供 slides 时，回退到生成端点写入的缓存
+    if not slides:
+        cache_key = data.get("cache_key")
+        entry = _EXPORT_CACHE.get(cache_key) if cache_key else None
+        if entry:
+            slides = entry["slides"]
+
+    if not slides:
+        return jsonify({
+            "error": "没有可导出的幻灯片内容，请先生成幻灯片（使用返回的 cache_key）或在请求中提供 slides"
+        }), 400
+
+    try:
+        result = _export_slides(
+            slides, title=data.get("title") or "LumiLearn 课件", fmt=fmt
+        )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    return send_file(
+        BytesIO(result["stream"]),
+        mimetype=result["content_type"],
+        as_attachment=True,
+        download_name=result["filename"],
+    )

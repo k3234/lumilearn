@@ -6,6 +6,7 @@ LumiLearn Ollama 模型提供者
 import json
 import logging
 import os
+import random
 import time
 from typing import Any, Dict, Generator, List, Optional
 
@@ -40,6 +41,36 @@ class OllamaProvider(ModelProvider):
 
         super().__init__(name="ollama", base_url=base_url, default_model=default_model)
         self._timeout = int(os.getenv("OLLAMA_TIMEOUT", "300"))
+
+    def _post_with_retries(self, url: str, payload: dict) -> requests.Response:
+        """POST 请求带指数退避重试。
+
+        仅对连接类异常（超时/拒绝/重置）及瞬时服务错误（HTTP 5xx、429）重试；
+        业务性 HTTP 错误（如 404 / 400）直接返回，不做无意义重试。
+        重试参数可用环境变量覆盖：OLLAMA_MAX_RETRIES / OLLAMA_RETRY_BACKOFF。
+        """
+        max_retries = int(os.getenv("OLLAMA_MAX_RETRIES", "3"))
+        backoff = float(os.getenv("OLLAMA_RETRY_BACKOFF", "0.5"))
+        last = None
+        resp = None
+        for attempt in range(max_retries + 1):
+            try:
+                resp = requests.post(url, json=payload, timeout=self._timeout)
+                if resp.status_code < 500 and resp.status_code != 429:
+                    return resp  # 200 或业务性错误：直接返回
+                last = RuntimeError(f"HTTP {resp.status_code}")
+            except requests.exceptions.RequestException as e:
+                last = e
+            if attempt >= max_retries:
+                break
+            delay = backoff * (2 ** attempt) + random.random() * 0.2
+            logger.warning(
+                f"Ollama 调用失败({url}), {delay:.2f}s 后重试第 {attempt + 1}/{max_retries} 次: {last}"
+            )
+            time.sleep(delay)
+        if isinstance(last, requests.exceptions.RequestException):
+            raise last
+        return resp
 
     def chat(self, messages: List[Dict[str, str]], model: str = None,
             temperature: float = 0.7, max_tokens: int = 2048,
@@ -109,20 +140,14 @@ class OllamaProvider(ModelProvider):
         }
 
         try:
-            resp = requests.post(
-                f"{self._base_url}/api/chat",
-                json=payload,
-                timeout=self._timeout
-            )
-
+            resp = self._post_with_retries(f"{self._base_url}/api/chat", payload)
             if resp.status_code == 200:
                 return resp.json()
-            else:
-                return {
-                    "error": f"Ollama returned {resp.status_code}: {resp.text[:500]}"
-                }
-        except Exception as e:
-            return {"error": str(e)}
+            return {
+                "error": f"Ollama returned {resp.status_code}: {resp.text[:500]}"
+            }
+        except requests.exceptions.RequestException as e:
+            return {"error": f"Ollama 连接失败（已重试）: {e}"}
 
     def generate(self, prompt: str, model: str = None,
                  temperature: float = 0.7, max_tokens: int = 2048,
@@ -154,19 +179,13 @@ class OllamaProvider(ModelProvider):
         }
 
         try:
-            resp = requests.post(
-                f"{self._base_url}/api/generate",
-                json=payload,
-                timeout=self._timeout
-            )
-
+            resp = self._post_with_retries(f"{self._base_url}/api/generate", payload)
             if resp.status_code == 200:
                 return resp.json().get("response", "")
-            else:
-                logger.error(f"Ollama generate error: {resp.status_code}")
-                return ""
-        except Exception as e:
-            logger.error(f"Ollama generate exception: {e}")
+            logger.error(f"Ollama generate error: {resp.status_code}")
+            return ""
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Ollama generate connection failed (retried): {e}")
             return ""
 
     def list_models(self) -> List[Dict[str, Any]]:
